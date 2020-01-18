@@ -45,6 +45,7 @@ class DiscordBotMain extends ListenerAdapter {
                         e.printStackTrace();
                     }
                     if (removedID != 0) {
+                        // For Printing in the Console and in Discord A Bot Abuse role has been removed.
                         outputChannel.sendMessage(":white_check_mark: [System] Removed Expired Bot Abuse for " + removedID).queue();
                         System.out.println("[System] Removed Expired Bot Abuse for " + removedID);
                         try {
@@ -52,6 +53,7 @@ class DiscordBotMain extends ListenerAdapter {
                                     event.getJDA().getGuildById(Long.parseLong("500167623070449676")).getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
                         }
                         catch (ErrorResponseException ex) {
+                            // For Printing in Console and in Discord the Role couldn't be removed because the Discord ID was not found.
                             outputChannel.sendMessage(":warning: Bot Abuse just expired for " + removedID + " and they did not have the Bot Abuse role").queue();
                             System.out.println("[System - ERROR] Bot Abuse just expired for " + removedID + " and they did not have the Bot Abuse role");
                         }
@@ -119,7 +121,12 @@ class DiscordBotMain extends ListenerAdapter {
             else if (args[0].equals("transfer")) { // /transfer <Old Mention or Discord ID> <New Mention or Discord ID>
                 if (!msg.getAuthor().getJDA().getRolesByName("Staff", false).isEmpty()
                         || !msg.getAuthor().getJDA().getRolesByName("Administrators", false).isEmpty()) {
-                    transferRecords(msg);
+                    try {
+                        transferRecords(msg);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
                 else {
                     msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + "[System] You Don't have Permission to do that!").queue();
@@ -392,7 +399,7 @@ class DiscordBotMain extends ListenerAdapter {
             index++;
         }
     }
-    private void transferRecords(Message msg) {
+    private void transferRecords(Message msg) throws Exception {
         MessageChannel outputChannel = msg.getGuild().getTextChannelsByName("to_channel", false).get(0);
 
         String[] args = msg.getContentRaw().substring(1).split(" ");

@@ -1,3 +1,4 @@
+import javax.swing.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -235,22 +236,26 @@ class Core { // This is where all the magic happens, where all the data is added
     boolean botAbuseIsCurrent(long targetDiscordID) { // Returns True if the targetDiscordID is Bot Abused
         Calendar c = Calendar.getInstance();
         try {
+            // The ExpiryDates array will have a null value for the targetDiscordID if it's a Permanent Bot Abuse - Return true
             if (this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)) == null) {
                 return true;
             }
             else {
+                // Otherwise return true or false if the date in the expiryDates array is after current time,
+                // return true if the Bot Abuse is still current
+                // return false if the Bot Abuse is not current
                 this.indexOfLastOffense = discordID.lastIndexOf(targetDiscordID);
                 return this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)).after(c.getTime());
             }
         }
         catch (IndexOutOfBoundsException ex) { // A -1 in the first if statement will cause this, a -1 indicates the target
-            // discord ID wasn't found, which means it's their first offense and they've never been
-            // Bot Abused before, so return false
+            // discord ID wasn't found in the discordID array, which means it's their first offense and they've never been
+            // Bot Abused before, so return false and set the indexOfLastOffense variable to -1
             this.indexOfLastOffense = -1;
             return false;
         }
     }
-    long checkExpiredBotAbuse() throws Exception {
+    long checkExpiredBotAbuse() throws Exception { // This is the method that gets run each second by the timer in DiscordBotMain
         Calendar c = Calendar.getInstance();
         int index = this.discordID.size() - 1;
         while (index >= 0) {
@@ -274,9 +279,11 @@ class Core { // This is where all the magic happens, where all the data is added
         }
         return 0;
     }
-    String transferRecords(long oldDiscordID, long newDiscordID) {
+    String transferRecords(long oldDiscordID, long newDiscordID) throws Exception {
+        FileHandler fileHandler = new FileHandler();
         int index = 0;
         int numTransferred = 0;
+        // We scan over the entire discordID array and if the oldDiscordID matches we set the value to the newDiscordID
         while (index < this.discordID.size()) {
             if (oldDiscordID == this.discordID.get(index)) {
                 this.discordID.set(index, newDiscordID);
@@ -284,32 +291,33 @@ class Core { // This is where all the magic happens, where all the data is added
             }
             index++;
         }
-        index = 0;
         boolean wasBotAbused = false;
-        while (index < this.currentBotAbusers.size()) {
-            if (oldDiscordID == this.currentBotAbusers.get(index)) {
-                this.currentBotAbusers.set(index, newDiscordID);
-                wasBotAbused = true;
-            }
-            else {
-                index++;
-            }
+        // Now we check if the player is currently Bot abused, their discordID will appear in the currentBotAbusers array if so.
+        if (this.currentBotAbusers.contains(oldDiscordID)) {
+            this.currentBotAbusers.set(this.currentBotAbusers.indexOf(oldDiscordID), newDiscordID);
+            wasBotAbused = true;
         }
+        // If we had records transferred and they weren't Bot Abused
         if (numTransferred > 0 && !wasBotAbused) {
+            fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
             return ":white_check_mark: [System] Successfully Transferred the Records of " + oldDiscordID + " to " + newDiscordID + "\nThe Old Discord ID Was Not Bot Abused";
         }
+        // If we had records transferred and they were Bot Abused
         else if (numTransferred > 0) {
+            fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
             return ":white_check_mark: [System] Successfully Transferred the Records of " + oldDiscordID + " to " + newDiscordID + "\nThe Old Discord ID Was Bot Abused at the Time and the Role was Transferred Over";
         }
+        // If we had No Records Transferred
         else {
             System.out.println("[System] No Records Transferred");
             return ":warning: [System] No Records Transferred";
         }
     }
-    int clearRecords (long targetDiscordID) throws Exception {
+    int clearRecords (long targetDiscordID) throws Exception { // For Handling Clearing all records of a Discord ID - Returns the Number of Records Cleared
         FileHandler fileHandler = new FileHandler();
         int clearedRecords = 0;
         int index = 0;
+        // If we want to clear the records of a Discord ID then we go through the discordID array and remove the elements in all the corresponding arrays.
         while (index < this.discordID.size()) {
             if (targetDiscordID == this.discordID.get(index)) {
                 this.discordID.remove(index);
