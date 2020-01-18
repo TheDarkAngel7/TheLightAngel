@@ -59,7 +59,7 @@ class Core { // This is where all the magic happens, where all the data is added
         else {
             return ":x: [System] Invalid Reason!";
         }
-        // We're checking to see if this player is currently Bot Abused
+        // We're checking to see if this player is currently Bot Abused - This Code would run if it was a moderator just using /botabuse like normal.
         if (!botAbuseIsCurrent(targetDiscordID) && !adminOverride) {
             // If they've been previously Bot Abused before then we need the index value of it
             if (indexOfLastOffense == -1) { // This is their first offense
@@ -91,17 +91,18 @@ class Core { // This is where all the magic happens, where all the data is added
                     "**\nExpiry Date: **" + getNewExpiryDate(targetDiscordID) +
                     "**\nReason: **" + this.reasons.get(this.discordID.lastIndexOf(targetDiscordID)) +
                     "**\nViolation Image: **" + this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) + "**";
-        }
+        } // If a /permbotabuse was run and the Bot Abuse is still current.
         else if (botAbuseIsCurrent(targetDiscordID) && adminOverride) {
+            // First we check to see if the current Bot Abuse is not permanent
             if (this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)) != null) {
-                // If the target ID is currently Bot Abused, the expiry date is changed to null for Permanent
+                // The expiry date is changed to null for Permanent and the reason is updated to "Contact Staff"
                 this.expiryDates.set(this.discordID.lastIndexOf(targetDiscordID), null);
                 this.reasons.set(this.discordID.lastIndexOf(targetDiscordID), "Contact Staff");
                 fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
                 return ":white_check_mark: **[System - Admin Override] Successfully Overrode Bot Abuse for " + targetDiscordID + " and it is now "
                         + this.getNewExpiryDate(targetDiscordID) + "**";
             }
-            // Here we're checking to see if the player is already Permanently Bot Abused
+            // Here we're saying player is already Permanently Bot Abused
             else {
                 return ":x: **[System - Admin Override] This Player is Already Permanently Bot Abused**";
             }
@@ -133,6 +134,8 @@ class Core { // This is where all the magic happens, where all the data is added
             System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                     "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
 
+            // Output to return from a perm Bot Abuse, we check to see if proofImages in the coorisponding index is null, if so Violation image will say "None Provided"
+            // If an image was provided then the else statement would run
             if (this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) == null) {
                 return ":white_check_mark: **[System] Successfully Bot Abused " + targetDiscordID +
                         "**\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
@@ -344,6 +347,7 @@ class Core { // This is where all the magic happens, where all the data is added
         else {
             output += "\n:information_source: Your Bot Abuse is as Follows**";
         }
+        // We check the discordID array and then get all the elements in the corresponding index of the other arrays
         while (index < this.discordID.size()) {
             if (this.discordID.get(index) == targetDiscordID) {
                 output += "\n\nOffense Number: " + this.repOffenses.get(index)
@@ -355,12 +359,15 @@ class Core { // This is where all the magic happens, where all the data is added
             }
             index++;
         }
+        // If It was a non-Team member that used the /checkhistory command this would return and they don't have any history.
         if (recordsCount == 0 && !isTeamMember) {
             return ":white_check_mark: **You Have No Bot Abuse History**";
         }
+        // If it was a Team member it would return as an error saying they don't have any history.
         else if (recordsCount == 0) {
             return ":x: **This Player Has No Bot Abuse History**";
         }
+        // Otherwise return the constructed string from the while loop and above.
         else {
             output += "\n\nRecords Count: " + recordsCount;
             return output;
