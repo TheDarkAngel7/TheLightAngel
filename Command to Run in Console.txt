@@ -1,0 +1,13 @@
+Start the Program With:
+
+pushd F:\TheLightAngel
+
+"C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2019.2.4\jbr\bin\java.exe" "-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2019.2.4\lib\idea_rt.jar=52985:C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2019.2.4\bin" -Dfile.encoding=UTF-8 -classpath F:\TheLightAngel\out\production\TheLightAngel;F:\TheLightAngel\JDA-4.1.0_81-withDependencies.jar LightAngel
+
+OR
+
+"C:\Program Files\Java\jdk-13.0.1\bin\java.exe" -classpath F:\TheLightAngel\out\production\TheLightAngel;F:\TheLightAngel\JDA-4.1.0_81-withDependencies.jar LightAngel
+
+New Version?
+
+"C:\Program Files\Java\jdk-13.0.2\bin\java.exe" -classpath F:\TheLightAngel\out\production\TheLightAngel;F:\TheLightAngel\JDA-4.1.0_81-withDependencies.jar LightAngel
