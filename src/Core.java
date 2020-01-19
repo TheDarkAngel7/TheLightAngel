@@ -164,7 +164,7 @@ class Core { // This is where all the magic happens, where all the data is added
         Calendar c = Calendar.getInstance();
         Calendar cOld = Calendar.getInstance();
         // Take off 6 months
-        cOld.add(Calendar.MINUTE, -30); // Minus 30 for Testing Purposes
+        cOld.add(Calendar.HOUR, -1); // Minus 30 for Testing Purposes
 
         int index = 0;
         int prevOffenses = 0;
@@ -327,7 +327,7 @@ class Core { // This is where all the magic happens, where all the data is added
         int clearedRecords = 0;
         int index = 0;
         // If we want to clear the records of a Discord ID then we go through the discordID array and remove the elements in all the corresponding arrays.
-        while (index < this.discordID.size()) {
+        while (this.discordID.contains(targetDiscordID)) {
             if (targetDiscordID == this.discordID.get(index)) {
                 this.discordID.remove(index);
                 this.repOffenses.remove(index);

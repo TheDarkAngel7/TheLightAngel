@@ -530,26 +530,59 @@ class DiscordBotMain extends ListenerAdapter {
                 msg.getGuild().getMemberById(Long.parseLong(args[1])).getUser().getAsTag());
             }
             catch (NumberFormatException ex) {
-                // The code above would throw a NumberFormatException if it's a mention
-                discussionChannel.sendMessage(core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), true)).queue();
-                outputChannel.sendMessage(":information_source: **[System] " + msg.getAuthor().getAsMention() + " just checked the history of " +
-                        msg.getMentionedMembers().get(0).getAsMention() + "**").queue();
-                System.out.println("[System] " + msg.getAuthor().getName() + " just checked the history of " +
-                        msg.getMentionedMembers().get(0).getUser().getAsTag());
+                try {
+                    // The code above would throw a NumberFormatException if it's a mention
+                    discussionChannel.sendMessage(core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), true)).queue();
+                    outputChannel.sendMessage(":information_source: **[System] " + msg.getAuthor().getAsMention() + " just checked the history of " +
+                            msg.getMentionedMembers().get(0).getAsMention() + "**").queue();
+                    System.out.println("[System] " + msg.getAuthor().getName() + " just checked the history of " +
+                            msg.getMentionedMembers().get(0).getUser().getAsTag());
+                }
+                // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
+                catch (IllegalArgumentException e) {
+                    String stringToSplit = core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), true);
+                    String[] splitString = stringToSplit.split("\n\n");
+                    int index = 0;
+                    while (index < splitString.length) {
+                        discussionChannel.sendMessage(splitString[index]).queue();
+                        index++;
+                    }
+                }
             }
             // The Try code would throw a NullPointerException if the Discord ID Provided does not exist on the server.
-            catch (NullPointerException ex) {
+            catch (NullPointerException f) {
                 outputChannel.sendMessage(":information_source: **[System] " + msg.getAuthor().getAsMention() + " just checked the history of " +
                         args[1] + " who currently does not exist within the Discord Server**").queue();
                 System.out.println("[System] " + msg.getAuthor().getName() + " just checked the history of "  +
                         args[1] + " who currently does not exist within the Discord Server");
             }
+            // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
+            catch (IllegalArgumentException h) {
+                String stringToSplit = core.seeHistory(Long.parseLong(args[1]), true);
+                String[] splitString = stringToSplit.split("\n\n");
+                int index = 0;
+                while (index < splitString.length) {
+                    discussionChannel.sendMessage(splitString[index]).queue();
+                    index++;
+                }
+            }
         }
         // Get the history of the player who used the command.
         else if (args.length == 1) {
             PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
-            channel.sendMessage(core.seeHistory(msg.getAuthor().getIdLong(), false)).queue();
-            System.out.println("[System] " + msg.getAuthor().getName() + " just checked their own Bot Abuse History");
+            try {
+                channel.sendMessage(core.seeHistory(msg.getAuthor().getIdLong(), false)).queue();
+                System.out.println("[System] " + msg.getAuthor().getName() + " just checked their own Bot Abuse History");
+            }
+            catch (IllegalArgumentException ex) {
+                String stringToSplit = core.seeHistory(Long.parseLong(args[1]), true);
+                String[] splitString = stringToSplit.split("\n\n");
+                int index = 0;
+                while (index < splitString.length) {
+                    channel.sendMessage(splitString[index]).queue();
+                    index++;
+                }
+            }
         }
     }
 }
