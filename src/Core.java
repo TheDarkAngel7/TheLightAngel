@@ -170,6 +170,9 @@ class Core { // This is where all the magic happens, where all the data is added
         int prevOffenses = 0;
 
         while (index < this.discordID.size() - 1 && this.expiryDates.size() != 0) {
+            // We check for discordID.size() - 1 & expiryDates.size() != 0 because the
+            // discordID array has the ID already added to it and the expiryDates array hasn't been touched yet
+            // so the size of discordID size would be 1 more than the size of the expiryDates array
             if (this.discordID.get(index) == targetDiscordID && this.expiryDates.get(index).after(cOld.getTime())) {
                 prevOffenses++;
             }
