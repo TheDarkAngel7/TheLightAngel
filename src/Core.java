@@ -1,4 +1,3 @@
-import javax.swing.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -33,15 +32,6 @@ class Core { // This is where all the magic happens, where all the data is added
             outputStream.close();
         }
     }
-    void save() throws Exception {
-        try {
-            FileHandler fileHandler = new FileHandler();
-            fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
-        }
-        catch (FileNotFoundException ex) {
-            ex.printStackTrace();
-        }
-    }
 
     String setBotAbuse(long targetDiscordID, boolean adminOverride, String reason, String imageURL) throws Exception {
         FileHandler fileHandler = new FileHandler();
@@ -66,7 +56,7 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.discordID.add(targetDiscordID);
                 this.repOffenses.add(1);
                 this.issuedDates.add(c.getTime());
-                this.expiryDates.add(setExpiryDate(0));
+                this.expiryDates.add(setExpiryDate(targetDiscordID));
                 this.proofImages.add(imageURL);
                 this.currentBotAbusers.add(targetDiscordID);
                 fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
@@ -76,7 +66,7 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.discordID.add(targetDiscordID);
                 this.repOffenses.add(this.repOffenses.get(indexOfLastOffense) + 1);
                 this.issuedDates.add(c.getTime());
-                this.expiryDates.add(setExpiryDate(this.repOffenses.get(indexOfLastOffense)));
+                this.expiryDates.add(setExpiryDate(targetDiscordID));
                 this.proofImages.add(imageURL);
                 this.currentBotAbusers.add(targetDiscordID);
                 fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
@@ -169,9 +159,22 @@ class Core { // This is where all the magic happens, where all the data is added
             }
         }
     }
-    Date setExpiryDate(int prevOffenses) { // The Times are Short for Testing Purposes, they would usually be in days or months
-        Calendar c = Calendar.getInstance();
 
+    Date setExpiryDate(long targetDiscordID) { // The Times are Short for Testing Purposes, they would usually be in days
+        Calendar c = Calendar.getInstance();
+        Calendar cOld = Calendar.getInstance();
+        // Take off 6 months
+        cOld.add(Calendar.MINUTE, -30); // Minus 30 for Testing Purposes
+
+        int index = 0;
+        int prevOffenses = 0;
+
+        while (index < this.discordID.size() - 1 && this.expiryDates.size() != 0) {
+            if (this.discordID.get(index) == targetDiscordID && this.expiryDates.get(index).after(cOld.getTime())) {
+                prevOffenses++;
+            }
+            index++;
+        }
         if (prevOffenses < 4) {
             if (prevOffenses == 0) { // 0 Prior Offenses - 1st Offense
                 c.add(Calendar.MINUTE, 1);
