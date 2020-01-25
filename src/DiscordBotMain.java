@@ -574,8 +574,9 @@ class DiscordBotMain extends ListenerAdapter {
                 channel.sendMessage(core.seeHistory(msg.getAuthor().getIdLong(), false)).queue();
                 System.out.println("[System] " + msg.getAuthor().getName() + " just checked their own Bot Abuse History");
             }
+            // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
             catch (IllegalArgumentException ex) {
-                String stringToSplit = core.seeHistory(Long.parseLong(args[1]), true);
+                String stringToSplit = core.seeHistory(msg.getAuthor().getIdLong(), false);
                 String[] splitString = stringToSplit.split("\n\n");
                 int index = 0;
                 while (index < splitString.length) {
