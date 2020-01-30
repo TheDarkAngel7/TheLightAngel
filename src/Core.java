@@ -124,7 +124,7 @@ class Core { // This is where all the magic happens, where all the data is added
             System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                     "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
 
-            // Output to return from a perm Bot Abuse, we check to see if proofImages in the coorisponding index is null, if so Violation image will say "None Provided"
+            // Output to return from a perm Bot Abuse, we check to see if proofImages in the corresponding index is null, if so Violation image will say "None Provided"
             // If an image was provided then the else statement would run
             if (this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) == null) {
                 return ":white_check_mark: **[System] Successfully Bot Abused " + targetDiscordID +
@@ -339,8 +339,8 @@ class Core { // This is where all the magic happens, where all the data is added
             }
             index++;
         }
-        fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
         this.currentBotAbusers.remove(targetDiscordID);
+        fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
         return clearedRecords;
     }
     String seeHistory(long targetDiscordID, boolean isTeamMember) {

@@ -99,19 +99,19 @@ class DiscordBotMain extends ListenerAdapter {
                     setBotAbuse(msg);
                 }
                 else { // If they Don't have the Team role then it returns an error message
-                    msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + "[System] You Lack Permissions to do that!").queue();
+                    msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] You Lack Permissions to do that!").queue();
 
                 }
             }
             else if (args[0].equals("botabuse")) {
-                msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + "[System] You Entered an Invalid Number of Arguments").queue();
+                msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] You Entered an Invalid Number of Arguments").queue();
             }
             else if (args[0].equals("permbotabuse")) { // /permbotabuse <Mention or Discord ID> [Image]
                 if (!msg.getAuthor().getJDA().getRolesByName("Team", false).isEmpty()) {
                     permBotAbuse(msg);
                 }
                 else {
-                    msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + "[System] You Lack Permissions to do that!").queue();
+                    msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] You Lack Permissions to do that!").queue();
                 }
             }
             else if (args[0].equals("check")) {
@@ -129,7 +129,7 @@ class DiscordBotMain extends ListenerAdapter {
                     }
                 }
                 else {
-                    msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + "[System] You Don't have Permission to do that!").queue();
+                    msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] You Don't have Permission to do that!").queue();
                 }
             }
             else if (args[0].equals("clear")) {
@@ -159,7 +159,7 @@ class DiscordBotMain extends ListenerAdapter {
         String[] args = msg.getContentRaw().substring(1).split(" ");
 
         if (args[1].isEmpty()) {
-            msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + "[System] I was expecting a target player").queue();
+            msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] I was expecting a target player").queue();
         }
         else if (msg.getMentionedMembers().isEmpty()) {
             try {
@@ -168,7 +168,7 @@ class DiscordBotMain extends ListenerAdapter {
                 msg.getGuild().addRoleToMember(msg.getGuild().getMemberById(Long.parseLong(args[1])),
                         msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
                 if (result.contains(":white_check_mark:")) {
-                    discussionChannel.sendMessage(":white_check_mark:" + msg.getAuthor().getAsMention() + " Successfully Bot Abused "
+                    discussionChannel.sendMessage(":white_check_mark: " + msg.getAuthor().getAsMention() + " Successfully Bot Abused "
                             + msg.getGuild().getMemberById(Long.parseLong(args[1])).getAsMention()).queue();
                 }
                 else if (result.contains(":x:")) {
@@ -176,7 +176,7 @@ class DiscordBotMain extends ListenerAdapter {
                 }
             }
             catch (NumberFormatException ex) {
-                msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + "[System] The Discord ID cannot contain any letters or special characters").queue();
+                msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] The Discord ID cannot contain any letters or special characters").queue();
             }
             catch (NullPointerException ex) {
                 discussionChannel.sendMessage(":warning: Caught NullPointerException" +
@@ -200,7 +200,7 @@ class DiscordBotMain extends ListenerAdapter {
                 msg.getGuild().addRoleToMember(msg.getMentionedMembers().get(0),
                         msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
                 if (result.contains(":white_check_mark:")) {
-                    discussionChannel.sendMessage(":white_check_mark:" + msg.getAuthor().getAsMention() + " Successfully Bot Abused " + msg.getMentionedMembers().get(0).getAsMention()).queue();
+                    discussionChannel.sendMessage(":white_check_mark: " + msg.getAuthor().getAsMention() + " Successfully Bot Abused " + msg.getMentionedMembers().get(0).getAsMention()).queue();
 
                 }
                 else if (result.contains(":x:")) {
