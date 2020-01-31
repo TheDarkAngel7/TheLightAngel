@@ -325,19 +325,15 @@ class Core { // This is where all the magic happens, where all the data is added
     int clearRecords (long targetDiscordID) throws Exception { // For Handling Clearing all records of a Discord ID - Returns the Number of Records Cleared
         FileHandler fileHandler = new FileHandler();
         int clearedRecords = 0;
-        int index = 0;
         // If we want to clear the records of a Discord ID then we go through the discordID array and remove the elements in all the corresponding arrays.
         while (this.discordID.contains(targetDiscordID)) {
-            if (targetDiscordID == this.discordID.get(index)) {
-                this.discordID.remove(index);
-                this.repOffenses.remove(index);
-                this.issuedDates.remove(index);
-                this.expiryDates.remove(index);
-                this.reasons.remove(index);
-                this.proofImages.remove(index);
-                clearedRecords++;
-            }
-            index++;
+            this.repOffenses.remove(this.discordID.lastIndexOf(targetDiscordID));
+            this.issuedDates.remove(this.discordID.lastIndexOf(targetDiscordID));
+            this.expiryDates.remove(this.discordID.lastIndexOf(targetDiscordID));
+            this.reasons.remove(this.discordID.lastIndexOf(targetDiscordID));
+            this.proofImages.remove(this.discordID.lastIndexOf(targetDiscordID));
+            this.discordID.remove(this.discordID.lastIndexOf(targetDiscordID));
+            clearedRecords++;
         }
         this.currentBotAbusers.remove(targetDiscordID);
         fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
