@@ -160,11 +160,12 @@ class Core { // This is where all the magic happens, where all the data is added
         }
     }
 
-    Date setExpiryDate(long targetDiscordID) { // The Times are Short for Testing Purposes, they would usually be in days
+    Date setExpiryDate(long targetDiscordID) {
         Calendar c = Calendar.getInstance();
         Calendar cOld = Calendar.getInstance();
         // Take off 6 months
-        cOld.add(Calendar.HOUR, -1); // Minus 30 for Testing Purposes
+        // Realistically this would say cOld.add(Calendar.MONTH, -6)
+        cOld.add(Calendar.HOUR, -1); // Minus 1 Hour for Testing Purposes
 
         int index = 0;
         int prevOffenses = 0;
@@ -174,11 +175,15 @@ class Core { // This is where all the magic happens, where all the data is added
             // discordID array has the ID already added to it and the expiryDates array hasn't been touched yet
             // so the size of discordID size would be 1 more than the size of the expiryDates array
             if (this.discordID.get(index) == targetDiscordID && this.expiryDates.get(index).after(cOld.getTime())) {
+                // Here we're checking to see if the discordID at the current index matches the targetDiscordID array
+                // We  also check the expiryDate at that index and see if it is after the Date where the records would
+                // otherwise be ignored by the bot, records whose expiryDates are before the cOld time would be ignored.
                 prevOffenses++;
             }
             index++;
         }
         if (prevOffenses < 4) {
+            // The Times are Short for Testing Purposes, they would usually be in days or months.
             if (prevOffenses == 0) { // 0 Prior Offenses - 1st Offense
                 c.add(Calendar.MINUTE, 1);
             }
@@ -347,7 +352,7 @@ class Core { // This is where all the magic happens, where all the data is added
             output += "\n:information_source: " + targetDiscordID + "'s Bot Abuse History is as Follows:**";
         }
         else {
-            output += "\n:information_source: Your Bot Abuse is as Follows**";
+            output += "\n:information_source: Your Bot Abuse History is as Follows:**";
         }
         // We check the discordID array and then get all the elements in the corresponding index of the other arrays
         while (index < this.discordID.size()) {

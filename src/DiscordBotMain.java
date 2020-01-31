@@ -510,6 +510,8 @@ class DiscordBotMain extends ListenerAdapter {
         }
     }
     private void checkHistory(Message msg) {
+        Guild guild = msg.getGuild();
+        Member author = guild.getMember(msg.getAuthor());
         MessageChannel outputChannel = msg.getGuild().getTextChannelsByName("to_channel", false).get(0);
         MessageChannel discussionChannel = msg.getGuild().getTextChannelsByName("team_discussion", false).get(0);
 
@@ -518,7 +520,7 @@ class DiscordBotMain extends ListenerAdapter {
         if (msg.getChannelType() == ChannelType.PRIVATE) {
             // Take No Action
         }
-        else if (msg.getChannel() == discussionChannel && (args.length == 2 || msg.getMentionedMembers().size() == 1)) {
+        else if (author.getRoles().contains(guild.getRoleById("664556958686380083")) && (msg.getChannel() == discussionChannel || args.length == 2)) {
             try {
                 // If the user provides a Discord ID
                 discussionChannel.sendMessage(core.seeHistory(Long.parseLong(args[1]), true)).queue();
@@ -565,6 +567,13 @@ class DiscordBotMain extends ListenerAdapter {
                 }
             }
         }
+        // No Permissions to check on someone elses Bot Abuse history
+        else if (args.length > 1 && !author.getRoles().contains(guild.getRoleById("664556958686380083"))) {
+            msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() +
+                    " **[System] You Don't Have Permission to check on someone elses Bot Abuse History**").queue();
+            System.out.println("[System] " + msg.getAuthor().getAsTag() +
+                    " just tried to check someone elses Bot Abuse History but they did not have permission to");
+        }
         // Get the history of the player who used the command.
         else if (args.length == 1) {
             PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
@@ -582,6 +591,9 @@ class DiscordBotMain extends ListenerAdapter {
                     index++;
                 }
             }
+        }
+        else {
+            msg.getChannel().sendMessage(":x: **[System] Something went Seriously wrong when that happened**").queue();
         }
     }
 }
