@@ -1,7 +1,4 @@
-import net.dv8tion.jda.api.entities.ChannelType;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
-import net.dv8tion.jda.api.entities.PrivateChannel;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -90,24 +87,25 @@ class DiscordBotMain extends ListenerAdapter {
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         Message msg = event.getMessage();
+        Guild guild = event.getGuild();
+        Member author = guild.getMember(msg.getAuthor());
         if (event.getAuthor().isBot()) return;
         if (msg.getContentRaw().charAt(0) == '/')  {
             String[] args = msg.getContentRaw().substring(1).split(" ");
             // Command Syntax /botabuse <Mention or Discord ID> <Reason (kick, offline, or staff)> <proof url>
             if (args[0].equals("botabuse") && args.length == 4) {
-                if (!msg.getAuthor().getJDA().getRolesByName("Team", false).isEmpty()) {
+                if (author.getRoles().contains(guild.getRoleById("664556958686380083"))) {
                     setBotAbuse(msg);
                 }
                 else { // If they Don't have the Team role then it returns an error message
                     msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] You Lack Permissions to do that!").queue();
-
                 }
             }
             else if (args[0].equals("botabuse")) {
                 msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] You Entered an Invalid Number of Arguments").queue();
             }
             else if (args[0].equals("permbotabuse")) { // /permbotabuse <Mention or Discord ID> [Image]
-                if (!msg.getAuthor().getJDA().getRolesByName("Team", false).isEmpty()) {
+                if (author.getRoles().contains(guild.getRoleById("664556958686380083"))) {
                     permBotAbuse(msg);
                 }
                 else {
