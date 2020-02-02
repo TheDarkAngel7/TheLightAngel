@@ -160,7 +160,7 @@ class Core { // This is where all the magic happens, where all the data is added
         }
     }
 
-    Date setExpiryDate(long targetDiscordID) {
+    private Date setExpiryDate(long targetDiscordID) {
         Calendar c = Calendar.getInstance();
         Calendar cOld = Calendar.getInstance();
         // Take off 6 months

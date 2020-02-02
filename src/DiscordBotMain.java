@@ -140,7 +140,12 @@ class DiscordBotMain extends ListenerAdapter {
                 }
             }
             else if (args[0].equals("checkhistory")) {
-                checkHistory(msg);
+                try {
+                    checkHistory(msg);
+                }
+                catch (IllegalStateException ex) {
+                    // Take No Action
+                }
             }
             msg.delete().completeAfter(5, TimeUnit.MILLISECONDS);
         }
@@ -302,16 +307,15 @@ class DiscordBotMain extends ListenerAdapter {
             PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
             channel.sendMessage(core.getInfo(msg.getAuthor().getIdLong())).queue();
         }
-        else if (msg.getMentionedMembers().isEmpty() && !msg.getAuthor().getJDA().getRolesByName("Team", false).isEmpty()) {
+        else if (msg.getMentionedMembers().isEmpty() && msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083"))) {
             try {
                 discussionChannel.sendMessage(core.getInfo(Long.parseLong(args[1]))).queue();
             }
             catch (NumberFormatException ex) {
                 discussionChannel.sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] Invalid Discord ID").queue();
             }
-
         }
-        else if (msg.getMentionedMembers().size() == 1 && !msg.getAuthor().getJDA().getRolesByName("Team", false).isEmpty()) {
+        else if (msg.getMentionedMembers().size() == 1 && msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083"))) {
             discussionChannel.sendMessage(core.getInfo(msg.getMentionedMembers().get(0).getIdLong())).queue();
         }
         else {
@@ -509,7 +513,7 @@ class DiscordBotMain extends ListenerAdapter {
                     "[System] Invalid Number of Arguments!\nUsage: /transfer <Old Mention or Discord ID> <New Mention or Discord ID>\"").queue();
         }
     }
-    private void checkHistory(Message msg) {
+    private void checkHistory(Message msg) throws IllegalStateException {
         Guild guild = msg.getGuild();
         Member author = guild.getMember(msg.getAuthor());
         MessageChannel outputChannel = msg.getGuild().getTextChannelsByName("to_channel", false).get(0);
@@ -565,6 +569,9 @@ class DiscordBotMain extends ListenerAdapter {
                     discussionChannel.sendMessage(splitString[index]).queue();
                     index++;
                 }
+            }
+            catch (IndexOutOfBoundsException j) {
+                discussionChannel.sendMessage("**You shouldn't need to check your own Bot Abuse History... you're a Team Member!**").queue();
             }
         }
         // No Permissions to check on someone elses Bot Abuse history
