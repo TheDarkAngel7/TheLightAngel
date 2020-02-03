@@ -37,10 +37,10 @@ class Core { // This is where all the magic happens, where all the data is added
         FileHandler fileHandler = new FileHandler();
         Calendar c = Calendar.getInstance();
 
-        if ((!adminOverride && (reason.equals("k") || reason.equals("kick")))) {
+        if (!adminOverride && (reason.equals("k") || reason.equals("kick"))) {
             this.reasons.add("Bumping a Kickvote");
         }
-        else if ((!adminOverride && (reason.equals("o") || reason.equals("offline")))) {
+        else if (!adminOverride && (reason.equals("o") || reason.equals("offline"))) {
             this.reasons.add("Bumping a Offline Message");
         }
         else if (reason.equals("s") || reason.equals("staff")) {
@@ -106,9 +106,7 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.issuedDates.add(c.getTime());
                 this.expiryDates.add(null);
                 this.proofImages.add(imageURL);
-                this.reasons.add("Contact Staff");
                 this.currentBotAbusers.add(targetDiscordID);
-                fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates,this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
             }
             else {
                 // If we Try to Perm Bot Abuse someone that's never had a Bot Abuse offense before.
@@ -117,10 +115,9 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.issuedDates.add(c.getTime());
                 this.expiryDates.add(null);
                 this.proofImages.add(imageURL);
-                this.reasons.add("Contact Staff");
                 this.currentBotAbusers.add(targetDiscordID);
-                fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
             }
+            fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
             System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                     "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
 
