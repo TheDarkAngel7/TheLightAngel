@@ -161,7 +161,8 @@ class Core { // This is where all the magic happens, where all the data is added
         Calendar c = Calendar.getInstance();
         Calendar cOld = Calendar.getInstance();
         // Take off 6 months
-        cOld.add(Calendar.MONTH, -6);
+        // Realistically this would say cOld.add(Calendar.MONTH, -6)
+        cOld.add(Calendar.HOUR, -1); // Minus 1 Hour for Testing Purposes
 
         int index = 0;
         int prevOffenses = 0;
@@ -181,16 +182,16 @@ class Core { // This is where all the magic happens, where all the data is added
         if (prevOffenses < 4) {
             // The Times are Short for Testing Purposes, they would usually be in days or months.
             if (prevOffenses == 0) { // 0 Prior Offenses - 1st Offense
-                c.add(Calendar.DAY_OF_MONTH, 7);
+                c.add(Calendar.MINUTE, 1);
             }
             else if (prevOffenses == 1) { // 1 Prior Offense - 2nd Offense
-                c.add(Calendar.DAY_OF_MONTH, 14);
+                c.add(Calendar.MINUTE, 3);
             }
             else if (prevOffenses == 2) { // 2 Prior Offenses - 3rd Offense
-                c.add(Calendar.DAY_OF_MONTH, 30);
+                c.add(Calendar.MINUTE, 5);
             }
             else if (prevOffenses == 3) { // 3 Prior Offenses - 4th Offense
-                c.add(Calendar.DAY_OF_MONTH, 60);
+                c.add(Calendar.MINUTE, 10);
             }
             return c.getTime(); // Set the Expiry Date
         }
