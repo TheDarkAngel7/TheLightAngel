@@ -232,6 +232,7 @@ class DiscordBotMain extends ListenerAdapter {
                         msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
                 discussionChannel.sendMessage(msg.getAuthor().getAsMention() + " Permanently Bot Abused " +
                         msg.getGuild().getMemberById(Long.parseLong(args[1])).getAsMention()).queue();
+                System.out.println("[System - Admin Override] " + msg.getAuthor().getAsTag() + " Successfully Permanently Bot Abused " + String.valueOf(args[1]));
             }
             catch (NumberFormatException ex) {
                 msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] Invalid User ID!").queue();
@@ -251,6 +252,7 @@ class DiscordBotMain extends ListenerAdapter {
                 outputChannel.sendMessage(core.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(), true, "staff", args[2])).queue();
                 msg.getGuild().addRoleToMember(msg.getMentionedMembers().get(0),
                         msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
+                System.out.println("[System - Admin Override] " + msg.getAuthor().getAsTag() + " Successfully Permanently Bot Abused " + msg.getMentionedMembers().get(0).getUser().getAsTag());
             }
             catch (Exception e) {
                 e.printStackTrace();
@@ -261,6 +263,7 @@ class DiscordBotMain extends ListenerAdapter {
                 outputChannel.sendMessage(core.setBotAbuse(Long.parseLong(args[1]), true, "staff", null)).queue();
                 msg.getGuild().addRoleToMember(msg.getGuild().getMemberById(Long.parseLong(args[1])),
                         msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
+                System.out.println("[System - Admin Override] " + msg.getAuthor().getAsTag() + " Successfully Permanently Bot Abused " + String.valueOf(args[1]));
             }
             catch (NumberFormatException ex) {
                 msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] Invalid User ID!").queue();
@@ -280,6 +283,7 @@ class DiscordBotMain extends ListenerAdapter {
                 outputChannel.sendMessage(core.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(), true, "staff", null)).queue();
                 msg.getGuild().addRoleToMember(msg.getMentionedMembers().get(0),
                         msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
+                System.out.println("[System - Admin Override] " + msg.getAuthor().getAsTag() + " Successfully Permanently Bot Abused " + msg.getMentionedMembers().get(0).getUser().getAsTag());
             }
             catch (Exception e) {
                 e.printStackTrace();
