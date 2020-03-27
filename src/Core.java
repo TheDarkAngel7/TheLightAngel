@@ -36,18 +36,19 @@ class Core { // This is where all the magic happens, where all the data is added
     String setBotAbuse(long targetDiscordID, boolean adminOverride, String reason, String imageURL) throws Exception {
         FileHandler fileHandler = new FileHandler();
         Calendar c = Calendar.getInstance();
-
-        if (!adminOverride && (reason.equals("k") || reason.equals("kick"))) {
-            this.reasons.add("Bumping a Kickvote");
-        }
-        else if (!adminOverride && (reason.equals("o") || reason.equals("offline"))) {
-            this.reasons.add("Bumping a Offline Message");
-        }
-        else if (reason.equals("s") || reason.equals("staff")) {
-            this.reasons.add("Contact Staff");
-        }
-        else {
-            return ":x: [System] Invalid Reason!";
+        if (!botAbuseIsCurrent(targetDiscordID)) {
+            if (!adminOverride && (reason.equals("k") || reason.equals("kick"))) {
+                this.reasons.add("Bumping a Kickvote");
+            }
+            else if (!adminOverride && (reason.equals("o") || reason.equals("offline"))) {
+                this.reasons.add("Bumping a Offline Message");
+            }
+            else if (reason.equals("s") || reason.equals("staff")) {
+                this.reasons.add("Contact Staff");
+            }
+            else {
+                return ":x: [System] Invalid Reason!";
+            }
         }
         // We're checking to see if this player is currently Bot Abused - This Code would run if it was a moderator just using /botabuse like normal.
         if (!botAbuseIsCurrent(targetDiscordID) && !adminOverride) {
@@ -59,7 +60,7 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.expiryDates.add(setExpiryDate(targetDiscordID));
                 this.proofImages.add(imageURL);
                 this.currentBotAbusers.add(targetDiscordID);
-                fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
+                fileHandler.writeArrayData();
             }
             else {
                 // The Bot Abuse Time gets progressively longer - This isn't their first offense
@@ -69,7 +70,7 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.expiryDates.add(setExpiryDate(targetDiscordID));
                 this.proofImages.add(imageURL);
                 this.currentBotAbusers.add(targetDiscordID);
-                fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
+                fileHandler.writeArrayData();
             }
 
             System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
@@ -88,9 +89,12 @@ class Core { // This is where all the magic happens, where all the data is added
                 // The expiry date is changed to null for Permanent and the reason is updated to "Contact Staff"
                 this.expiryDates.set(this.discordID.lastIndexOf(targetDiscordID), null);
                 this.reasons.set(this.discordID.lastIndexOf(targetDiscordID), "Contact Staff");
-                fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
+                System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
+                        "\n" + this.expiryDates.toString() + "\n" + this.currentBotAbusers.toString());
+                fileHandler.writeArrayData();
                 return ":white_check_mark: **[System - Admin Override] Successfully Overrode Bot Abuse for " + targetDiscordID + " and it is now "
                         + this.getNewExpiryDate(targetDiscordID) + "**";
+
             }
             // Here we're saying player is already Permanently Bot Abused
             else {
@@ -117,7 +121,7 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.proofImages.add(imageURL);
                 this.currentBotAbusers.add(targetDiscordID);
             }
-            fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
+            fileHandler.writeArrayData();
             System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                     "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
 
@@ -280,9 +284,9 @@ class Core { // This is where all the magic happens, where all the data is added
             else if (targetDate.before(c.getTime()) && this.currentBotAbusers.contains(targetDiscordID)) {
                 FileHandler fileHandler = new FileHandler();
                 this.currentBotAbusers.remove(targetDiscordID);
-                fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates,this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
+                fileHandler.writeArrayData();
                 System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
-                        "\n" + this.expiryDates.toString() + "\n" + this.currentBotAbusers.toString());
+                        "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
                 return targetDiscordID;
 
             }
@@ -310,12 +314,12 @@ class Core { // This is where all the magic happens, where all the data is added
         }
         // If we had records transferred and they weren't Bot Abused
         if (numTransferred > 0 && !wasBotAbused) {
-            fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
+            fileHandler.writeArrayData();
             return ":white_check_mark: [System] Successfully Transferred the Records of " + oldDiscordID + " to " + newDiscordID + "\nThe Old Discord ID Was Not Bot Abused";
         }
         // If we had records transferred and they were Bot Abused
         else if (numTransferred > 0) {
-            fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
+            fileHandler.writeArrayData();
             return ":white_check_mark: [System] Successfully Transferred the Records of " + oldDiscordID + " to " + newDiscordID + "\nThe Old Discord ID Was Bot Abused at the Time and the Role was Transferred Over";
         }
         // If we had No Records Transferred
@@ -338,7 +342,7 @@ class Core { // This is where all the magic happens, where all the data is added
             clearedRecords++;
         }
         this.currentBotAbusers.remove(targetDiscordID);
-        fileHandler.writeArrayData(this.discordID, this.repOffenses, this.issuedDates, this.expiryDates, this.reasons, this.proofImages, this.currentBotAbusers);
+        fileHandler.writeArrayData();
         return clearedRecords;
     }
     String seeHistory(long targetDiscordID, boolean isTeamMember) {
