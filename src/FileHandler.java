@@ -2,10 +2,11 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Date;
 
-class FileHandler extends Core {
+class FileHandler {
     private File dataFile = new File("data/data.dat");
     private File tempDataFile = new File("data/datatemp.dat");
-    private ObjectInputStream inputStream = new ObjectInputStream(new FileInputStream(dataFile));
+    private FileInputStream inputFile = new FileInputStream(dataFile);
+    private ObjectInputStream inputStream = new ObjectInputStream(inputFile);
 
     FileHandler() throws IOException {
     }
@@ -32,35 +33,35 @@ class FileHandler extends Core {
         return (ArrayList<Long>) inputStream.readObject();
     }
 
-    void writeArrayData()
+    void writeArrayData(ArrayList<Long> discordID, ArrayList<Integer> repOffenses, ArrayList<Date> issuedDates,
+                        ArrayList<Date> expiryDates, ArrayList<String> reasons, ArrayList<String> proofImages,
+                        ArrayList<Long> currentBotAbusers)
             throws Exception {
-        // Close Input if it hasn't been closed already
-        inputStream.close();
+        this.inputStream.close();
+        this.inputFile.close();
         // Open Output Stream
         ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(tempDataFile));
         // Write the Objects
-        outputStream.writeObject(super.discordID);
-        outputStream.writeObject(super.repOffenses);
-        outputStream.writeObject(super.issuedDates);
-        outputStream.writeObject(super.expiryDates);
-        outputStream.writeObject(super.reasons);
-        outputStream.writeObject(super.proofImages);
-        outputStream.writeObject(super.currentBotAbusers);
+        outputStream.writeObject(discordID);
+        outputStream.writeObject(repOffenses);
+        outputStream.writeObject(issuedDates);
+        outputStream.writeObject(expiryDates);
+        outputStream.writeObject(reasons);
+        outputStream.writeObject(proofImages);
+        outputStream.writeObject(currentBotAbusers);
 
         // Close
         outputStream.flush();
         outputStream.close();
-        // Delete Original File
-        System.gc();
         if (dataFile.delete()) {
-            System.out.println("[System] Successfully Deleted Original File!");
-        } else {
-            System.out.println("[System] Couldn't Delete Original File! Please Restart the Program and Try Again");
-            while (!dataFile.delete()) {
-                System.out.println("[System] Trying Again");
-                inputStream.close();
+            System.out.println("[System] Successfully Deleted Original File");
+        }
+        else {
+            while (dataFile.exists()) {
+                System.out.println("Result of Deletion: " + dataFile.delete());
             }
         }
+
         // Rename the file
         if (tempDataFile.renameTo(dataFile)) {
             System.out.println("[System] Successfully Renamed Temp File to Original File");

@@ -6,12 +6,22 @@ import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 class DiscordBotMain extends ListenerAdapter {
-    private Core core = new Core();
+    private Core core;
+
+    {
+        try {
+            core = new Core();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private int timerRunning = 0;
 
     @Override
