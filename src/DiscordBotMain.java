@@ -1,4 +1,5 @@
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -10,19 +11,14 @@ import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 class DiscordBotMain extends ListenerAdapter {
-    private Core core;
-
-    {
-        try {
-            core = new Core();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
+    private Core core = new Core();
     private int timerRunning = 0;
+
+    DiscordBotMain() throws IOException, TimeoutException {
+    }
 
     @Override
     public void onReady(@Nonnull ReadyEvent event) {
@@ -30,7 +26,7 @@ class DiscordBotMain extends ListenerAdapter {
         MessageChannel outputChannel = event.getJDA().getTextChannelsByName("to_channel", false).get(0);
         try {
             core.startup();
-            System.out.println("Ready!");
+            System.out.println("[System] TheLightAngel is Ready!");
             discussionChannel.sendMessage(":wave: Hey Folks! I'm Ready To Fly!").queue();
         }
         catch (Exception e) {
@@ -93,6 +89,16 @@ class DiscordBotMain extends ListenerAdapter {
                     " since according to the data file they shouldn't have it").queue();
         }
     }
+    @Override
+    public void onDisconnect(@Nonnull DisconnectEvent event) {
+        try {
+            System.out.println("[System] Disconnected... Saving Data...");
+            core.writeArrayData();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
@@ -102,6 +108,7 @@ class DiscordBotMain extends ListenerAdapter {
         if (event.getAuthor().isBot()) return;
         if (msg.getContentRaw().charAt(0) == '/')  {
             String[] args = msg.getContentRaw().substring(1).split(" ");
+            msg.delete().complete();
             // Command Syntax /botabuse <Mention or Discord ID> <Reason (kick, offline, or staff)> <proof url>
             if (args[0].equals("botabuse") && args.length == 4) {
                 if (author.getRoles().contains(guild.getRoleById("664556958686380083"))) {
@@ -157,7 +164,6 @@ class DiscordBotMain extends ListenerAdapter {
                     // Take No Action
                 }
             }
-            msg.delete().completeAfter(5, TimeUnit.MILLISECONDS);
         }
         else if (msg.getMentionedMembers().contains(msg.getGuild().getMemberById(Long.parseLong("664520352315080727")))) {
             msg.getChannel().sendMessage(":blobnomping:").queue();
@@ -314,23 +320,23 @@ class DiscordBotMain extends ListenerAdapter {
         }
         // This handles a /check for someone to check their own Bot Abuse status
         else if (msg.getMentionedMembers().isEmpty() && args.length == 1) {
-            helpChannel.sendMessage("Hey " + msg.getAuthor().getAsMention() + ",\n" + core.getInfo(msg.getAuthor().getIdLong())).queue();
+            helpChannel.sendMessage("Hey " + msg.getAuthor().getAsMention() + ",\n" + core.getInfo(msg.getAuthor().getIdLong(), 100)).queue();
         }
         // This handles if the player opts for a Direct Message instead "/check dm"
         else if (msg.getMentionedMembers().isEmpty() && args.length == 2 && args[1].equals("dm")) {
             PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
-            channel.sendMessage(core.getInfo(msg.getAuthor().getIdLong())).queue();
+            channel.sendMessage(core.getInfo(msg.getAuthor().getIdLong(), 100)).queue();
         }
         else if (msg.getMentionedMembers().isEmpty() && msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083"))) {
             try {
-                discussionChannel.sendMessage(core.getInfo(Long.parseLong(args[1]))).queue();
+                discussionChannel.sendMessage(core.getInfo(Long.parseLong(args[1]), 100)).queue();
             }
             catch (NumberFormatException ex) {
                 discussionChannel.sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] Invalid Discord ID").queue();
             }
         }
         else if (msg.getMentionedMembers().size() == 1 && msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083"))) {
-            discussionChannel.sendMessage(core.getInfo(msg.getMentionedMembers().get(0).getIdLong())).queue();
+            discussionChannel.sendMessage(core.getInfo(msg.getMentionedMembers().get(0).getIdLong(), 100)).queue();
         }
         else {
             helpChannel.sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] " + msg.getAuthor().getAsMention() + ", You Don't have Permission to check on someone else's Bot Abuse status").queue();
@@ -541,7 +547,7 @@ class DiscordBotMain extends ListenerAdapter {
         else if (author.getRoles().contains(guild.getRoleById("664556958686380083")) && (msg.getChannel() == discussionChannel || args.length == 2)) {
             try {
                 // If the user provides a Discord ID
-                discussionChannel.sendMessage(core.seeHistory(Long.parseLong(args[1]), true)).queue();
+                discussionChannel.sendMessage(core.seeHistory(Long.parseLong(args[1]), 100, true)).queue();
                 outputChannel.sendMessage(":information_source: **[System] " + msg.getAuthor().getAsMention() + " just checked the history of " +
                         msg.getGuild().getMemberById(Long.parseLong(args[1])).getAsMention() + "**").queue();
                 System.out.println("[System] " + msg.getAuthor().getName() + " just checked the history of " +
@@ -550,7 +556,7 @@ class DiscordBotMain extends ListenerAdapter {
             catch (NumberFormatException ex) {
                 try {
                     // The code above would throw a NumberFormatException if it's a mention
-                    discussionChannel.sendMessage(core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), true)).queue();
+                    discussionChannel.sendMessage(core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), 100, true)).queue();
                     outputChannel.sendMessage(":information_source: **[System] " + msg.getAuthor().getAsMention() + " just checked the history of " +
                             msg.getMentionedMembers().get(0).getAsMention() + "**").queue();
                     System.out.println("[System] " + msg.getAuthor().getName() + " just checked the history of " +
@@ -558,7 +564,7 @@ class DiscordBotMain extends ListenerAdapter {
                 }
                 // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
                 catch (IllegalArgumentException e) {
-                    String stringToSplit = core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), true);
+                    String stringToSplit = core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), 100, true);
                     String[] splitString = stringToSplit.split("\n\n");
                     int index = 0;
                     while (index < splitString.length) {
@@ -576,7 +582,7 @@ class DiscordBotMain extends ListenerAdapter {
             }
             // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
             catch (IllegalArgumentException h) {
-                String stringToSplit = core.seeHistory(Long.parseLong(args[1]), true);
+                String stringToSplit = core.seeHistory(Long.parseLong(args[1]), 100,true);
                 String[] splitString = stringToSplit.split("\n\n");
                 int index = 0;
                 while (index < splitString.length) {
@@ -599,12 +605,12 @@ class DiscordBotMain extends ListenerAdapter {
         else if (args.length == 1) {
             PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
             try {
-                channel.sendMessage(core.seeHistory(msg.getAuthor().getIdLong(), false)).queue();
+                channel.sendMessage(core.seeHistory(msg.getAuthor().getIdLong(), 100,false)).queue();
                 System.out.println("[System] " + msg.getAuthor().getName() + " just checked their own Bot Abuse History");
             }
             // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
             catch (IllegalArgumentException ex) {
-                String stringToSplit = core.seeHistory(msg.getAuthor().getIdLong(), false);
+                String stringToSplit = core.seeHistory(msg.getAuthor().getIdLong(), 100,false);
                 String[] splitString = stringToSplit.split("\n\n");
                 int index = 0;
                 while (index < splitString.length) {
