@@ -170,7 +170,9 @@ class DiscordBotMain extends ListenerAdapter {
         }
 
     }
-
+    ///////////////////////////////////////////////////////////////////
+    // Divider Between Event Handlers and Command Handlers
+    //////////////////////////////////////////////////////////////////
     private void setBotAbuse(Message msg) {
         MessageChannel outputChannel = msg.getGuild().getTextChannelsByName("to_channel", false).get(0);
         MessageChannel discussionChannel = msg.getGuild().getTextChannelsByName("team_discussion", false).get(0);
@@ -183,12 +185,12 @@ class DiscordBotMain extends ListenerAdapter {
         else if (msg.getMentionedMembers().isEmpty()) {
             try {
                 String result = core.setBotAbuse(Long.parseLong(args[1]), false, args[2], args[3]);
-                outputChannel.sendMessage(result).queue();
-                msg.getGuild().addRoleToMember(msg.getGuild().getMemberById(Long.parseLong(args[1])),
-                        msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
                 if (result.contains(":white_check_mark:")) {
                     discussionChannel.sendMessage(":white_check_mark: " + msg.getAuthor().getAsMention() + " Successfully Bot Abused "
                             + msg.getGuild().getMemberById(Long.parseLong(args[1])).getAsMention()).queue();
+                    outputChannel.sendMessage(result).queue();
+                    msg.getGuild().addRoleToMember(msg.getGuild().getMemberById(Long.parseLong(args[1])),
+                            msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
                 }
                 else if (result.contains(":x:")) {
                     discussionChannel.sendMessage("Hey " + msg.getAuthor().getAsMention() + "... Seems someone beat you to it...").queue();
@@ -327,7 +329,8 @@ class DiscordBotMain extends ListenerAdapter {
             PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
             channel.sendMessage(core.getInfo(msg.getAuthor().getIdLong(), 100)).queue();
         }
-        else if (msg.getMentionedMembers().isEmpty() && msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083"))) {
+        // /check <Discord ID>
+        else if (msg.getMentionedMembers().isEmpty() && msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083")) && args.length == 2) {
             try {
                 discussionChannel.sendMessage(core.getInfo(Long.parseLong(args[1]), 100)).queue();
             }
@@ -335,8 +338,48 @@ class DiscordBotMain extends ListenerAdapter {
                 discussionChannel.sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] Invalid Discord ID").queue();
             }
         }
-        else if (msg.getMentionedMembers().size() == 1 && msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083"))) {
+        // /check <Mention>
+        else if (msg.getMentionedMembers().size() == 1 && msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083")) && args.length == 2) {
             discussionChannel.sendMessage(core.getInfo(msg.getMentionedMembers().get(0).getIdLong(), 100)).queue();
+        }
+        // /check <Timezone Offset>
+        else if (msg.getMentionedMembers().isEmpty() && args.length == 2) {
+            if (core.checkOffset(args[1])) {
+                helpChannel.sendMessage("Hey " + msg.getAuthor().getAsMention() + ",\n" + core.getInfo(msg.getAuthor().getIdLong(), Float.parseFloat(args[1]))).queue();
+            }
+            else {
+                helpChannel.sendMessage(":x: **Invalid Timezone Offset**").queue();
+            }
+        }
+        // /check [dm] <Timezone Offset>
+        else if (msg.getMentionedMembers().isEmpty() && args.length == 3 && args[1].equals("dm")) {
+            PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
+            if (core.checkOffset(args[2])) {
+                channel.sendMessage(core.getInfo(msg.getAuthor().getIdLong(), Integer.parseInt(args[2]))).queue();
+            }
+            else {
+                channel.sendMessage(":x: **Invalid Timezone Offset**").queue();
+            }
+        }
+        // /check <Timezone Offset> <Mention or Discord ID>
+        else if (msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083")) && args.length == 3) {
+            if (core.checkOffset(args[1])) {
+                try {
+                    if (msg.getMentionedMembers().isEmpty()) {
+                        discussionChannel.sendMessage(core.getInfo(Long.parseLong(args[2]), Float.parseFloat(args[1]))).queue();
+                    }
+                    else if (msg.getMentionedMembers().size() == 1) {
+                        discussionChannel.sendMessage(core.getInfo(msg.getMentionedMembers().get(0).getIdLong(), Float.parseFloat(args[1]))).queue();
+                    }
+                }
+                catch (NumberFormatException ex) {
+                    discussionChannel.sendMessage(":x: [System] **Invalid Timezone Offset**").queue();
+                }
+            }
+            else {
+                discussionChannel.sendMessage(":x: [System] **Invalid Timezone Offset**").queue();
+            }
+
         }
         else {
             helpChannel.sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] " + msg.getAuthor().getAsMention() + ", You Don't have Permission to check on someone else's Bot Abuse status").queue();
@@ -544,6 +587,7 @@ class DiscordBotMain extends ListenerAdapter {
         if (msg.getChannelType() == ChannelType.PRIVATE) {
             // Take No Action
         }
+        // /checkhistory <Mention or Discord ID>
         else if (author.getRoles().contains(guild.getRoleById("664556958686380083")) && (msg.getChannel() == discussionChannel || args.length == 2)) {
             try {
                 // If the user provides a Discord ID
@@ -564,13 +608,7 @@ class DiscordBotMain extends ListenerAdapter {
                 }
                 // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
                 catch (IllegalArgumentException e) {
-                    String stringToSplit = core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), 100, true);
-                    String[] splitString = stringToSplit.split("\n\n");
-                    int index = 0;
-                    while (index < splitString.length) {
-                        discussionChannel.sendMessage(splitString[index]).queue();
-                        index++;
-                    }
+                    this.lengthyHistory(core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), 100, true), discussionChannel);
                 }
             }
             // The Try code would throw a NullPointerException if the Discord ID Provided does not exist on the server.
@@ -582,13 +620,8 @@ class DiscordBotMain extends ListenerAdapter {
             }
             // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
             catch (IllegalArgumentException h) {
-                String stringToSplit = core.seeHistory(Long.parseLong(args[1]), 100,true);
-                String[] splitString = stringToSplit.split("\n\n");
-                int index = 0;
-                while (index < splitString.length) {
-                    discussionChannel.sendMessage(splitString[index]).queue();
-                    index++;
-                }
+                this.lengthyHistory(core.seeHistory(Long.parseLong(args[1]), 100,true), discussionChannel);
+
             }
             catch (IndexOutOfBoundsException j) {
                 discussionChannel.sendMessage("**You shouldn't need to check your own Bot Abuse History... you're a Team Member!**").queue();
@@ -601,6 +634,7 @@ class DiscordBotMain extends ListenerAdapter {
             System.out.println("[System] " + msg.getAuthor().getAsTag() +
                     " just tried to check someone elses Bot Abuse History but they did not have permission to");
         }
+        // /checkhistory
         // Get the history of the player who used the command.
         else if (args.length == 1) {
             PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
@@ -610,17 +644,61 @@ class DiscordBotMain extends ListenerAdapter {
             }
             // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
             catch (IllegalArgumentException ex) {
-                String stringToSplit = core.seeHistory(msg.getAuthor().getIdLong(), 100,false);
-                String[] splitString = stringToSplit.split("\n\n");
-                int index = 0;
-                while (index < splitString.length) {
-                    channel.sendMessage(splitString[index]).queue();
-                    index++;
+                this.lengthyHistory(core.seeHistory(msg.getAuthor().getIdLong(), 100,false), channel);
+
+            }
+        }
+        // /checkhistory <timeOffset>
+        else if (args.length == 2) {
+            PrivateChannel channel =  msg.getAuthor().openPrivateChannel().complete();
+            try {
+                if (core.checkOffset(args[1])) {
+                    this.lengthyHistory(core.seeHistory(msg.getAuthor().getIdLong(), Float.parseFloat(args[1]), false), channel);
+                }
+                else {
+                    msg.getChannel().sendMessage(":x: **Invalid Timezone Offset**").queue();
+                }
+            }
+            catch (IllegalArgumentException ex) {
+
+            }
+        }
+
+        // /checkhistory <timeOffset> <Mention or Discord ID>
+        else if (args.length == 3 && msg.getAuthor().getJDA().getRoles().contains(guild.getRoleById("664556958686380083"))) {
+            PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
+            if (core.checkOffset(args[1])) {
+                try {
+                    if (msg.getMentionedMembers().size() == 1) {
+                        channel.sendMessage(core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), Float.parseFloat(args[1]), true)).queue();
+                    }
+                    else if (msg.getMentionedMembers().isEmpty()) {
+                        channel.sendMessage(core.seeHistory(Long.parseLong(args[2]), Float.parseFloat(args[1]), true)).queue();
+                    }
+                }
+                catch (IllegalArgumentException ex) {
+                    try {
+                        this.lengthyHistory(core.seeHistory(Long.parseLong(args[2]), Float.parseFloat(args[1]), true), channel);
+                    }
+                    catch (NumberFormatException e) {
+                        this.lengthyHistory(core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), Float.parseFloat(args[1]), true), channel);
+                    }
                 }
             }
         }
         else {
             msg.getChannel().sendMessage(":x: **[System] Something went Seriously wrong when that happened**").queue();
+        }
+    }
+    ///////////////////////////////////////////////////////////
+    // Miscellaneous Methods
+    ///////////////////////////////////////////////////////////
+    private void lengthyHistory(String stringToSplit, MessageChannel channel) {
+        String[] splitString = stringToSplit.split("\n\n");
+        int index = 0;
+        while (index < splitString.length) {
+            channel.sendMessage(splitString[index]).queue();
+            index++;
         }
     }
 }
