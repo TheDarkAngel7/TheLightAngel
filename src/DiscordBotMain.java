@@ -103,15 +103,14 @@ class DiscordBotMain extends ListenerAdapter {
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         Message msg = event.getMessage();
-        Guild guild = event.getGuild();
-        Member author = guild.getMember(msg.getAuthor());
+        Member author = event.getGuild().getMember(msg.getAuthor());
         if (event.getAuthor().isBot()) return;
         if (msg.getContentRaw().charAt(0) == '/')  {
             String[] args = msg.getContentRaw().substring(1).split(" ");
             msg.delete().complete();
             // Command Syntax /botabuse <Mention or Discord ID> <Reason (kick, offline, or staff)> <proof url>
             if (args[0].equals("botabuse") && args.length == 4) {
-                if (author.getRoles().contains(guild.getRoleById("664556958686380083"))) {
+                if (author.getRoles().contains(event.getGuild().getRoleById("664556958686380083"))) {
                     setBotAbuse(msg);
                 }
                 else { // If they Don't have the Team role then it returns an error message
@@ -122,7 +121,7 @@ class DiscordBotMain extends ListenerAdapter {
                 msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] You Entered an Invalid Number of Arguments").queue();
             }
             else if (args[0].equals("permbotabuse")) { // /permbotabuse <Mention or Discord ID> [Image]
-                if (author.getRoles().contains(guild.getRoleById("664556958686380083"))) {
+                if (author.getRoles().contains(event.getGuild().getRoleById("664556958686380083"))) {
                     permBotAbuse(msg);
                 }
                 else {
@@ -588,7 +587,7 @@ class DiscordBotMain extends ListenerAdapter {
             // Take No Action
         }
         // /checkhistory <Mention or Discord ID>
-        else if (author.getRoles().contains(guild.getRoleById("664556958686380083")) && (msg.getChannel() == discussionChannel || args.length == 2)) {
+        else if (author.getRoles().contains(guild.getRoleById("664556958686380083")) && args.length == 2) {
             try {
                 // If the user provides a Discord ID
                 discussionChannel.sendMessage(core.seeHistory(Long.parseLong(args[1]), 100, true)).queue();
@@ -645,7 +644,6 @@ class DiscordBotMain extends ListenerAdapter {
             // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
             catch (IllegalArgumentException ex) {
                 this.lengthyHistory(core.seeHistory(msg.getAuthor().getIdLong(), 100,false), channel);
-
             }
         }
         // /checkhistory <timeOffset>
@@ -697,7 +695,12 @@ class DiscordBotMain extends ListenerAdapter {
         String[] splitString = stringToSplit.split("\n\n");
         int index = 0;
         while (index < splitString.length) {
-            channel.sendMessage(splitString[index]).queue();
+            try {
+                channel.sendMessage(splitString[index]).queue();
+            }
+            catch (IllegalStateException ex) {
+                // Take No Action
+            }
             index++;
         }
     }

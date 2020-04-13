@@ -1,3 +1,4 @@
+import com.google.gson.Gson;
 import java.io.EOFException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -10,6 +11,9 @@ import java.util.concurrent.TimeoutException;
 class Core { // This is where all the magic happens, where all the data is added and queried from the appropriate arrays to
     // Display all the requested data.
     FileHandler fileHandler = new FileHandler();
+    // private RabbitMQSend rabbit = new RabbitMQSend();
+    private Gson gson = new Gson();
+    private JsonVariables jsonVars = new JsonVariables();
     ArrayList<Long> discordID = new ArrayList<>();
     ArrayList<Integer> repOffenses = new ArrayList<>();
     ArrayList<Date> issuedDates = new ArrayList<>();
@@ -17,14 +21,13 @@ class Core { // This is where all the magic happens, where all the data is added
     ArrayList<String> reasons = new ArrayList<>();
     ArrayList<String> proofImages = new ArrayList<>();
     ArrayList<Long> currentBotAbusers = new ArrayList<>();
-    //private RabbitMQSend rabbit = new RabbitMQSend();
     private int indexOfLastOffense;
 
     Core() throws TimeoutException, IOException {
     }
 
     void startup() throws Exception {
-        //rabbit.startup();
+        // rabbit.startup();
         try {
             this.discordID = fileHandler.getDiscordIDs();
             this.repOffenses = fileHandler.getRepOffenses();
@@ -65,7 +68,7 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.expiryDates.add(setExpiryDate(targetDiscordID));
                 this.proofImages.add(imageURL);
                 this.currentBotAbusers.add(targetDiscordID);
-                this.writeArrayData();
+
             }
             else {
                 // The Bot Abuse Time gets progressively longer - This isn't their first offense
@@ -75,9 +78,9 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.expiryDates.add(setExpiryDate(targetDiscordID));
                 this.proofImages.add(imageURL);
                 this.currentBotAbusers.add(targetDiscordID);
-                this.writeArrayData();
             }
-
+            this.writeArrayData();
+            this.sendMessage(0);
             System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                     "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
             System.out.println("[System] Successfully Bot Abused " + targetDiscordID + " for " + this.reasons.get(this.discordID.lastIndexOf(targetDiscordID)));
@@ -127,6 +130,7 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.currentBotAbusers.add(targetDiscordID);
             }
             this.writeArrayData();
+            this.sendMessage(0);
             System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                     "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
 
@@ -226,14 +230,15 @@ class Core { // This is where all the magic happens, where all the data is added
             Calendar dateIssued = Calendar.getInstance();
             Calendar dateToExpire = Calendar.getInstance();
             String trueOffset = this.offsetParsing(timeOffset);
+            System.out.println(trueOffset);
             // Checking to see if the queried player is perm bot abused
             if (this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)) == null) {
                 dateIssued.setTime(this.issuedDates.get(this.discordID.lastIndexOf(targetDiscordID)));
-                sdfDateIssued.format(TimeZone.getTimeZone(trueOffset));
+                sdfDateIssued.setTimeZone(TimeZone.getTimeZone(trueOffset));
 
                 return ":information_source: " + targetDiscordID + " Bot Abuse Info: " +
                         "\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
-                        "**\nDate Issued: **" + dateIssued.getTime() +
+                        "**\nDate Issued: **" + sdfDateIssued.format(dateIssued.getTime()) +
                         "**\nExpiry Date: **Never" +
                         "**\nReason: **" + this.reasons.get(this.discordID.lastIndexOf(targetDiscordID)) +
                         "**\nViolation Image: **" + this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) +
@@ -242,8 +247,8 @@ class Core { // This is where all the magic happens, where all the data is added
             else { // They Are Currently Bot Abused but not permanently
                 dateIssued.setTime(this.issuedDates.get(this.discordID.lastIndexOf(targetDiscordID)));
                 dateToExpire.setTime(this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)));
-                sdfDateIssued.format(TimeZone.getTimeZone(trueOffset));
-                sdfDateExpired.format(TimeZone.getTimeZone(trueOffset));
+                sdfDateIssued.setTimeZone(TimeZone.getTimeZone(trueOffset));
+                sdfDateExpired.setTimeZone(TimeZone.getTimeZone(trueOffset));
 
                 return ":information_source: " + targetDiscordID + " Bot Abuse Info: " +
                         "\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
@@ -375,20 +380,16 @@ class Core { // This is where all the magic happens, where all the data is added
         else {
             output += "\n:information_source: Your Bot Abuse History is as Follows:**";
         }
+        // Setting the TimeZones of both formatter objects
+        String trueOffset = this.offsetParsing(timeOffset);
+        System.out.println(trueOffset);
+        sdfDateIssued.setTimeZone(TimeZone.getTimeZone(trueOffset));
+        sdfDateExpired.setTimeZone(TimeZone.getTimeZone(trueOffset));
         // We check the discordID array and then get all the elements in the corresponding index of the other arrays
         while (index < this.discordID.size()) {
             if (this.discordID.get(index) == targetDiscordID) {
                 dateIssued.setTime(this.issuedDates.get(index));
                 dateToExpire.setTime(this.expiryDates.get(index));
-
-                if (timeOffset >= 0 && timeOffset != 100) {
-                    dateIssued.setTimeZone(TimeZone.getTimeZone("GMT+" + timeOffset));
-                    dateToExpire.setTimeZone(TimeZone.getTimeZone("GMT+" + timeOffset));
-                }
-                else if (timeOffset != 100) {
-                    dateIssued.setTimeZone(TimeZone.getTimeZone("GMT" + timeOffset));
-                    dateToExpire.setTimeZone(TimeZone.getTimeZone("GMT" + timeOffset));
-                }
                 output += "\n\nOffense Number: " + this.repOffenses.get(index)
                         + "\nDate Issued: " + sdfDateIssued.format(dateIssued.getTime())
                         + "\nDate Expired: " + sdfDateExpired.format(dateToExpire.getTime())
@@ -412,9 +413,6 @@ class Core { // This is where all the magic happens, where all the data is added
             return output;
         }
     }
-    void sendMessage() {
-
-    }
     void writeArrayData() throws Exception {
         fileHandler.writeArrayData(this.discordID,
                 this.repOffenses,
@@ -423,6 +421,20 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.reasons,
                 this.proofImages,
                 this.currentBotAbusers);
+    }
+    // Purpose will always be 0 for now until another reason for sending messages is made.
+    void sendMessage(int purpose) throws TimeoutException, IOException {
+        if (purpose == 0) {
+            jsonVars.purpose = "botAbuse";
+            jsonVars.targetDiscordID = this.discordID.get(this.discordID.size() - 1);
+            jsonVars.dateIssued = this.issuedDates.get(this.discordID.size() - 1);
+            jsonVars.dateToExpire = this.expiryDates.get(this.discordID.size() - 1);
+            jsonVars.reason = this.reasons.get(this.discordID.size() - 1);
+            jsonVars.imageURL = this.proofImages.get(this.discordID.size() - 1);
+        }
+        String json = gson.toJson(jsonVars);
+        System.out.println(json);
+        //rabbit.sendMessage(json);
     }
     // This Method is primarily for DiscordBotMain, when users enter an offset,
     // this checks whether or not the string from the message checks out to be a valid integer the program can use
@@ -438,33 +450,43 @@ class Core { // This is where all the magic happens, where all the data is added
     String offsetParsing(float timeOffset) {
         // What we do here is basically we process the timeOffset entered by the user into
         String strippedTimeOffset = String.valueOf(timeOffset);
-        if (timeOffset % 2 == 1 && timeOffset != 100) {
+        if (timeOffset != 100 && ((timeOffset / 0.5) % 2 == 1) || (timeOffset / -0.5) % 2 == 1) {
             // Ex 4.5 7.5
             if (strippedTimeOffset.charAt(1) == '.') {
-                return "GMT+" + strippedTimeOffset.substring(0,0) + ":30";
+                return "GMT+" + strippedTimeOffset.substring(0, 1) + ":30";
             }
             // Ex 10.5 -4.5
             else if (strippedTimeOffset.charAt(2) == '.') {
                 // Ex Handles 10.5 11.5
                 if (strippedTimeOffset.charAt(0) != '-') {
-                    return "GMT+" + strippedTimeOffset.substring(0,1) + ":30";
+                    return "GMT+" + strippedTimeOffset.substring(0, 2) + ":30";
                 }
                 // Ex Handles -4.5 -6.5
                 else {
-                    return "GMT" + strippedTimeOffset.substring(0,1) + ":30";
+                    return "GMT" + strippedTimeOffset.substring(0, 2) + ":30";
                 }
             }
             // Ex Handles -10.5 -11.5
             else {
-                return "GMT" + strippedTimeOffset.substring(0,2) + ":30";
+                return "GMT" + strippedTimeOffset.substring(0, 3) + ":30";
             }
         }
-
-        else if (timeOffset >= 0 && timeOffset != 100) {
-            return "GMT+" + timeOffset;
+        if (timeOffset >= 0 && timeOffset != 100) {
+            // Because it's a float, we need to strip the trailing .0
+            if (timeOffset >= 10) {
+                return "GMT+" + strippedTimeOffset.substring(0, 2);
+            } else {
+                return "GMT+" + strippedTimeOffset.substring(0, 1);
+            }
         }
-        else  if (timeOffset != 100) {
-            return "GMT" + timeOffset;
+        else if (timeOffset < 0 && timeOffset != 100) {
+            if (timeOffset <= -10) {
+                return "GMT" + strippedTimeOffset.substring(0, 3);
+            }
+            else {
+                return "GMT" + strippedTimeOffset.substring(0, 2);
+            }
+
         }
         else return null;
     }
