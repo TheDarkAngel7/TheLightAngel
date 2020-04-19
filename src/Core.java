@@ -69,6 +69,10 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.proofImages.add(imageURL);
                 this.currentBotAbusers.add(targetDiscordID);
 
+
+
+                
+
             }
             else {
                 // The Bot Abuse Time gets progressively longer - This isn't their first offense
@@ -78,6 +82,10 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.expiryDates.add(setExpiryDate(targetDiscordID));
                 this.proofImages.add(imageURL);
                 this.currentBotAbusers.add(targetDiscordID);
+
+
+              
+
             }
             this.writeArrayData();
             this.sendMessage(0);
@@ -99,7 +107,11 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.reasons.set(this.discordID.lastIndexOf(targetDiscordID), "Contact Staff");
                 System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                         "\n" + this.expiryDates.toString() + "\n" + this.currentBotAbusers.toString());
+
                 this.writeArrayData();
+
+                
+
                 return ":white_check_mark: **[System - Admin Override] Successfully Overrode Bot Abuse for " + targetDiscordID + " and it is now "
                         + this.getNewExpiryDate(targetDiscordID) + "**";
 
@@ -129,8 +141,12 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.proofImages.add(imageURL);
                 this.currentBotAbusers.add(targetDiscordID);
             }
+
             this.writeArrayData();
             this.sendMessage(0);
+
+           
+
             System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                     "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
 
@@ -195,16 +211,16 @@ class Core { // This is where all the magic happens, where all the data is added
         if (prevOffenses < 4) {
             // The Times are Short for Testing Purposes, they would usually be in days or months.
             if (prevOffenses == 0) { // 0 Prior Offenses - 1st Offense
-                c.add(Calendar.MINUTE, 1);
+                c.add(Calendar.DAY_OF_MONTH, 7);
             }
             else if (prevOffenses == 1) { // 1 Prior Offense - 2nd Offense
-                c.add(Calendar.MINUTE, 3);
+                c.add(Calendar.DAY_OF_MONTH, 14);
             }
             else if (prevOffenses == 2) { // 2 Prior Offenses - 3rd Offense
-                c.add(Calendar.MINUTE, 5);
+                c.add(Calendar.DAY_OF_MONTH, 30);
             }
             else if (prevOffenses == 3) { // 3 Prior Offenses - 4th Offense
-                c.add(Calendar.MINUTE, 10);
+                c.add(Calendar.DAY_OF_MONTH, 60);
             }
             return c.getTime(); // Set the Expiry Date
         }
@@ -309,6 +325,7 @@ class Core { // This is where all the magic happens, where all the data is added
             else if (targetDate.before(c.getTime()) && this.currentBotAbusers.contains(targetDiscordID)) {
                 this.currentBotAbusers.remove(targetDiscordID);
                 this.writeArrayData();
+
                 System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                         "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
                 return targetDiscordID;
@@ -333,6 +350,7 @@ class Core { // This is where all the magic happens, where all the data is added
         }
         // If we had records transferred and they weren't Bot Abused
         if (numTransferred > 0 && !wasBotAbused) {
+
             this.writeArrayData();
             System.out.println("[System] Successfully Transferred " + numTransferred + " Records from " + oldDiscordID + " to " + newDiscordID + " - Old Discord ID Was Not Bot Abused");
             return ":white_check_mark: [System] Successfully Transferred " + numTransferred + " Records from " + oldDiscordID + " to " + newDiscordID + "\nThe Old Discord ID Was Not Bot Abused";
@@ -342,6 +360,15 @@ class Core { // This is where all the magic happens, where all the data is added
             this.writeArrayData();
             System.out.println("[System] Successfully Transferred " + numTransferred + " Records from " + oldDiscordID + " to " + newDiscordID + " - Old Discord ID Was Bot Abused and was also Transferred");
             return ":white_check_mark: [System] Successfully Transferred " + numTransferred + " Records from " + oldDiscordID + " to " + newDiscordID + "\nThe Old Discord ID Was Bot Abused at the Time and the Role was Transferred Over";
+
+            
+            return ":white_check_mark: [System] Successfully Transferred the Records of " + oldDiscordID + " to " + newDiscordID + "\nThe Old Discord ID Was Not Bot Abused";
+        }
+        // If we had records transferred and they were Bot Abused
+        else if (numTransferred > 0) {
+            
+            return ":white_check_mark: [System] Successfully Transferred the Records of " + oldDiscordID + " to " + newDiscordID + "\nThe Old Discord ID Was Bot Abused at the Time and the Role was Transferred Over";
+
         }
         // If we had No Records Transferred
         else {
@@ -362,7 +389,11 @@ class Core { // This is where all the magic happens, where all the data is added
             clearedRecords++;
         }
         this.currentBotAbusers.remove(targetDiscordID);
+
         this.writeArrayData();
+
+        
+
         return clearedRecords;
     }
     String seeHistory(long targetDiscordID, float timeOffset, boolean isTeamMember) {

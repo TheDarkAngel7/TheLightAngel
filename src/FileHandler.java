@@ -33,22 +33,20 @@ class FileHandler {
         return (ArrayList<Long>) inputStream.readObject();
     }
 
-    void writeArrayData(ArrayList<Long> discordID, ArrayList<Integer> repOffenses, ArrayList<Date> issuedDates,
-                        ArrayList<Date> expiryDates, ArrayList<String> reasons, ArrayList<String> proofImages,
-                        ArrayList<Long> currentBotAbusers)
+    void writeArrayData()
             throws Exception {
         this.inputStream.close();
         this.inputFile.close();
         // Open Output Stream
         ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(tempDataFile));
         // Write the Objects
-        outputStream.writeObject(discordID);
-        outputStream.writeObject(repOffenses);
-        outputStream.writeObject(issuedDates);
-        outputStream.writeObject(expiryDates);
-        outputStream.writeObject(reasons);
-        outputStream.writeObject(proofImages);
-        outputStream.writeObject(currentBotAbusers);
+        outputStream.writeObject(super.discordID);
+        outputStream.writeObject(super.repOffenses);
+        outputStream.writeObject(super.issuedDates);
+        outputStream.writeObject(super.expiryDates);
+        outputStream.writeObject(super.reasons);
+        outputStream.writeObject(super.proofImages);
+        outputStream.writeObject(super.currentBotAbusers);
 
         // Close
         outputStream.flush();
