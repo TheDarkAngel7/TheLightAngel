@@ -1,3 +1,6 @@
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Date;
@@ -11,6 +14,10 @@ class FileHandler {
     FileHandler() throws IOException {
     }
 
+    JsonObject getConfig() throws FileNotFoundException {
+        JsonElement element = JsonParser.parseReader(new FileReader("config.json"));
+        return element.getAsJsonObject();
+    }
     ArrayList<Long> getDiscordIDs() throws Exception {
         return (ArrayList<Long>) inputStream.readObject();
     }
