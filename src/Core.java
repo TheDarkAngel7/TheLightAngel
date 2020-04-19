@@ -191,8 +191,7 @@ class Core { // This is where all the magic happens, where all the data is added
         Calendar c = Calendar.getInstance();
         Calendar cOld = Calendar.getInstance();
         // Take off 6 months
-        // Realistically this would say cOld.add(Calendar.MONTH, -6)
-        cOld.add(Calendar.HOUR_OF_DAY, -1); // Minus 1 Hour for Testing Purposes
+        cOld.add(Calendar.MONTH, -6); // Minus 1 Hour for Testing Purposes
 
         int index = 0;
         int prevOffenses = 0;
