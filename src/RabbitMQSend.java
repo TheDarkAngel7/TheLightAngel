@@ -3,7 +3,6 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
 import java.io.IOException;
-import java.util.Date;
 import java.util.concurrent.TimeoutException;
 
 class RabbitMQSend {
@@ -14,8 +13,8 @@ class RabbitMQSend {
     RabbitMQSend() throws IOException, TimeoutException {
     }
 
-    void startup() throws IOException {
-        factory.setHost("localhost");
+    void startup(String host) throws IOException {
+        factory.setHost(host);
         channel.queueDeclare("safe_events", false, false, false, null);
     }
 
@@ -23,12 +22,4 @@ class RabbitMQSend {
     void sendMessage(String message) throws IOException {
         channel.basicPublish(message, "ReportCreatedEvent", false, null, message.getBytes());
     }
-}
-class JsonVariables {
-    String purpose;
-    long targetDiscordID;
-    Date dateIssued;
-    Date dateToExpire;
-    String reason;
-    String imageURL;
 }

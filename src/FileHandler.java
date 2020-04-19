@@ -1,3 +1,6 @@
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Date;
@@ -11,6 +14,10 @@ class FileHandler {
     FileHandler() throws IOException {
     }
 
+    JsonObject getConfig() throws FileNotFoundException {
+        JsonElement element = JsonParser.parseReader(new FileReader("config.json"));
+        return element.getAsJsonObject();
+    }
     ArrayList<Long> getDiscordIDs() throws Exception {
         return (ArrayList<Long>) inputStream.readObject();
     }
@@ -33,20 +40,22 @@ class FileHandler {
         return (ArrayList<Long>) inputStream.readObject();
     }
 
-    void writeArrayData()
+    void writeArrayData(ArrayList<Long> discordID, ArrayList<Integer> repOffenses, ArrayList<Date> issuedDates,
+                        ArrayList<Date> expiryDates, ArrayList<String> reasons, ArrayList<String> proofImages,
+                        ArrayList<Long> currentBotAbusers)
             throws Exception {
         this.inputStream.close();
         this.inputFile.close();
         // Open Output Stream
         ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(tempDataFile));
         // Write the Objects
-        outputStream.writeObject(super.discordID);
-        outputStream.writeObject(super.repOffenses);
-        outputStream.writeObject(super.issuedDates);
-        outputStream.writeObject(super.expiryDates);
-        outputStream.writeObject(super.reasons);
-        outputStream.writeObject(super.proofImages);
-        outputStream.writeObject(super.currentBotAbusers);
+        outputStream.writeObject(discordID);
+        outputStream.writeObject(repOffenses);
+        outputStream.writeObject(issuedDates);
+        outputStream.writeObject(expiryDates);
+        outputStream.writeObject(reasons);
+        outputStream.writeObject(proofImages);
+        outputStream.writeObject(currentBotAbusers);
 
         // Close
         outputStream.flush();
