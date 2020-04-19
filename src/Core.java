@@ -1,10 +1,19 @@
-import java.io.*;
+import com.google.gson.Gson;
+import java.io.EOFException;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.TimeZone;
+import java.util.concurrent.TimeoutException;
 
 class Core { // This is where all the magic happens, where all the data is added and queried from the appropriate arrays to
     // Display all the requested data.
+    FileHandler fileHandler = new FileHandler();
+    // private RabbitMQSend rabbit = new RabbitMQSend();
+    private Gson gson = new Gson();
+    private JsonVariables jsonVars = new JsonVariables();
     ArrayList<Long> discordID = new ArrayList<>();
     ArrayList<Integer> repOffenses = new ArrayList<>();
     ArrayList<Date> issuedDates = new ArrayList<>();
@@ -14,10 +23,12 @@ class Core { // This is where all the magic happens, where all the data is added
     ArrayList<Long> currentBotAbusers = new ArrayList<>();
     private int indexOfLastOffense;
 
-    void startup() throws Exception {
+    Core() throws TimeoutException, IOException {
+    }
 
+    void startup() throws Exception {
+        // rabbit.startup();
         try {
-            FileHandler fileHandler = new FileHandler();
             this.discordID = fileHandler.getDiscordIDs();
             this.repOffenses = fileHandler.getRepOffenses();
             this.issuedDates = fileHandler.getIssuedDates();
@@ -26,15 +37,12 @@ class Core { // This is where all the magic happens, where all the data is added
             this.proofImages = fileHandler.getProofImages();
             this.currentBotAbusers = fileHandler.getCurrentBotAbusers();
         }
-        catch (FileNotFoundException ex) {
-            // Create a New File the immediately close it if the data file doesn't exist
-            ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("data/data.dat"));
-            outputStream.close();
+        catch (EOFException ex) {
+            System.out.println("[System] No Data File Existed - A New One Should Have Been Created");
         }
     }
 
     String setBotAbuse(long targetDiscordID, boolean adminOverride, String reason, String imageURL) throws Exception {
-        FileHandler fileHandler = new FileHandler();
         Calendar c = Calendar.getInstance();
         if (!botAbuseIsCurrent(targetDiscordID)) {
             if (!adminOverride && (reason.equals("k") || reason.equals("kick"))) {
@@ -60,7 +68,11 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.expiryDates.add(setExpiryDate(targetDiscordID));
                 this.proofImages.add(imageURL);
                 this.currentBotAbusers.add(targetDiscordID);
-                fileHandler.writeArrayData();
+
+
+
+                
+
             }
             else {
                 // The Bot Abuse Time gets progressively longer - This isn't their first offense
@@ -70,9 +82,13 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.expiryDates.add(setExpiryDate(targetDiscordID));
                 this.proofImages.add(imageURL);
                 this.currentBotAbusers.add(targetDiscordID);
-                fileHandler.writeArrayData();
-            }
 
+
+              
+
+            }
+            this.writeArrayData();
+            this.sendMessage(0);
             System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                     "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
             System.out.println("[System] Successfully Bot Abused " + targetDiscordID + " for " + this.reasons.get(this.discordID.lastIndexOf(targetDiscordID)));
@@ -91,7 +107,11 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.reasons.set(this.discordID.lastIndexOf(targetDiscordID), "Contact Staff");
                 System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                         "\n" + this.expiryDates.toString() + "\n" + this.currentBotAbusers.toString());
-                fileHandler.writeArrayData();
+
+                this.writeArrayData();
+
+                
+
                 return ":white_check_mark: **[System - Admin Override] Successfully Overrode Bot Abuse for " + targetDiscordID + " and it is now "
                         + this.getNewExpiryDate(targetDiscordID) + "**";
 
@@ -121,7 +141,12 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.proofImages.add(imageURL);
                 this.currentBotAbusers.add(targetDiscordID);
             }
-            fileHandler.writeArrayData();
+
+            this.writeArrayData();
+            this.sendMessage(0);
+
+           
+
             System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                     "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
 
@@ -166,7 +191,7 @@ class Core { // This is where all the magic happens, where all the data is added
         Calendar cOld = Calendar.getInstance();
         // Take off 6 months
         // Realistically this would say cOld.add(Calendar.MONTH, -6)
-        cOld.add(Calendar.HOUR, -1); // Minus 1 Hour for Testing Purposes
+        cOld.add(Calendar.HOUR_OF_DAY, -1); // Minus 1 Hour for Testing Purposes
 
         int index = 0;
         int prevOffenses = 0;
@@ -204,9 +229,13 @@ class Core { // This is where all the magic happens, where all the data is added
             return null;
         }
     }
-    String getInfo(long targetDiscordID) { // This method is for queries
+    String getInfo(long targetDiscordID, float timeOffset) { // This method is for queries
         int index = 0;
         int prevOffenses = 0;
+
+        SimpleDateFormat sdfDateIssued = new SimpleDateFormat("MM-dd-yy HH:mm:ss zzz");
+        SimpleDateFormat sdfDateExpired= new SimpleDateFormat("MM-dd-yy HH:mm:ss zzz");
+
         while (index < this.discordID.size()) {
             if (this.discordID.get(index) == targetDiscordID) {
                 prevOffenses++;
@@ -214,21 +243,33 @@ class Core { // This is where all the magic happens, where all the data is added
             index++;
         }
         if (botAbuseIsCurrent(targetDiscordID)) {
+            Calendar dateIssued = Calendar.getInstance();
+            Calendar dateToExpire = Calendar.getInstance();
+            String trueOffset = this.offsetParsing(timeOffset);
+            System.out.println(trueOffset);
             // Checking to see if the queried player is perm bot abused
             if (this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)) == null) {
+                dateIssued.setTime(this.issuedDates.get(this.discordID.lastIndexOf(targetDiscordID)));
+                sdfDateIssued.setTimeZone(TimeZone.getTimeZone(trueOffset));
+
                 return ":information_source: " + targetDiscordID + " Bot Abuse Info: " +
                         "\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
-                        "**\nDate Issued: **" + this.issuedDates.get(this.discordID.lastIndexOf(targetDiscordID)) +
+                        "**\nDate Issued: **" + sdfDateIssued.format(dateIssued.getTime()) +
                         "**\nExpiry Date: **Never" +
                         "**\nReason: **" + this.reasons.get(this.discordID.lastIndexOf(targetDiscordID)) +
                         "**\nViolation Image: **" + this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) +
                         "**\n\n:information_source: You have had " + (prevOffenses - 1) + " Previous Offenses" ;
             }
             else { // They Are Currently Bot Abused but not permanently
+                dateIssued.setTime(this.issuedDates.get(this.discordID.lastIndexOf(targetDiscordID)));
+                dateToExpire.setTime(this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)));
+                sdfDateIssued.setTimeZone(TimeZone.getTimeZone(trueOffset));
+                sdfDateExpired.setTimeZone(TimeZone.getTimeZone(trueOffset));
+
                 return ":information_source: " + targetDiscordID + " Bot Abuse Info: " +
                         "\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
-                        "**\nDate Issued: **" + this.issuedDates.get(this.discordID.lastIndexOf(targetDiscordID)) +
-                        "**\nExpiry Date: **" + this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)) +
+                        "**\nDate Issued: **" + sdfDateIssued.format(dateIssued.getTime()) +
+                        "**\nExpiry Date: **" + sdfDateExpired.format(dateToExpire.getTime()) +
                         "**\nReason: **" + this.reasons.get(this.discordID.lastIndexOf(targetDiscordID)) +
                         "**\nViolation Image: **" + this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) + "**";
             }
@@ -282,9 +323,9 @@ class Core { // This is where all the magic happens, where all the data is added
             }
             // If the targetDate is before the current time and the player is currently Bot Abused then remove their Bot Abuse
             else if (targetDate.before(c.getTime()) && this.currentBotAbusers.contains(targetDiscordID)) {
-                FileHandler fileHandler = new FileHandler();
                 this.currentBotAbusers.remove(targetDiscordID);
-                fileHandler.writeArrayData();
+                this.writeArrayData();
+
                 System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                         "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
                 return targetDiscordID;
@@ -295,16 +336,11 @@ class Core { // This is where all the magic happens, where all the data is added
         return 0;
     }
     String transferRecords(long oldDiscordID, long newDiscordID) throws Exception {
-        FileHandler fileHandler = new FileHandler();
-        int index = 0;
         int numTransferred = 0;
         // We scan over the entire discordID array and if the oldDiscordID matches we set the value to the newDiscordID
-        while (index < this.discordID.size()) {
-            if (oldDiscordID == this.discordID.get(index)) {
-                this.discordID.set(index, newDiscordID);
-                numTransferred++;
-            }
-            index++;
+        while (this.discordID.contains(oldDiscordID)) {
+            this.discordID.set(this.discordID.lastIndexOf(oldDiscordID), newDiscordID);
+            numTransferred++;
         }
         boolean wasBotAbused = false;
         // Now we check if the player is currently Bot abused, their discordID will appear in the currentBotAbusers array if so.
@@ -314,13 +350,25 @@ class Core { // This is where all the magic happens, where all the data is added
         }
         // If we had records transferred and they weren't Bot Abused
         if (numTransferred > 0 && !wasBotAbused) {
-            fileHandler.writeArrayData();
+
+            this.writeArrayData();
+            System.out.println("[System] Successfully Transferred " + numTransferred + " Records from " + oldDiscordID + " to " + newDiscordID + " - Old Discord ID Was Not Bot Abused");
+            return ":white_check_mark: [System] Successfully Transferred " + numTransferred + " Records from " + oldDiscordID + " to " + newDiscordID + "\nThe Old Discord ID Was Not Bot Abused";
+        }
+        // If we had records transferred and they were Bot Abused
+        else if (numTransferred > 0) {
+            this.writeArrayData();
+            System.out.println("[System] Successfully Transferred " + numTransferred + " Records from " + oldDiscordID + " to " + newDiscordID + " - Old Discord ID Was Bot Abused and was also Transferred");
+            return ":white_check_mark: [System] Successfully Transferred " + numTransferred + " Records from " + oldDiscordID + " to " + newDiscordID + "\nThe Old Discord ID Was Bot Abused at the Time and the Role was Transferred Over";
+
+            
             return ":white_check_mark: [System] Successfully Transferred the Records of " + oldDiscordID + " to " + newDiscordID + "\nThe Old Discord ID Was Not Bot Abused";
         }
         // If we had records transferred and they were Bot Abused
         else if (numTransferred > 0) {
-            fileHandler.writeArrayData();
+            
             return ":white_check_mark: [System] Successfully Transferred the Records of " + oldDiscordID + " to " + newDiscordID + "\nThe Old Discord ID Was Bot Abused at the Time and the Role was Transferred Over";
+
         }
         // If we had No Records Transferred
         else {
@@ -329,7 +377,6 @@ class Core { // This is where all the magic happens, where all the data is added
         }
     }
     int clearRecords (long targetDiscordID) throws Exception { // For Handling Clearing all records of a Discord ID - Returns the Number of Records Cleared
-        FileHandler fileHandler = new FileHandler();
         int clearedRecords = 0;
         // If we want to clear the records of a Discord ID then we go through the discordID array and remove the elements in all the corresponding arrays.
         while (this.discordID.contains(targetDiscordID)) {
@@ -342,25 +389,41 @@ class Core { // This is where all the magic happens, where all the data is added
             clearedRecords++;
         }
         this.currentBotAbusers.remove(targetDiscordID);
-        fileHandler.writeArrayData();
+
+        this.writeArrayData();
+
+        
+
         return clearedRecords;
     }
-    String seeHistory(long targetDiscordID, boolean isTeamMember) {
+    String seeHistory(long targetDiscordID, float timeOffset, boolean isTeamMember) {
         int index = 0;
         int recordsCount = 0;
         String output = "**/checkhistory Results";
+        SimpleDateFormat sdfDateIssued = new SimpleDateFormat("MM-dd-yy HH:mm:ss zzz");
+        SimpleDateFormat sdfDateExpired= new SimpleDateFormat("MM-dd-yy HH:mm:ss zzz");
+        Calendar dateIssued = Calendar.getInstance();
+        Calendar dateToExpire = Calendar.getInstance();
+
         if (isTeamMember) {
             output += "\n:information_source: " + targetDiscordID + "'s Bot Abuse History is as Follows:**";
         }
         else {
             output += "\n:information_source: Your Bot Abuse History is as Follows:**";
         }
+        // Setting the TimeZones of both formatter objects
+        String trueOffset = this.offsetParsing(timeOffset);
+        System.out.println(trueOffset);
+        sdfDateIssued.setTimeZone(TimeZone.getTimeZone(trueOffset));
+        sdfDateExpired.setTimeZone(TimeZone.getTimeZone(trueOffset));
         // We check the discordID array and then get all the elements in the corresponding index of the other arrays
         while (index < this.discordID.size()) {
             if (this.discordID.get(index) == targetDiscordID) {
+                dateIssued.setTime(this.issuedDates.get(index));
+                dateToExpire.setTime(this.expiryDates.get(index));
                 output += "\n\nOffense Number: " + this.repOffenses.get(index)
-                        + "\nDate Issued: " + this.issuedDates.get(index)
-                        + "\nDate Expired: " + this.expiryDates.get(index)
+                        + "\nDate Issued: " + sdfDateIssued.format(dateIssued.getTime())
+                        + "\nDate Expired: " + sdfDateExpired.format(dateToExpire.getTime())
                         + "\nReason: " + this.reasons.get(index)
                         + "\nProof Image: " + this.proofImages.get(index);
                 recordsCount++;
@@ -380,5 +443,82 @@ class Core { // This is where all the magic happens, where all the data is added
             output += "\n\nRecords Count: " + recordsCount;
             return output;
         }
+    }
+    void writeArrayData() throws Exception {
+        fileHandler.writeArrayData(this.discordID,
+                this.repOffenses,
+                this.issuedDates,
+                this.expiryDates,
+                this.reasons,
+                this.proofImages,
+                this.currentBotAbusers);
+    }
+    // Purpose will always be 0 for now until another reason for sending messages is made.
+    void sendMessage(int purpose) throws TimeoutException, IOException {
+        if (purpose == 0) {
+            jsonVars.purpose = "botAbuse";
+            jsonVars.targetDiscordID = this.discordID.get(this.discordID.size() - 1);
+            jsonVars.dateIssued = this.issuedDates.get(this.discordID.size() - 1);
+            jsonVars.dateToExpire = this.expiryDates.get(this.discordID.size() - 1);
+            jsonVars.reason = this.reasons.get(this.discordID.size() - 1);
+            jsonVars.imageURL = this.proofImages.get(this.discordID.size() - 1);
+        }
+        String json = gson.toJson(jsonVars);
+        System.out.println(json);
+        //rabbit.sendMessage(json);
+    }
+    // This Method is primarily for DiscordBotMain, when users enter an offset,
+    // this checks whether or not the string from the message checks out to be a valid integer the program can use
+    boolean checkOffset(String offset) {
+        try {
+            float parsedOffset = Float.parseFloat(offset);
+            return parsedOffset <= 12 && parsedOffset >= -12;
+        }
+        catch (NumberFormatException ex) {
+            return false;
+        }
+    }
+    String offsetParsing(float timeOffset) {
+        // What we do here is basically we process the timeOffset entered by the user into
+        String strippedTimeOffset = String.valueOf(timeOffset);
+        if (timeOffset != 100 && ((timeOffset / 0.5) % 2 == 1) || (timeOffset / -0.5) % 2 == 1) {
+            // Ex 4.5 7.5
+            if (strippedTimeOffset.charAt(1) == '.') {
+                return "GMT+" + strippedTimeOffset.substring(0, 1) + ":30";
+            }
+            // Ex 10.5 -4.5
+            else if (strippedTimeOffset.charAt(2) == '.') {
+                // Ex Handles 10.5 11.5
+                if (strippedTimeOffset.charAt(0) != '-') {
+                    return "GMT+" + strippedTimeOffset.substring(0, 2) + ":30";
+                }
+                // Ex Handles -4.5 -6.5
+                else {
+                    return "GMT" + strippedTimeOffset.substring(0, 2) + ":30";
+                }
+            }
+            // Ex Handles -10.5 -11.5
+            else {
+                return "GMT" + strippedTimeOffset.substring(0, 3) + ":30";
+            }
+        }
+        if (timeOffset >= 0 && timeOffset != 100) {
+            // Because it's a float, we need to strip the trailing .0
+            if (timeOffset >= 10) {
+                return "GMT+" + strippedTimeOffset.substring(0, 2);
+            } else {
+                return "GMT+" + strippedTimeOffset.substring(0, 1);
+            }
+        }
+        else if (timeOffset < 0 && timeOffset != 100) {
+            if (timeOffset <= -10) {
+                return "GMT" + strippedTimeOffset.substring(0, 3);
+            }
+            else {
+                return "GMT" + strippedTimeOffset.substring(0, 2);
+            }
+
+        }
+        else return null;
     }
 }
