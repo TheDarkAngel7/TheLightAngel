@@ -204,7 +204,7 @@ class DiscordBotMain extends ListenerAdapter {
             }
             else if (args[0].equals("clear")) {
                 if (!msg.getAuthor().getJDA().getRolesByName("Staff", false).isEmpty() ||
-                !msg.getAuthor().getJDA().getRolesByName("Administrators", false).isEmpty() || msg.getAuthor() == owner) {
+                        !msg.getAuthor().getJDA().getRolesByName("Administrators", false).isEmpty() || msg.getAuthor() == owner) {
                     clearCommand(msg);
                 }
                 else {
@@ -239,7 +239,7 @@ class DiscordBotMain extends ListenerAdapter {
         }
         else if (msg.getMentionedMembers().isEmpty()) {
             try {
-                String result = core.setBotAbuse(Long.parseLong(args[1]), false, args[2], args[3]);
+                String result = core.setBotAbuse(Long.parseLong(args[1]), false, args[2], args[3], msg.getMember().getAsMention());
                 if (result.contains(":white_check_mark:")) {
                     core.embed.setColor(Color.GREEN);
                     core.embed.setTitle("Successful Bot Abuse");
@@ -271,7 +271,7 @@ class DiscordBotMain extends ListenerAdapter {
                 core.embed.setThumbnail(warningIcon);
                 core.embed.addField("System Message", "Caught a NullPointerException" +
                         "\n**[System] The Bot Abuse role could not be added to that Discord ID as they Don't Exist in the Server!**" +
-                                "\n **Successfully Added A Bot Abuse for that Discord ID to the Database**", true);
+                        "\n **Successfully Added A Bot Abuse for that Discord ID to the Database**", true);
                 discussionChannel.sendMessage(core.embed.build()).queue();
                 System.out.println("[System] " + msg.getMember().getEffectiveName() + " Successfully Bot Abused "
                         + args[1]);
@@ -295,7 +295,7 @@ class DiscordBotMain extends ListenerAdapter {
         else if (msg.getMentionedMembers().size() == 1) {
             try {
                 String result = core.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
-                        false, args[2], args[3]);
+                        false, args[2], args[3], msg.getMember().getAsMention());
                 msg.getGuild().addRoleToMember(msg.getMentionedMembers().get(0),
                         msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
                 if (result.contains(":white_check_mark:")) {
@@ -335,7 +335,8 @@ class DiscordBotMain extends ListenerAdapter {
                 core.embed.setColor(Color.GREEN);
                 core.embed.setThumbnail(checkIcon);
                 core.embed.setTitle("Successful Perm Bot Abuse");
-                core.embed.addField("System Message", core.setBotAbuse(Long.parseLong(args[1]), true, "staff", args[2]), true);
+                core.embed.addField("System Message", core.setBotAbuse(Long.parseLong(args[1]),
+                        true, "staff", args[2] , msg.getMember().getAsMention()), true);
                 outputChannel.sendMessage(core.embed.build()).queue();
                 msg.getGuild().addRoleToMember(msg.getGuild().getMemberById(Long.parseLong(args[1])),
                         msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
@@ -345,12 +346,21 @@ class DiscordBotMain extends ListenerAdapter {
                         " Successfully Permanently Bot Abused " + msg.getGuild().getMemberById(Long.parseLong(args[1])).getEffectiveName());
             }
             catch (NumberFormatException ex) {
-                msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] Invalid User ID!").queue();
+                core.embed.setColor(Color.RED);
+                core.embed.setThumbnail(errorIcon);
+                core.embed.setTitle("Error While Setting Perm Bot Abuse");
+                core.embed.addField("System Message",msg.getMember().getAsMention() + " [System] Invalid User ID!", true);
+                discussionChannel.sendMessage(core.embed.build()).queue();
             }
             catch (ArrayIndexOutOfBoundsException ex) {
-                msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] Invalid Number of Arguments!").queue();
+                core.embed.setColor(Color.RED);
+                core.embed.setThumbnail(errorIcon);
+                core.embed.setTitle("Error While Setting Perm Bot Abuse");
+                core.embed.addField("System Message",msg.getMember().getAsMention() + " [System] Invalid Number of Arguments!", true);
+                discussionChannel.sendMessage(core.embed.build()).queue();
             }
             catch (NullPointerException ex) {
+                core.embed.clearFields();
                 core.embed.setColor(Color.YELLOW);
                 core.embed.setTitle("Exception Caught but Successful Perm Bot Abuse");
                 core.embed.setThumbnail(warningIcon);
@@ -365,10 +375,16 @@ class DiscordBotMain extends ListenerAdapter {
         }
         else if (msg.getMentionedMembers().size() == 1 && args.length == 3) {
             try {
-                outputChannel.sendMessage(core.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(), true, "staff", args[2])).queue();
+                core.embed.setColor(Color.GREEN);
+                core.embed.setThumbnail(checkIcon);
+                core.embed.setTitle("Successful Perm Bot Abuse");
+                core.embed.addField("System Message", core.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
+                        true, "staff", args[2], msg.getMember().getAsMention()),true);
+                outputChannel.sendMessage(core.embed.build()).queue();
                 msg.getGuild().addRoleToMember(msg.getMentionedMembers().get(0),
                         msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
-                System.out.println("[System - Admin Override] " + msg.getAuthor().getAsTag() + " Successfully Permanently Bot Abused " + msg.getMentionedMembers().get(0).getUser().getAsTag());
+                System.out.println("[System - Admin Override] " + msg.getMember().getEffectiveName()
+                        + " Successfully Permanently Bot Abused " + msg.getMentionedMembers().get(0).getEffectiveName());
             }
             catch (Exception e) {
                 e.printStackTrace();
@@ -380,28 +396,35 @@ class DiscordBotMain extends ListenerAdapter {
                 core.embed.setThumbnail(checkIcon);
                 core.embed.setTitle("Successful Perm Bot Abuse");
                 core.embed.addField("System Message",
-                        core.setBotAbuse(Long.parseLong(args[1]), true, "staff", null), true);
+                        core.setBotAbuse(Long.parseLong(args[1]), true, "staff", null, msg.getMember().getAsMention()), true);
                 outputChannel.sendMessage(core.embed.build()).queue();
                 msg.getGuild().addRoleToMember(msg.getGuild().getMemberById(Long.parseLong(args[1])),
                         msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
-                System.out.println("[System - Admin Override] " + msg.getAuthor().getAsTag() + " Successfully Permanently Bot Abused " + String.valueOf(args[1]));
+                System.out.println("[System - Admin Override] " + msg.getMember().getEffectiveName()
+                        + " Successfully Permanently Bot Abused " + msg.getGuild().getMemberById(args[1]).getEffectiveName());
             }
             catch (NumberFormatException ex) {
                 core.embed.setColor(Color.RED);
                 core.embed.setThumbnail(errorIcon);
                 core.embed.setTitle("Error in Setting Perm Bot Abuse");
-                core.embed.addField("System Message", "Invalid User ID!", true);
-                discussionChannel.sendMessage(msg.getAuthor().getAsMention() + core.embed.build()).queue();
+                core.embed.addField("System Message", msg.getAuthor().getAsMention() + " [System] Invalid User ID!", true);
+                discussionChannel.sendMessage(core.embed.build()).queue();
             }
             catch (ArrayIndexOutOfBoundsException ex) {
                 core.embed.setColor(Color.RED);
                 core.embed.setThumbnail(errorIcon);
                 core.embed.setTitle("Error in Setting Perm Bot Abuse");
-                core.embed.addField("System Message", "Invalid Arguements!", true);
-                discussionChannel.sendMessage(msg.getAuthor().getAsMention() + core.embed.build()).queue();
+                core.embed.addField("System Message", msg.getAuthor().getAsMention() + "[System] Invalid Number of Arguements!", true);
+                discussionChannel.sendMessage(core.embed.build()).queue();
             }
             catch (NullPointerException ex) {
-                discussionChannel.sendMessage(":white_check_mark: " + msg.getAuthor().getAsMention() + " Permanently Bot Abused " + args[1] + " who does not exist on the Discord Server").queue();
+                core.embed.clearFields();
+                core.embed.setTitle("Exception Caught but Successful Perm Bot Abuse");
+                core.embed.setColor(Color.YELLOW);
+                core.embed.setThumbnail(warningIcon);
+                core.embed.addField("System Message", ":white_check_mark: " + msg.getMember().getEffectiveName()
+                        + " Permanently Bot Abused " + args[1] + " who does not exist on the Discord Server", true);
+                discussionChannel.sendMessage(core.embed.build()).queue();
             }
             catch (Exception ex) {
                 ex.printStackTrace();
@@ -409,18 +432,27 @@ class DiscordBotMain extends ListenerAdapter {
         }
         else if (msg.getMentionedMembers().size() == 1 && args.length == 2) {
             try {
-                outputChannel.sendMessage(core.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(), true, "staff", null)).queue();
+                core.embed.setColor(Color.GREEN);
+                core.embed.setTitle("Successful Perm Bot Abuse");
+                outputChannel.sendMessage(core.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
+                        true, "staff", null, msg.getMember().getAsMention())).queue();
                 msg.getGuild().addRoleToMember(msg.getMentionedMembers().get(0),
                         msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
-                System.out.println("[System - Admin Override] " + msg.getAuthor().getAsTag() + " Successfully Permanently Bot Abused " + msg.getMentionedMembers().get(0).getUser().getAsTag());
+                System.out.println("[System - Admin Override] " + msg.getMember().getEffectiveName()
+                        + " Successfully Permanently Bot Abused " + msg.getMentionedMembers().get(0).getEffectiveName());
             }
             catch (Exception e) {
                 e.printStackTrace();
             }
         }
         else {
-            msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] Too Many Mentioned Players!").queue();
+            core.embed.setColor(Color.RED);
+            core.embed.setTitle("Fatal Error");
+            core.embed.setThumbnail(errorIcon);
+            core.embed.addField("System Message", ":x: " + msg.getAuthor().getAsMention() + " [System] Too Many Mentioned Players!", true);
+            msg.getChannel().sendMessage(core.embed.build()).queue();
         }
+        core.embed.clearFields();
     }
     private void checkCommand(Message msg) {
         MessageChannel discussionChannel = msg.getGuild().getTextChannelsByName("team_discussion", false).get(0);
@@ -433,17 +465,18 @@ class DiscordBotMain extends ListenerAdapter {
         }
         // This handles a /check for someone to check their own Bot Abuse status
         else if (msg.getMentionedMembers().isEmpty() && args.length == 1) {
-            helpChannel.sendMessage("Hey " + msg.getAuthor().getAsMention() + ",\n" + core.getInfo(msg.getAuthor().getIdLong(), 100)).queue();
+            helpChannel.sendMessage("Hey " + msg.getAuthor().getAsMention() + ",\n" +
+                    core.getInfo(msg.getAuthor().getIdLong(), 100, false)).queue();
         }
         // This handles if the player opts for a Direct Message instead "/check dm"
         else if (msg.getMentionedMembers().isEmpty() && args.length == 2 && args[1].equals("dm")) {
             PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
-            channel.sendMessage(core.getInfo(msg.getAuthor().getIdLong(), 100)).queue();
+            channel.sendMessage(core.getInfo(msg.getAuthor().getIdLong(), 100, false)).queue();
         }
         // /check <Discord ID>
         else if (msg.getMentionedMembers().isEmpty() && msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083")) && args.length == 2) {
             try {
-                discussionChannel.sendMessage(core.getInfo(Long.parseLong(args[1]), 100)).queue();
+                discussionChannel.sendMessage(core.getInfo(Long.parseLong(args[1]), 100 ,true)).queue();
             }
             catch (NumberFormatException ex) {
                 discussionChannel.sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] Invalid Discord ID").queue();
@@ -451,12 +484,13 @@ class DiscordBotMain extends ListenerAdapter {
         }
         // /check <Mention>
         else if (msg.getMentionedMembers().size() == 1 && msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083")) && args.length == 2) {
-            discussionChannel.sendMessage(core.getInfo(msg.getMentionedMembers().get(0).getIdLong(), 100)).queue();
+            discussionChannel.sendMessage(core.getInfo(msg.getMentionedMembers().get(0).getIdLong(), 100 ,true)).queue();
         }
         // /check <Timezone Offset>
         else if (msg.getMentionedMembers().isEmpty() && args.length == 2) {
             if (core.checkOffset(args[1])) {
-                helpChannel.sendMessage("Hey " + msg.getAuthor().getAsMention() + ",\n" + core.getInfo(msg.getAuthor().getIdLong(), Float.parseFloat(args[1]))).queue();
+                helpChannel.sendMessage("Hey " + msg.getAuthor().getAsMention() + ",\n" +
+                        core.getInfo(msg.getAuthor().getIdLong(), Float.parseFloat(args[1]), false)).queue();
             }
             else {
                 helpChannel.sendMessage(":x: **Invalid Timezone Offset**").queue();
@@ -466,7 +500,7 @@ class DiscordBotMain extends ListenerAdapter {
         else if (msg.getMentionedMembers().isEmpty() && args.length == 3 && args[1].equals("dm")) {
             PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
             if (core.checkOffset(args[2])) {
-                channel.sendMessage(core.getInfo(msg.getAuthor().getIdLong(), Integer.parseInt(args[2]))).queue();
+                channel.sendMessage(core.getInfo(msg.getAuthor().getIdLong(), Integer.parseInt(args[2]), false)).queue();
             }
             else {
                 msg.getChannel().sendMessage(":x: **Invalid Timezone Offset**").queue();
@@ -477,10 +511,12 @@ class DiscordBotMain extends ListenerAdapter {
             if (core.checkOffset(args[1])) {
                 try {
                     if (msg.getMentionedMembers().isEmpty()) {
-                        discussionChannel.sendMessage(core.getInfo(Long.parseLong(args[2]), Float.parseFloat(args[1]))).queue();
+                        discussionChannel.sendMessage(
+                                core.getInfo(Long.parseLong(args[2]), Float.parseFloat(args[1]), true)).queue();
                     }
                     else if (msg.getMentionedMembers().size() == 1) {
-                        discussionChannel.sendMessage(core.getInfo(msg.getMentionedMembers().get(0).getIdLong(), Float.parseFloat(args[1]))).queue();
+                        discussionChannel.sendMessage(
+                                core.getInfo(msg.getMentionedMembers().get(0).getIdLong(), Float.parseFloat(args[1]), true)).queue();
                     }
                 }
                 catch (NumberFormatException ex) {
@@ -642,7 +678,7 @@ class DiscordBotMain extends ListenerAdapter {
                     catch (NullPointerException e) {
                         System.out.println("[System] " + msg.getAuthor().getAsTag() + " Successfully Transferred the Records of "
                                 + msg.getMentionedMembers().get(0).getUser().getAsTag() +
-                                        " to " + args[2]);
+                                " to " + args[2]);
                     }
                 }
             }
@@ -706,7 +742,7 @@ class DiscordBotMain extends ListenerAdapter {
                 outputChannel.sendMessage(":information_source: **[System] " + msg.getAuthor().getAsMention() + " just checked the history of " +
                         msg.getGuild().getMemberById(Long.parseLong(args[1])).getAsMention() + "**").queue();
                 System.out.println("[System] " + author.getEffectiveName() + " just checked the history of " +
-                msg.getGuild().getMemberById(Long.parseLong(args[1])).getUser().getAsTag());
+                        msg.getGuild().getMemberById(Long.parseLong(args[1])).getEffectiveName());
             }
             catch (NumberFormatException ex) {
                 try {
@@ -715,7 +751,7 @@ class DiscordBotMain extends ListenerAdapter {
                     outputChannel.sendMessage(":information_source: **[System] " + msg.getAuthor().getAsMention() + " just checked the history of " +
                             msg.getMentionedMembers().get(0).getAsMention() + "**").queue();
                     System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked the history of " +
-                            msg.getMentionedMembers().get(0).getUser().getAsTag());
+                            msg.getMentionedMembers().get(0).getEffectiveName());
                 }
                 // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
                 catch (IllegalArgumentException e) {
@@ -742,7 +778,7 @@ class DiscordBotMain extends ListenerAdapter {
         else if (args.length > 1 && !author.getRoles().contains(guild.getRoleById("664556958686380083"))) {
             msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() +
                     " **[System] You Don't Have Permission to check on someone elses Bot Abuse History**").queue();
-            System.out.println("[System] " + msg.getAuthor().getAsTag() +
+            System.out.println("[System] " + msg.getMember().getEffectiveName() +
                     " just tried to check someone elses Bot Abuse History but they did not have permission to");
         }
         // /checkhistory
