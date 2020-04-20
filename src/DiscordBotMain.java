@@ -94,14 +94,21 @@ class DiscordBotMain extends ListenerAdapter {
                     Guild guild = event.getJDA().getGuilds().get(0);
                     List<Member> serverMembers = guild.getMembers();
                     int index = 0;
-
+                    core.embed.setColor(Color.BLUE);
+                    core.embed.setTitle("Role Scanner Information");
+                    core.embed.setThumbnail(infoIcon);
                     while (index < core.currentBotAbusers.size()) {
-                        if (!guild.getMemberById(core.currentBotAbusers.get(index)).getRoles().contains(guild.getRoleById("664619076324294666"))) {
+                        if (serverMembers.contains(guild.getMemberById(core.currentBotAbusers.get(index))) &&
+                        !guild.getMemberById(core.currentBotAbusers.get(index)).getRoles().contains(guild.getRoleById("664619076324294666"))) {
                             guild.addRoleToMember(guild.getMemberById(core.currentBotAbusers.get(index)),
                                     guild.getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
-                            System.out.println("[System] Role Scanner Added Bot Abuse to " +
-                                    guild.getMemberById(core.currentBotAbusers.get(index)).getEffectiveName() +
-                                    " because they were missing the role and they were supposed to have it");
+                            core.embed.addField("System Message", "[System - Role Scanner] Added Bot Abuse Role to "
+                                    + guild.getMemberById(core.currentBotAbusers.get(index)).getAsMention() +
+                                    " because they didn't have the role... and they're supposed to have it." , true);
+                            outputChannel.sendMessage(core.embed.build()).queue();
+                            System.out.println("[System - Role Scanner] Added Bot Abuse to " +
+                                    guild.getMemberById(core.currentBotAbusers.get(index)).getEffectiveName());
+                            core.embed.clearFields();
                         }
                         index++;
                     }
@@ -111,8 +118,13 @@ class DiscordBotMain extends ListenerAdapter {
                                 && !core.botAbuseIsCurrent(serverMembers.get(index).getIdLong())) {
                             guild.removeRoleFromMember(serverMembers.get(index).getIdLong(),
                                     guild.getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
-                            System.out.println("[System] Role Scanner Removed Bot Abuse Role from "
+                            core.embed.addField("System Message", "[System - Role Scanner] Removed Bot Abuse Role from "
+                                    + serverMembers.get(index).getAsMention() + " because they had the role... " +
+                            "and they weren't supposed to have it." , true);
+                            outputChannel.sendMessage(core.embed.build()).queue();
+                            System.out.println("[System - Role Scanner] Removed Bot Abuse Role from "
                                     + serverMembers.get(index).getEffectiveName());
+                            core.embed.clearFields();
                         }
                         index++;
                     }
@@ -131,19 +143,30 @@ class DiscordBotMain extends ListenerAdapter {
             e.printStackTrace();
         }
         // If they're supposed to be Bot Abused and they don't have the role on join
-        if (core.botAbuseIsCurrent(event.getMember().getIdLong()) && event.getJDA().getRolesByName("Bot Abuse", false).isEmpty()) {
+        if (core.botAbuseIsCurrent(event.getMember().getIdLong()) && !event.getMember().getRoles().contains(event.getGuild().getRoleById("664619076324294666"))) {
             event.getGuild().addRoleToMember(event.getMember().getIdLong(),
                     event.getJDA().getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
-            outputChannel.sendMessage("[System - Join Event] Added the Bot Abuse Role to " + event.getMember().getAsMention() +
-                    " since according to the data file they should have the Bot Abuse role").queue();
+            core.embed.setTitle("Join Event Information");
+            core.embed.setColor(Color.BLUE);
+            core.embed.setThumbnail(infoIcon);
+            core.embed.addField("System Message", "[System - Join Event] Added the Bot Abuse Role to " + event.getMember().getAsMention() +
+                    " since according to the data file they should have the Bot Abuse role", true);
+            outputChannel.sendMessage(core.embed.build()).queue();
+            System.out.println("[System - Join Event] Added Bot Abuse Role to " + event.getMember().getEffectiveName());
         }
         // If they're not supposed to be Bot Abused and they do have the role
-        else if (!core.botAbuseIsCurrent(event.getMember().getIdLong()) && !event.getJDA().getRolesByName("Bot Abuse", false).isEmpty()) {
+        else if (!core.botAbuseIsCurrent(event.getMember().getIdLong()) && event.getMember().getRoles().contains(event.getGuild().getRoleById("664619076324294666"))) {
             event.getGuild().removeRoleFromMember(event.getMember().getIdLong(),
                     event.getJDA().getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
-            outputChannel.sendMessage("[System - Join Event] Removed the Bot Abuse Role from " + event.getMember().getAsMention() +
-                    " since according to the data file they shouldn't have it").queue();
+            core.embed.setTitle("Join Event Information");
+            core.embed.setColor(Color.BLUE);
+            core.embed.setThumbnail(infoIcon);
+            core.embed.addField("System Message", "[System - Join Event] Removed the Bot Abuse Role from " + event.getMember().getAsMention() +
+                    " since according to the data file they shouldn't have it", true);
+            outputChannel.sendMessage(core.embed.build()).queue();
+            System.out.println("[System - Join Event] Removed Bot Abuse Role from " + event.getMember().getEffectiveName());
         }
+        core.embed.clearFields();
     }
     @Override
     public void onDisconnect(@Nonnull DisconnectEvent event) {
