@@ -21,6 +21,9 @@ class FileHandler {
     ArrayList<Long> getDiscordIDs() throws Exception {
         return (ArrayList<Long>) inputStream.readObject();
     }
+    ArrayList<String> getTeamMembers() throws Exception {
+        return (ArrayList<String>) inputStream.readObject();
+    }
     ArrayList<Integer> getRepOffenses() throws Exception {
         return (ArrayList<Integer>) inputStream.readObject();
     }
@@ -40,7 +43,7 @@ class FileHandler {
         return (ArrayList<Long>) inputStream.readObject();
     }
 
-    void writeArrayData(ArrayList<Long> discordID, ArrayList<Integer> repOffenses, ArrayList<Date> issuedDates,
+    void writeArrayData(ArrayList<Long> discordID, ArrayList<String> teamMembers, ArrayList<Integer> repOffenses, ArrayList<Date> issuedDates,
                         ArrayList<Date> expiryDates, ArrayList<String> reasons, ArrayList<String> proofImages,
                         ArrayList<Long> currentBotAbusers)
             throws Exception {
@@ -50,6 +53,7 @@ class FileHandler {
         ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(tempDataFile));
         // Write the Objects
         outputStream.writeObject(discordID);
+        outputStream.writeObject(teamMembers);
         outputStream.writeObject(repOffenses);
         outputStream.writeObject(issuedDates);
         outputStream.writeObject(expiryDates);
