@@ -256,7 +256,7 @@ class DiscordBotMain extends ListenerAdapter {
                 }
             }
         }
-        else if (msg.getMentionedMembers().contains(msg.getGuild().getMemberById(Long.parseLong("664520352315080727")))) {
+        else if (msg.getMentionedMembers().contains(msg.getGuild().getSelfMember())) {
             msg.getChannel().sendMessage(":blobnomping:").queue();
         }
         core.embed.clearFields();
@@ -584,14 +584,14 @@ class DiscordBotMain extends ListenerAdapter {
                     discussionChannel.sendMessage(core.embed.build()).queue();
                     System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked on "
                             + msg.getGuild().getMemberById(Long.parseLong(args[2])).getEffectiveName()
-                            + "'s Bot Abuse Status while using TimeZone offset" + args[1]);
+                            + "'s Bot Abuse Status while using TimeZone offset " + args[1]);
                 }
                 else if (msg.getMentionedMembers().size() == 1) {
                     discussionChannel.sendMessage(
                             core.getInfo(msg.getMentionedMembers().get(0).getIdLong(), Float.parseFloat(args[1]), true)).queue();
                     System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked on "
                             + msg.getMentionedMembers().get(0).getEffectiveName()
-                            + "'s Bot Abuse Status while using TimeZone offset" + args[1]);
+                            + "'s Bot Abuse Status while using TimeZone offset " + args[1]);
                 }
             }
             else {

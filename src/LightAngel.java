@@ -19,9 +19,9 @@ class LightAngel {
                     System.out.println("[System] Successfully Created new Data File");
                     objectOutputStream.close();
                 }
-                else {
-                    System.out.println("[System] Successfully Found Existing Data File");
-                }
+            }
+            else {
+                System.out.println("[System] Successfully Found Existing Data File");
             }
             discord = new DiscordBotMain();
         }

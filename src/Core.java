@@ -417,6 +417,7 @@ class Core { // This is where all the magic happens, where all the data is added
         // If we want to clear the records of a Discord ID then we go through the discordID array and remove the elements in all the corresponding arrays.
         while (this.discordID.contains(targetDiscordID)) {
             this.repOffenses.remove(this.discordID.lastIndexOf(targetDiscordID));
+            this.issuingTeamMember.remove(this.discordID.lastIndexOf(targetDiscordID));
             this.issuedDates.remove(this.discordID.lastIndexOf(targetDiscordID));
             this.expiryDates.remove(this.discordID.lastIndexOf(targetDiscordID));
             this.reasons.remove(this.discordID.lastIndexOf(targetDiscordID));
