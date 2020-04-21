@@ -212,7 +212,8 @@ class DiscordBotMain extends ListenerAdapter {
                 msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] You Entered an Invalid Number of Arguments").queue();
             }
             else if (args[0].equals("permbotabuse")) { // /permbotabuse <Mention or Discord ID> [Image]
-                if (author.getRoles().contains(event.getGuild().getRoleById(this.teamRoleID))) {
+                if (author.getRoles().contains(event.getGuild().getRoleById(this.staffRoleID)) ||
+                        author.getRoles().contains(event.getGuild().getRoleById(this.adminRoleID)) || author == owner) {
                     permBotAbuse(msg);
                 }
                 else {
@@ -225,7 +226,7 @@ class DiscordBotMain extends ListenerAdapter {
             }
             else if (args[0].equals("transfer")) { // /transfer <Old Mention or Discord ID> <New Mention or Discord ID>
                 if (!msg.getMember().getRoles().contains(guild.getRoleById(this.staffRoleID))
-                        || msg.getMember().getRoles().contains(guild.getRoleById(this.adminRoleID))) {
+                        || msg.getMember().getRoles().contains(guild.getRoleById(this.adminRoleID)) || author == owner) {
                     try {
                         transferRecords(msg);
                     }
@@ -238,8 +239,8 @@ class DiscordBotMain extends ListenerAdapter {
                 }
             }
             else if (args[0].equals("clear")) {
-                if (!msg.getAuthor().getJDA().getRolesByName("Staff", false).isEmpty() ||
-                        !msg.getAuthor().getJDA().getRolesByName("Administrators", false).isEmpty() || msg.getAuthor() == owner) {
+                if (!msg.getMember().getRoles().contains(guild.getRoleById(this.staffRoleID))
+                        || msg.getMember().getRoles().contains(guild.getRoleById(this.adminRoleID)) || author == owner) {
                     clearCommand(msg);
                 }
                 else {
