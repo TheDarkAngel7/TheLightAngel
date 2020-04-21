@@ -290,13 +290,21 @@ class Core { // This is where all the magic happens, where all the data is added
             else { // They Are Currently Bot Abused but not permanently
                 dateIssued.setTime(this.issuedDates.get(this.discordID.lastIndexOf(targetDiscordID)));
                 dateToExpire.setTime(this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)));
-                if (!isTeamMember) {
+                if (!isTeamMember && this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) == null) {
                     return ":information_source: " + targetDiscordID + " Bot Abuse Info: " +
                             "\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
                             "**\nDate Issued: **" + sdfDateIssued.format(dateIssued.getTime()) +
                             "**\nExpiry Date: **" + sdfDateExpired.format(dateToExpire.getTime()) +
                             "**\nReason: **" + this.reasons.get(this.discordID.lastIndexOf(targetDiscordID)) +
-                            "**\nViolation Image: **" + this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) + "**";
+                            "**\nViolation Image: **None Provided**";
+                }
+                else if (!isTeamMember) {
+                    return ":information_source: " + targetDiscordID + " Bot Abuse Info: " +
+                            "\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
+                            "**\nDate Issued: **" + sdfDateIssued.format(dateIssued.getTime()) +
+                            "**\nExpiry Date: **" + sdfDateExpired.format(dateToExpire.getTime()) +
+                            "**\nReason: **" + this.reasons.get(this.discordID.lastIndexOf(targetDiscordID)) +
+                            "**\nViolation Image: **" + this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID));
                 }
                 else {
                     return  result.concat(
@@ -426,10 +434,10 @@ class Core { // This is where all the magic happens, where all the data is added
         Calendar dateToExpire = Calendar.getInstance();
 
         if (isTeamMember) {
-            output += "\n:information_source: " + targetDiscordID + "'s Bot Abuse History is as Follows:**";
+            output += "\n:information_source: " + targetDiscordID + "'s Bot Abuse History is as Follows:";
         }
         else {
-            output += "\n:information_source: Your Bot Abuse History is as Follows:**";
+            output += "\n:information_source: Your Bot Abuse History is as Follows:";
         }
         // Setting the TimeZones of both formatter objects
         String trueOffset = this.offsetParsing(timeOffset);
@@ -444,19 +452,19 @@ class Core { // This is where all the magic happens, where all the data is added
                 dateIssued.setTime(this.issuedDates.get(index));
                 dateToExpire.setTime(this.expiryDates.get(index));
                 if (!isTeamMember) {
-                    output += "\n\nOffense Number: " + this.repOffenses.get(index)
-                            + "\nDate Issued: " + sdfDateIssued.format(dateIssued.getTime())
-                            + "\nDate Expired: " + sdfDateExpired.format(dateToExpire.getTime())
-                            + "\nReason: " + this.reasons.get(index)
-                            + "\nProof Image: " + this.proofImages.get(index);
+                    output += "\n\nOffense Number: **" + this.repOffenses.get(index)
+                            + "\n**Date Issued: **" + sdfDateIssued.format(dateIssued.getTime())
+                            + "\n**Date Expired: **" + sdfDateExpired.format(dateToExpire.getTime())
+                            + "\n**Reason: **" + this.reasons.get(index)
+                            + "\n**Proof Image: **" + this.proofImages.get(index) + "**";
                 }
                 else {
-                    output += "\n\nIssuing Team Member: " + this.issuingTeamMember.get(index)
-                            + "\nOffense Number: " + this.repOffenses.get(index)
-                            + "\nDate Issued: " + sdfDateIssued.format(dateIssued.getTime())
-                            + "\nDate Expired: " + sdfDateExpired.format(dateToExpire.getTime())
-                            + "\nReason: " + this.reasons.get(index)
-                            + "\nProof Image: " + this.proofImages.get(index);
+                    output += "\n\nOffense Number: **" + this.repOffenses.get(index)
+                            + "\n**Issuing Team Member: **" + this.issuingTeamMember.get(index)
+                            + "\n**Date Issued: **" + sdfDateIssued.format(dateIssued.getTime())
+                            + "\n**Date Expired: **" + sdfDateExpired.format(dateToExpire.getTime())
+                            + "\n**Reason: **" + this.reasons.get(index)
+                            + "\n**Proof Image: **" + this.proofImages.get(index) + "**";
                 }
                 recordsCount++;
             }

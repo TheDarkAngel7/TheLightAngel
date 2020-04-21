@@ -482,77 +482,122 @@ class DiscordBotMain extends ListenerAdapter {
         MessageChannel helpChannel = msg.getGuild().getTextChannelsByName("help_and_support", false).get(0);
 
         String[] args = msg.getContentRaw().substring(1).split(" ");
+        core.embed.setColor(Color.BLUE);
+        core.embed.setTitle("Bot Abuse Information");
+        core.embed.setThumbnail(infoIcon);
 
         if (msg.getChannelType() == ChannelType.PRIVATE) {
             // Take No Action
         }
         // This handles a /check for someone to check their own Bot Abuse status
         else if (msg.getMentionedMembers().isEmpty() && args.length == 1) {
-            helpChannel.sendMessage("Hey " + msg.getAuthor().getAsMention() + ",\n" +
-                    core.getInfo(msg.getAuthor().getIdLong(), 100, false)).queue();
+            core.embed.addField("System Message",
+                    core.getInfo(msg.getAuthor().getIdLong(), 100, false), true);
+            helpChannel.sendMessage("Hey " + msg.getAuthor().getAsMention() + ",").queue();
+            helpChannel.sendMessage(core.embed.build()).queue();
+            System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked their own Bot Abuse status");
         }
         // This handles if the player opts for a Direct Message instead "/check dm"
         else if (msg.getMentionedMembers().isEmpty() && args.length == 2 && args[1].equals("dm")) {
             PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
-            channel.sendMessage(core.getInfo(msg.getAuthor().getIdLong(), 100, false)).queue();
+            core.embed.addField("System Message", core.getInfo(msg.getAuthor().getIdLong(), 100, false), true);
+            channel.sendMessage(core.embed.build()).queue();
+            System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked their own Bot Abuse status and opted for a DM");
         }
         // /check <Discord ID>
         else if (msg.getMentionedMembers().isEmpty() && msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083")) && args.length == 2) {
             try {
-                discussionChannel.sendMessage(core.getInfo(Long.parseLong(args[1]), 100 ,true)).queue();
+                core.embed.addField("System Message", core.getInfo(Long.parseLong(args[1]), 100 ,true), true);
+                discussionChannel.sendMessage(core.embed.build()).queue();
+                System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked on "+
+                        msg.getGuild().getMemberById(Long.parseLong(args[1])) + "'s Bot Abuse Status");
             }
             catch (NumberFormatException ex) {
-                discussionChannel.sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] Invalid Discord ID").queue();
+                core.embed.setColor(Color.RED);
+                core.embed.setTitle("Check Info Error");
+                core.embed.setThumbnail(errorIcon);
+                core.embed.addField("System Message",":x: **Invalid Discord ID**", true);
+                discussionChannel.sendMessage(msg.getAuthor().getAsMention());
+                discussionChannel.sendMessage(core.embed.build()).queue();
+                System.out.println("[System] Team Member " + msg.getMember().getEffectiveName() + " just entered an invalid Discord ID");
             }
         }
         // /check <Mention>
         else if (msg.getMentionedMembers().size() == 1 && msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083")) && args.length == 2) {
-            discussionChannel.sendMessage(core.getInfo(msg.getMentionedMembers().get(0).getIdLong(), 100 ,true)).queue();
+            core.embed.addField("System Message", core.getInfo(msg.getMentionedMembers().get(0).getIdLong(), 100 ,true), true);
+            discussionChannel.sendMessage(core.embed.build()).queue();
+            System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked on "+
+                    msg.getMentionedMembers().get(0).getEffectiveName() + "'s Bot Abuse Status");
         }
         // /check <Timezone Offset>
         else if (msg.getMentionedMembers().isEmpty() && args.length == 2) {
             if (core.checkOffset(args[1])) {
-                helpChannel.sendMessage("Hey " + msg.getAuthor().getAsMention() + ",\n" +
-                        core.getInfo(msg.getAuthor().getIdLong(), Float.parseFloat(args[1]), false)).queue();
+                core.embed.addField("System Message", core.getInfo(msg.getAuthor().getIdLong(), Float.parseFloat(args[1]), false), true);
+                helpChannel.sendMessage("Hey " + msg.getAuthor().getAsMention() + ",").queue();
+                helpChannel.sendMessage(core.embed.build()).queue();
+                System.out.println("[System] " + msg.getMember().getEffectiveName() +
+                        " just checked on their own Bot Abuse status using TimeZone offset " + args[1]);
             }
             else {
-                helpChannel.sendMessage(":x: **Invalid Timezone Offset**").queue();
+                core.embed.setColor(Color.RED);
+                core.embed.setTitle("Check Info Error");
+                core.embed.setThumbnail(errorIcon);
+                core.embed.addField("System Message",":x: **Invalid Timezone Offset**", true);
+                helpChannel.sendMessage(core.embed.build()).queue();
+                System.out.println("[System] " + msg.getMember().getEffectiveName() + " just entered an invalid TimeZone offset");
             }
         }
         // /check [dm] <Timezone Offset>
         else if (msg.getMentionedMembers().isEmpty() && args.length == 3 && args[1].equals("dm")) {
             PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
             if (core.checkOffset(args[2])) {
-                channel.sendMessage(core.getInfo(msg.getAuthor().getIdLong(), Integer.parseInt(args[2]), false)).queue();
+                core.embed.addField("System Message", core.getInfo(msg.getAuthor().getIdLong(), Float.parseFloat(args[2]), false), true);
+                channel.sendMessage(core.embed.build()).queue();
+                System.out.println("[System] " + msg.getMember().getEffectiveName() +
+                        " just checked on their own Bot Abuse status while opting for a DM");
             }
             else {
-                msg.getChannel().sendMessage(":x: **Invalid Timezone Offset**").queue();
+                helpChannel.sendMessage(":x: " + msg.getAuthor().getAsMention() + " **Invalid Timezone Offset**").queue();
+                System.out.println("[System] " + msg.getMember().getEffectiveName() +
+                        " just entered an invalid Discord ID while opting for a DM");
             }
         }
         // /check <Timezone Offset> <Mention or Discord ID>
         else if (msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083")) && args.length == 3) {
             if (core.checkOffset(args[1])) {
-                try {
-                    if (msg.getMentionedMembers().isEmpty()) {
-                        discussionChannel.sendMessage(
-                                core.getInfo(Long.parseLong(args[2]), Float.parseFloat(args[1]), true)).queue();
-                    }
-                    else if (msg.getMentionedMembers().size() == 1) {
-                        discussionChannel.sendMessage(
-                                core.getInfo(msg.getMentionedMembers().get(0).getIdLong(), Float.parseFloat(args[1]), true)).queue();
-                    }
+                if (msg.getMentionedMembers().isEmpty()) {
+                    core.embed.addField("System Message",
+                            core.getInfo(Long.parseLong(args[2]), Float.parseFloat(args[1]), true), true);
+                    discussionChannel.sendMessage(core.embed.build()).queue();
+                    System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked on "
+                            + msg.getGuild().getMemberById(Long.parseLong(args[2])).getEffectiveName()
+                            + "'s Bot Abuse Status while using TimeZone offset" + args[1]);
                 }
-                catch (NumberFormatException ex) {
-                    discussionChannel.sendMessage(":x: [System] **Invalid Timezone Offset**").queue();
+                else if (msg.getMentionedMembers().size() == 1) {
+                    discussionChannel.sendMessage(
+                            core.getInfo(msg.getMentionedMembers().get(0).getIdLong(), Float.parseFloat(args[1]), true)).queue();
+                    System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked on "
+                            + msg.getMentionedMembers().get(0).getEffectiveName()
+                            + "'s Bot Abuse Status while using TimeZone offset" + args[1]);
                 }
             }
             else {
-                discussionChannel.sendMessage(":x: [System] **Invalid Timezone Offset**").queue();
+                core.embed.setColor(Color.RED);
+                core.embed.setTitle("Check Info Error");
+                core.embed.setThumbnail(errorIcon);
+                core.embed.addField("System Message", ":x: [System] **Invalid Timezone Offset**", true);
+                discussionChannel.sendMessage(core.embed.build()).queue();
+                System.out.println("[System] Team Member " + msg.getMember().getEffectiveName() + " just entered an invalid TimeZone offset.");
             }
 
         }
         else {
-            helpChannel.sendMessage(":x: " + " [System] " + msg.getAuthor().getAsMention() + ", You Don't have Permission to check on someone else's Bot Abuse status").queue();
+            core.embed.setColor(Color.RED);
+            core.embed.setTitle("Permission Error");
+            core.embed.setThumbnail(errorIcon);
+            core.embed.addField("System Message","You Don't have Permission to check on someone else's Bot Abuse status", true);
+            helpChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
+            helpChannel.sendMessage(core.embed.build());
         }
     }
     private void clearCommand(Message msg) {
@@ -560,6 +605,7 @@ class DiscordBotMain extends ListenerAdapter {
         MessageChannel discussionChannel = msg.getGuild().getTextChannelsByName("team_discussion", false).get(0);
 
         String[] args = msg.getContentRaw().substring(1).split(" ");
+
 
         int index = 0;
         // This Handles the list of mentioned members
@@ -569,26 +615,40 @@ class DiscordBotMain extends ListenerAdapter {
             if (msg.getMentionedMembers().get(index).getRoles().contains(msg.getGuild().getRoleById("664619076324294666"))) {
                 msg.getGuild().removeRoleFromMember(msg.getMentionedMembers().get(index).getIdLong(),
                         msg.getGuild().getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
+                core.embed.setColor(Color.BLUE);
+                core.embed.setTitle("Bot Abuse Role Removed");
+                core.embed.setThumbnail(infoIcon);
+                core.embed.addField("System Message", "**Successfully Removed Bot Abuse Role from "
+                        + msg.getMentionedMembers().get(index).getAsMention() + " as their Records just got Cleared**", true);
+                outputChannel.sendMessage(core.embed.build()).queue();
+                core.embed.clearFields();
             }
+            core.embed.setColor(Color.GREEN);
+            core.embed.setThumbnail(checkIcon);
+            core.embed.setTitle("Successfully Cleared Records");
             try {
                 int clearedRecords = core.clearRecords(msg.getMentionedMembers().get(index).getIdLong());
                 if (clearedRecords == 0) {
-                    discussionChannel.sendMessage(":x: " + msg.getAuthor().getAsMention() + "** [System] No Records Found for " + msg.getMentionedMembers().get(0).getAsMention() + "**").queue();
+                    core.embed.setColor(Color.RED);
+                    core.embed.setTitle("No Records Cleared");
+                    core.embed.setThumbnail(errorIcon);
+                    core.embed.addField("System Message","** [System] No Records Found for " + msg.getMentionedMembers().get(0).getAsMention() + "**", true);
+                    discussionChannel.sendMessage(core.embed.build()).queue();
                 }
                 else {
-                    outputChannel.sendMessage(":white_check_mark: **[System] Successfully Cleared " +
-                            clearedRecords + " Records from " + msg.getMentionedMembers().get(index).getAsMention() + "**").queue();
+                    core.embed.addField("System Message", ":white_check_mark: **[System] Successfully Cleared " +
+                            clearedRecords + " Records from " + msg.getMentionedMembers().get(index).getAsMention() + "**", true);
+                    outputChannel.sendMessage(core.embed.build()).queue();
                     System.out.println("[System] Successfully Cleared " + clearedRecords + " Records from " + msg.getMentionedMembers().get(index).getUser().getAsTag());
                 }
                 index++;
-
-
             }
             catch (Exception ex) {
                 ex.printStackTrace();
             }
+            core.embed.clearFields();
         }
-        index = 1;
+        index = 0;
         // We check for any plain discord IDs with this, we don't take any action on a NumberFormatException as that would indicate
         // a mention in that argument, which was already handled, so they're ignored
         while (index < args.length) {
@@ -596,13 +656,25 @@ class DiscordBotMain extends ListenerAdapter {
                 if (msg.getGuild().getMemberById(Long.parseLong(args[index])).getRoles().contains(msg.getGuild().getRoleById("664619076324294666"))) {
                     msg.getGuild().removeRoleFromMember(Long.parseLong(args[index]),
                             msg.getGuild().getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
+                    core.embed.setColor(Color.BLUE);
+                    core.embed.setTitle("Bot Abuse Role Removed");
+                    core.embed.setThumbnail(infoIcon);
+                    core.embed.addField("System Message", "**Successfully Removed Bot Abuse Role from "
+                            + msg.getGuild().getMemberById(Long.parseLong(args[index])).getEffectiveName() + " as their Records just got Cleared**", true);
                 }
                 int clearedRecords = core.clearRecords(Long.parseLong(args[index]));
 
                 if (clearedRecords == 0) {
-                    discussionChannel.sendMessage(":x: " + msg.getAuthor().getAsMention() + "** [System] No Records Found for " + args[index] + "**").queue();
+                    core.embed.setColor(Color.RED);
+                    core.embed.setTitle("No Records Cleared");
+                    core.embed.setThumbnail(errorIcon);
+                    core.embed.addField("System Message", "**[System] No Records Found for " + args[index] + "**", true);
+                    discussionChannel.sendMessage(core.embed.build()).queue();
                 }
                 else {
+                    core.embed.setColor(Color.GREEN);
+                    core.embed.setThumbnail(checkIcon);
+                    core.embed.setTitle("Successfully Cleared Records");
                     outputChannel.sendMessage(":white_check_mark: **[System] Successfully Cleared " +
                             clearedRecords + " Records from " + msg.getGuild().getMemberById(Long.parseLong(args[index])).getAsMention()).queue();
                     System.out.println("[System] Successfully Cleared " + clearedRecords + " Records from " + msg.getGuild().getMemberById(Long.parseLong(args[index])).getAsMention() + "**");
@@ -616,11 +688,15 @@ class DiscordBotMain extends ListenerAdapter {
                 try {
                     int clearedRecords = core.clearRecords(Long.parseLong(args[index]));
                     if (clearedRecords == 0) {
-                        discussionChannel.sendMessage(":x: " + msg.getAuthor().getAsMention() + "** [System] No Records Found for " + args[index] + "**").queue();
+                        core.embed.setColor(Color.RED);
+                        core.embed.setTitle("Error in Clearing Records");
+                        core.embed.setThumbnail(errorIcon);
+                        discussionChannel.sendMessage(core.embed.build()).queue();
                     }
                     else {
-                        outputChannel.sendMessage(":white_check_mark: **[System] Successfully Cleared " +
-                                clearedRecords + " Records from " + args[index] + "**").queue();
+                        core.embed.addField("System Message", ":white_check_mark: **[System] Successfully Cleared " +
+                                clearedRecords + " Records from " + args[index] + "**", true);
+                        outputChannel.sendMessage(core.embed.build()).queue();
                         System.out.println("[System] Successfully Cleared " + clearedRecords + " Records from " + args[index]);
                     }
 
@@ -631,6 +707,7 @@ class DiscordBotMain extends ListenerAdapter {
             catch (Exception ex) {
                 ex.printStackTrace();
             }
+            core.embed.clearFields();
             index++;
         }
     }
