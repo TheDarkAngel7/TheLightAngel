@@ -37,6 +37,10 @@ class Core { // This is where all the magic happens, where all the data is added
         this.config.host = configObj.get("host").getAsString();
         this.config.testModeEnabled = configObj.get("testModeEnabled").getAsBoolean();
         this.config.token = configObj.get("token").getAsString();
+        this.config.adminRoleID = configObj.get("adminRoleID").getAsString();
+        this.config.staffRoleID = configObj.get("staffRoleID").getAsString();
+        this.config.teamRoleID = configObj.get("teamRoleID").getAsString();
+        this.config.botAbuseRoleID = configObj.get("botAbuseRoleID").getAsString();
         System.out.println("[System Config]\nHost: " + config.host + "\ntestModeEnabled: " + config.testModeEnabled);
 
         if (!config.testModeEnabled) {
@@ -570,6 +574,10 @@ class Configuration {
     String host;
     boolean testModeEnabled;
     String token;
+    String adminRoleID;
+    String staffRoleID;
+    String teamRoleID;
+    String botAbuseRoleID;
 }
 class JsonVariables {
     String purpose;

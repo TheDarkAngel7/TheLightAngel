@@ -1,5 +1,9 @@
 {
 	"host": "localhost",
 	"testModeEnabled": true,
-	"token": "<Token Here>"
+	"token": "<Token Here>",
+	"adminRoleID": "702223865606176841",
+	"staffRoleID": "666047627166744597",
+	"teamRoleID": "664556958686380083",
+	"botAbuseRoleID": "664619076324294666"
 }

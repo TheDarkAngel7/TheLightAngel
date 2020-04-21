@@ -23,9 +23,18 @@ class DiscordBotMain extends ListenerAdapter {
     String warningIcon = "https://i.imgur.com/5SD8jxX.png";
     String errorIcon = "https://i.imgur.com/KmZRhnK.png";
     String infoIcon = "https://i.imgur.com/WM8qFWT.png";
+    String adminRoleID;
+    String staffRoleID;
+    String teamRoleID;
+    String botAbuseRoleID;
+
 
     DiscordBotMain() throws IOException, TimeoutException {
         core.startup();
+        this.adminRoleID = core.config.adminRoleID;
+        this.staffRoleID = core.config.staffRoleID;
+        this.teamRoleID = core.config.teamRoleID;
+        this.botAbuseRoleID = core.config.botAbuseRoleID;
     }
     @Override
     public void onReady(@Nonnull ReadyEvent event) {
@@ -40,6 +49,8 @@ class DiscordBotMain extends ListenerAdapter {
         }
         if (timerRunning == 0) {
             timerRunning = 1;
+            String botAbuseRoleID = this.botAbuseRoleID;
+            Guild guild = event.getJDA().getGuilds().get(0);
             System.out.println("[System] Timer is Running");
             Timer timer = new Timer();
             Timer timer2 = new Timer();
@@ -65,8 +76,8 @@ class DiscordBotMain extends ListenerAdapter {
                             core.embed.addField("System Message", ":white_check_mark: [System] Removed Expired Bot Abuse for " + removedID, true);
                             outputChannel.sendMessage(core.embed.build()).queue();
 
-                            event.getJDA().getGuildById(Long.parseLong("500167623070449676")).removeRoleFromMember(removedID,
-                                    event.getJDA().getGuildById(Long.parseLong("500167623070449676")).getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
+                            guild.removeRoleFromMember(removedID,
+                                    guild.getRoleById(botAbuseRoleID)).completeAfter(5, TimeUnit.MILLISECONDS);
                         }
                         catch (ErrorResponseException ex) {
                             // For Printing in Console and in Discord the Role couldn't be removed because the Discord ID was not found.
@@ -99,9 +110,9 @@ class DiscordBotMain extends ListenerAdapter {
                     core.embed.setThumbnail(infoIcon);
                     while (index < core.currentBotAbusers.size()) {
                         if (serverMembers.contains(guild.getMemberById(core.currentBotAbusers.get(index))) &&
-                        !guild.getMemberById(core.currentBotAbusers.get(index)).getRoles().contains(guild.getRoleById("664619076324294666"))) {
+                        !guild.getMemberById(core.currentBotAbusers.get(index)).getRoles().contains(guild.getRoleById(botAbuseRoleID))) {
                             guild.addRoleToMember(guild.getMemberById(core.currentBotAbusers.get(index)),
-                                    guild.getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
+                                    guild.getRoleById(botAbuseRoleID)).completeAfter(50, TimeUnit.MILLISECONDS);
                             core.embed.addField("System Message", "[System - Role Scanner] Added Bot Abuse Role to "
                                     + guild.getMemberById(core.currentBotAbusers.get(index)).getAsMention() +
                                     " because they didn't have the role... and they're supposed to have it." , true);
@@ -114,10 +125,10 @@ class DiscordBotMain extends ListenerAdapter {
                     }
                     index = 0;
                     while (index < serverMembers.size()) {
-                        if (serverMembers.get(index).getRoles().contains(guild.getRoleById("664619076324294666"))
+                        if (serverMembers.get(index).getRoles().contains(guild.getRoleById(botAbuseRoleID))
                                 && !core.botAbuseIsCurrent(serverMembers.get(index).getIdLong())) {
                             guild.removeRoleFromMember(serverMembers.get(index).getIdLong(),
-                                    guild.getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
+                                    guild.getRoleById(botAbuseRoleID)).completeAfter(50, TimeUnit.MILLISECONDS);
                             core.embed.addField("System Message", "[System - Role Scanner] Removed Bot Abuse Role from "
                                     + serverMembers.get(index).getAsMention() + " because they had the role... " +
                             "and they weren't supposed to have it." , true);
@@ -143,9 +154,9 @@ class DiscordBotMain extends ListenerAdapter {
             e.printStackTrace();
         }
         // If they're supposed to be Bot Abused and they don't have the role on join
-        if (core.botAbuseIsCurrent(event.getMember().getIdLong()) && !event.getMember().getRoles().contains(event.getGuild().getRoleById("664619076324294666"))) {
+        if (core.botAbuseIsCurrent(event.getMember().getIdLong()) && !event.getMember().getRoles().contains(event.getGuild().getRoleById(this.botAbuseRoleID))) {
             event.getGuild().addRoleToMember(event.getMember().getIdLong(),
-                    event.getJDA().getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
+                    event.getJDA().getRoleById(this.botAbuseRoleID)).completeAfter(50, TimeUnit.MILLISECONDS);
             core.embed.setTitle("Join Event Information");
             core.embed.setColor(Color.BLUE);
             core.embed.setThumbnail(infoIcon);
@@ -155,9 +166,9 @@ class DiscordBotMain extends ListenerAdapter {
             System.out.println("[System - Join Event] Added Bot Abuse Role to " + event.getMember().getEffectiveName());
         }
         // If they're not supposed to be Bot Abused and they do have the role
-        else if (!core.botAbuseIsCurrent(event.getMember().getIdLong()) && event.getMember().getRoles().contains(event.getGuild().getRoleById("664619076324294666"))) {
+        else if (!core.botAbuseIsCurrent(event.getMember().getIdLong()) && event.getMember().getRoles().contains(event.getGuild().getRoleById(this.botAbuseRoleID))) {
             event.getGuild().removeRoleFromMember(event.getMember().getIdLong(),
-                    event.getJDA().getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
+                    event.getJDA().getRoleById(this.botAbuseRoleID)).completeAfter(50, TimeUnit.MILLISECONDS);
             core.embed.setTitle("Join Event Information");
             core.embed.setColor(Color.BLUE);
             core.embed.setThumbnail(infoIcon);
@@ -181,6 +192,7 @@ class DiscordBotMain extends ListenerAdapter {
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         Message msg = event.getMessage();
+        Guild guild = event.getGuild();
         Member author = event.getGuild().getMember(msg.getAuthor());
         User owner = event.getJDA().getUserById("260562868519436308");
         if (event.getAuthor().isBot()) return;
@@ -189,7 +201,7 @@ class DiscordBotMain extends ListenerAdapter {
             msg.delete().complete();
             // Command Syntax /botabuse <Mention or Discord ID> <Reason (kick, offline, or staff)> <proof url>
             if (args[0].equals("botabuse") && args.length == 4) {
-                if (author.getRoles().contains(event.getGuild().getRoleById("664556958686380083")) || author.getUser() == owner) {
+                if (author.getRoles().contains(event.getGuild().getRoleById(this.teamRoleID)) || author.getUser() == owner) {
                     setBotAbuse(msg);
                 }
                 else { // If they Don't have the Team role then it returns an error message
@@ -200,7 +212,7 @@ class DiscordBotMain extends ListenerAdapter {
                 msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] You Entered an Invalid Number of Arguments").queue();
             }
             else if (args[0].equals("permbotabuse")) { // /permbotabuse <Mention or Discord ID> [Image]
-                if (author.getRoles().contains(event.getGuild().getRoleById("664556958686380083"))) {
+                if (author.getRoles().contains(event.getGuild().getRoleById(this.teamRoleID))) {
                     permBotAbuse(msg);
                 }
                 else {
@@ -212,8 +224,8 @@ class DiscordBotMain extends ListenerAdapter {
                 checkCommand(msg);
             }
             else if (args[0].equals("transfer")) { // /transfer <Old Mention or Discord ID> <New Mention or Discord ID>
-                if (!msg.getAuthor().getJDA().getRolesByName("Staff", false).isEmpty()
-                        || !msg.getAuthor().getJDA().getRolesByName("Administrators", false).isEmpty() || msg.getAuthor() == owner) {
+                if (!msg.getMember().getRoles().contains(guild.getRoleById(this.staffRoleID))
+                        || msg.getMember().getRoles().contains(guild.getRoleById(this.adminRoleID))) {
                     try {
                         transferRecords(msg);
                     }
@@ -270,7 +282,7 @@ class DiscordBotMain extends ListenerAdapter {
                     core.embed.addField("System Message", result, true);
                     outputChannel.sendMessage(core.embed.build()).queue();
                     msg.getGuild().addRoleToMember(msg.getGuild().getMemberById(Long.parseLong(args[1])),
-                            msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
+                            msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(5, TimeUnit.MILLISECONDS);
                     discussionChannel.sendMessage(":white_check_mark: " + msg.getAuthor().getAsMention() + " Successfully Bot Abused "
                             + msg.getGuild().getMemberById(Long.parseLong(args[1])).getAsMention()).queue();
                     System.out.println("[System] " + msg.getMember().getEffectiveName() + " Successfully Bot Abused "
@@ -320,7 +332,7 @@ class DiscordBotMain extends ListenerAdapter {
                 String result = core.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
                         false, args[2], args[3], msg.getMember().getAsMention());
                 msg.getGuild().addRoleToMember(msg.getMentionedMembers().get(0),
-                        msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
+                        msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(5, TimeUnit.MILLISECONDS);
                 if (result.contains(":white_check_mark:")) {
                     core.embed.setColor(Color.GREEN);
                     core.embed.setTitle("Successful Bot Abuse");
@@ -362,7 +374,7 @@ class DiscordBotMain extends ListenerAdapter {
                         true, "staff", args[2] , msg.getMember().getAsMention()), true);
                 outputChannel.sendMessage(core.embed.build()).queue();
                 msg.getGuild().addRoleToMember(msg.getGuild().getMemberById(Long.parseLong(args[1])),
-                        msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
+                        msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(5, TimeUnit.MILLISECONDS);
                 discussionChannel.sendMessage(msg.getAuthor().getAsMention() + " Permanently Bot Abused " +
                         msg.getGuild().getMemberById(Long.parseLong(args[1])).getAsMention()).queue();
                 System.out.println("[System - Admin Override] " + msg.getMember().getEffectiveName() +
@@ -405,7 +417,7 @@ class DiscordBotMain extends ListenerAdapter {
                         true, "staff", args[2], msg.getMember().getAsMention()),true);
                 outputChannel.sendMessage(core.embed.build()).queue();
                 msg.getGuild().addRoleToMember(msg.getMentionedMembers().get(0),
-                        msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
+                        msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(5, TimeUnit.MILLISECONDS);
                 System.out.println("[System - Admin Override] " + msg.getMember().getEffectiveName()
                         + " Successfully Permanently Bot Abused " + msg.getMentionedMembers().get(0).getEffectiveName());
             }
@@ -422,7 +434,7 @@ class DiscordBotMain extends ListenerAdapter {
                         core.setBotAbuse(Long.parseLong(args[1]), true, "staff", null, msg.getMember().getAsMention()), true);
                 outputChannel.sendMessage(core.embed.build()).queue();
                 msg.getGuild().addRoleToMember(msg.getGuild().getMemberById(Long.parseLong(args[1])),
-                        msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
+                        msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(5, TimeUnit.MILLISECONDS);
                 System.out.println("[System - Admin Override] " + msg.getMember().getEffectiveName()
                         + " Successfully Permanently Bot Abused " + msg.getGuild().getMemberById(args[1]).getEffectiveName());
             }
@@ -460,7 +472,7 @@ class DiscordBotMain extends ListenerAdapter {
                 outputChannel.sendMessage(core.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
                         true, "staff", null, msg.getMember().getAsMention())).queue();
                 msg.getGuild().addRoleToMember(msg.getMentionedMembers().get(0),
-                        msg.getGuild().getRoleById("664619076324294666")).completeAfter(5, TimeUnit.MILLISECONDS);
+                        msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(5, TimeUnit.MILLISECONDS);
                 System.out.println("[System - Admin Override] " + msg.getMember().getEffectiveName()
                         + " Successfully Permanently Bot Abused " + msg.getMentionedMembers().get(0).getEffectiveName());
             }
@@ -505,7 +517,7 @@ class DiscordBotMain extends ListenerAdapter {
             System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked their own Bot Abuse status and opted for a DM");
         }
         // /check <Discord ID>
-        else if (msg.getMentionedMembers().isEmpty() && msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083")) && args.length == 2) {
+        else if (msg.getMentionedMembers().isEmpty() && msg.getMember().getRoles().contains(msg.getGuild().getRoleById(this.teamRoleID)) && args.length == 2) {
             try {
                 core.embed.addField("System Message", core.getInfo(Long.parseLong(args[1]), 100 ,true), true);
                 discussionChannel.sendMessage(core.embed.build()).queue();
@@ -523,7 +535,7 @@ class DiscordBotMain extends ListenerAdapter {
             }
         }
         // /check <Mention>
-        else if (msg.getMentionedMembers().size() == 1 && msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083")) && args.length == 2) {
+        else if (msg.getMentionedMembers().size() == 1 && msg.getMember().getRoles().contains(msg.getGuild().getRoleById(this.teamRoleID)) && args.length == 2) {
             core.embed.addField("System Message", core.getInfo(msg.getMentionedMembers().get(0).getIdLong(), 100 ,true), true);
             discussionChannel.sendMessage(core.embed.build()).queue();
             System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked on "+
@@ -563,7 +575,7 @@ class DiscordBotMain extends ListenerAdapter {
             }
         }
         // /check <Timezone Offset> <Mention or Discord ID>
-        else if (msg.getAuthor().getJDA().getRoles().contains(msg.getGuild().getRoleById("664556958686380083")) && args.length == 3) {
+        else if (msg.getMember().getRoles().contains(msg.getGuild().getRoleById(this.teamRoleID)) && args.length == 3) {
             if (core.checkOffset(args[1])) {
                 if (msg.getMentionedMembers().isEmpty()) {
                     core.embed.addField("System Message",
@@ -597,7 +609,7 @@ class DiscordBotMain extends ListenerAdapter {
             core.embed.setThumbnail(errorIcon);
             core.embed.addField("System Message","You Don't have Permission to check on someone else's Bot Abuse status", true);
             helpChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
-            helpChannel.sendMessage(core.embed.build());
+            helpChannel.sendMessage(core.embed.build()).queue();
         }
     }
     private void clearCommand(Message msg) {
@@ -612,9 +624,9 @@ class DiscordBotMain extends ListenerAdapter {
         while (index < msg.getMentionedMembers().size()) {
 
             // We now check if they have the Bot Abuse role, if they do then it's removed.
-            if (msg.getMentionedMembers().get(index).getRoles().contains(msg.getGuild().getRoleById("664619076324294666"))) {
+            if (msg.getMentionedMembers().get(index).getRoles().contains(msg.getGuild().getRoleById(this.botAbuseRoleID))) {
                 msg.getGuild().removeRoleFromMember(msg.getMentionedMembers().get(index).getIdLong(),
-                        msg.getGuild().getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
+                        msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(50, TimeUnit.MILLISECONDS);
                 core.embed.setColor(Color.BLUE);
                 core.embed.setTitle("Bot Abuse Role Removed");
                 core.embed.setThumbnail(infoIcon);
@@ -633,6 +645,7 @@ class DiscordBotMain extends ListenerAdapter {
                     core.embed.setTitle("No Records Cleared");
                     core.embed.setThumbnail(errorIcon);
                     core.embed.addField("System Message","** [System] No Records Found for " + msg.getMentionedMembers().get(0).getAsMention() + "**", true);
+                    discussionChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
                     discussionChannel.sendMessage(core.embed.build()).queue();
                 }
                 else {
@@ -653,9 +666,9 @@ class DiscordBotMain extends ListenerAdapter {
         // a mention in that argument, which was already handled, so they're ignored
         while (index < args.length) {
             try {
-                if (msg.getGuild().getMemberById(Long.parseLong(args[index])).getRoles().contains(msg.getGuild().getRoleById("664619076324294666"))) {
+                if (msg.getGuild().getMemberById(Long.parseLong(args[index])).getRoles().contains(msg.getGuild().getRoleById(this.botAbuseRoleID))) {
                     msg.getGuild().removeRoleFromMember(Long.parseLong(args[index]),
-                            msg.getGuild().getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
+                            msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(50, TimeUnit.MILLISECONDS);
                     core.embed.setColor(Color.BLUE);
                     core.embed.setTitle("Bot Abuse Role Removed");
                     core.embed.setThumbnail(infoIcon);
@@ -669,6 +682,7 @@ class DiscordBotMain extends ListenerAdapter {
                     core.embed.setTitle("No Records Cleared");
                     core.embed.setThumbnail(errorIcon);
                     core.embed.addField("System Message", "**[System] No Records Found for " + args[index] + "**", true);
+                    discussionChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
                     discussionChannel.sendMessage(core.embed.build()).queue();
                 }
                 else {
@@ -691,6 +705,7 @@ class DiscordBotMain extends ListenerAdapter {
                         core.embed.setColor(Color.RED);
                         core.embed.setTitle("Error in Clearing Records");
                         core.embed.setThumbnail(errorIcon);
+                        discussionChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
                         discussionChannel.sendMessage(core.embed.build()).queue();
                     }
                     else {
@@ -713,6 +728,7 @@ class DiscordBotMain extends ListenerAdapter {
     }
     private void transferRecords(Message msg) throws Exception {
         MessageChannel outputChannel = msg.getGuild().getTextChannelsByName("to_channel", false).get(0);
+        MessageChannel discussionChannel = msg.getGuild().getTextChannelsByName("team_discussion", false).get(0);
 
         String[] args = msg.getContentRaw().substring(1).split(" ");
 
@@ -720,39 +736,51 @@ class DiscordBotMain extends ListenerAdapter {
             if (msg.getMentionedMembers().size() == 2) {
                 if (core.botAbuseIsCurrent(msg.getMentionedMembers().get(0).getIdLong())) {
                     msg.getGuild().addRoleToMember(msg.getMentionedMembers().get(1).getIdLong(),
-                            msg.getGuild().getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
+                            msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(50, TimeUnit.MILLISECONDS);
                     msg.getGuild().removeRoleFromMember(msg.getMentionedMembers().get(0).getIdLong(),
-                            msg.getGuild().getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
-                    System.out.println("[System] Successfully Transferred the Records of " + msg.getMentionedMembers().get(0).getUser().getAsTag()
-                            + " to " + msg.getMentionedMembers().get(1).getUser().getAsTag());
+                            msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(50, TimeUnit.MILLISECONDS);
+                    System.out.println("[System] " + msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
+                            + msg.getMentionedMembers().get(0).getEffectiveName() + " to " + msg.getMentionedMembers().get(1).getEffectiveName());
                 }
-                outputChannel.sendMessage(core.transferRecords(msg.getMentionedMembers().get(0).getIdLong(), msg.getMentionedMembers().get(1).getIdLong())).queue();
+                core.embed.addField("System Message",
+                        core.transferRecords(msg.getMentionedMembers().get(0).getIdLong(), msg.getMentionedMembers().get(1).getIdLong()), true);
+                outputChannel.sendMessage(core.embed.build()).queue();
             }
             else if (msg.getMentionedMembers().size() == 1) {
                 try {
                     // If they provide a Discord ID First and a Mention Last
                     if (core.botAbuseIsCurrent(Long.parseLong(args[1]))) {
                         msg.getGuild().addRoleToMember(msg.getMentionedMembers().get(0).getIdLong(),
-                                msg.getGuild().getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
+                                msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(50, TimeUnit.MILLISECONDS);
                         try {
                             msg.getGuild().removeRoleFromMember(Long.parseLong(args[1]),
-                                    msg.getGuild().getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
+                                    msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(50, TimeUnit.MILLISECONDS);
                         }
                         catch (ErrorResponseException ex) {
-                            outputChannel.sendMessage(":warning: **[System] Could Not Remove the Bot Abuse Role from "
-                                    + args[1] + " because they do not exist in the Discord Server**").queue();
+                            core.embed.setColor(Color.YELLOW);
+                            core.embed.setTitle("Exception Caught - Player Does Not Exist");
+                            core.embed.setThumbnail(warningIcon);
+                            core.embed.addField("System Message", "**[System] Could Not Remove the Bot Abuse Role from "
+                                    + args[1] + " because they do not exist in the Discord Server**", true );
+                            outputChannel.sendMessage(core.embed.build()).queue();
+                            core.embed.clearFields();
                         }
                     }
-                    outputChannel.sendMessage(core.transferRecords(Long.parseLong(args[1]), msg.getMentionedMembers().get(0).getIdLong())).queue();
+                    core.embed.setColor(Color.GREEN);
+                    core.embed.setTitle("Successful Transfer of Records");
+                    core.embed.setThumbnail(checkIcon);
+                    core.embed.addField("System Message",
+                            core.transferRecords(Long.parseLong(args[1]), msg.getMentionedMembers().get(0).getIdLong()), true);
+                    outputChannel.sendMessage(core.embed.build()).queue();
                     try {
-                        System.out.println("[System] " + msg.getAuthor().getAsTag() + " Successfully Transferred the Records of "
-                                + msg.getGuild().getMemberById(Long.parseLong(args[1])).getUser().getAsTag()
-                                + " to " + msg.getMentionedMembers().get(0).getUser().getAsTag());
+                        System.out.println("[System] " + msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
+                                + msg.getGuild().getMemberById(Long.parseLong(args[1])).getEffectiveName()
+                                + " to " + msg.getMentionedMembers().get(0).getEffectiveName());
                     }
                     catch (NullPointerException e) {
-                        System.out.println("[System] " + msg.getAuthor().getAsTag() + " Successfully Transferred the Records of "
+                        System.out.println("[System] " + msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
                                 + args[1] + " to " +
-                                msg.getMentionedMembers().get(0).getUser().getAsTag());
+                                msg.getMentionedMembers().get(0).getEffectiveName());
                     }
                 }
                 catch (NumberFormatException ex) {
@@ -760,24 +788,34 @@ class DiscordBotMain extends ListenerAdapter {
                     if (core.botAbuseIsCurrent(msg.getMentionedMembers().get(0).getIdLong())) {
                         try {
                             msg.getGuild().addRoleToMember(Long.parseLong(args[2]),
-                                    msg.getGuild().getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
+                                    msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(50, TimeUnit.MILLISECONDS);
                         }
                         catch (ErrorResponseException e) {
-                            outputChannel.sendMessage(":warning: **[System] Could Not Add the Bot Abuse Role to "
-                                    + args[2] + " because they do not exist in the Discord Server**").queue();
+                            core.embed.setColor(Color.YELLOW);
+                            core.embed.setTitle("Exception Caught - Player Does Not Exist");
+                            core.embed.setThumbnail(warningIcon);
+                            core.embed.addField("System Message", "**[System] Could Not Add the Bot Abuse Role to "
+                                    + args[2] + " because they do not exist in the Discord Server**", true);
+                            outputChannel.sendMessage(core.embed.build()).queue();
+                            core.embed.clearFields();
                         }
                         msg.getGuild().removeRoleFromMember(msg.getMentionedMembers().get(0).getIdLong(),
-                                msg.getGuild().getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
+                                msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(50, TimeUnit.MILLISECONDS);
                     }
-                    outputChannel.sendMessage(core.transferRecords(msg.getMentionedMembers().get(0).getIdLong(), Long.parseLong(args[2]))).queue();
+                    core.embed.setColor(Color.GREEN);
+                    core.embed.setTitle("Successful Transfer of Records");
+                    core.embed.setThumbnail(checkIcon);
+                    core.embed.addField("System Message",
+                            core.transferRecords(msg.getMentionedMembers().get(0).getIdLong(), Long.parseLong(args[2])), true);
+                    outputChannel.sendMessage(core.embed.build()).queue();
                     try {
                         System.out.println("[System] " + msg.getAuthor().getAsTag() + " Successfully Transferred the Records of "
                                 + msg.getMentionedMembers().get(0).getUser().getAsTag() + " to " +
-                                msg.getGuild().getMemberById(Long.parseLong(args[2])).getUser().getAsTag());
+                                msg.getGuild().getMemberById(Long.parseLong(args[2])).getEffectiveName());
                     }
                     catch (NullPointerException e) {
                         System.out.println("[System] " + msg.getAuthor().getAsTag() + " Successfully Transferred the Records of "
-                                + msg.getMentionedMembers().get(0).getUser().getAsTag() +
+                                + msg.getMentionedMembers().get(0).getEffectiveName() +
                                 " to " + args[2]);
                     }
                 }
@@ -786,41 +824,63 @@ class DiscordBotMain extends ListenerAdapter {
                 if (core.botAbuseIsCurrent(Long.parseLong(args[1]))) {
                     try {
                         msg.getGuild().addRoleToMember(Long.parseLong(args[2]),
-                                msg.getGuild().getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
+                                msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(50, TimeUnit.MILLISECONDS);
                     }
                     catch (ErrorResponseException ex) {
-                        outputChannel.sendMessage(":warning: **[System] Could Not Add the Bot Abuse Role to "
-                                + args[2] + " because they do not exist in the Discord Server**").queue();
+                        core.embed.setColor(Color.YELLOW);
+                        core.embed.setTitle("Exception Caught - Player Does Not Exist");
+                        core.embed.setThumbnail(warningIcon);
+                        core.embed.addField("System Message", "**[System] Could Not Add the Bot Abuse Role to "
+                                + args[2] + " because they do not exist in the Discord Server**", true);
+                        outputChannel.sendMessage(core.embed.build()).queue();
                     }
                     try {
                         msg.getGuild().removeRoleFromMember(Long.parseLong(args[1]),
-                                msg.getGuild().getRoleById("664619076324294666")).completeAfter(50, TimeUnit.MILLISECONDS);
+                                msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(50, TimeUnit.MILLISECONDS);
                     }
                     catch (ErrorResponseException ex) {
-                        outputChannel.sendMessage(":warning: **[System] Could Not Remove the Bot Abuse Role from "
-                                + args[1] + " because they do not exist in the Discord Server**").queue();
+                        core.embed.setColor(Color.YELLOW);
+                        core.embed.setTitle("Exception Caught - Player Does Not Exist");
+                        core.embed.setThumbnail(warningIcon);
+                        core.embed.addField("System Message", "**[System] Could Not Remove the Bot Abuse Role from "
+                                + args[1] + " because they do not exist in the Discord Server**", true);
+                        outputChannel.sendMessage(core.embed.build()).queue();
                     }
                 }
+                core.embed.setColor(Color.GREEN);
+                core.embed.setTitle("Successful Transfer of Records");
+                core.embed.setThumbnail(checkIcon);
                 outputChannel.sendMessage(core.transferRecords(Long.parseLong(args[1]), Long.parseLong(args[2]))).queue();
                 try {
                     System.out.println("[System] " + msg.getAuthor().getAsTag() + " Successfully Transferred the Records of "
-                            + msg.getGuild().getMemberById(Long.parseLong(args[1])).getUser().getAsTag() + " to " +
-                            msg.getGuild().getMemberById(Long.parseLong(args[2])).getUser().getAsTag());
+                            + msg.getGuild().getMemberById(Long.parseLong(args[1])).getEffectiveName() + " to " +
+                            msg.getGuild().getMemberById(Long.parseLong(args[2])).getEffectiveName());
                 }
                 catch (NullPointerException ex) {
-                    System.out.println("[System] " + msg.getAuthor().getAsTag() + "Successfully Transferred the Records of " + args[1] + " to " +
+                    System.out.println("[System] " + msg.getMember().getEffectiveName() + " Successfully Transferred the Records of " + args[1] + " to " +
                             args[2]);
                 }
 
             }
             else {
-                msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() +
-                        "[System] Invalid Number of Mentions!\nUsage: /transfer <Old Mention or Discord ID> <New Mention or Discord ID>").queue();
+                core.embed.setColor(Color.RED);
+                core.embed.setTitle("Error while Parsing Transfer Command");
+                core.embed.setThumbnail(errorIcon);
+                core.embed.addField("System Message",
+                        "[System] Invalid Number of Mentions!" +
+                                "\nUsage: /transfer <Old Mention or Discord ID> <New Mention or Discord ID>", true);
+                msg.getChannel().sendMessage(core.embed.build()).queue();
             }
+            core.embed.clearFields();
         }
         else {
-            msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() +
-                    "[System] Invalid Number of Arguments!\nUsage: /transfer <Old Mention or Discord ID> <New Mention or Discord ID>\"").queue();
+            core.embed.setColor(Color.RED);
+            core.embed.setTitle("Error while Parsing Transfer Command");
+            core.embed.setThumbnail(errorIcon);
+            core.embed.addField("System Message",
+                    "[System] Invalid Number of Arguments!" +
+                            "\nUsage: /transfer <Old Mention or Discord ID> <New Mention or Discord ID>", true);
+            msg.getChannel().sendMessage(core.embed.build()).queue();
         }
     }
     private void checkHistory(Message msg) throws IllegalStateException {
@@ -835,7 +895,7 @@ class DiscordBotMain extends ListenerAdapter {
             // Take No Action
         }
         // /checkhistory <Mention or Discord ID>
-        else if (author.getRoles().contains(guild.getRoleById("664556958686380083")) && args.length == 2) {
+        else if (author.getRoles().contains(guild.getRoleById(this.teamRoleID)) && args.length == 2) {
             try {
                 // If the user provides a Discord ID
                 discussionChannel.sendMessage(core.seeHistory(Long.parseLong(args[1]), 100, true)).queue();
@@ -875,7 +935,7 @@ class DiscordBotMain extends ListenerAdapter {
             }
         }
         // No Permissions to check on someone elses Bot Abuse history
-        else if (args.length > 1 && !author.getRoles().contains(guild.getRoleById("664556958686380083"))) {
+        else if (args.length > 1 && !author.getRoles().contains(guild.getRoleById(this.teamRoleID))) {
             msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() +
                     " **[System] You Don't Have Permission to check on someone elses Bot Abuse History**").queue();
             System.out.println("[System] " + msg.getMember().getEffectiveName() +
@@ -912,7 +972,7 @@ class DiscordBotMain extends ListenerAdapter {
         }
 
         // /checkhistory <timeOffset> <Mention or Discord ID>
-        else if (args.length == 3 && msg.getAuthor().getJDA().getRoles().contains(guild.getRoleById("664556958686380083"))) {
+        else if (args.length == 3 && msg.getAuthor().getJDA().getRoles().contains(guild.getRoleById(this.teamRoleID))) {
             PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
             if (core.checkOffset(args[1])) {
                 try {
