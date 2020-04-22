@@ -205,7 +205,7 @@ class Core { // This is where all the magic happens, where all the data is added
         Calendar c = Calendar.getInstance();
         Calendar cOld = Calendar.getInstance();
 
-        if (!this.config.testModeEnabled) {
+        if (this.config.testModeEnabled) {
             cOld.add(Calendar.HOUR_OF_DAY, -1); // Minus 1 Hour for Testing Purposes
         }
         else {
