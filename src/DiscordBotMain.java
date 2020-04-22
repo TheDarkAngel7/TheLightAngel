@@ -935,13 +935,6 @@ class DiscordBotMain extends ListenerAdapter {
                 discussionChannel.sendMessage("**You shouldn't need to check your own Bot Abuse History... you're a Team Member!**").queue();
             }
         }
-        // No Permissions to check on someone elses Bot Abuse history
-        else if (args.length > 1 && !author.getRoles().contains(guild.getRoleById(this.teamRoleID))) {
-            msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() +
-                    " **[System] You Don't Have Permission to check on someone elses Bot Abuse History**").queue();
-            System.out.println("[System] " + msg.getMember().getEffectiveName() +
-                    " just tried to check someone elses Bot Abuse History but they did not have permission to");
-        }
         // /checkhistory
         // Get the history of the player who used the command.
         else if (args.length == 1) {
@@ -960,7 +953,7 @@ class DiscordBotMain extends ListenerAdapter {
             PrivateChannel channel =  msg.getAuthor().openPrivateChannel().complete();
             try {
                 if (core.checkOffset(args[1])) {
-                    this.lengthyHistory(core.seeHistory(msg.getAuthor().getIdLong(), Float.parseFloat(args[1]), false), channel);
+                    channel.sendMessage(core.seeHistory(msg.getAuthor().getIdLong(), Float.parseFloat(args[1]), false)).queue();
                     System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked their own Bot Abuse History");
                 }
                 else {
@@ -968,7 +961,7 @@ class DiscordBotMain extends ListenerAdapter {
                 }
             }
             catch (IllegalArgumentException ex) {
-
+                this.lengthyHistory(core.seeHistory(msg.getAuthor().getIdLong(), Float.parseFloat(args[1]), false), channel);
             }
         }
 
@@ -1001,6 +994,13 @@ class DiscordBotMain extends ListenerAdapter {
                     }
                 }
             }
+        }
+        // No Permissions to check on someone elses Bot Abuse history
+        else if (args.length > 1 && !author.getRoles().contains(guild.getRoleById(this.teamRoleID))) {
+            msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() +
+                    " **[System] You Don't Have Permission to check on someone elses Bot Abuse History**").queue();
+            System.out.println("[System] " + msg.getMember().getEffectiveName() +
+                    " just tried to check someone elses Bot Abuse History but they did not have permission to");
         }
         else {
             msg.getChannel().sendMessage(":x: **[System] Something went Seriously wrong when that happened**").queue();

@@ -204,9 +204,16 @@ class Core { // This is where all the magic happens, where all the data is added
     private Date setExpiryDate(long targetDiscordID) {
         Calendar c = Calendar.getInstance();
         Calendar cOld = Calendar.getInstance();
-        // Take off 6 months
-        // Realistically this would say cOld.add(Calendar.MONTH, -6)
-        cOld.add(Calendar.HOUR_OF_DAY, -1); // Minus 1 Hour for Testing Purposes
+
+        if (!this.config.testModeEnabled) {
+            cOld.add(Calendar.HOUR_OF_DAY, -1); // Minus 1 Hour for Testing Purposes
+        }
+        else {
+            // Take off 6 months
+            cOld.add(Calendar.MONTH, -6);
+        }
+
+
 
         int index = 0;
         int prevOffenses = 0;
@@ -223,7 +230,7 @@ class Core { // This is where all the magic happens, where all the data is added
             }
             index++;
         }
-        if (prevOffenses < 4) {
+        if (prevOffenses < 4 && this.config.testModeEnabled) {
             // The Times are Short for Testing Purposes, they would usually be in days or months.
             if (prevOffenses == 0) { // 0 Prior Offenses - 1st Offense
                 c.add(Calendar.MINUTE, 1);
@@ -236,6 +243,21 @@ class Core { // This is where all the magic happens, where all the data is added
             }
             else if (prevOffenses == 3) { // 3 Prior Offenses - 4th Offense
                 c.add(Calendar.MINUTE, 10);
+            }
+            return c.getTime(); // Set the Expiry Date
+        }
+        else if (prevOffenses < 4 && !this.config.testModeEnabled) {
+            if (prevOffenses == 0) { // 0 Prior Offenses - 1st Offense
+                c.add(Calendar.DAY_OF_MONTH, 7);
+            }
+            else if (prevOffenses == 1) { // 1 Prior Offense - 2nd Offense
+                c.add(Calendar.DAY_OF_MONTH, 14);
+            }
+            else if (prevOffenses == 2) { // 2 Prior Offenses - 3rd Offense
+                c.add(Calendar.DAY_OF_MONTH, 30);
+            }
+            else if (prevOffenses == 3) { // 3 Prior Offenses - 4th Offense
+                c.add(Calendar.DAY_OF_MONTH, 60);
             }
             return c.getTime(); // Set the Expiry Date
         }
@@ -278,7 +300,7 @@ class Core { // This is where all the magic happens, where all the data is added
                             "**\nExpiry Date: **Never" +
                             "**\nReason: **" + this.reasons.get(this.discordID.lastIndexOf(targetDiscordID)) +
                             "**\nViolation Image: **" + this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) +
-                            "**\n\n:information_source: You have had " + (prevOffenses - 1) + " Previous Offenses";
+                            "\n\n You have had " + (prevOffenses - 1) + " Previous Offenses**";
                 }
                 else {
                     return ":information_source: " + targetDiscordID + " Bot Abuse Info: " +
@@ -288,7 +310,7 @@ class Core { // This is where all the magic happens, where all the data is added
                             "**\nExpiry Date: **Never" +
                             "**\nReason: **" + this.reasons.get(this.discordID.lastIndexOf(targetDiscordID)) +
                             "**\nViolation Image: **" + this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) +
-                            "**\n\n:information_source: You have had " + (prevOffenses - 1) + " Previous Offenses";
+                            "\n\nYou have had " + (prevOffenses - 1) + " Previous Offenses**";
                 }
             }
             else { // They Are Currently Bot Abused but not permanently
@@ -300,7 +322,9 @@ class Core { // This is where all the magic happens, where all the data is added
                             "**\nDate Issued: **" + sdfDateIssued.format(dateIssued.getTime()) +
                             "**\nExpiry Date: **" + sdfDateExpired.format(dateToExpire.getTime()) +
                             "**\nReason: **" + this.reasons.get(this.discordID.lastIndexOf(targetDiscordID)) +
-                            "**\nViolation Image: **None Provided**";
+                            "**\nViolation Image: **None Provided" +
+                            "\n\nYou have had " + (prevOffenses - 1) + " Previous Offenses**";
+
                 }
                 else if (!isTeamMember) {
                     return ":information_source: " + targetDiscordID + " Bot Abuse Info: " +
@@ -308,7 +332,8 @@ class Core { // This is where all the magic happens, where all the data is added
                             "**\nDate Issued: **" + sdfDateIssued.format(dateIssued.getTime()) +
                             "**\nExpiry Date: **" + sdfDateExpired.format(dateToExpire.getTime()) +
                             "**\nReason: **" + this.reasons.get(this.discordID.lastIndexOf(targetDiscordID)) +
-                            "**\nViolation Image: **" + this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID));
+                            "**\nViolation Image: **" + this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) +
+                            "\n\nYou have had " + (prevOffenses - 1) + " Previous Offenses**";
                 }
                 else {
                     return  result.concat(
@@ -317,7 +342,8 @@ class Core { // This is where all the magic happens, where all the data is added
                             "**\nDate Issued: **" + sdfDateIssued.format(dateIssued.getTime()) +
                             "**\nExpiry Date: **" + sdfDateExpired.format(dateToExpire.getTime()) +
                             "**\nReason: **" + this.reasons.get(this.discordID.lastIndexOf(targetDiscordID)) +
-                            "**\nViolation Image: **" + this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) + "**");
+                            "**\nViolation Image: **" + this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) +
+                            "\n\nYou have had " + (prevOffenses - 1) + " Previous Offenses**");
                 }
             }
         }
@@ -439,10 +465,10 @@ class Core { // This is where all the magic happens, where all the data is added
         Calendar dateToExpire = Calendar.getInstance();
 
         if (isTeamMember) {
-            output += "\n:information_source: " + targetDiscordID + "'s Bot Abuse History is as Follows:";
+            output += "\n:information_source: " + targetDiscordID + "'s Bot Abuse History is as Follows: **";
         }
         else {
-            output += "\n:information_source: Your Bot Abuse History is as Follows:";
+            output += "\n:information_source: Your Bot Abuse History is as Follows: **";
         }
         // Setting the TimeZones of both formatter objects
         String trueOffset = this.offsetParsing(timeOffset);
