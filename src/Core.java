@@ -1,6 +1,5 @@
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import net.dv8tion.jda.api.EmbedBuilder;
 import java.io.EOFException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -14,7 +13,6 @@ class Core { // This is where all the magic happens, where all the data is added
     // Display all the requested data.
     FileHandler fileHandler = new FileHandler();
     private RabbitMQSend rabbit;
-    EmbedBuilder embed = new EmbedBuilder();
     private Gson gson = new Gson();
     private JsonVariables jsonVars = new JsonVariables();
     Configuration config = new Configuration();
@@ -547,7 +545,7 @@ class Core { // This is where all the magic happens, where all the data is added
     boolean checkOffset(String offset) {
         try {
             float parsedOffset = Float.parseFloat(offset);
-            return parsedOffset <= 12 && parsedOffset >= -12;
+            return parsedOffset <= 14 && parsedOffset >= -12;
         }
         catch (NumberFormatException ex) {
             return false;
