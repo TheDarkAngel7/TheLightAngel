@@ -31,7 +31,9 @@ class DiscordBotMain extends ListenerAdapter {
     String staffRoleID;
     String teamRoleID;
     String botAbuseRoleID;
-
+    String teamChannelID;
+    String helpChannelID;
+    String logchannelID;
 
     DiscordBotMain() throws IOException, TimeoutException {
         core.startup();
@@ -39,11 +41,14 @@ class DiscordBotMain extends ListenerAdapter {
         this.staffRoleID = core.config.staffRoleID;
         this.teamRoleID = core.config.teamRoleID;
         this.botAbuseRoleID = core.config.botAbuseRoleID;
+        this.teamChannelID = core.config.teamChannel;
+        this.helpChannelID = core.config.helpChannel;
+        this.logchannelID = core.config.logChannel;
     }
     @Override
     public void onReady(@Nonnull ReadyEvent event) {
-        MessageChannel discussionChannel = event.getJDA().getTextChannelsByName("team_discussion", false).get(0);
-        MessageChannel outputChannel = event.getJDA().getTextChannelsByName("to_channel", false).get(0);
+        MessageChannel discussionChannel = event.getJDA().getTextChannelById(teamChannelID);
+        MessageChannel outputChannel = event.getJDA().getTextChannelById(logchannelID);
         try {
             System.out.println("[System] TheLightAngel is Ready!");
             discussionChannel.sendMessage(":wave: Hey Folks! I'm Ready To Fly!").queue();
@@ -70,10 +75,10 @@ class DiscordBotMain extends ListenerAdapter {
                         e.printStackTrace();
                     }
                     if (removedID != 0) {
-                        // For Printing in the Console and in Discord A Bot Abuse role has been removed.
-                        System.out.println("[System] Removed Expired Bot Abuse for " +
-                                event.getJDA().getGuilds().get(0).getMemberById(removedID).getEffectiveName());
                         try {
+                            // For Printing in the Console and in Discord A Bot Abuse role has been removed.
+                            System.out.println("[System] Removed Expired Bot Abuse for " +
+                                    event.getJDA().getGuilds().get(0).getMemberById(removedID).getEffectiveName());
                             timerEmbed.setColor(Color.GREEN);
                             timerEmbed.setTitle("Successfully Removed Expired Bot Abuse");
                             timerEmbed.setThumbnail(checkIcon);
@@ -96,6 +101,16 @@ class DiscordBotMain extends ListenerAdapter {
                             System.out.println("[System - ERROR] Bot Abuse just expired for " +
                                     event.getJDA().getGuilds().get(0).getMemberById(removedID).getEffectiveName() +
                                     " and they did not have the Bot Abuse role");
+                        }
+                        catch (NullPointerException ex) {
+                            System.out.println("[System] Removed Expired Bot Abuse for " +
+                                    removedID);
+                            timerEmbed.setColor(Color.YELLOW);
+                            timerEmbed.setTitle("Expired Bot Abuse Error");
+                            timerEmbed.setTitle(warningIcon);
+                            timerEmbed.addField("System Message", "Bot Abuse just expired for " + removedID
+                            + " but they did not exist in the discord server!", true);
+                            outputChannel.sendMessage(timerEmbed.build());
                         }
                         timerEmbed.clearFields();
                     }
@@ -151,7 +166,7 @@ class DiscordBotMain extends ListenerAdapter {
     
     @Override
     public void onGuildMemberJoin(@Nonnull GuildMemberJoinEvent event) {
-        MessageChannel outputChannel = event.getGuild().getTextChannelsByName("to_channel", true).get(0);
+        MessageChannel outputChannel = event.getGuild().getTextChannelById(logchannelID);
         try {
             Thread.sleep(10000);
         } catch (InterruptedException e) {
@@ -199,6 +214,7 @@ class DiscordBotMain extends ListenerAdapter {
         Guild guild = event.getGuild();
         Member author = event.getGuild().getMember(msg.getAuthor());
         User owner = event.getJDA().getUserById("260562868519436308");
+        MessageChannel helpChannel = event.getGuild().getTextChannelById(helpChannelID);
         if (event.getAuthor().isBot()) return;
         if (msg.getContentRaw().charAt(0) == '/')  {
             String[] args = msg.getContentRaw().substring(1).split(" ");
@@ -208,11 +224,23 @@ class DiscordBotMain extends ListenerAdapter {
                     setBotAbuse(msg);
                 }
                 else { // If they Don't have the Team role then it returns an error message
-                    msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] You Lack Permissions to do that!").queue();
+                    embed.setTitle("Error - No Permissions");
+                    embed.setColor(Color.RED);
+                    embed.setThumbnail(errorIcon);
+                    embed.addField("System Message", ":x: "
+                            + msg.getAuthor().getAsMention() + " [System] You Lack Permissions to do that!", true);
+                    helpChannel.sendMessage("Hey " + msg.getMember().getAsMention() + ",").queue();
+                    helpChannel.sendMessage(embed.build()).queue();
                 }
             }
             else if (args[0].equalsIgnoreCase("botabuse")) {
-                msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] You Entered an Invalid Number of Arguments").queue();
+                embed.setTitle("Error - Invalid Arguements");
+                embed.setColor(Color.RED);
+                embed.setThumbnail(errorIcon);
+                embed.addField("System Message",
+                        ":x: " + msg.getAuthor().getAsMention() + " [System] You Entered an Invalid Number of Arguments", true);
+                helpChannel.sendMessage("Hey " + msg.getMember().getAsMention() + ",").queue();
+                helpChannel.sendMessage(embed.build()).queue();
             }
             else if (args[0].equalsIgnoreCase("permbotabuse")) { // /permbotabuse <Mention or Discord ID> [Image]
                 if (author.getRoles().contains(event.getGuild().getRoleById(this.staffRoleID)) ||
@@ -220,7 +248,13 @@ class DiscordBotMain extends ListenerAdapter {
                     permBotAbuse(msg);
                 }
                 else {
-                    msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] You Lack Permissions to do that!").queue();
+                    embed.setTitle("Error - No Permissions");
+                    embed.setColor(Color.RED);
+                    embed.setThumbnail(errorIcon);
+                    embed.addField("System Message", ":x: "
+                            + msg.getAuthor().getAsMention() + " [System] You Lack Permissions to do that!", true);
+                    helpChannel.sendMessage("Hey " + msg.getMember().getAsMention() + ",").queue();
+                    helpChannel.sendMessage(embed.build()).queue();
                 }
             }
             else if (args[0].equalsIgnoreCase("check")) {
@@ -238,7 +272,13 @@ class DiscordBotMain extends ListenerAdapter {
                     }
                 }
                 else {
-                    msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] You Don't have Permission to do that!").queue();
+                    embed.setTitle("Error - No Permissions");
+                    embed.setColor(Color.RED);
+                    embed.setThumbnail(errorIcon);
+                    embed.addField("System Message", ":x: "
+                            + msg.getAuthor().getAsMention() + " [System] You Lack Permissions to do that!", true);
+                    helpChannel.sendMessage("Hey " + msg.getMember().getAsMention() + ",").queue();
+                    helpChannel.sendMessage(embed.build()).queue();
                 }
             }
             else if (args[0].equalsIgnoreCase("clear")) {
@@ -247,7 +287,13 @@ class DiscordBotMain extends ListenerAdapter {
                     clearCommand(msg);
                 }
                 else {
-                    msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + "[System] You Don't have Permission to do that!").queue();
+                    embed.setTitle("Error - No Permissions");
+                    embed.setColor(Color.RED);
+                    embed.setThumbnail(errorIcon);
+                    embed.addField("System Message", ":x: "
+                            + msg.getAuthor().getAsMention() + " [System] You Lack Permissions to do that!", true);
+                    helpChannel.sendMessage("Hey " + msg.getMember().getAsMention() + ",").queue();
+                    helpChannel.sendMessage(embed.build()).queue();
                 }
             }
             else if (args[0].equalsIgnoreCase("checkhistory")) {
@@ -262,7 +308,7 @@ class DiscordBotMain extends ListenerAdapter {
                 msg.delete().complete();
             }
             else {
-                msg.delete().completeAfter(1, TimeUnit.SECONDS);
+                msg.delete().completeAfter(10, TimeUnit.SECONDS);
             }
         }
         else if (msg.getMentionedMembers().contains(msg.getGuild().getSelfMember())) {
@@ -274,8 +320,8 @@ class DiscordBotMain extends ListenerAdapter {
     // Divider Between Event Handlers and Command Handlers
     //////////////////////////////////////////////////////////////////
     private void setBotAbuse(Message msg) {
-        MessageChannel outputChannel = msg.getGuild().getTextChannelsByName("to_channel", false).get(0);
-        MessageChannel discussionChannel = msg.getGuild().getTextChannelsByName("team_discussion", false).get(0);
+        MessageChannel outputChannel = msg.getGuild().getTextChannelById(logchannelID);
+        MessageChannel discussionChannel = msg.getGuild().getTextChannelById(teamChannelID);
 
         String[] args = msg.getContentRaw().substring(1).split(" ");
 
@@ -419,8 +465,8 @@ class DiscordBotMain extends ListenerAdapter {
         }
     }
     private void permBotAbuse(Message msg) {
-        MessageChannel outputChannel = msg.getGuild().getTextChannelsByName("to_channel", false).get(0);
-        MessageChannel discussionChannel = msg.getGuild().getTextChannelsByName("team_discussion", false).get(0);
+        MessageChannel outputChannel = msg.getGuild().getTextChannelById(logchannelID);
+        MessageChannel discussionChannel = msg.getGuild().getTextChannelById(teamChannelID);
         String[] args = msg.getContentRaw().substring(1).split(" ");
 
         // If length is 3, then an image url was provided.
@@ -549,8 +595,8 @@ class DiscordBotMain extends ListenerAdapter {
         embed.clearFields();
     }
     private void checkCommand(Message msg) {
-        MessageChannel discussionChannel = msg.getGuild().getTextChannelsByName("team_discussion", false).get(0);
-        MessageChannel helpChannel = msg.getGuild().getTextChannelsByName("help_and_support", false).get(0);
+        MessageChannel discussionChannel = msg.getGuild().getTextChannelById(teamChannelID);
+        MessageChannel helpChannel = msg.getGuild().getTextChannelById(helpChannelID);
 
         String[] args = msg.getContentRaw().substring(1).split(" ");
         embed.setColor(Color.BLUE);
@@ -733,8 +779,8 @@ class DiscordBotMain extends ListenerAdapter {
         }
     }
     private void clearCommand(Message msg) {
-        MessageChannel outputChannel = msg.getGuild().getTextChannelsByName("to_channel", false).get(0);
-        MessageChannel discussionChannel = msg.getGuild().getTextChannelsByName("team_discussion", false).get(0);
+        MessageChannel outputChannel = msg.getGuild().getTextChannelById(logchannelID);
+        MessageChannel discussionChannel = msg.getGuild().getTextChannelById(teamChannelID);
 
         String[] args = msg.getContentRaw().substring(1).split(" ");
 
@@ -785,6 +831,9 @@ class DiscordBotMain extends ListenerAdapter {
         // We check for any plain discord IDs with this, we don't take any action on a NumberFormatException as that would indicate
         // a mention in that argument, which was already handled, so they're ignored
         while (index < args.length) {
+            embed.setColor(Color.GREEN);
+            embed.setThumbnail(checkIcon);
+            embed.setTitle("Successfully Cleared Records");
             try {
                 if (msg.getGuild().getMemberById(Long.parseLong(args[index])).getRoles().contains(msg.getGuild().getRoleById(this.botAbuseRoleID))) {
                     msg.getGuild().removeRoleFromMember(Long.parseLong(args[index]),
@@ -847,8 +896,8 @@ class DiscordBotMain extends ListenerAdapter {
         }
     }
     private void transferRecords(Message msg) throws Exception {
-        MessageChannel outputChannel = msg.getGuild().getTextChannelsByName("to_channel", false).get(0);
-        MessageChannel discussionChannel = msg.getGuild().getTextChannelsByName("team_discussion", false).get(0);
+        MessageChannel outputChannel = msg.getGuild().getTextChannelById(logchannelID);
+        MessageChannel discussionChannel = msg.getGuild().getTextChannelById(teamChannelID);
 
         String[] args = msg.getContentRaw().substring(1).split(" ");
         embed.setColor(Color.GREEN);
@@ -1010,9 +1059,9 @@ class DiscordBotMain extends ListenerAdapter {
     private void checkHistory(Message msg) throws IllegalStateException {
         Guild guild = msg.getGuild();
         Member author = guild.getMember(msg.getAuthor());
-        MessageChannel outputChannel = msg.getGuild().getTextChannelsByName("to_channel", false).get(0);
-        MessageChannel discussionChannel = msg.getGuild().getTextChannelsByName("team_discussion", false).get(0);
-        MessageChannel helpChannel = msg.getGuild().getTextChannelsByName("help_and_support", false).get(0);
+        MessageChannel outputChannel = msg.getGuild().getTextChannelById(logchannelID);
+        MessageChannel discussionChannel = msg.getGuild().getTextChannelById(teamChannelID);
+        MessageChannel helpChannel = msg.getGuild().getTextChannelById(helpChannelID);
 
         String[] args = msg.getContentRaw().substring(1).split(" ");
         embed.setColor(Color.BLUE);

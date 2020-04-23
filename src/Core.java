@@ -39,6 +39,9 @@ class Core { // This is where all the magic happens, where all the data is added
         this.config.staffRoleID = configObj.get("staffRoleID").getAsString();
         this.config.teamRoleID = configObj.get("teamRoleID").getAsString();
         this.config.botAbuseRoleID = configObj.get("botAbuseRoleID").getAsString();
+        this.config.teamChannel = configObj.get("teamDiscussionChannel").getAsString();
+        this.config.helpChannel = configObj.get("helpChannel").getAsString();
+        this.config.logChannel = configObj.get("logChannel").getAsString();
         System.out.println("[System Config]\nHost: " + config.host + "\ntestModeEnabled: " + config.testModeEnabled);
 
         if (!config.testModeEnabled) {
@@ -603,6 +606,9 @@ class Configuration {
     String staffRoleID;
     String teamRoleID;
     String botAbuseRoleID;
+    String teamChannel;
+    String helpChannel;
+    String logChannel;
 }
 class JsonVariables {
     String purpose;
