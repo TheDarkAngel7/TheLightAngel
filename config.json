@@ -1,5 +1,12 @@
 {
 	"host": "localhost",
 	"testModeEnabled": true,
-	"token": "<Token Here>"
+	"token": "<Token Here>",
+	"adminRoleID": "702223865606176841",
+	"staffRoleID": "666047627166744597",
+	"teamRoleID": "664556958686380083",
+	"botAbuseRoleID": "664619076324294666",
+	"teamDiscussionChannel": "664525869913473054",
+	"helpChannel": "666801237781643296",
+	"logChannel": "697643345471602740"
 }
