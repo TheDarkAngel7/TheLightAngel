@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import java.util.Date;
 
 class FileHandler {
-    private File dataFile = new File("data/data.dat");
+    File dataFile = new File("data/data.dat");
     private File tempDataFile = new File("data/datatemp.dat");
-    private FileInputStream inputFile = new FileInputStream(dataFile);
-    private ObjectInputStream inputStream = new ObjectInputStream(inputFile);
+    FileInputStream inputFile = new FileInputStream(dataFile);
+    ObjectInputStream inputStream = new ObjectInputStream(inputFile);
 
     FileHandler() throws IOException {
     }

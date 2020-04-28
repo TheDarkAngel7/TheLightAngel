@@ -2,6 +2,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
+import net.dv8tion.jda.api.events.ShutdownEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
@@ -9,6 +10,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nonnull;
 import java.awt.*;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 import java.util.Timer;
@@ -21,6 +23,7 @@ class DiscordBotMain extends ListenerAdapter {
     EmbedBuilder embed = new EmbedBuilder();
     EmbedBuilder timerEmbed = new EmbedBuilder();
     EmbedBuilder timerEmbed2 = new EmbedBuilder();
+    Member owner;
     private int timerRunning = 0;
     // Image Background Hex: #2F3136
     String checkIcon = "https://i.imgur.com/bakLhaw.png";
@@ -36,7 +39,7 @@ class DiscordBotMain extends ListenerAdapter {
     String logchannelID;
 
     DiscordBotMain() throws IOException, TimeoutException {
-        core.startup();
+        core.startup(false);
         this.adminRoleID = core.config.adminRoleID;
         this.staffRoleID = core.config.staffRoleID;
         this.teamRoleID = core.config.teamRoleID;
@@ -49,6 +52,7 @@ class DiscordBotMain extends ListenerAdapter {
     public void onReady(@Nonnull ReadyEvent event) {
         MessageChannel discussionChannel = event.getJDA().getTextChannelById(teamChannelID);
         MessageChannel outputChannel = event.getJDA().getTextChannelById(logchannelID);
+        this.owner = event.getJDA().getGuilds().get(0).getMemberById("260562868519436308");
         try {
             System.out.println("[System] TheLightAngel is Ready!");
             discussionChannel.sendMessage(":wave: Hey Folks! I'm Ready To Fly!").queue();
@@ -151,7 +155,7 @@ class DiscordBotMain extends ListenerAdapter {
                             timerEmbed2.addField("System Message", "[System - Role Scanner] Removed Bot Abuse Role from "
                                     + serverMembers.get(index).getAsMention() + " because they had the role... " +
                             "and they weren't supposed to have it." , true);
-                            outputChannel.sendMessage(timerEmbed.build()).queue();
+                            outputChannel.sendMessage(timerEmbed2.build()).queue();
                             System.out.println("[System - Role Scanner] Removed Bot Abuse Role from "
                                     + serverMembers.get(index).getEffectiveName());
                             timerEmbed2.clearFields();
@@ -213,15 +217,25 @@ class DiscordBotMain extends ListenerAdapter {
         Message msg = event.getMessage();
         Guild guild = event.getGuild();
         Member author = event.getGuild().getMember(msg.getAuthor());
-        User owner = event.getJDA().getUserById("260562868519436308");
         MessageChannel helpChannel = event.getGuild().getTextChannelById(helpChannelID);
-        if (event.getAuthor().isBot()) return;
+        MessageChannel discussionChannel = event.getGuild().getTextChannelById(teamChannelID);
+        if (event.getAuthor().isBot() || msg.getChannelType() == ChannelType.PRIVATE) return;
         if (msg.getContentRaw().charAt(0) == '/')  {
             String[] args = msg.getContentRaw().substring(1).split(" ");
             // Command Syntax /botabuse <Mention or Discord ID> <Reason (kick, offline, or staff)> <proof url>
-            if (args[0].equalsIgnoreCase("botabuse") && (args.length == 3 || args.length == 4)) {
-                if (author.getRoles().contains(event.getGuild().getRoleById(this.teamRoleID)) || author.getUser() == owner) {
+            if (args[0].equalsIgnoreCase("botabuse")) {
+                if ((author.getRoles().contains(event.getGuild().getRoleById(this.teamRoleID)) &&
+                        (args.length == 3 || args.length == 4)) || author == owner) {
                     setBotAbuse(msg);
+                }
+                else if ((args.length < 3 || args.length > 4) && author.getRoles().contains(guild.getRoleById(this.teamRoleID))) {
+                    embed.setTitle("Error - Invalid Arguements");
+                    embed.setColor(Color.RED);
+                    embed.setThumbnail(errorIcon);
+                    embed.addField("System Message",
+                            ":x: " + msg.getAuthor().getAsMention() + " [System] You Entered an Invalid Number of Arguments", true);
+                    discussionChannel.sendMessage("Hey " + msg.getMember().getAsMention() + ",").queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
                 }
                 else { // If they Don't have the Team role then it returns an error message
                     embed.setTitle("Error - No Permissions");
@@ -233,19 +247,24 @@ class DiscordBotMain extends ListenerAdapter {
                     helpChannel.sendMessage(embed.build()).queue();
                 }
             }
-            else if (args[0].equalsIgnoreCase("botabuse")) {
-                embed.setTitle("Error - Invalid Arguements");
-                embed.setColor(Color.RED);
-                embed.setThumbnail(errorIcon);
-                embed.addField("System Message",
-                        ":x: " + msg.getAuthor().getAsMention() + " [System] You Entered an Invalid Number of Arguments", true);
-                helpChannel.sendMessage("Hey " + msg.getMember().getAsMention() + ",").queue();
-                helpChannel.sendMessage(embed.build()).queue();
-            }
             else if (args[0].equalsIgnoreCase("permbotabuse")) { // /permbotabuse <Mention or Discord ID> [Image]
                 if (author.getRoles().contains(event.getGuild().getRoleById(this.staffRoleID)) ||
                         author.getRoles().contains(event.getGuild().getRoleById(this.adminRoleID)) || author == owner) {
                     permBotAbuse(msg);
+                }
+                else {
+                    embed.setTitle("Error - No Permissions");
+                    embed.setColor(Color.RED);
+                    embed.setThumbnail(errorIcon);
+                    embed.addField("System Message", ":x: "
+                            + msg.getAuthor().getAsMention() + " [System] You Lack Permissions to do that!", true);
+                    helpChannel.sendMessage("Hey " + msg.getMember().getAsMention() + ",").queue();
+                    helpChannel.sendMessage(embed.build()).queue();
+                }
+            }
+            else if (args[0].equalsIgnoreCase("undo")) {
+                if (author.getRoles().contains(guild.getRoleById(this.teamRoleID))) {
+                    undoCommand(msg);
                 }
                 else {
                     embed.setTitle("Error - No Permissions");
@@ -304,11 +323,22 @@ class DiscordBotMain extends ListenerAdapter {
                     // Take No Action
                 }
             }
-            if (msg.getAttachments().isEmpty() && !(args[0].equalsIgnoreCase("botabuse") && args[0].equalsIgnoreCase("permbotabuse"))) {
-                msg.delete().complete();
+            else if ((args[0].equalsIgnoreCase("reload") || args[0].equalsIgnoreCase("restart"))
+                    && (msg.getMember().getRoles().contains(guild.getRoleById(this.staffRoleID)) ||
+                    msg.getMember().getRoles().contains(guild.getRoleById(this.adminRoleID)) || author == owner)) {
+                try {
+                    System.out.println("[System] Staff Invoked Restart...");
+                    core.startup(true);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            if ((args[0].equalsIgnoreCase("botabuse") || args[0].equalsIgnoreCase("permbotabuse"))
+                    && msg.getChannel() == discussionChannel && msg.getAttachments().size() == 1) {
+                msg.delete().completeAfter(10, TimeUnit.SECONDS);
             }
             else {
-                msg.delete().completeAfter(10, TimeUnit.SECONDS);
+                msg.delete().complete();
             }
         }
         else if (msg.getMentionedMembers().contains(msg.getGuild().getSelfMember())) {
@@ -353,7 +383,7 @@ class DiscordBotMain extends ListenerAdapter {
                         discussionChannel.sendMessage(embed.build()).queue();
                     }
                 }
-                else if (msg.getAttachments().size() == 1) {
+                else if (msg.getAttachments().size() == 1 && msg.getChannel() == discussionChannel) {
                     String result = core.setBotAbuse(Long.parseLong(args[1]),
                             false, args[2], msg.getAttachments().get(0).getProxyUrl(), msg.getMember().getAsMention());
                     if (result.contains(":white_check_mark:")) {
@@ -433,7 +463,7 @@ class DiscordBotMain extends ListenerAdapter {
                         discussionChannel.sendMessage(embed.build()).queue();
                     }
                 }
-                else if (msg.getAttachments().size() == 1) {
+                else if (msg.getAttachments().size() == 1 && msg.getChannel() == discussionChannel) {
                     String result = core.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
                             false, args[2], msg.getAttachments().get(0).getProxyUrl(), msg.getMember().getAsMention());
                     msg.getGuild().addRoleToMember(msg.getMentionedMembers().get(0),
@@ -461,7 +491,12 @@ class DiscordBotMain extends ListenerAdapter {
             }
         }
         else if (msg.getMentionedMembers().size() > 1 ) {
-            msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " [System] Too many Target IDs").queue();
+            embed.setColor(Color.RED);
+            embed.setThumbnail(errorIcon);
+            embed.setTitle("Error");
+            embed.addField("System Message", ":x: [System] Too many Target IDs", true);
+            discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+            discussionChannel.sendMessage(embed.build()).queue();
         }
     }
     private void permBotAbuse(Message msg) {
@@ -574,8 +609,10 @@ class DiscordBotMain extends ListenerAdapter {
             try {
                 embed.setColor(Color.GREEN);
                 embed.setTitle("Successful Perm Bot Abuse");
-                outputChannel.sendMessage(core.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
-                        true, "staff", null, msg.getMember().getAsMention())).queue();
+                embed.setThumbnail(checkIcon);
+                embed.addField("System Message", core.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
+                        true, "staff", null, msg.getMember().getAsMention()), true);
+                outputChannel.sendMessage(embed.build()).queue();
                 msg.getGuild().addRoleToMember(msg.getMentionedMembers().get(0),
                         msg.getGuild().getRoleById(this.botAbuseRoleID)).completeAfter(5, TimeUnit.MILLISECONDS);
                 System.out.println("[System - Admin Override] " + msg.getMember().getEffectiveName()
@@ -587,10 +624,116 @@ class DiscordBotMain extends ListenerAdapter {
         }
         else {
             embed.setColor(Color.RED);
-            embed.setTitle("Fatal Error");
+            embed.setTitle("Error");
             embed.setThumbnail(errorIcon);
             embed.addField("System Message", ":x: " + msg.getAuthor().getAsMention() + " [System] Too Many Mentioned Players!", true);
             msg.getChannel().sendMessage(embed.build()).queue();
+        }
+        embed.clearFields();
+    }
+    private void undoCommand(Message msg) {
+        MessageChannel discussionChannel = msg.getGuild().getTextChannelById(teamChannelID);
+
+        String[] args = msg.getContentRaw().substring(1).split(" ");
+        embed.setColor(Color.GREEN);
+        embed.setTitle("Successful Undo");
+        embed.setThumbnail(checkIcon);
+        try {
+            if (args.length == 1) {
+                msg.getGuild().removeRoleFromMember(msg.getGuild().getMemberById(core.discordID.get(core.issuingTeamMember.lastIndexOf(msg.getMember().getAsMention()))),
+                        msg.getGuild().getRoleById(this.botAbuseRoleID)).complete();
+                String result = core.undoBotAbuse(msg.getMember().getAsMention(), true, 0);
+                if (result.contains("FATAL ERROR")) {
+                    embed.setColor(Color.RED);
+                    embed.setTitle("FATAL ERROR");
+                    embed.setThumbnail(errorIcon);
+                    embed.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
+                            " while I reload and then you can try to run that command again**", true);
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                    System.out.println("[System - FATAL ERROR] Data Integiry Check on ArrayList objects Failed - Reloading to Prevent Damage");
+                    core.startup(true);
+                }
+                else if (result.contains(":x:")) {
+                    embed.setColor(Color.RED);
+                    embed.setTitle("Error While Undoing");
+                    embed.setThumbnail(errorIcon);
+                    embed.addField("System Message", result, true);
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+                else {
+                    embed.addField("System Message", result, true);
+                    System.out.println("[System] " + msg.getMember().getEffectiveName() + " just undid their last Bot Abuse");
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+            }
+            else if (args.length == 2 && msg.getMentionedMembers().isEmpty()) {
+                msg.getGuild().removeRoleFromMember(Long.parseLong(args[1]),
+                        msg.getGuild().getRoleById(this.botAbuseRoleID)).complete();
+                String result = core.undoBotAbuse(msg.getMember().getAsMention(), false, Long.parseLong(args[1]));
+                if (result.contains("FATAL ERROR")) {
+                    embed.setColor(Color.RED);
+                    embed.setTitle("FATAL ERROR");
+                    embed.setThumbnail(errorIcon);
+                    embed.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
+                            " while I reload and then you can try to run that command again**", true);
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                    System.out.println("[System - FATAL ERROR] Data Integiry Check on ArrayList objects Failed - Reloading to Prevent Damage");
+                    core.startup(true);
+                }
+                else if (result.contains(":x:")) {
+                    embed.setColor(Color.RED);
+                    embed.setTitle("Error While Undoing");
+                    embed.setThumbnail(errorIcon);
+                    embed.addField("System Message", result, true);
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+                else {
+                    embed.addField("System Message", result, true);
+                    System.out.println("[System] " + msg.getMember().getEffectiveName() + " just undid the Bot Abuse for "
+                    + msg.getGuild().getMemberById(args[1]).getEffectiveName());
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+            }
+            else if (args.length == 2 && msg.getMentionedMembers().size() == 1) {
+                msg.getGuild().removeRoleFromMember(msg.getMentionedMembers().get(0),
+                        msg.getGuild().getRoleById(this.botAbuseRoleID)).complete();
+                String result = core.undoBotAbuse(msg.getMember().getAsMention(), false, msg.getMentionedMembers().get(0).getIdLong());
+                if (result.contains("FATAL ERROR")) {
+                    embed.setColor(Color.RED);
+                    embed.setTitle("FATAL ERROR");
+                    embed.setThumbnail(errorIcon);
+                    embed.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
+                            " while I reload and then you can try to run that command again**", true);
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                    System.out.println("[System - FATAL ERROR] Data Integiry Check on ArrayList objects Failed - Reloading to Prevent Damage");
+                    core.startup(true);
+                }
+                if (result.contains(":x:")) {
+                    embed.setColor(Color.RED);
+                    embed.setTitle("Error While Undoing");
+                    embed.setThumbnail(errorIcon);
+                    embed.addField("System Message", result, true);
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+                else {
+                    embed.addField("System Message", result, true);
+                    System.out.println("[System] " + msg.getMember().getEffectiveName() + " just undid the Bot Abuse for "
+                            + msg.getMentionedMembers().get(0).getEffectiveName());
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+            }
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
         }
         embed.clearFields();
     }
@@ -603,11 +746,8 @@ class DiscordBotMain extends ListenerAdapter {
         embed.setTitle("Bot Abuse Information");
         embed.setThumbnail(infoIcon);
 
-        if (msg.getChannelType() == ChannelType.PRIVATE) {
-            // Take No Action
-        }
         // This handles a /check for someone to check their own Bot Abuse status
-        else if (msg.getMentionedMembers().isEmpty() && args.length == 1) {
+        if (msg.getMentionedMembers().isEmpty() && args.length == 1) {
             String result = core.getInfo(msg.getAuthor().getIdLong(), 100, false);
             if (result.contains(":white_check_mark:")) {
                 embed.setColor(Color.GREEN);
@@ -806,12 +946,24 @@ class DiscordBotMain extends ListenerAdapter {
             embed.setTitle("Successfully Cleared Records");
             try {
                 int clearedRecords = core.clearRecords(msg.getMentionedMembers().get(index).getIdLong());
-                if (clearedRecords == 0) {
+                if (clearedRecords == -1) {
+                    embed.setColor(Color.RED);
+                    embed.setTitle("FATAL ERROR");
+                    embed.setThumbnail(errorIcon);
+                    embed.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
+                            " while I reload and then you can try to run that command again**", true);
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                    System.out.println("[System - FATAL ERROR] Data Integiry Check on ArrayList objects Failed - Reloading to Prevent Damage");
+                    core.startup(true);
+                    break;
+                }
+                else if (clearedRecords == 0) {
                     embed.setColor(Color.RED);
                     embed.setTitle("No Records Cleared");
                     embed.setThumbnail(errorIcon);
                     embed.addField("System Message","** [System] No Records Found for " + msg.getMentionedMembers().get(0).getAsMention() + "**", true);
-                    discussionChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     discussionChannel.sendMessage(embed.build()).queue();
                 }
                 else {
@@ -845,7 +997,18 @@ class DiscordBotMain extends ListenerAdapter {
                             + msg.getGuild().getMemberById(Long.parseLong(args[index])).getEffectiveName() + " as their Records just got Cleared**", true);
                 }
                 int clearedRecords = core.clearRecords(Long.parseLong(args[index]));
-
+                if (clearedRecords == -1) {
+                    embed.setColor(Color.RED);
+                    embed.setTitle("FATAL ERROR");
+                    embed.setThumbnail(errorIcon);
+                    embed.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
+                            " while I reload and then you can try to run that command again**", true);
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                    System.out.println("[System - FATAL ERROR] Data Integiry Check on ArrayList objects Failed - Reloading to Prevent Damage");
+                    core.startup(true);
+                    break;
+                }
                 if (clearedRecords == 0) {
                     embed.setColor(Color.RED);
                     embed.setTitle("No Records Cleared");
@@ -870,6 +1033,18 @@ class DiscordBotMain extends ListenerAdapter {
                 // Handles if the Player is no longer in the Discord Server
                 try {
                     int clearedRecords = core.clearRecords(Long.parseLong(args[index]));
+                    if (clearedRecords == -1) {
+                        embed.setColor(Color.RED);
+                        embed.setTitle("FATAL ERROR");
+                        embed.setThumbnail(errorIcon);
+                        embed.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
+                                " while I reload and then you can try to run that command again**", true);
+                        discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                        discussionChannel.sendMessage(embed.build()).queue();
+                        System.out.println("[System - FATAL ERROR] Data Integiry Check on ArrayList objects Failed - Reloading to Prevent Damage");
+                        core.startup(true);
+                        break;
+                    }
                     if (clearedRecords == 0) {
                         embed.setColor(Color.RED);
                         embed.setTitle("Error in Clearing Records");
@@ -1165,7 +1340,8 @@ class DiscordBotMain extends ListenerAdapter {
                     }
                     embed.addField("System Message", result, true);
                     channel.sendMessage(embed.build()).queue();
-                    System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked their own Bot Abuse History");
+                    System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked their own Bot Abuse History" +
+                            " using TimeZone offset " + args[1]);
                 }
                 else {
                     embed.setColor(Color.RED);
@@ -1196,7 +1372,7 @@ class DiscordBotMain extends ListenerAdapter {
                         embed.addField("System Message", result, true);
                         discussionChannel.sendMessage(embed.build()).queue();
                         System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked the history of " +
-                                msg.getMentionedMembers().get(0).getEffectiveName());
+                                msg.getMentionedMembers().get(0).getEffectiveName() + " using TimeZone offset " + args[1]);
                     }
                     else if (msg.getMentionedMembers().isEmpty()) {
                         String result = core.seeHistory(Long.parseLong(args[2]), Float.parseFloat(args[1]), true);
@@ -1207,20 +1383,20 @@ class DiscordBotMain extends ListenerAdapter {
                         embed.addField("System Message", result, true);
                         discussionChannel.sendMessage(embed.build()).queue();
                         System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked the history of " +
-                                msg.getGuild().getMemberById(Long.parseLong(args[2])).getEffectiveName());
+                                msg.getGuild().getMemberById(Long.parseLong(args[2])).getEffectiveName() + " using TimeZone offset " + args[1]);
                     }
                 }
                 catch (IllegalArgumentException ex) {
                     try {
-                        this.lengthyHistory(core.seeHistory(Long.parseLong(args[2]), Float.parseFloat(args[1]), true), channel);
+                        this.lengthyHistory(core.seeHistory(Long.parseLong(args[2]), Float.parseFloat(args[1]), true), discussionChannel);
                         System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked the history of " +
-                                msg.getGuild().getMemberById(Long.parseLong(args[2])).getEffectiveName());
+                                msg.getGuild().getMemberById(Long.parseLong(args[2])).getEffectiveName() + " using TimeZone offset " + args[1]);
                     }
                     catch (NumberFormatException e) {
                         this.lengthyHistory(
-                                core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), Float.parseFloat(args[1]), true), channel);
+                                core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), Float.parseFloat(args[1]), true), discussionChannel);
                         System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked the history of " +
-                                msg.getMentionedMembers().get(0).getEffectiveName());
+                                msg.getMentionedMembers().get(0).getEffectiveName() + " using TimeZone offset " + args[1]);
                     }
                 }
             }
@@ -1232,7 +1408,8 @@ class DiscordBotMain extends ListenerAdapter {
             embed.setTitle("Error - No Permissions");
             embed.addField("System Message", ":x: " + msg.getAuthor().getAsMention() +
                     " **[System] You Don't Have Permission to check on someone elses Bot Abuse History**", true);
-            helpChannel.sendMessage(embed.build());
+            helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
+            helpChannel.sendMessage(embed.build()).queue();
             System.out.println("[System] " + msg.getMember().getEffectiveName() +
                     " just tried to check someone elses Bot Abuse History but they did not have permission to");
         }
