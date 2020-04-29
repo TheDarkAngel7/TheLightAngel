@@ -224,8 +224,8 @@ class DiscordBotMain extends ListenerAdapter {
             String[] args = msg.getContentRaw().substring(1).split(" ");
             // Command Syntax /botabuse <Mention or Discord ID> <Reason (kick, offline, or staff)> <proof url>
             if (args[0].equalsIgnoreCase("botabuse")) {
-                if ((author.getRoles().contains(event.getGuild().getRoleById(this.teamRoleID)) &&
-                        (args.length == 3 || args.length == 4)) || author == owner) {
+                if ((author.getRoles().contains(event.getGuild().getRoleById(this.teamRoleID)) || author == owner) &&
+                        (args.length == 3 || args.length == 4)) {
                     setBotAbuse(msg);
                 }
                 else if ((args.length < 3 || args.length > 4) && author.getRoles().contains(guild.getRoleById(this.teamRoleID))) {

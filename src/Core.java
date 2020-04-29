@@ -1,6 +1,4 @@
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import java.io.EOFException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -13,7 +11,6 @@ class Core { // This is where all the magic happens, where all the data is added
     // Display all the requested data.
     FileHandler fileHandler = new FileHandler();
     private RabbitMQSend rabbit;
-    private Gson gson = new Gson();
     private BotAbuseVariables botAbuseVars = new BotAbuseVariables();
     private UndoVariables undoVars = new UndoVariables();
     Configuration config = new Configuration();
@@ -36,8 +33,6 @@ class Core { // This is where all the magic happens, where all the data is added
         }
         else {
             System.out.println("[System] Core Restarting...");
-            fileHandler.inputFile.close();
-            fileHandler.inputStream.close();
             fileHandler = new FileHandler();
             System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                     "\n" + this.expiryDates.toString() + "\n" + this.currentBotAbusers.toString());
@@ -72,11 +67,8 @@ class Core { // This is where all the magic happens, where all the data is added
             this.proofImages = fileHandler.getProofImages();
             this.currentBotAbusers = fileHandler.getCurrentBotAbusers();
         }
-        catch (EOFException ex) {
-            System.out.println("[System] No Data File Existed - A New One Should Have Been Created");
-        }
-        catch (Exception e) {
-            e.printStackTrace();
+        catch (IllegalStateException ex) {
+            System.out.println("[System - Warning] No Data Existed in the Arrays - Data File is Empty");
         }
     }
 
@@ -279,22 +271,30 @@ class Core { // This is where all the magic happens, where all the data is added
         }
     }
     String undoBotAbuse(String teamMember, boolean isUndoingLast, long targetDiscordID) throws Exception {
-        if (isUndoingLast) {
+        Calendar c = Calendar.getInstance();
+        Calendar cTooLate = Calendar.getInstance();
+        if (targetDiscordID == 0) {
             targetDiscordID = this.discordID.get(this.issuingTeamMember.lastIndexOf(teamMember));
-            if (botAbuseIsCurrent(targetDiscordID)) {
-                int index = this.issuingTeamMember.lastIndexOf(teamMember);
-                this.discordID.remove(index);
-                this.issuingTeamMember.remove(index);
-                this.repOffenses.remove(index);
-                this.issuedDates.remove(index);
-                this.expiryDates.remove(index);
-                this.reasons.remove(index);
-                this.proofImages.remove(index);
-                this.currentBotAbusers.remove(targetDiscordID);
-            }
-            else return ":x: **[System] Undo Failed Because This Bot Abuse Is No Longer Current!**";
         }
-        else if (botAbuseIsCurrent(targetDiscordID)) {
+        cTooLate.setTime(this.issuedDates.get(this.issuingTeamMember.lastIndexOf(teamMember)));
+        if (this.config.testModeEnabled) {
+            cTooLate.add(Calendar.SECOND, 30);
+        }
+        else {
+            cTooLate.add(Calendar.DAY_OF_MONTH, 5);
+        }
+        if (c.getTime().before(cTooLate.getTime()) && botAbuseIsCurrent(targetDiscordID) && isUndoingLast) {
+            int index = this.issuingTeamMember.lastIndexOf(teamMember);
+            this.discordID.remove(index);
+            this.issuingTeamMember.remove(index);
+            this.repOffenses.remove(index);
+            this.issuedDates.remove(index);
+            this.expiryDates.remove(index);
+            this.reasons.remove(index);
+            this.proofImages.remove(index);
+            this.currentBotAbusers.remove(targetDiscordID);
+        }
+        else if (botAbuseIsCurrent(targetDiscordID) && (c.getTime().before(cTooLate.getTime())) && !isUndoingLast) {
             this.repOffenses.remove(this.discordID.lastIndexOf(targetDiscordID));
             this.issuingTeamMember.remove(this.discordID.lastIndexOf(targetDiscordID));
             this.issuedDates.remove(this.discordID.lastIndexOf(targetDiscordID));
@@ -304,18 +304,20 @@ class Core { // This is where all the magic happens, where all the data is added
             this.discordID.remove(this.discordID.lastIndexOf(targetDiscordID));
             this.currentBotAbusers.remove(targetDiscordID);
         }
-        else if (!botAbuseIsCurrent(targetDiscordID)) {
-            return ":x: **[System] Undo Failed Because This Bot Abuse Is No Longer Current!**";
+        else if (!(c.getTime().before(cTooLate.getTime())) && botAbuseIsCurrent(targetDiscordID)) {
+            return ":x: **[System] Undo Failed because Bot Abuses Older than 5 Days Cannot Be Undone.**";
         }
+        else return ":x: **[System] Undo Failed Because This Bot Abuse Is No Longer Current!**";
+
         if ((this.discordID.size() == this.issuingTeamMember.size()) && (this.repOffenses.size() == this.issuedDates.size()) &&
                 (this.expiryDates.size() == this.reasons.size()) && (this.reasons.size() == this.proofImages.size())) {
             this.writeArrayData();
             this.sendMessage(1, targetDiscordID);
-            return ":white_check_mark: Undo Successful... So... Whatever it was you were doing... Try Again...";
+            return ":white_check_mark: **[System] Undo Successful... So... Whatever it was you were doing... Try Again...**";
         }
         else {
-            return ":x: **FATAL ERROR: One of the Remove Operations in the Undo Method Did Not Run Successfully!" +
-                    "\nPlease Wait While I Restart...";
+            return ":x: **[System] FATAL ERROR: One of the Remove Operations in the Undo Method Did Not Run Successfully!" +
+                    "\nPlease Wait While I Restart...**";
         }
     }
     String getInfo(long targetDiscordID, float timeOffset, boolean isTeamMember) { // This method is for queries
@@ -573,7 +575,7 @@ class Core { // This is where all the magic happens, where all the data is added
             return output;
         }
     }
-    void writeArrayData() throws Exception {
+    void writeArrayData() throws IOException {
         fileHandler.writeArrayData(this.discordID,
                 this.issuingTeamMember,
                 this.repOffenses,
@@ -584,7 +586,7 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.currentBotAbusers);
     }
     // Purpose 0 is a Bot Abuse Event while Purpose 1 is a Undo Event
-    void sendMessage(int purpose, long targetDiscordID) throws IOException {
+    private void sendMessage(int purpose, long targetDiscordID) throws IOException {
         if (purpose == 0) {
             botAbuseVars.targetDiscordID = this.discordID.get(this.discordID.size() - 1);
             botAbuseVars.dateIssued = this.issuedDates.get(this.discordID.size() - 1);
@@ -596,16 +598,16 @@ class Core { // This is where all the magic happens, where all the data is added
             undoVars.targetDiscordID = targetDiscordID;
         }
         if (config.testModeEnabled && purpose == 0) {
-            System.out.println(gson.toJson(botAbuseVars));
+            System.out.println(fileHandler.gson.toJson(botAbuseVars));
         }
         else if (!config.testModeEnabled && purpose == 0) {
-            rabbit.sendMessage(gson.toJson(botAbuseVars), "ReportCreatedEvent");
+            rabbit.sendMessage(fileHandler.gson.toJson(botAbuseVars), "ReportCreatedEvent");
         }
         else if (config.testModeEnabled && purpose == 1) {
-            System.out.println(gson.toJson(undoVars));
+            System.out.println(fileHandler.gson.toJson(undoVars));
         }
         else if (!config.testModeEnabled && purpose == 1) {
-            rabbit.sendMessage(gson.toJson(undoVars), "ReportUndoEvent");
+            rabbit.sendMessage(fileHandler.gson.toJson(undoVars), "ReportUndoEvent");
         }
     }
     // This Method is primarily for DiscordBotMain, when users enter an offset,

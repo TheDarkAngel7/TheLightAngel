@@ -10,7 +10,7 @@ import java.util.concurrent.TimeoutException;
 
 class LightAngel {
     static DiscordBotMain discord;
-    static File dataFile = new File("data/data.dat");
+    static File dataFile = new File("data/data.json");
     static {
         try {
             if (!dataFile.exists()) {
