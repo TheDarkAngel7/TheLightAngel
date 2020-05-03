@@ -19,7 +19,7 @@ class RabbitMQSend {
     }
 
 
-    void sendMessage(String message) throws IOException {
-        channel.basicPublish(message, "ReportCreatedEvent", false, null, message.getBytes());
+    void sendMessage(String message, String routingKey) throws IOException {
+        channel.basicPublish(message, routingKey, false, null, message.getBytes());
     }
 }
