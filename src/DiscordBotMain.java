@@ -22,6 +22,7 @@ class DiscordBotMain extends ListenerAdapter {
     EmbedBuilder embed = new EmbedBuilder();
     EmbedBuilder timerEmbed = new EmbedBuilder();
     EmbedBuilder timerEmbed2 = new EmbedBuilder();
+    Help help = new Help(embed);
     Member owner;
     private boolean timerRunning = false;
     private boolean commandsSuspended = false;
@@ -30,6 +31,7 @@ class DiscordBotMain extends ListenerAdapter {
     String warningIcon = "https://i.imgur.com/5SD8jxX.png";
     String errorIcon = "https://i.imgur.com/KmZRhnK.png";
     String infoIcon = "https://i.imgur.com/WM8qFWT.png";
+    String stopIcon = "https://i.imgur.com/pnJF5T1.png";
     String adminRoleID;
     String staffRoleID;
     String teamRoleID;
@@ -123,7 +125,7 @@ class DiscordBotMain extends ListenerAdapter {
         MessageChannel discussionChannel = event.getGuild().getTextChannelById(teamChannelID);
         if (event.getAuthor().isBot() || msg.getChannelType() == ChannelType.PRIVATE) return;
         String[] args = msg.getContentRaw().substring(1).split(" ");
-        if (msg.getContentRaw().charAt(0) == '/' && !commandsSuspended)  {
+        if (msg.getContentRaw().charAt(0) == '/' && !commandsSuspended && !args[0].equalsIgnoreCase("help"))  {
             // Command Syntax /botabuse <Mention or Discord ID> <Reason (kick, offline, or staff)> <proof url>
             if (args[0].equalsIgnoreCase("botabuse")) {
                 if ((author.getRoles().contains(event.getGuild().getRoleById(this.teamRoleID)) || author == owner) &&
@@ -253,9 +255,94 @@ class DiscordBotMain extends ListenerAdapter {
                 e.printStackTrace();
             }
         }
+        else if (msg.getContentRaw().charAt(0) == '/' && args[0].equalsIgnoreCase("help")) {
+            boolean isTeamMember = msg.getMember().getRoles().contains(guild.getRoleById(teamRoleID));
+            if (args.length == 1) {
+                embed.setColor(Color.BLUE);
+                embed.setTitle("About /help");
+                embed.setThumbnail(infoIcon);
+                embed.addField("System Message", "Syntax: `/help <Command Name>`", true);
+                if (isTeamMember) {
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+                else {
+                    helpChannel.sendMessage(embed.build()).queue();
+                }
+            }
+            else if (args.length == 2 && isTeamMember) {
+                if (args[1].equalsIgnoreCase("botAbuse")) {
+                    help.botAbuseCommand();
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+                else if (args[1].equalsIgnoreCase("permBotAbuse") && isTeamMember) {
+                    help.permBotAbuseCommand();
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+                else if (args[1].equalsIgnoreCase("undo") && isTeamMember) {
+                    help.undoCommand();
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+                else if (args[1].equalsIgnoreCase("check")) {
+                    help.checkCommand(isTeamMember);
+                    if (!isTeamMember) {
+                        helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                        helpChannel.sendMessage(embed.build()).queue();
+                    }
+                    else {
+                        discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                        discussionChannel.sendMessage(embed.build()).queue();
+                    }
+                }
+                else if (args[1].equalsIgnoreCase("checkHistory")) {
+                    help.checkHistoryCommand();
+                    if (!isTeamMember) {
+                        helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                        helpChannel.sendMessage(embed.build()).queue();
+                    }
+                    else {
+                        discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                        discussionChannel.sendMessage(embed.build()).queue();
+                    }
+                }
+                else if (args[1].equalsIgnoreCase("transfer")) {
+                    help.transferCommand();
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+                else if (args[1].equalsIgnoreCase("clear")) {
+                    help.clearCommand();
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+                else if (args.length > 2) {
+                    embed.setColor(Color.RED);
+                    embed.setThumbnail(errorIcon);
+                    embed.setTitle("Error While Fetching Help");
+                    embed.addField("System Message", ":x: **[System] Too Many Arguements**", true);
+                    if (!isTeamMember) {
+                        helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                        helpChannel.sendMessage(embed.build()).queue();
+                    }
+                    else {
+                        discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                        discussionChannel.sendMessage(embed.build()).queue();
+                    }
+                }
+                else {
+                    embed.setColor(Color.RED);
+                    embed.setThumbnail(errorIcon);
+                    embed.setTitle("No Permissions to Get This Help");
+                    embed.addField("System Message", ":x: **[System] You Do Not Have Permissions to See This Help**", true);
+                    helpChannel.sendMessage(embed.build()).queue();
+                }
+            }
+        }
         else if (commandsSuspended) {
             embed.setColor(Color.RED);
-            embed.setThumbnail(errorIcon);
+            embed.setThumbnail(stopIcon);
             embed.setTitle("Commands Suspended");
             if (!msg.getMember().getRoles().contains(guild.getRoleById(teamRoleID))) {
                 embed.addField("System Message", "**Commands are Temporarily Suspended... Sorry for the inconvience...**", true);
@@ -403,7 +490,8 @@ class DiscordBotMain extends ListenerAdapter {
             embed.setColor(Color.RED);
             embed.setTitle("FATAL ERROR");
             embed.setThumbnail(errorIcon);
-            embed.addField("System Message", "The Data File has been Damaged", true);
+            embed.addField("System Message", ":x: **[System] The Data File has been Damaged" +
+                    "\n\nCommands Have Been Suspended**", true);
             discussionChannel.sendMessage(owner.getAsMention()).queue();
             discussionChannel.sendMessage(embed.build()).queue();
             embed.clearFields();
