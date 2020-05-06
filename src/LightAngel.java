@@ -23,13 +23,14 @@ class LightAngel {
             else {
                 System.out.println("[System] Successfully Found Existing Data File");
             }
-            discord = new DiscordBotMain();
         }
-        catch (IOException | TimeoutException e) {
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
-    public static void main(String[] args) throws LoginException {
+    public static void main(String[] args) throws LoginException, IOException, TimeoutException {
+        boolean isRestart = Boolean.parseBoolean(args[0]);
+        discord = new DiscordBotMain(isRestart);
         JDA api = new JDABuilder(AccountType.BOT).setToken(discord.core.config.token).build();
         api.addEventListener(discord);
         api.setAutoReconnect(true);

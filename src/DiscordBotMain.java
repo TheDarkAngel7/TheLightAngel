@@ -26,12 +26,13 @@ class DiscordBotMain extends ListenerAdapter {
     Member owner;
     private boolean timerRunning = false;
     private boolean commandsSuspended = false;
+    private boolean isRestart;
     // Image Background Hex: #2F3136
     String checkIcon = "https://i.imgur.com/bakLhaw.png";
     String warningIcon = "https://i.imgur.com/5SD8jxX.png";
     String errorIcon = "https://i.imgur.com/KmZRhnK.png";
     String infoIcon = "https://i.imgur.com/WM8qFWT.png";
-    String stopIcon = "https://i.imgur.com/pnJF5T1.png";
+    String stopIcon = "https://i.imgur.com/LR6Q5jE.png";
     String adminRoleID;
     String staffRoleID;
     String teamRoleID;
@@ -40,7 +41,7 @@ class DiscordBotMain extends ListenerAdapter {
     String helpChannelID;
     String logchannelID;
 
-    DiscordBotMain() throws IOException, TimeoutException {
+    DiscordBotMain(boolean isRestart) throws IOException, TimeoutException {
         core.startup(false);
         this.adminRoleID = core.config.adminRoleID;
         this.staffRoleID = core.config.staffRoleID;
@@ -49,6 +50,7 @@ class DiscordBotMain extends ListenerAdapter {
         this.teamChannelID = core.config.teamChannel;
         this.helpChannelID = core.config.helpChannel;
         this.logchannelID = core.config.logChannel;
+        this.isRestart = isRestart;
     }
     @Override
     public void onReady(@Nonnull ReadyEvent event) {
@@ -123,16 +125,21 @@ class DiscordBotMain extends ListenerAdapter {
         Member author = event.getGuild().getMember(msg.getAuthor());
         MessageChannel helpChannel = event.getGuild().getTextChannelById(helpChannelID);
         MessageChannel discussionChannel = event.getGuild().getTextChannelById(teamChannelID);
+        boolean isTeamMember = msg.getMember().getRoles().contains(guild.getRoleById(teamRoleID));
+        boolean isStaffMember = msg.getMember().getRoles().contains(guild.getRoleById(staffRoleID)) ||
+                msg.getMember().getRoles().contains(guild.getRoleById(adminRoleID));
+
         if (event.getAuthor().isBot() || msg.getChannelType() == ChannelType.PRIVATE) return;
         String[] args = msg.getContentRaw().substring(1).split(" ");
-        if (msg.getContentRaw().charAt(0) == '/' && !commandsSuspended && !args[0].equalsIgnoreCase("help"))  {
+        if (msg.getContentRaw().charAt(0) == '/' && !commandsSuspended && !args[0].equalsIgnoreCase("help")
+                && !args[0].equalsIgnoreCase("restart") && !args[0].equalsIgnoreCase("reload"))  {
             // Command Syntax /botabuse <Mention or Discord ID> <Reason (kick, offline, or staff)> <proof url>
             if (args[0].equalsIgnoreCase("botabuse")) {
-                if ((author.getRoles().contains(event.getGuild().getRoleById(this.teamRoleID)) || author == owner) &&
+                if ((isTeamMember || author == owner) &&
                         (args.length == 3 || args.length == 4)) {
                     setBotAbuse(msg);
                 }
-                else if ((args.length < 3 || args.length > 4) && (author.getRoles().contains(guild.getRoleById(this.teamRoleID)) || author == owner)) {
+                else if ((args.length < 3 || args.length > 4) && (isTeamMember || author == owner)) {
                     embed.setTitle("Error - Invalid Number of Arguements");
                     embed.setColor(Color.RED);
                     embed.setThumbnail(errorIcon);
@@ -151,12 +158,10 @@ class DiscordBotMain extends ListenerAdapter {
                 }
             }
             else if (args[0].equalsIgnoreCase("permbotabuse")) { // /permbotabuse <Mention or Discord ID> [Image]
-                if ((author.getRoles().contains(event.getGuild().getRoleById(this.staffRoleID)) ||
-                        author.getRoles().contains(event.getGuild().getRoleById(this.adminRoleID)) || author == owner) && (args.length == 2 || args.length == 3)) {
+                if ((isStaffMember || author == owner) && (args.length == 2 || args.length == 3)) {
                     permBotAbuse(msg);
                 }
-                else if ((author.getRoles().contains(event.getGuild().getRoleById(this.staffRoleID)) ||
-                        author.getRoles().contains(event.getGuild().getRoleById(this.adminRoleID)) || author == owner) && (args.length < 2 || args.length > 3)) {
+                else if ((isStaffMember || author == owner) && (args.length < 2 || args.length > 3)) {
                     embed.setTitle("Error - Invalid Number of Arguements");
                     embed.setColor(Color.RED);
                     embed.setThumbnail(errorIcon);
@@ -174,7 +179,7 @@ class DiscordBotMain extends ListenerAdapter {
                 }
             }
             else if (args[0].equalsIgnoreCase("undo")) {
-                if (author.getRoles().contains(guild.getRoleById(this.teamRoleID))) {
+                if (isTeamMember) {
                     undoCommand(msg);
                 }
                 else {
@@ -188,11 +193,10 @@ class DiscordBotMain extends ListenerAdapter {
             }
             else if (args[0].equalsIgnoreCase("check")) {
                 // This handles a /check for someone to check their own Bot Abuse status or someone else's.
-                checkCommand(msg);
+                checkCommand(msg, isTeamMember);
             }
             else if (args[0].equalsIgnoreCase("transfer")) { // /transfer <Old Mention or Discord ID> <New Mention or Discord ID>
-                if (!msg.getMember().getRoles().contains(guild.getRoleById(this.staffRoleID))
-                        || msg.getMember().getRoles().contains(guild.getRoleById(this.adminRoleID)) || author == owner) {
+                if ((isStaffMember) || author == owner) {
                     try {
                         transferRecords(msg);
                     }
@@ -210,8 +214,7 @@ class DiscordBotMain extends ListenerAdapter {
                 }
             }
             else if (args[0].equalsIgnoreCase("clear")) {
-                if (!msg.getMember().getRoles().contains(guild.getRoleById(this.staffRoleID))
-                        || msg.getMember().getRoles().contains(guild.getRoleById(this.adminRoleID)) || author == owner) {
+                if ((isStaffMember) || author == owner) {
                     clearCommand(msg);
                 }
                 else {
@@ -226,7 +229,7 @@ class DiscordBotMain extends ListenerAdapter {
             }
             else if (args[0].equalsIgnoreCase("checkhistory")) {
                 try {
-                    checkHistory(msg);
+                    checkHistory(msg, isTeamMember);
                 }
                 catch (IllegalStateException ex) {
                     // Take No Action
@@ -238,10 +241,14 @@ class DiscordBotMain extends ListenerAdapter {
         }
         else if (msg.getContentRaw().charAt(0) == '/' && (args[0].equalsIgnoreCase("reload")
                 || args[0].equalsIgnoreCase("restart"))
-                && (msg.getMember().getRoles().contains(guild.getRoleById(this.staffRoleID)) ||
-                msg.getMember().getRoles().contains(guild.getRoleById(this.adminRoleID)) || author == owner)) {
+                && ((isStaffMember) || author == owner)) {
             try {
-                System.out.println("[System] Staff Invoked Restart...");
+                if (author != owner) {
+                    System.out.println("[System] Staff Invoked Restart...");
+                }
+                else {
+                    System.out.println("[System] Owner Invoked Restart...");
+                }
                 core.startup(true);
                 if (!core.arraySizesEqual()) {
                     commandsSuspended = true;
@@ -256,7 +263,6 @@ class DiscordBotMain extends ListenerAdapter {
             }
         }
         else if (msg.getContentRaw().charAt(0) == '/' && args[0].equalsIgnoreCase("help")) {
-            boolean isTeamMember = msg.getMember().getRoles().contains(guild.getRoleById(teamRoleID));
             if (args.length == 1) {
                 embed.setColor(Color.BLUE);
                 embed.setTitle("About /help");
@@ -331,11 +337,21 @@ class DiscordBotMain extends ListenerAdapter {
                         discussionChannel.sendMessage(embed.build()).queue();
                     }
                 }
-                else {
+                else if (!isTeamMember) {
                     embed.setColor(Color.RED);
                     embed.setThumbnail(errorIcon);
                     embed.setTitle("No Permissions to Get This Help");
                     embed.addField("System Message", ":x: **[System] You Do Not Have Permissions to See This Help**", true);
+                    helpChannel.sendMessage(msg.getMember().getAsMention());
+                    helpChannel.sendMessage(embed.build()).queue();
+                }
+                else {
+                    embed.setColor(Color.RED);
+                    embed.setThumbnail(errorIcon);
+                    embed.setTitle("Misspelled Command");
+                    embed.addField("System Message", ":x: **[System] You Likely Misspelled the Name of the " +
+                            "Command You Are Wanting to Lookup**", true);
+                    helpChannel.sendMessage(msg.getMember().getAsMention());
                     helpChannel.sendMessage(embed.build()).queue();
                 }
             }
@@ -380,9 +396,28 @@ class DiscordBotMain extends ListenerAdapter {
             commandsSuspended = false;
             System.out.println("[System] TheLightAngel is Ready!");
         }
+        if (isRestart) {
+            embed.setColor(Color.GREEN);
+            embed.setTitle("Restart Complete");
+            embed.setThumbnail(checkIcon);
+            if (!commandsSuspended) {
+                embed.addField("System Message", "**I'm Back Fellas! Restart is Complete!\n\n\"" +
+                        "Btw... the Data File is Usable Again!**", true);
+            }
+            else {
+                embed.setColor(Color.RED);
+                embed.setThumbnail(stopIcon);
+                embed.addField("System Message", "**Data File Still Is Not Usable**", true);
+            }
+            discussionChannel.sendMessage(embed.build()).queue();
+            embed.clearFields();
+            isRestart = false;
+        }
         if (!timerRunning && !commandsSuspended) {
             timerRunning = true;
-            discussionChannel.sendMessage(":wave: Hey Folks! I'm Ready To Fly!").queue();
+            if (!isRestart) {
+                discussionChannel.sendMessage(":wave: Hey Folks! I'm Ready To Fly!").queue();
+            }
             String botAbuseRoleID = this.botAbuseRoleID;
             System.out.println("[System] Timer is Running");
             Timer timer = new Timer();
@@ -406,7 +441,8 @@ class DiscordBotMain extends ListenerAdapter {
                             timerEmbed.setColor(Color.GREEN);
                             timerEmbed.setTitle("Successfully Removed Expired Bot Abuse");
                             timerEmbed.setThumbnail(checkIcon);
-                            timerEmbed.addField("System Message", ":white_check_mark: [System] Removed Expired Bot Abuse for " + removedID, true);
+                            timerEmbed.addField("System Message", "**:white_check_mark: [System] Removed Expired Bot Abuse for "
+                                    + removedID + "**", true);
                             outputChannel.sendMessage(timerEmbed.build()).queue();
 
                             guild.removeRoleFromMember(removedID,
@@ -418,9 +454,9 @@ class DiscordBotMain extends ListenerAdapter {
                             timerEmbed.setTitle("Expired Bot Abuse Error");
                             timerEmbed.setTitle(warningIcon);
                             timerEmbed.addField("System Message",
-                                    "Bot Abuse just expired for " +  event.getJDA().getGuilds().get(0).getMemberById(removedID).getAsMention()
+                                    "**Bot Abuse just expired for " +  event.getJDA().getGuilds().get(0).getMemberById(removedID).getAsMention()
                                             + " and they did not have the Bot Abuse role\n" +
-                                            "They either do not Exist in the Discord Server or they simply did not have it", true);
+                                            "They either do not Exist in the Discord Server or they simply did not have it**", true);
                             outputChannel.sendMessage(timerEmbed.build()).queue();
                             System.out.println("[System - ERROR] Bot Abuse just expired for " +
                                     event.getJDA().getGuilds().get(0).getMemberById(removedID).getEffectiveName() +
@@ -432,8 +468,8 @@ class DiscordBotMain extends ListenerAdapter {
                             timerEmbed.setColor(Color.YELLOW);
                             timerEmbed.setTitle("Expired Bot Abuse Error");
                             timerEmbed.setTitle(warningIcon);
-                            timerEmbed.addField("System Message", "Bot Abuse just expired for " + removedID
-                                    + " but they did not exist in the discord server!", true);
+                            timerEmbed.addField("System Message", "**Bot Abuse just expired for " + removedID
+                                    + " but they did not exist in the discord server!**", true);
                             outputChannel.sendMessage(timerEmbed.build());
                         }
                         timerEmbed.clearFields();
@@ -486,10 +522,10 @@ class DiscordBotMain extends ListenerAdapter {
                 }
             }, 0, 900000);
         }
-        else if (commandsSuspended && !timerRunning) {
+        else if (commandsSuspended) {
             embed.setColor(Color.RED);
-            embed.setTitle("FATAL ERROR");
-            embed.setThumbnail(errorIcon);
+            embed.setTitle("Commands Suspended");
+            embed.setThumbnail(stopIcon);
             embed.addField("System Message", ":x: **[System] The Data File has been Damaged" +
                     "\n\nCommands Have Been Suspended**", true);
             discussionChannel.sendMessage(owner.getAsMention()).queue();
@@ -972,7 +1008,7 @@ class DiscordBotMain extends ListenerAdapter {
         }
         embed.clearFields();
     }
-    private void checkCommand(Message msg) {
+    private void checkCommand(Message msg, boolean isTeamMember) {
         MessageChannel discussionChannel = msg.getGuild().getTextChannelById(teamChannelID);
         MessageChannel helpChannel = msg.getGuild().getTextChannelById(helpChannelID);
 
@@ -1008,7 +1044,7 @@ class DiscordBotMain extends ListenerAdapter {
             System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked their own Bot Abuse status and opted for a DM");
         }
         // /check <Discord ID>
-        else if (msg.getMentionedMembers().isEmpty() && msg.getMember().getRoles().contains(msg.getGuild().getRoleById(this.teamRoleID)) && args.length == 2) {
+        else if (isTeamMember && args.length == 2) {
             try {
                 String result = core.getInfo(Long.parseLong(args[1]), 100 ,true);
                 if (result.contains(":white_check_mark:")) {
@@ -1035,7 +1071,7 @@ class DiscordBotMain extends ListenerAdapter {
             }
         }
         // /check <Mention>
-        else if (msg.getMentionedMembers().size() == 1 && msg.getMember().getRoles().contains(msg.getGuild().getRoleById(this.teamRoleID)) && args.length == 2) {
+        else if ((msg.getMentionedMembers().size() == 1 && isTeamMember) && args.length == 2) {
             String result = core.getInfo(msg.getMentionedMembers().get(0).getIdLong(), 100 ,true);
             if (result.contains(":white_check_mark:")) {
                 embed.setColor(Color.RED);
@@ -1099,7 +1135,7 @@ class DiscordBotMain extends ListenerAdapter {
             }
         }
         // /check <Timezone Offset> <Mention or Discord ID>
-        else if (msg.getMember().getRoles().contains(msg.getGuild().getRoleById(this.teamRoleID)) && args.length == 3) {
+        else if ((isTeamMember) && args.length == 3) {
             if (core.checkOffset(args[1])) {
                 if (msg.getMentionedMembers().isEmpty()) {
                     String result =  core.getInfo(Long.parseLong(args[2]), Float.parseFloat(args[1]), true);
@@ -1466,7 +1502,7 @@ class DiscordBotMain extends ListenerAdapter {
             msg.getChannel().sendMessage(embed.build()).queue();
         }
     }
-    private void checkHistory(Message msg) throws IllegalStateException {
+    private void checkHistory(Message msg, boolean isTeamMember) throws IllegalStateException {
         Guild guild = msg.getGuild();
         Member author = guild.getMember(msg.getAuthor());
         MessageChannel outputChannel = msg.getGuild().getTextChannelById(logchannelID);
@@ -1482,7 +1518,7 @@ class DiscordBotMain extends ListenerAdapter {
             // Take No Action
         }
         // /checkhistory <Mention or Discord ID>
-        else if (author.getRoles().contains(guild.getRoleById(this.teamRoleID)) && args.length == 2) {
+        else if ((isTeamMember) && args.length == 2) {
             try {
                 // If the user provides a Discord ID
                 String result = core.seeHistory(Long.parseLong(args[1]), 100, true);
@@ -1593,7 +1629,7 @@ class DiscordBotMain extends ListenerAdapter {
         }
 
         // /checkhistory <timeOffset> <Mention or Discord ID>
-        else if (args.length == 3 && msg.getAuthor().getJDA().getRoles().contains(guild.getRoleById(this.teamRoleID))) {
+        else if (args.length == 3 && isTeamMember) {
             PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
             embed.setTitle("Bot Abuse History");
             if (core.checkOffset(args[1])) {
@@ -1637,7 +1673,7 @@ class DiscordBotMain extends ListenerAdapter {
             }
         }
         // No Permissions to check on someone elses Bot Abuse history
-        else if (args.length > 1 && !author.getRoles().contains(guild.getRoleById(this.teamRoleID))) {
+        else if (args.length > 1 && !isTeamMember) {
             embed.setColor(Color.RED);
             embed.setThumbnail(errorIcon);
             embed.setTitle("Error - No Permissions");

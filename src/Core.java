@@ -28,16 +28,17 @@ class Core { // This is where all the magic happens, where all the data is added
     }
 
     void startup(boolean reload) throws IOException, TimeoutException {
+        JsonObject configObj = fileHandler.getConfig();
+        this.config.systemPath = configObj.get("systemPath").getAsString();
         if (!reload) {
             System.out.println("[System] Core Initiated...");
         }
         else {
-            System.out.println("[System] Core Restarting...");
-            fileHandler = new FileHandler();
-            System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
-                    "\n" + this.expiryDates.toString() + "\n" + this.currentBotAbusers.toString());
+            System.out.println("[System] Program Restarting...");
+            ProcessBuilder process = new ProcessBuilder();
+            process.command("cmd.exe", "/c", "start", this.config.systemPath + "\\restart.bat").start();
+            System.exit(1);
         }
-        JsonObject configObj = fileHandler.getConfig();
         this.config.host = configObj.get("host").getAsString();
         this.config.testModeEnabled = configObj.get("testModeEnabled").getAsBoolean();
         this.config.token = configObj.get("token").getAsString();
@@ -53,7 +54,7 @@ class Core { // This is where all the magic happens, where all the data is added
         + "\nBot Abuse Role ID: " + config.botAbuseRoleID + "\nTeam Discussion Channel ID: " + config.teamChannel
         + "\nHelp and Support Channel ID: " + config.helpChannel + "\nLog Channel ID: " + config.logChannel);
 
-        if (!config.testModeEnabled && !reload) {
+        if (!config.testModeEnabled) {
             rabbit = new RabbitMQSend();
             rabbit.startup(config.host);
         }
@@ -694,6 +695,7 @@ class Core { // This is where all the magic happens, where all the data is added
     }
 }
 class Configuration {
+    String systemPath;
     String host;
     boolean testModeEnabled;
     String token;

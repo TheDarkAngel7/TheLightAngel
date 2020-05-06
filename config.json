@@ -1,4 +1,5 @@
 {
+	"systemPath": "<Path Here>",
 	"host": "localhost",
 	"testModeEnabled": true,
 	"token": "<Token Here>",
