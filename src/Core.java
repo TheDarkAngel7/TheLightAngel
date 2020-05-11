@@ -406,7 +406,7 @@ class Core { // This is where all the magic happens, where all the data is added
                 }
                 else {
                     return  result.concat(
-                            "\nIssuing Team Member: **" + this.issuingTeamMember.get(this.discordID.lastIndexOf(targetDiscordID)) +
+                            "\nIssuing Team Member: " + this.issuingTeamMember.get(this.discordID.lastIndexOf(targetDiscordID)) +
                             "\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
                             "**\nDate Issued: **" + sdfDateIssued.format(dateIssued.getTime()) +
                             "**\nExpiry Date: **" + sdfDateExpired.format(dateToExpire.getTime()) +

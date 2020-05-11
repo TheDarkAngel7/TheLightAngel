@@ -243,21 +243,22 @@ class DiscordBotMain extends ListenerAdapter {
                 || args[0].equalsIgnoreCase("restart"))
                 && ((isStaffMember) || author == owner)) {
             try {
+                embed.setColor(Color.YELLOW);
+                embed.setTitle("Restart Initiated");
+                embed.setThumbnail(warningIcon);
                 if (author != owner) {
-                    System.out.println("[System] Staff Invoked Restart...");
+                    embed.addField("System Message", "**Restart Initiated by " + msg.getMember().getAsMention()
+                            + "\nPlease Allow up to 10 seconds for this to complete**", true);
+                    System.out.println("[System - RESTART] Staff Invoked Restart...");
                 }
                 else {
-                    System.out.println("[System] Owner Invoked Restart...");
+                    embed.addField("System Message", "**Restart Initiated by The Angel of Darkness"
+                            + "\nPlease Allow up to 10 seconds for this to complete**", true);
+                    System.out.println("[System - RESTART] Owner Invoked Restart...");
                 }
+                discussionChannel.sendMessage(embed.build()).queue();
+                Thread.sleep(5000);
                 core.startup(true);
-                if (!core.arraySizesEqual()) {
-                    commandsSuspended = true;
-                    System.out.println("[System - FATAL ERROR] Data File is still Damaged on Restart Command");
-                }
-                else {
-                    System.out.println("[System] Data File has been successfully loaded on Restart Command");
-                    commandsSuspended = false;
-                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -275,23 +276,8 @@ class DiscordBotMain extends ListenerAdapter {
                     helpChannel.sendMessage(embed.build()).queue();
                 }
             }
-            else if (args.length == 2 && isTeamMember) {
-                if (args[1].equalsIgnoreCase("botAbuse")) {
-                    help.botAbuseCommand();
-                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
-                    discussionChannel.sendMessage(embed.build()).queue();
-                }
-                else if (args[1].equalsIgnoreCase("permBotAbuse") && isTeamMember) {
-                    help.permBotAbuseCommand();
-                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
-                    discussionChannel.sendMessage(embed.build()).queue();
-                }
-                else if (args[1].equalsIgnoreCase("undo") && isTeamMember) {
-                    help.undoCommand();
-                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
-                    discussionChannel.sendMessage(embed.build()).queue();
-                }
-                else if (args[1].equalsIgnoreCase("check")) {
+            else if (args.length == 2) {
+                if (args[1].equalsIgnoreCase("check")) {
                     help.checkCommand(isTeamMember);
                     if (!isTeamMember) {
                         helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -313,6 +299,32 @@ class DiscordBotMain extends ListenerAdapter {
                         discussionChannel.sendMessage(embed.build()).queue();
                     }
                 }
+                else {
+                    embed.setColor(Color.RED);
+                    embed.setThumbnail(errorIcon);
+                    embed.setTitle("Misspelled Command");
+                    embed.addField("System Message", ":x: **[System] You Likely Misspelled the Name of the " +
+                            "Command You Are Wanting to Lookup**", true);
+                    helpChannel.sendMessage(msg.getMember().getAsMention());
+                    helpChannel.sendMessage(embed.build()).queue();
+                }
+            }
+            else if (args.length == 2 && isTeamMember) {
+                if (args[1].equalsIgnoreCase("botAbuse")) {
+                    help.botAbuseCommand();
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+                else if (args[1].equalsIgnoreCase("permBotAbuse")) {
+                    help.permBotAbuseCommand();
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+                else if (args[1].equalsIgnoreCase("undo")) {
+                    help.undoCommand();
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
                 else if (args[1].equalsIgnoreCase("transfer")) {
                     help.transferCommand();
                     discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -322,28 +334,6 @@ class DiscordBotMain extends ListenerAdapter {
                     help.clearCommand();
                     discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     discussionChannel.sendMessage(embed.build()).queue();
-                }
-                else if (args.length > 2) {
-                    embed.setColor(Color.RED);
-                    embed.setThumbnail(errorIcon);
-                    embed.setTitle("Error While Fetching Help");
-                    embed.addField("System Message", ":x: **[System] Too Many Arguements**", true);
-                    if (!isTeamMember) {
-                        helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
-                        helpChannel.sendMessage(embed.build()).queue();
-                    }
-                    else {
-                        discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
-                        discussionChannel.sendMessage(embed.build()).queue();
-                    }
-                }
-                else if (!isTeamMember) {
-                    embed.setColor(Color.RED);
-                    embed.setThumbnail(errorIcon);
-                    embed.setTitle("No Permissions to Get This Help");
-                    embed.addField("System Message", ":x: **[System] You Do Not Have Permissions to See This Help**", true);
-                    helpChannel.sendMessage(msg.getMember().getAsMention());
-                    helpChannel.sendMessage(embed.build()).queue();
                 }
                 else {
                     embed.setColor(Color.RED);
@@ -355,12 +345,34 @@ class DiscordBotMain extends ListenerAdapter {
                     helpChannel.sendMessage(embed.build()).queue();
                 }
             }
+            else if (args.length > 2) {
+                embed.setColor(Color.RED);
+                embed.setThumbnail(errorIcon);
+                embed.setTitle("Error While Fetching Help");
+                embed.addField("System Message", ":x: **[System] Too Many Arguements**", true);
+                if (!isTeamMember) {
+                    helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    helpChannel.sendMessage(embed.build()).queue();
+                }
+                else {
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+            }
+            else {
+                embed.setColor(Color.RED);
+                embed.setThumbnail(errorIcon);
+                embed.setTitle("No Permissions to Get This Help");
+                embed.addField("System Message", ":x: **[System] You Do Not Have Permissions to See This Help**", true);
+                helpChannel.sendMessage(msg.getMember().getAsMention());
+                helpChannel.sendMessage(embed.build()).queue();
+            }
         }
         else if (commandsSuspended) {
             embed.setColor(Color.RED);
             embed.setThumbnail(stopIcon);
             embed.setTitle("Commands Suspended");
-            if (!msg.getMember().getRoles().contains(guild.getRoleById(teamRoleID))) {
+            if (!isTeamMember) {
                 embed.addField("System Message", "**Commands are Temporarily Suspended... Sorry for the inconvience...**", true);
                 helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
                 helpChannel.sendMessage(embed.build()).queue();
@@ -376,7 +388,7 @@ class DiscordBotMain extends ListenerAdapter {
                 && msg.getChannel() == discussionChannel && msg.getAttachments().size() == 1) {
             msg.delete().completeAfter(10, TimeUnit.SECONDS);
         }
-        else {
+        else if (!msg.getMentionedMembers().contains(msg.getGuild().getSelfMember())) {
             msg.delete().complete();
         }
         embed.clearFields();
@@ -401,17 +413,15 @@ class DiscordBotMain extends ListenerAdapter {
             embed.setTitle("Restart Complete");
             embed.setThumbnail(checkIcon);
             if (!commandsSuspended) {
-                embed.addField("System Message", "**I'm Back Fellas! Restart is Complete!\n\n\"" +
-                        "Btw... the Data File is Usable Again!**", true);
+                embed.addField("System Message", "**I'm Back Fellas! Restart is Complete!**", true);
             }
             else {
                 embed.setColor(Color.RED);
                 embed.setThumbnail(stopIcon);
-                embed.addField("System Message", "**Data File Still Is Not Usable**", true);
+                embed.addField("System Message", "**Restart Complete but Data File Still Is Not Usable**", true);
             }
             discussionChannel.sendMessage(embed.build()).queue();
             embed.clearFields();
-            isRestart = false;
         }
         if (!timerRunning && !commandsSuspended) {
             timerRunning = true;
@@ -532,6 +542,7 @@ class DiscordBotMain extends ListenerAdapter {
             discussionChannel.sendMessage(embed.build()).queue();
             embed.clearFields();
         }
+        isRestart = false;
     }
     ///////////////////////////////////////////////////////////////////
     // Divider Between Event Handlers and Command Handlers
@@ -552,7 +563,7 @@ class DiscordBotMain extends ListenerAdapter {
                     if (result.contains("FATAL ERROR")) {
                         embed.setColor(Color.RED);
                         embed.setTitle("FATAL ERROR");
-                        embed.setThumbnail(errorIcon);
+                        embed.setThumbnail(stopIcon);
                         embed.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                                 " while I reload and then you can try to run that command again**", true);
                         discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -590,7 +601,7 @@ class DiscordBotMain extends ListenerAdapter {
                     if (result.contains("FATAL ERROR")) {
                         embed.setColor(Color.RED);
                         embed.setTitle("FATAL ERROR");
-                        embed.setThumbnail(errorIcon);
+                        embed.setThumbnail(stopIcon);
                         embed.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                                 " while I reload and then you can try to run that command again**", true);
                         discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -678,7 +689,7 @@ class DiscordBotMain extends ListenerAdapter {
                     if (result.contains("FATAL ERROR")) {
                         embed.setColor(Color.RED);
                         embed.setTitle("FATAL ERROR");
-                        embed.setThumbnail(errorIcon);
+                        embed.setThumbnail(stopIcon);
                         embed.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                                 " while I reload and then you can try to run that command again**", true);
                         discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -693,8 +704,8 @@ class DiscordBotMain extends ListenerAdapter {
                         embed.addField("System Message", result, true);
                         outputChannel.sendMessage(embed.build()).queue();
                         embed.clearFields();
-                        embed.addField("System Message", ":white_check_mark: " +
-                                " Successfully Bot Abused " + msg.getMentionedMembers().get(0).getAsMention(), true);
+                        embed.addField("System Message", "**:white_check_mark: " +
+                                " Successfully Bot Abused " + msg.getMentionedMembers().get(0).getAsMention() + "**", true);
                         discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                         discussionChannel.sendMessage(embed.build()).queue();
                         System.out.println("[System] " + msg.getMember().getEffectiveName() + " Successfully Bot Abused "
@@ -716,7 +727,7 @@ class DiscordBotMain extends ListenerAdapter {
                     if (result.contains("FATAL ERROR")) {
                         embed.setColor(Color.RED);
                         embed.setTitle("FATAL ERROR");
-                        embed.setThumbnail(errorIcon);
+                        embed.setThumbnail(stopIcon);
                         embed.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                                 " while I reload and then you can try to run that command again**", true);
                         discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -729,11 +740,15 @@ class DiscordBotMain extends ListenerAdapter {
                         embed.setTitle("Successful Bot Abuse");
                         embed.setThumbnail(this.checkIcon);
                         embed.addField("System Message", result, true);
-                        discussionChannel.sendMessage(":white_check_mark: " + msg.getAuthor().getAsMention() + " Successfully Bot Abused " + msg.getMentionedMembers().get(0).getAsMention()).queue();
                         outputChannel.sendMessage(embed.build()).queue();
+                        embed.clearFields();
+                        embed.addField("System Message", "**:white_check_mark: " + msg.getAuthor().getAsMention()
+                                + " Successfully Bot Abused " + msg.getMentionedMembers().get(0).getAsMention() + "**", true);
+                        discussionChannel.sendMessage(embed.build()).queue();
                         System.out.println("[System] " + msg.getMember().getEffectiveName() + " Successfully Bot Abused "
                                 + msg.getMentionedMembers().get(0).getEffectiveName());
-                    } else if (result.contains(":x:")) {
+                    }
+                    else if (result.contains(":x:")) {
                         embed.setColor(Color.RED);
                         embed.setTitle("Whoops... Something went wrong");
                         embed.setThumbnail(errorIcon);
@@ -852,7 +867,7 @@ class DiscordBotMain extends ListenerAdapter {
                 embed.setColor(Color.RED);
                 embed.setThumbnail(errorIcon);
                 embed.setTitle("Error in Setting Perm Bot Abuse");
-                embed.addField("System Message",  "[System] Invalid User ID!", true);
+                embed.addField("System Message",  "**:x: [System] Invalid User ID!**", true);
                 discussionChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
                 discussionChannel.sendMessage(embed.build()).queue();
             }
@@ -860,7 +875,8 @@ class DiscordBotMain extends ListenerAdapter {
                 embed.setColor(Color.RED);
                 embed.setThumbnail(errorIcon);
                 embed.setTitle("Error in Setting Perm Bot Abuse");
-                embed.addField("System Message", msg.getAuthor().getAsMention() + "[System] Invalid Number of Arguements!", true);
+                embed.addField("System Message", "**:x: [System] Invalid Number of Arguements!**", true);
+                discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                 discussionChannel.sendMessage(embed.build()).queue();
             }
             catch (NullPointerException ex) {
@@ -897,8 +913,9 @@ class DiscordBotMain extends ListenerAdapter {
             embed.setColor(Color.RED);
             embed.setTitle("Error");
             embed.setThumbnail(errorIcon);
-            embed.addField("System Message", ":x: " + "[System] Too Many Mentioned Players!", true);
-            msg.getChannel().sendMessage(embed.build()).queue();
+            embed.addField("System Message", "**:x: [System] Too Many Mentioned Players!**", true);
+            discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+            discussionChannel.sendMessage(embed.build()).queue();
         }
         embed.clearFields();
     }
@@ -917,7 +934,7 @@ class DiscordBotMain extends ListenerAdapter {
                 if (result.contains("FATAL ERROR")) {
                     embed.setColor(Color.RED);
                     embed.setTitle("FATAL ERROR");
-                    embed.setThumbnail(errorIcon);
+                    embed.setThumbnail(stopIcon);
                     embed.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                             " while I reload and then you can try to run that command again**", true);
                     discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -947,7 +964,7 @@ class DiscordBotMain extends ListenerAdapter {
                 if (result.contains("FATAL ERROR")) {
                     embed.setColor(Color.RED);
                     embed.setTitle("FATAL ERROR");
-                    embed.setThumbnail(errorIcon);
+                    embed.setThumbnail(stopIcon);
                     embed.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                             " while I reload and then you can try to run that command again**", true);
                     discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -978,7 +995,7 @@ class DiscordBotMain extends ListenerAdapter {
                 if (result.contains("FATAL ERROR")) {
                     embed.setColor(Color.RED);
                     embed.setTitle("FATAL ERROR");
-                    embed.setThumbnail(errorIcon);
+                    embed.setThumbnail(stopIcon);
                     embed.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                             " while I reload and then you can try to run that command again**", true);
                     discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -1044,7 +1061,7 @@ class DiscordBotMain extends ListenerAdapter {
             System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked their own Bot Abuse status and opted for a DM");
         }
         // /check <Discord ID>
-        else if (isTeamMember && args.length == 2) {
+        else if (isTeamMember && args.length == 2 && msg.getMentionedMembers().isEmpty()) {
             try {
                 String result = core.getInfo(Long.parseLong(args[1]), 100 ,true);
                 if (result.contains(":white_check_mark:")) {
@@ -1174,7 +1191,7 @@ class DiscordBotMain extends ListenerAdapter {
                 embed.setColor(Color.RED);
                 embed.setTitle("Check Info Error");
                 embed.setThumbnail(errorIcon);
-                embed.addField("System Message", ":x: [System] **Invalid Timezone Offset**", true);
+                embed.addField("System Message", ":x: **[System] Invalid Timezone Offset**", true);
                 discussionChannel.sendMessage(embed.build()).queue();
                 System.out.println("[System] Team Member " + msg.getMember().getEffectiveName() + " just entered an invalid TimeZone offset.");
             }
@@ -1220,7 +1237,7 @@ class DiscordBotMain extends ListenerAdapter {
                 if (clearedRecords == -1) {
                     embed.setColor(Color.RED);
                     embed.setTitle("FATAL ERROR");
-                    embed.setThumbnail(errorIcon);
+                    embed.setThumbnail(stopIcon);
                     embed.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                             " while I reload and then you can try to run that command again**", true);
                     discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -1233,7 +1250,7 @@ class DiscordBotMain extends ListenerAdapter {
                     embed.setColor(Color.RED);
                     embed.setTitle("No Records Cleared");
                     embed.setThumbnail(errorIcon);
-                    embed.addField("System Message","** [System] No Records Found for " + msg.getMentionedMembers().get(0).getAsMention() + "**", true);
+                    embed.addField("System Message","** [System] No Records Found for " + msg.getMentionedMembers().get(0).getEffectiveName() + "**", true);
                     discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     discussionChannel.sendMessage(embed.build()).queue();
                 }
@@ -1241,7 +1258,7 @@ class DiscordBotMain extends ListenerAdapter {
                     embed.addField("System Message", ":white_check_mark: **[System] Successfully Cleared " +
                             clearedRecords + " Records from " + msg.getMentionedMembers().get(index).getAsMention() + "**", true);
                     outputChannel.sendMessage(embed.build()).queue();
-                    System.out.println("[System] Successfully Cleared " + clearedRecords + " Records from " + msg.getMentionedMembers().get(index).getUser().getAsTag());
+                    System.out.println("[System] Successfully Cleared " + clearedRecords + " Records from " + msg.getMentionedMembers().get(index).getEffectiveName());
                 }
                 index++;
             }
@@ -1271,7 +1288,7 @@ class DiscordBotMain extends ListenerAdapter {
                 if (clearedRecords == -1) {
                     embed.setColor(Color.RED);
                     embed.setTitle("FATAL ERROR");
-                    embed.setThumbnail(errorIcon);
+                    embed.setThumbnail(stopIcon);
                     embed.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                             " while I reload and then you can try to run that command again**", true);
                     discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -1307,7 +1324,7 @@ class DiscordBotMain extends ListenerAdapter {
                     if (clearedRecords == -1) {
                         embed.setColor(Color.RED);
                         embed.setTitle("FATAL ERROR");
-                        embed.setThumbnail(errorIcon);
+                        embed.setThumbnail(stopIcon);
                         embed.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                                 " while I reload and then you can try to run that command again**", true);
                         discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -1475,8 +1492,8 @@ class DiscordBotMain extends ListenerAdapter {
                             msg.getGuild().getMemberById(Long.parseLong(args[2])).getEffectiveName());
                 }
                 catch (NullPointerException ex) {
-                    System.out.println("[System] " + msg.getMember().getEffectiveName() + " Successfully Transferred the Records of " + args[1] + " to " +
-                            args[2]);
+                    System.out.println("[System] " + msg.getMember().getEffectiveName() + " Successfully Transferred the Records of " +
+                            args[1] + " to " + args[2]);
                 }
 
             }
