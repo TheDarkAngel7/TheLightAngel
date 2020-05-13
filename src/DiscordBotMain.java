@@ -277,11 +277,36 @@ class DiscordBotMain extends ListenerAdapter {
                 }
             }
             else if (args.length == 2) {
-                if (args[1].equalsIgnoreCase("check")) {
-                    help.checkCommand(isTeamMember);
+                if (args[1].equalsIgnoreCase("botAbuse") && isTeamMember) {
+                    help.botAbuseCommand();
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+                else if (args[1].equalsIgnoreCase("permBotAbuse") && isTeamMember) {
+                    help.permBotAbuseCommand();
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+                else if (args[1].equalsIgnoreCase("undo") && isTeamMember) {
+                    help.undoCommand();
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+                else if (args[1].equalsIgnoreCase("transfer") && isTeamMember) {
+                    help.transferCommand();
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+                else if (args[1].equalsIgnoreCase("clear") && isTeamMember) {
+                    help.clearCommand();
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    discussionChannel.sendMessage(embed.build()).queue();
+                }
+                else if (args[1].equalsIgnoreCase("check")) {
+                    help.checkCommand(isTeamMember, guild, helpChannel);
                     if (!isTeamMember) {
-                        helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
-                        helpChannel.sendMessage(embed.build()).queue();
+                        msg.getChannel().sendMessage(msg.getMember().getAsMention()).queue();
+                        msg.getChannel().sendMessage(embed.build()).queue();
                     }
                     else {
                         discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -291,8 +316,8 @@ class DiscordBotMain extends ListenerAdapter {
                 else if (args[1].equalsIgnoreCase("checkHistory")) {
                     help.checkHistoryCommand();
                     if (!isTeamMember) {
-                        helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
-                        helpChannel.sendMessage(embed.build()).queue();
+                        msg.getChannel().sendMessage(msg.getMember().getAsMention()).queue();
+                        msg.getChannel().sendMessage(embed.build()).queue();
                     }
                     else {
                         discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -305,44 +330,8 @@ class DiscordBotMain extends ListenerAdapter {
                     embed.setTitle("Misspelled Command");
                     embed.addField("System Message", ":x: **[System] You Likely Misspelled the Name of the " +
                             "Command You Are Wanting to Lookup**", true);
-                    helpChannel.sendMessage(msg.getMember().getAsMention());
-                    helpChannel.sendMessage(embed.build()).queue();
-                }
-            }
-            else if (args.length == 2 && isTeamMember) {
-                if (args[1].equalsIgnoreCase("botAbuse")) {
-                    help.botAbuseCommand();
-                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
-                    discussionChannel.sendMessage(embed.build()).queue();
-                }
-                else if (args[1].equalsIgnoreCase("permBotAbuse")) {
-                    help.permBotAbuseCommand();
-                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
-                    discussionChannel.sendMessage(embed.build()).queue();
-                }
-                else if (args[1].equalsIgnoreCase("undo")) {
-                    help.undoCommand();
-                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
-                    discussionChannel.sendMessage(embed.build()).queue();
-                }
-                else if (args[1].equalsIgnoreCase("transfer")) {
-                    help.transferCommand();
-                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
-                    discussionChannel.sendMessage(embed.build()).queue();
-                }
-                else if (args[1].equalsIgnoreCase("clear")) {
-                    help.clearCommand();
-                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
-                    discussionChannel.sendMessage(embed.build()).queue();
-                }
-                else {
-                    embed.setColor(Color.RED);
-                    embed.setThumbnail(errorIcon);
-                    embed.setTitle("Misspelled Command");
-                    embed.addField("System Message", ":x: **[System] You Likely Misspelled the Name of the " +
-                            "Command You Are Wanting to Lookup**", true);
-                    helpChannel.sendMessage(msg.getMember().getAsMention());
-                    helpChannel.sendMessage(embed.build()).queue();
+                    msg.getChannel().sendMessage(msg.getMember().getAsMention());
+                    msg.getChannel().sendMessage(embed.build()).queue();
                 }
             }
             else if (args.length > 2) {
@@ -351,8 +340,8 @@ class DiscordBotMain extends ListenerAdapter {
                 embed.setTitle("Error While Fetching Help");
                 embed.addField("System Message", ":x: **[System] Too Many Arguements**", true);
                 if (!isTeamMember) {
-                    helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
-                    helpChannel.sendMessage(embed.build()).queue();
+                    msg.getChannel().sendMessage(msg.getMember().getAsMention()).queue();
+                    msg.getChannel().sendMessage(embed.build()).queue();
                 }
                 else {
                     discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();

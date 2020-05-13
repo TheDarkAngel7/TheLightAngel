@@ -1,9 +1,11 @@
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import java.awt.*;
 
 class Help {
-    EmbedBuilder embed;
-    String helpIcon = "https://i.imgur.com/saZzlXr.png";
+    private EmbedBuilder embed;
+    private String helpIcon = "https://i.imgur.com/saZzlXr.png";
 
     Help(EmbedBuilder embedBuilder) {
         this.embed = embedBuilder;
@@ -41,7 +43,7 @@ class Help {
                 "However, including a Mention or Discord ID with the command will undo the bot abuse for that player. " +
                 "However this command will only work for Bot Abuses that were issued 5 days or less ago.", true);
     }
-    void checkCommand(boolean isTeamMember) {
+    void checkCommand(boolean isTeamMember, Guild guild, MessageChannel helpChannel) {
         embed.setTitle("/check Command Help");
         embed.setThumbnail(helpIcon);
         embed.setColor(Color.BLUE);
@@ -56,7 +58,12 @@ class Help {
             embed.addField("System Message", "**Full Syntax:\n `/check [dm] [TimeZone]`**\n" +
                     "\n" +
                     "/check allows you to check your own bot abuse status, " +
-                    "instead of the staff having to guess when your bot abuse will expire, you can just have the bot tell you.", true);
+                    "instead of the staff having to guess when your bot abuse will expire, you can just have the bot tell you.\n\n" +
+                    "About `[dm]`: If you would like to opt for TheLightAngel to send you the information via a DM " +
+                    "instead of the default location in " + guild.getTextChannelById(helpChannel.getIdLong()).getAsMention() + ", you can place a \"dm\" right after the \"/check\".\n\n" +
+                    "About `[TimeZone]`: Because the bot records the times in Central Time/US, *what if someone used this command " +
+                    "and wanted to see the times in their own time zone?* **That's where this argument comes into play!**  " +
+                    "Right now the bot is compatible with Time Zones that are a full hour, or a full hour and a half ahead or behind UTC.", true);
         }
     }
     void checkHistoryCommand() {
