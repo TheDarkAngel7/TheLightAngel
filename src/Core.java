@@ -611,9 +611,11 @@ class Core { // This is where all the magic happens, where all the data is added
             botAbuseVars.targetDiscordID = this.discordID.get(this.discordID.size() - 1);
             botAbuseVars.dateIssued = this.issuedDates.get(this.discordID.size() - 1);
             if (purpose == 0) {
+                botAbuseVars.purpose = "botAbuse";
                 botAbuseVars.dateToExpire = this.expiryDates.get(this.discordID.size() - 1);
             }
             else {
+                botAbuseVars.purpose = "permBotAbuse";
                 botAbuseVars.dateToExpire = null;
             }
             botAbuseVars.reason = this.reasons.get(this.discordID.size() - 1);

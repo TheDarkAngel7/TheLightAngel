@@ -11,9 +11,8 @@ import javax.annotation.Nonnull;
 import java.awt.*;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.*;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -27,6 +26,7 @@ class DiscordBotMain extends ListenerAdapter {
     private boolean timerRunning = false;
     private boolean commandsSuspended = false;
     private boolean isRestart;
+    private List<String> commands = new ArrayList<>();
     // Image Background Hex: #2F3136
     String checkIcon = "https://i.imgur.com/bakLhaw.png";
     String warningIcon = "https://i.imgur.com/5SD8jxX.png";
@@ -270,9 +270,11 @@ class DiscordBotMain extends ListenerAdapter {
                 embed.setThumbnail(infoIcon);
                 embed.addField("System Message", "Syntax: `/help <Command Name>`", true);
                 if (isTeamMember) {
+                    discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     discussionChannel.sendMessage(embed.build()).queue();
                 }
                 else {
+                    helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     helpChannel.sendMessage(embed.build()).queue();
                 }
             }
@@ -305,8 +307,8 @@ class DiscordBotMain extends ListenerAdapter {
                 else if (args[1].equalsIgnoreCase("check")) {
                     help.checkCommand(isTeamMember, guild, helpChannel);
                     if (!isTeamMember) {
-                        msg.getChannel().sendMessage(msg.getMember().getAsMention()).queue();
-                        msg.getChannel().sendMessage(embed.build()).queue();
+                        helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                        helpChannel.sendMessage(embed.build()).queue();
                     }
                     else {
                         discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -316,13 +318,21 @@ class DiscordBotMain extends ListenerAdapter {
                 else if (args[1].equalsIgnoreCase("checkHistory")) {
                     help.checkHistoryCommand();
                     if (!isTeamMember) {
-                        msg.getChannel().sendMessage(msg.getMember().getAsMention()).queue();
-                        msg.getChannel().sendMessage(embed.build()).queue();
+                        helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                        helpChannel.sendMessage(embed.build()).queue();
                     }
                     else {
                         discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                         discussionChannel.sendMessage(embed.build()).queue();
                     }
+                }
+                else if (isCommand(args[1]) && !isTeamMember) {
+                    embed.setColor(Color.RED);
+                    embed.setThumbnail(errorIcon);
+                    embed.setTitle("No Permissions to Get This Help");
+                    embed.addField("System Message", ":x: **[System] You Do Not Have Permissions to See This Help**", true);
+                    helpChannel.sendMessage(msg.getMember().getAsMention());
+                    helpChannel.sendMessage(embed.build()).queue();
                 }
                 else {
                     embed.setColor(Color.RED);
@@ -340,21 +350,13 @@ class DiscordBotMain extends ListenerAdapter {
                 embed.setTitle("Error While Fetching Help");
                 embed.addField("System Message", ":x: **[System] Too Many Arguements**", true);
                 if (!isTeamMember) {
-                    msg.getChannel().sendMessage(msg.getMember().getAsMention()).queue();
-                    msg.getChannel().sendMessage(embed.build()).queue();
+                    helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
+                    helpChannel.sendMessage(embed.build()).queue();
                 }
                 else {
                     discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     discussionChannel.sendMessage(embed.build()).queue();
                 }
-            }
-            else {
-                embed.setColor(Color.RED);
-                embed.setThumbnail(errorIcon);
-                embed.setTitle("No Permissions to Get This Help");
-                embed.addField("System Message", ":x: **[System] You Do Not Have Permissions to See This Help**", true);
-                helpChannel.sendMessage(msg.getMember().getAsMention());
-                helpChannel.sendMessage(embed.build()).queue();
             }
         }
         else if (commandsSuspended) {
@@ -414,6 +416,7 @@ class DiscordBotMain extends ListenerAdapter {
         }
         if (!timerRunning && !commandsSuspended) {
             timerRunning = true;
+            commands.addAll(Arrays.asList("botAbuse", "permBotAbuse", "undo", "check", "checkHistory", "clear", "transfer"));
             if (!isRestart) {
                 discussionChannel.sendMessage(":wave: Hey Folks! I'm Ready To Fly!").queue();
             }
@@ -1715,5 +1718,15 @@ class DiscordBotMain extends ListenerAdapter {
             }
             index++;
         }
+    }
+    private boolean isCommand(String arg) {
+        int index = 0;
+        while (index < commands.size()) {
+            if (arg.equalsIgnoreCase(commands.get(index))) {
+                return true;
+            }
+            index++;
+        }
+        return false;
     }
 }
