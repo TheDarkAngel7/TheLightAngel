@@ -13,7 +13,7 @@ class Core { // This is where all the magic happens, where all the data is added
     private RabbitMQSend rabbit;
     private BotAbuseVariables botAbuseVars = new BotAbuseVariables();
     private UndoVariables undoVars = new UndoVariables();
-    Configuration config = new Configuration();
+    Configuration config;
     ArrayList<Long> discordID = new ArrayList<>();
     ArrayList<String> issuingTeamMember = new ArrayList<>();
     ArrayList<Integer> repOffenses = new ArrayList<>();
@@ -35,8 +35,7 @@ class Core { // This is where all the magic happens, where all the data is added
         }
         else {
             System.out.println("[System] Program Restarting...");
-            ProcessBuilder process = new ProcessBuilder();
-            process.command("cmd.exe", "/c", "start", this.config.systemPath + "\\restart.bat").start();
+            new ProcessBuilder().command("cmd.exe", "/c", "start", this.config.systemPath + "\\restart.bat").start();
             System.exit(1);
         }
         this.config.host = configObj.get("host").getAsString();
@@ -696,7 +695,7 @@ class Core { // This is where all the magic happens, where all the data is added
                 (this.expiryDates.size() == this.reasons.size()) && (this.reasons.size() == this.proofImages.size());
     }
 }
-class Configuration {
+abstract class Configuration {
     String systemPath;
     String host;
     boolean testModeEnabled;

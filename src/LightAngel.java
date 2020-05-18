@@ -12,6 +12,7 @@ class LightAngel {
     static DiscordBotMain discord;
     static File dataFile = new File("data/data.json");
     static {
+        System.out.println("[System] TheLightAngel is Starting! Please Wait...");
         try {
             if (!dataFile.exists()) {
                 if (dataFile.createNewFile()) {
