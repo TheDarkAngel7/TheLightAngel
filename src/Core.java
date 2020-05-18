@@ -13,7 +13,7 @@ class Core { // This is where all the magic happens, where all the data is added
     private RabbitMQSend rabbit;
     private BotAbuseVariables botAbuseVars = new BotAbuseVariables();
     private UndoVariables undoVars = new UndoVariables();
-    Configuration config;
+    Configuration config = new Configuration() {};
     ArrayList<Long> discordID = new ArrayList<>();
     ArrayList<String> issuingTeamMember = new ArrayList<>();
     ArrayList<Integer> repOffenses = new ArrayList<>();
