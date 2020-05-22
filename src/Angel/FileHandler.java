@@ -44,26 +44,16 @@ class FileHandler {
         log.info("Database Successfully Setup");
     }
     void saveDatabase() throws IOException {
-        String jsonDiscordID = gson.toJson(core.discordID);
-        String jsonTeamMembers = gson.toJson(core.issuingTeamMember);
-        String jsonRepOffenses = gson.toJson(core.repOffenses);
-        String jsonDatesIssued = gson.toJson(core.issuedDates);
-        String jsonDatesToExpire = gson.toJson(core.expiryDates);
-        String jsonReasons = gson.toJson(core.reasons);
-        String jsonProofImages = gson.toJson(core.proofImages);
-        String jsonCurrentBotAbusers = gson.toJson(core.currentBotAbusers);
-        System.out.println(jsonDiscordID + "\n" + jsonTeamMembers + "\n" + jsonRepOffenses + "\n" + jsonDatesIssued
-        + "\n" + jsonDatesToExpire + "\n" + jsonReasons + "\n" + jsonProofImages + "\n" + jsonCurrentBotAbusers);
         JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(new FileOutputStream(jsonTempDataFile)));
         jsonWriter.beginObject();
-        jsonWriter.name("DiscordID").value(jsonDiscordID);
-        jsonWriter.name("TeamMembers").value(jsonTeamMembers);
-        jsonWriter.name("RepOffenses").value(jsonRepOffenses);
-        jsonWriter.name("DatesIssued").value(jsonDatesIssued);
-        jsonWriter.name("ExpiryDates").value(jsonDatesToExpire);
-        jsonWriter.name("Reasons").value(jsonReasons);
-        jsonWriter.name("ProofImages").value(jsonProofImages);
-        jsonWriter.name("CurrentBotAbusers").value(jsonCurrentBotAbusers);
+        jsonWriter.name("DiscordID").value(gson.toJson(core.discordID));
+        jsonWriter.name("TeamMembers").value(gson.toJson(core.issuingTeamMember));
+        jsonWriter.name("RepOffenses").value(gson.toJson(core.repOffenses));
+        jsonWriter.name("DatesIssued").value(gson.toJson(core.issuedDates));
+        jsonWriter.name("ExpiryDates").value(gson.toJson(core.expiryDates));
+        jsonWriter.name("Reasons").value(gson.toJson(core.reasons));
+        jsonWriter.name("ProofImages").value(gson.toJson(core.proofImages));
+        jsonWriter.name("CurrentBotAbusers").value(gson.toJson(core.currentBotAbusers));
         jsonWriter.endObject();
         jsonWriter.close();
         log.info("JSONWriter Successfully Ran to Database Temp File");

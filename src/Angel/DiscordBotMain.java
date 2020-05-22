@@ -130,12 +130,12 @@ class DiscordBotMain extends ListenerAdapter {
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         Message msg = event.getMessage();
-        Member author = event.getGuild().getMember(msg.getAuthor());
+        Member author = event.getMember();
+        if (event.getAuthor().isBot() || msg.getChannelType() == ChannelType.PRIVATE) return;
         boolean isTeamMember = msg.getMember().getRoles().contains(botConfig.teamRole);
         boolean isStaffMember = msg.getMember().getRoles().contains(botConfig.staffRole) ||
                 msg.getMember().getRoles().contains(botConfig.adminRole);
 
-        if (event.getAuthor().isBot() || msg.getChannelType() == ChannelType.PRIVATE) return;
         String[] args = msg.getContentRaw().substring(1).split(" ");
         if (msg.getContentRaw().charAt(0) == '/' && !commandsSuspended && !args[0].equalsIgnoreCase("help")
                 && !args[0].equalsIgnoreCase("restart") && !args[0].equalsIgnoreCase("reload"))  {
@@ -1297,7 +1297,7 @@ class DiscordBotMain extends ListenerAdapter {
                 // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
                 catch (IllegalArgumentException e) {
                     this.lengthyHistory(
-                            core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), 100, true), botConfig.discussionChannel);
+                            core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), 100, true), msg.getAuthor(), isTeamMember);
                 }
             }
             // The Try code would throw a NullPointerException if the Discord ID Provided does not exist on the server.
@@ -1311,7 +1311,7 @@ class DiscordBotMain extends ListenerAdapter {
             }
             // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
             catch (IllegalArgumentException h) {
-                this.lengthyHistory(core.seeHistory(Long.parseLong(args[1]), 100,true), botConfig.discussionChannel);
+                this.lengthyHistory(core.seeHistory(Long.parseLong(args[1]), 100,true), msg.getAuthor(), isTeamMember);
             }
             catch (IndexOutOfBoundsException j) {
                 botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention() +
@@ -1321,24 +1321,22 @@ class DiscordBotMain extends ListenerAdapter {
         // /checkhistory
         // Get the history of the player who used the command.
         else if (args.length == 1) {
-            PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
             try {
                 String result = core.seeHistory(msg.getAuthor().getIdLong(), 100,false);
                 if (result.contains(":white_check_mark:")) {
                     embed.setAsSuccess("Your Bot Abuse History");
                 }
                 embedBuilder.addField("System Message", result, true);
-                channel.sendMessage(embedBuilder.build()).queue();
+                sendDM(msg.getAuthor(), embedBuilder.build());
                 System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked their own Bot Abuse History");
             }
             // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
             catch (IllegalArgumentException ex) {
-                this.lengthyHistory(core.seeHistory(msg.getAuthor().getIdLong(), 100,false), channel);
+                this.lengthyHistory(core.seeHistory(msg.getAuthor().getIdLong(), 100,false), msg.getAuthor(), isTeamMember);
             }
         }
         // /checkhistory <timeOffset>
         else if (args.length == 2) {
-            PrivateChannel channel =  msg.getAuthor().openPrivateChannel().complete();
             try {
                 if (core.checkOffset(args[1])) {
                     String result = core.seeHistory(msg.getAuthor().getIdLong(), Float.parseFloat(args[1]), false);
@@ -1347,7 +1345,7 @@ class DiscordBotMain extends ListenerAdapter {
                         embed.setAsSuccess("Your Bot Abuse History");
                     }
                     embedBuilder.addField("System Message", result, true);
-                    channel.sendMessage(embedBuilder.build()).queue();
+                    sendDM(msg.getAuthor(), embedBuilder.build());
                     System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked their own Bot Abuse History" +
                             " using TimeZone offset " + args[1]);
                 }
@@ -1359,13 +1357,12 @@ class DiscordBotMain extends ListenerAdapter {
                 }
             }
             catch (IllegalArgumentException ex) {
-                this.lengthyHistory(core.seeHistory(msg.getAuthor().getIdLong(), Float.parseFloat(args[1]), false), channel);
+                this.lengthyHistory(core.seeHistory(msg.getAuthor().getIdLong(), Float.parseFloat(args[1]), false), msg.getAuthor(), isTeamMember);
             }
         }
 
         // /checkhistory <timeOffset> <Mention or Discord ID>
         else if (args.length == 3 && isTeamMember) {
-            PrivateChannel channel = msg.getAuthor().openPrivateChannel().complete();
             embed.setAsInfo("Bot Abuse History");
             if (core.checkOffset(args[1])) {
                 try {
@@ -1392,13 +1389,12 @@ class DiscordBotMain extends ListenerAdapter {
                 }
                 catch (IllegalArgumentException ex) {
                     try {
-                        this.lengthyHistory(core.seeHistory(Long.parseLong(args[2]), Float.parseFloat(args[1]), true), botConfig.discussionChannel);
+                        this.lengthyHistory(core.seeHistory(Long.parseLong(args[2]), Float.parseFloat(args[1]), true), msg.getAuthor(), isTeamMember);
                         System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked the history of " +
                                 msg.getGuild().getMemberById(Long.parseLong(args[2])).getEffectiveName() + " using TimeZone offset " + args[1]);
                     }
                     catch (NumberFormatException e) {
-                        this.lengthyHistory(
-                                core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), Float.parseFloat(args[1]), true), botConfig.discussionChannel);
+                        this.lengthyHistory(core.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), Float.parseFloat(args[1]), true), msg.getAuthor(), isTeamMember);
                         System.out.println("[System] " + msg.getMember().getEffectiveName() + " just checked the history of " +
                                 msg.getMentionedMembers().get(0).getEffectiveName() + " using TimeZone offset " + args[1]);
                     }
@@ -1514,18 +1510,18 @@ class DiscordBotMain extends ListenerAdapter {
     ///////////////////////////////////////////////////////////
     // Miscellaneous Methods
     ///////////////////////////////////////////////////////////
-    private void lengthyHistory(String stringToSplit, MessageChannel channel) {
+    private void lengthyHistory(String stringToSplit, User user, boolean isTeamMember) {
         String[] splitString = stringToSplit.split("\n\n");
         int index = 0;
         while (index < splitString.length) {
-            try {
-                embedBuilder.addField("System Message", splitString[index], true);
-                channel.sendMessage(embedBuilder.build()).queue();
-                embedBuilder.clearFields();
+            embedBuilder.addField("System Message", splitString[index], true);
+            if (!isTeamMember) {
+                sendDM(user, embedBuilder.build());
             }
-            catch (IllegalStateException ex) {
-                // Take No Action
+            else {
+                botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
             }
+            embedBuilder.clearFields();
             index++;
         }
     }
@@ -1543,6 +1539,9 @@ class DiscordBotMain extends ListenerAdapter {
         log.fatal("Integiry Check on Array Data Failed - Attempting Restart");
         System.out.println("[System - FATAL ERROR] Data Integiry Check on ArrayList objects Failed - Reloading to Prevent Damage");
         core.startup(true);
+    }
+    private void sendDM(User user, MessageEmbed msg) {
+        user.openPrivateChannel().flatMap(channel -> channel.sendMessage(msg)).queue();
     }
 }
 abstract class BotConfiguration {
