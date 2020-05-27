@@ -14,10 +14,10 @@ import java.util.ArrayList;
 import java.util.Date;
 
 class FileHandler {
-    Core core;
+    private Core core;
     Gson gson = new Gson();
-    File jsonDataFile = new File("data/data.json");
-    File jsonTempDataFile = new File("data/datatemp.json");
+    private File jsonDataFile = new File("data/data.json");
+    private File jsonTempDataFile = new File("data/datatemp.json");
     private final Logger log = LogManager.getLogger(FileHandler.class);
     private Type longType = new TypeToken<ArrayList<Long>>(){}.getType();
     private Type integerType = new TypeToken<ArrayList<Integer>>(){}.getType();
@@ -58,18 +58,18 @@ class FileHandler {
         jsonWriter.close();
         log.info("JSONWriter Successfully Ran to Database Temp File");
         if (jsonDataFile.delete()) {
-            System.out.println("[System] Successfully Deleted Original File");
             log.info("Successfully Deleted Original File");
         }
         else {
+            log.warn("Could Not Delete Original Data File - Trying Again Over and Over...");
             while (jsonDataFile.exists()) {
                 System.out.println("Result of Deletion: " + jsonDataFile.delete());
             }
+            log.info("Deletion Finally Ran");
         }
 
         // Rename the file
         if (jsonTempDataFile.renameTo(jsonDataFile)) {
-            System.out.println("[System] Successfully Renamed Temp File to Original File");
             log.info("Successfully Renamed Temp File to Original File");
         }
         else {

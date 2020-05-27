@@ -18,7 +18,7 @@ class Core { // This is where all the magic happens, where all the data is added
     private BotAbuseVariables botAbuseVars = new BotAbuseVariables();
     private UndoVariables undoVars = new UndoVariables();
     private final Logger log = LogManager.getLogger(Core.class);
-    CoreConfiguration config = new CoreConfiguration() {};
+    private CoreConfiguration config = new CoreConfiguration() {};
     ArrayList<Long> discordID = new ArrayList<>();
     ArrayList<String> issuingTeamMember = new ArrayList<>();
     ArrayList<Integer> repOffenses = new ArrayList<>();
@@ -37,10 +37,10 @@ class Core { // This is where all the magic happens, where all the data is added
     void startup(boolean reload) throws IOException, TimeoutException {
         if (!reload) {
             config.setup(fileHandler.getConfig());
-            System.out.println("[System] Core Initiated...");
+            log.info("[System] Core Initiated...");
         }
         else {
-            System.out.println("[System] Program Restarting...");
+            log.warn("[System] Program Restarting...");
             new ProcessBuilder().command("cmd.exe", "/c", "start", this.config.systemPath + "\\restart.bat").start();
             System.exit(1);
         }
@@ -54,7 +54,6 @@ class Core { // This is where all the magic happens, where all the data is added
         }
         catch (IllegalStateException ex) {
             log.warn("No Data Existed in the Arrays - Data File is Empty");
-            System.out.println("[System - Warning] No Data Existed in the Arrays - Data File is Empty");
         }
     }
 
@@ -104,8 +103,6 @@ class Core { // This is where all the magic happens, where all the data is added
             if (arraySizesEqual()) {
                 fileHandler.saveDatabase();
                 this.sendMessage(0, targetDiscordID);
-                System.out.println("[System] Successfully Bot Abused " + targetDiscordID + " for " + this.reasons.get(this.discordID.lastIndexOf(targetDiscordID)));
-                log.info("Successfully Bot Abused " + targetDiscordID + " for " + this.reasons.get(this.discordID.lastIndexOf(targetDiscordID)));
                 return ":white_check_mark: **[System] Successfully Bot Abused " + targetDiscordID +
                         "**\nIssuing Team Member: **" + this.issuingTeamMember.get(this.discordID.lastIndexOf(targetDiscordID)) +
                         "**\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
@@ -486,14 +483,12 @@ class Core { // This is where all the magic happens, where all the data is added
         // If we had records transferred and they weren't Bot Abused
         if (numTransferred > 0 && !wasBotAbused) {
             fileHandler.saveDatabase();
-            System.out.println("[System] Successfully Transferred " + numTransferred + " Records from " + oldDiscordID + " to " + newDiscordID + " - Old Discord ID Was Not Bot Abused");
-            return ":white_check_mark: [System] Successfully Transferred " + numTransferred + " Records from " + oldDiscordID + " to " + newDiscordID + "\nThe Old Discord ID Was Not Bot Abused";
+            return ":white_check_mark: **[System] Successfully Transferred " + numTransferred + " Records from " + oldDiscordID + " to " + newDiscordID + "\nThe Old Discord ID Was Not Bot Abused**";
         }
         // If we had records transferred and they were Bot Abused
         else if (numTransferred > 0) {
             fileHandler.saveDatabase();
-            System.out.println("[System] Successfully Transferred " + numTransferred + " Records from " + oldDiscordID + " to " + newDiscordID + " - Old Discord ID Was Bot Abused and was also Transferred");
-            return ":white_check_mark: [System] Successfully Transferred " + numTransferred + " Records from " + oldDiscordID + " to " + newDiscordID + "\nThe Old Discord ID Was Bot Abused at the Time and the Role was Transferred Over";
+            return ":white_check_mark: **[System] Successfully Transferred " + numTransferred + " Records from " + oldDiscordID + " to " + newDiscordID + "\nThe Old Discord ID Was Bot Abused at the Time and the Role was Transferred Over**";
         }
         // If we had No Records Transferred
         else {
@@ -533,7 +528,7 @@ class Core { // This is where all the magic happens, where all the data is added
         int recordsCount = 0;
         String output = "**/checkhistory Results";
         SimpleDateFormat sdfDateIssued = new SimpleDateFormat("MM-dd-yy HH:mm:ss zzz");
-        SimpleDateFormat sdfDateExpired= new SimpleDateFormat("MM-dd-yy HH:mm:ss zzz");
+        SimpleDateFormat sdfDateExpired = new SimpleDateFormat("MM-dd-yy HH:mm:ss zzz");
         Calendar dateIssued = Calendar.getInstance();
         Calendar dateToExpire = Calendar.getInstance();
 
