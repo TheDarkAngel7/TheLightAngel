@@ -5,6 +5,7 @@
 	"token": "<Token Here>",
 	"ownerDiscordID": "<Bot Owner Discord ID Here>",
 	"roleScannerInterval": 900000,
+	"fieldHeader": "System Message",
 	"adminRoleID": "702223865606176841",
 	"staffRoleID": "666047627166744597",
 	"teamRoleID": "664556958686380083",

@@ -67,7 +67,7 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.reasons.add("Bumping an Offline Message");
             }
             else if (reason.equals("s") || reason.equals("staff")) {
-                this.reasons.add("Contact Staff");
+                this.reasons.add("Contact SAFE Team");
             }
             else {
                 return ":x: [System] Invalid Reason!";

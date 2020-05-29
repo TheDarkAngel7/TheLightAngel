@@ -36,7 +36,8 @@ class DiscordBotMain extends ListenerAdapter {
     // don't interfere with the main builder
     private EmbedBuilder timerEmbed = new EmbedBuilder();
     private EmbedBuilder timerEmbed2 = new EmbedBuilder();
-    private Help help = new Help(embedBuilder, embed);
+    private String fieldHeader;
+    private Help help = new Help(embedBuilder, embed, fieldHeader);
     private boolean timerRunning = false;
     private boolean commandsSuspended = false;
     private boolean isRestart;
@@ -49,6 +50,7 @@ class DiscordBotMain extends ListenerAdapter {
         core.startup(false);
         botConfig = new BotConfiguration(fileHandler.getConfig()) {};
         botConfig.initialSetup();
+        this.fieldHeader = botConfig.fieldHeader;
         this.isRestart = isRestart;
         log.info("All Classes Constructed");
         commands.addAll(Arrays.asList("botAbuse", "permBotAbuse", "undo", "check", "checkHistory", "clear", "transfer"));
@@ -85,7 +87,7 @@ class DiscordBotMain extends ListenerAdapter {
             event.getGuild().addRoleToMember(event.getMember().getIdLong(),
                    botConfig.botAbuseRole).completeAfter(50, TimeUnit.MILLISECONDS);
             embed.setAsInfo("Join Event Information");
-            embedBuilder.addField("System Message", "**[System - Join Event] Added the Bot Abuse Role to "
+            embedBuilder.addField(fieldHeader, "**[System - Join Event] Added the Bot Abuse Role to "
                     + event.getMember().getAsMention() +
                     " since according to the data file they should have the Bot Abuse role**", true);
             botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
@@ -97,7 +99,7 @@ class DiscordBotMain extends ListenerAdapter {
             event.getGuild().removeRoleFromMember(event.getMember().getIdLong(),
                     botConfig.botAbuseRole).completeAfter(50, TimeUnit.MILLISECONDS);
             embed.setAsInfo("Join Event Information");
-            embedBuilder.addField("System Message", "**[System - Join Event] Removed the Bot Abuse Role from "
+            embedBuilder.addField(fieldHeader, "**[System - Join Event] Removed the Bot Abuse Role from "
                     + event.getMember().getAsMention() +
                     " since according to the data file they shouldn't have it**", true);
             botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
@@ -142,14 +144,14 @@ class DiscordBotMain extends ListenerAdapter {
                 }
                 else if ((args.length < 3 || args.length > 4) && (isTeamMember || author == botConfig.owner)) {
                     embed.setAsError("Error - Invalid Number of Arguements");
-                    embedBuilder.addField("System Message",
+                    embedBuilder.addField(fieldHeader,
                             "**[System] You Entered an Invalid Number of Arguments**", true);
                     botConfig.discussionChannel.sendMessage("Hey " + msg.getMember().getAsMention() + ",").queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                 }
                 else { // If they Don't have the Team role then it returns an error message
                     embed.setAsError("Error - No Permissions");
-                    embedBuilder.addField("System Message", ":x: **[System] You Lack Permissions to do that!**", true);
+                    embedBuilder.addField(fieldHeader, ":x: **[System] You Lack Permissions to do that!**", true);
                     botConfig.helpChannel.sendMessage("Hey " + msg.getMember().getAsMention() + ",").queue();
                     botConfig.helpChannel.sendMessage(embedBuilder.build()).queue();
                 }
@@ -160,13 +162,13 @@ class DiscordBotMain extends ListenerAdapter {
                 }
                 else if ((isStaffMember || author == botConfig.owner) && (args.length < 2 || args.length > 3)) {
                     embed.setAsError("Error - Invalid Number of Arguements");
-                    embedBuilder.addField("System Message", ":x: **[System] You Entered an Invalid Number of Arguments**", true);
+                    embedBuilder.addField(fieldHeader, ":x: **[System] You Entered an Invalid Number of Arguments**", true);
                     botConfig.discussionChannel.sendMessage("Hey " + msg.getMember().getAsMention() + ",").queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                 }
                 else {
                     embed.setAsError("Error - No Permissions");
-                    embedBuilder.addField("System Message", ":x: **[System] You Lack Permissions to do that!**", true);
+                    embedBuilder.addField(fieldHeader, ":x: **[System] You Lack Permissions to do that!**", true);
                     botConfig.helpChannel.sendMessage("Hey " + msg.getMember().getAsMention() + ",").queue();
                     botConfig.helpChannel.sendMessage(embedBuilder.build()).queue();
                 }
@@ -177,7 +179,7 @@ class DiscordBotMain extends ListenerAdapter {
                 }
                 else {
                     embed.setAsError("Error - No Permissions");
-                    embedBuilder.addField("System Message", ":x: **[System] You Lack Permissions to do that!**", true);
+                    embedBuilder.addField(fieldHeader, ":x: **[System] You Lack Permissions to do that!**", true);
                     botConfig.helpChannel.sendMessage("Hey " + msg.getMember().getAsMention() + ",").queue();
                     botConfig.helpChannel.sendMessage(embedBuilder.build()).queue();
                 }
@@ -197,7 +199,7 @@ class DiscordBotMain extends ListenerAdapter {
                 }
                 else {
                     embed.setAsError("Error - No Permissions");
-                    embedBuilder.addField("System Message", ":x: **[System] You Lack Permissions to do that!**", true);
+                    embedBuilder.addField(fieldHeader, ":x: **[System] You Lack Permissions to do that!**", true);
                     botConfig.helpChannel.sendMessage("Hey " + msg.getMember().getAsMention() + ",").queue();
                     botConfig.helpChannel.sendMessage(embedBuilder.build()).queue();
                 }
@@ -208,7 +210,7 @@ class DiscordBotMain extends ListenerAdapter {
                 }
                 else {
                     embed.setAsError("Error - No Permissions");
-                    embedBuilder.addField("System Message", ":x: "
+                    embedBuilder.addField(fieldHeader, ":x: "
                             + msg.getAuthor().getAsMention() + " [System] You Lack Permissions to do that!", true);
                     botConfig.helpChannel.sendMessage("Hey " + msg.getMember().getAsMention() + ",").queue();
                     botConfig.helpChannel.sendMessage(embedBuilder.build()).queue();
@@ -232,12 +234,12 @@ class DiscordBotMain extends ListenerAdapter {
             try {
                 embed.setAsWarning("Restart Initiated");
                 if (author != botConfig.owner) {
-                    embedBuilder.addField("System Message", "**Restart Initiated by " + msg.getMember().getAsMention()
+                    embedBuilder.addField(fieldHeader, "**Restart Initiated by " + msg.getMember().getAsMention()
                             + "\nPlease Allow up to 10 seconds for this to complete**", true);
                     log.warn("Staff Invoked Restart");
                 }
                 else {
-                    embedBuilder.addField("System Message", "**Restart Initiated by The Angel of Darkness"
+                    embedBuilder.addField(fieldHeader, "**Restart Initiated by The Angel of Darkness"
                             + "\nPlease Allow up to 10 seconds for this to complete**", true);
                     log.warn("Owner Invoked Restart");
                 }
@@ -251,7 +253,7 @@ class DiscordBotMain extends ListenerAdapter {
         else if ((msg.getContentRaw().charAt(0) == '/' && args[0].equalsIgnoreCase("reload"))
                 && ((isStaffMember) || author == botConfig.owner)) {
             embed.setAsWarning("Reloading Configuration");
-            embedBuilder.addField("System Message",
+            embedBuilder.addField(fieldHeader,
                     "**Reloading Configuration... Please Wait a Few Moments...**", true);
             botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
             embedBuilder.clearFields();
@@ -270,12 +272,12 @@ class DiscordBotMain extends ListenerAdapter {
         else if (commandsSuspended) {
             embed.setAsStop("Commands Suspended");
             if (!isTeamMember) {
-                embedBuilder.addField("System Message", "**Commands are Temporarily Suspended... Sorry for the inconvience...**", true);
+                embedBuilder.addField(fieldHeader, "**Commands are Temporarily Suspended... Sorry for the inconvience...**", true);
                 botConfig.helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
                 botConfig.helpChannel.sendMessage(embedBuilder.build()).queue();
             }
             else {
-                embedBuilder.addField("System Message", "**Commands are Temporarily Suspended... " +
+                embedBuilder.addField(fieldHeader, "**Commands are Temporarily Suspended... " +
                         "Please Post The Action you were trying to do in either a DM with" + botConfig.owner.getAsMention() + " or in this channel.**", true);
                 botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                 botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -305,17 +307,17 @@ class DiscordBotMain extends ListenerAdapter {
         if (isRestart) {
             embed.setAsSuccess("Restart Complete");
             if (!commandsSuspended) {
-                embedBuilder.addField("System Message", "**I'm Back Fellas! Restart is Complete!**", true);
+                embedBuilder.addField(fieldHeader, "**I'm Back Fellas! Restart is Complete!**", true);
             }
             else {
-                embedBuilder.addField("System Message", "**Restart Complete but Data File Still Is Not Usable**", true);
+                embedBuilder.addField(fieldHeader, "**Restart Complete but Data File Still Is Not Usable**", true);
             }
             botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
             embedBuilder.clearFields();
         }
         if (isReload) {
             embed.setAsSuccess("Reload Complete");
-            embedBuilder.addField("System Message",
+            embedBuilder.addField(fieldHeader,
                     "**Reloading Config was Successfully Completed!**",true);
             botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
             embedBuilder.clearFields();
@@ -345,7 +347,7 @@ class DiscordBotMain extends ListenerAdapter {
                             timerEmbed.setColor(Color.GREEN);
                             timerEmbed.setTitle("Successfully Removed Expired Bot Abuse");
                             timerEmbed.setThumbnail(embed.checkIcon);
-                            timerEmbed.addField("System Message", "**:white_check_mark: [System] Removed Expired Bot Abuse for "
+                            timerEmbed.addField(fieldHeader, "**:white_check_mark: [System] Removed Expired Bot Abuse for "
                                     + guild.getMemberById(removedID).getAsMention() + "**", true);
                             botConfig.logChannel.sendMessage(timerEmbed.build()).queue();
                             guild.removeRoleFromMember(removedID,
@@ -359,7 +361,7 @@ class DiscordBotMain extends ListenerAdapter {
                             timerEmbed.setColor(Color.YELLOW);
                             timerEmbed.setTitle("Expired Bot Abuse Error");
                             timerEmbed.setThumbnail(embed.warningIcon);
-                            timerEmbed.addField("System Message",
+                            timerEmbed.addField(fieldHeader,
                                     "**Bot Abuse just expired for " +  guild.getMemberById(removedID).getAsMention()
                                             + " and they did not have the Bot Abuse role", true);
                             botConfig.logChannel.sendMessage(timerEmbed.build()).queue();
@@ -371,7 +373,7 @@ class DiscordBotMain extends ListenerAdapter {
                             timerEmbed.setColor(Color.YELLOW);
                             timerEmbed.setTitle("Expired Bot Abuse Error");
                             timerEmbed.setThumbnail(embed.warningIcon);
-                            timerEmbed.addField("System Message", "**Successfully Removed Expired Bot Abuse for "
+                            timerEmbed.addField(fieldHeader, "**Successfully Removed Expired Bot Abuse for "
                                     + removedID + " but they did not exist in the discord server!**", true);
                             botConfig.logChannel.sendMessage(timerEmbed.build());
                             log.warn("Successfully Removed Expired Bot Abuse for "
@@ -396,7 +398,7 @@ class DiscordBotMain extends ListenerAdapter {
                                 !guild.getMemberById(core.currentBotAbusers.get(index)).getRoles().contains(botConfig.botAbuseRole)) {
                             guild.addRoleToMember(guild.getMemberById(core.currentBotAbusers.get(index)),
                                     botConfig.botAbuseRole).completeAfter(50, TimeUnit.MILLISECONDS);
-                            timerEmbed2.addField("System Message", "[System - Role Scanner] Added Bot Abuse Role to "
+                            timerEmbed2.addField(fieldHeader, "[System - Role Scanner] Added Bot Abuse Role to "
                                     + guild.getMemberById(core.currentBotAbusers.get(index)).getAsMention() +
                                     " because they didn't have the role... and they're supposed to have it." , true);
                             botConfig.logChannel.sendMessage(timerEmbed.build()).queue();
@@ -413,7 +415,7 @@ class DiscordBotMain extends ListenerAdapter {
                                 && !core.botAbuseIsCurrent(serverMembers.get(index).getIdLong())) {
                             guild.removeRoleFromMember(serverMembers.get(index).getIdLong(),
                                     botConfig.botAbuseRole).completeAfter(50, TimeUnit.MILLISECONDS);
-                            timerEmbed2.addField("System Message", "[System - Role Scanner] Removed Bot Abuse Role from "
+                            timerEmbed2.addField(fieldHeader, "[System - Role Scanner] Removed Bot Abuse Role from "
                                     + serverMembers.get(index).getAsMention() + " because they had the role... " +
                                     "and they weren't supposed to have it." , true);
                             botConfig.logChannel.sendMessage(timerEmbed2.build()).queue();
@@ -430,7 +432,7 @@ class DiscordBotMain extends ListenerAdapter {
         }
         else if (commandsSuspended) {
             embed.setAsStop("Commands Suspended");
-            embedBuilder.addField("System Message", ":x: **[System] The Data File has been Damaged" +
+            embedBuilder.addField(fieldHeader, ":x: **[System] The Data File has been Damaged" +
                     "\n\nCommands Have Been Suspended**", true);
             botConfig.discussionChannel.sendMessage(botConfig.owner.getAsMention()).queue();
             botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -455,7 +457,7 @@ class DiscordBotMain extends ListenerAdapter {
                     String result = core.setBotAbuse(Long.parseLong(args[1]), false, args[2], args[3], msg.getMember().getAsMention());
                     if (result.contains("FATAL ERROR")) {
                         embed.setAsStop("FATAL ERROR");
-                        embedBuilder.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
+                        embedBuilder.addField(fieldHeader, "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                                 " while I reload and then you can try to run that command again**", true);
                         botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -463,12 +465,12 @@ class DiscordBotMain extends ListenerAdapter {
                     }
                     else if (result.contains(":white_check_mark:")) {
                         embed.setAsSuccess("Successful Bot Abuse");
-                        embedBuilder.addField("System Message", result, true);
+                        embedBuilder.addField(fieldHeader, result, true);
                         botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                         msg.getGuild().addRoleToMember(msg.getGuild().getMemberById(Long.parseLong(args[1])),
                                 botConfig.botAbuseRole).completeAfter(5, TimeUnit.MILLISECONDS);
                         embedBuilder.clearFields();
-                        embedBuilder.addField("System Message", ":white_check_mark: " + " Successfully Bot Abused "
+                        embedBuilder.addField(fieldHeader, ":white_check_mark: " + " Successfully Bot Abused "
                                 + msg.getGuild().getMemberById(Long.parseLong(args[1])).getAsMention(), true);
                         botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -477,7 +479,7 @@ class DiscordBotMain extends ListenerAdapter {
                     }
                     else if (result.contains(":x:")) {
                         embed.setAsError("Whoops... Something went wrong");
-                        embedBuilder.addField("System Message", result, true);
+                        embedBuilder.addField(fieldHeader, result, true);
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                     }
                 }
@@ -486,7 +488,7 @@ class DiscordBotMain extends ListenerAdapter {
                             false, args[2], msg.getAttachments().get(0).getProxyUrl(), msg.getMember().getAsMention());
                     if (result.contains("FATAL ERROR")) {
                         embed.setAsStop("FATAL ERROR");
-                        embedBuilder.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
+                        embedBuilder.addField(fieldHeader, "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                                 " while I reload and then you can try to run that command again**", true);
                         botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -494,12 +496,12 @@ class DiscordBotMain extends ListenerAdapter {
                     }
                     else if (result.contains(":white_check_mark:")) {
                         embed.setAsSuccess("Successful Bot Abuse");
-                        embedBuilder.addField("System Message", result, true);
+                        embedBuilder.addField(fieldHeader, result, true);
                         botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                         msg.getGuild().addRoleToMember(msg.getGuild().getMemberById(Long.parseLong(args[1])),
                                 botConfig.botAbuseRole).completeAfter(5, TimeUnit.MILLISECONDS);
                         embedBuilder.clearFields();
-                        embedBuilder.addField("System Message",":white_check_mark: " + " Successfully Bot Abused "
+                        embedBuilder.addField(fieldHeader,":white_check_mark: " + " Successfully Bot Abused "
                                 + msg.getGuild().getMemberById(Long.parseLong(args[1])).getAsMention(), true);
                         botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -508,13 +510,13 @@ class DiscordBotMain extends ListenerAdapter {
                     }
                     else if (result.contains(":x:")) {
                         embed.setAsError("Whoops... Something went wrong");
-                        embedBuilder.addField("System Message", result, true);
+                        embedBuilder.addField(fieldHeader, result, true);
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                     }
                 }
                 else if (msg.getAttachments().size() == 1 && msg.getChannel() != botConfig.discussionChannel) {
                     embed.setAsError("Channel Error for This Action");
-                    embedBuilder.addField("System Message",
+                    embedBuilder.addField(fieldHeader,
                             "**That was the Wrong Channel to attach an image to this command. Please use this channel.**", true);
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -522,14 +524,14 @@ class DiscordBotMain extends ListenerAdapter {
             }
             catch (NumberFormatException ex) {
                 embed.setAsError("Error While Setting Bot Abuse");
-                embedBuilder.addField("System Message", ":x: [System] The Discord ID cannot contain any letters or special characters", true);
+                embedBuilder.addField(fieldHeader, ":x: [System] The Discord ID cannot contain any letters or special characters", true);
                 botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                 botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
             }
             catch (NullPointerException ex) {
                 embedBuilder.clearFields();
                 embed.setAsWarning("Exception Caught but Successful Bot Abuse");
-                embedBuilder.addField("System Message", "Caught a NullPointerException" +
+                embedBuilder.addField(fieldHeader, "Caught a NullPointerException" +
                         "\n**[System] The Bot Abuse role could not be added to that Discord ID as they Don't Exist in the Server!**" +
                         "\n **Successfully Added A Bot Abuse for that Discord ID to the Database**", true);
                 botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -538,7 +540,7 @@ class DiscordBotMain extends ListenerAdapter {
             catch (IllegalArgumentException ex) {
                 embedBuilder.clearFields();
                 embed.setAsWarning("Exception Caught but Successful Bot Abuse");
-                embedBuilder.addField("System Message", "Caught a IllegalArgumentException" +
+                embedBuilder.addField(fieldHeader, "Caught a IllegalArgumentException" +
                         "\n**[System] The Bot Abuse role could not be added to that Discord ID as they Don't Exist in the Server!**" +
                         "\n **Successfully Added A Bot Abuse for that Discord ID to the Database**", true);
                 botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -558,7 +560,7 @@ class DiscordBotMain extends ListenerAdapter {
                             botConfig.botAbuseRole).completeAfter(5, TimeUnit.MILLISECONDS);
                     if (result.contains("FATAL ERROR")) {
                         embed.setAsStop("FATAL ERROR");
-                        embedBuilder.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
+                        embedBuilder.addField(fieldHeader, "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                                 " while I reload and then you can try to run that command again**", true);
                         botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -566,10 +568,10 @@ class DiscordBotMain extends ListenerAdapter {
                     }
                     else if (result.contains(":white_check_mark:")) {
                         embed.setAsSuccess("Successful Bot Abuse");
-                        embedBuilder.addField("System Message", result, true);
+                        embedBuilder.addField(fieldHeader, result, true);
                         botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                         embedBuilder.clearFields();
-                        embedBuilder.addField("System Message", "**:white_check_mark: " +
+                        embedBuilder.addField(fieldHeader, "**:white_check_mark: " +
                                 " Successfully Bot Abused " + msg.getMentionedMembers().get(0).getAsMention() + "**", true);
                         botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -578,7 +580,7 @@ class DiscordBotMain extends ListenerAdapter {
                     }
                     else if (result.contains(":x:")) {
                         embed.setAsError("Whoops... Something went wrong");
-                        embedBuilder.addField("System Message", result, true);
+                        embedBuilder.addField(fieldHeader, result, true);
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                     }
                 }
@@ -589,7 +591,7 @@ class DiscordBotMain extends ListenerAdapter {
                             botConfig.botAbuseRole).completeAfter(5, TimeUnit.MILLISECONDS);
                     if (result.contains("FATAL ERROR")) {
                         embed.setAsStop("FATAL ERROR");
-                        embedBuilder.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
+                        embedBuilder.addField(fieldHeader, "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                                 " while I reload and then you can try to run that command again**", true);
                         botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -597,10 +599,10 @@ class DiscordBotMain extends ListenerAdapter {
                     }
                     else if (result.contains(":white_check_mark:")) {
                         embed.setAsSuccess("Successful Bot Abuse");
-                        embedBuilder.addField("System Message", result, true);
+                        embedBuilder.addField(fieldHeader, result, true);
                         botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                         embedBuilder.clearFields();
-                        embedBuilder.addField("System Message", "**:white_check_mark: " + msg.getAuthor().getAsMention()
+                        embedBuilder.addField(fieldHeader, "**:white_check_mark: " + msg.getAuthor().getAsMention()
                                 + " Successfully Bot Abused " + msg.getMentionedMembers().get(0).getAsMention() + "**", true);
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                         log.info(msg.getMember().getEffectiveName() + " Successfully Bot Abused "
@@ -608,13 +610,13 @@ class DiscordBotMain extends ListenerAdapter {
                     }
                     else if (result.contains(":x:")) {
                         embed.setAsError("Whoops... Something went wrong");
-                        embedBuilder.addField("System Message", result, true);
+                        embedBuilder.addField(fieldHeader, result, true);
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                     }
                 }
                 else if (msg.getAttachments().size() == 1 && msg.getChannel() != botConfig.discussionChannel) {
                     embed.setAsError("Channel Error for This Action");
-                    embedBuilder.addField("System Message",
+                    embedBuilder.addField(fieldHeader,
                             "**That was the Wrong Channel to attach an image to this command. Please use this channel.**", true);
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -626,7 +628,7 @@ class DiscordBotMain extends ListenerAdapter {
         }
         else if (msg.getMentionedMembers().size() > 1 ) {
             embed.setAsError("Target ID Error");
-            embedBuilder.addField("System Message", ":x: [System] Too many Target IDs", true);
+            embedBuilder.addField(fieldHeader, ":x: [System] Too many Target IDs", true);
             botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
             botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
         }
@@ -638,13 +640,13 @@ class DiscordBotMain extends ListenerAdapter {
         if (msg.getMentionedMembers().isEmpty() && args.length == 3) {
             try {
                 embed.setAsSuccess("Successful Perm Bot Abuse");
-                embedBuilder.addField("System Message", core.setBotAbuse(Long.parseLong(args[1]),
+                embedBuilder.addField(fieldHeader, core.setBotAbuse(Long.parseLong(args[1]),
                         true, "staff", args[2] , msg.getMember().getAsMention()), true);
                 botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                 msg.getGuild().addRoleToMember(msg.getGuild().getMemberById(Long.parseLong(args[1])),
                         botConfig.botAbuseRole).completeAfter(5, TimeUnit.MILLISECONDS);
                 embedBuilder.clearFields();
-                embedBuilder.addField("System Message", msg.getAuthor().getAsMention() + " Permanently Bot Abused " +
+                embedBuilder.addField(fieldHeader, msg.getAuthor().getAsMention() + " Permanently Bot Abused " +
                         msg.getGuild().getMemberById(Long.parseLong(args[1])).getAsMention(), true);
                 botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                 botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -653,20 +655,20 @@ class DiscordBotMain extends ListenerAdapter {
             }
             catch (NumberFormatException ex) {
                 embed.setAsError("Error While Setting Perm Bot Abuse");
-                embedBuilder.addField("System Message", "[System] Invalid User ID!", true);
+                embedBuilder.addField(fieldHeader, "[System] Invalid User ID!", true);
                 botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                 botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
             }
             catch (ArrayIndexOutOfBoundsException ex) {
                 embed.setAsError("Error While Setting Perm Bot Abuse");
-                embedBuilder.addField("System Message", "[System] Invalid Number of Arguments!", true);
+                embedBuilder.addField(fieldHeader, "[System] Invalid Number of Arguments!", true);
                 botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                 botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
             }
             catch (NullPointerException ex) {
                 embedBuilder.clearFields();
                 embed.setAsWarning("Exception Caught but Successful Perm Bot Abuse");
-                embedBuilder.addField("System Message", "Caught a NullPointerException" +
+                embedBuilder.addField(fieldHeader, "Caught a NullPointerException" +
                         "\n**[System] The Bot Abuse role could not be added to that Discord ID as they Don't Exist in the Server!**" +
                         "\n **Successfully Added A Perm Bot Abuse for that Discord ID to the Database**", true);
                 botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -678,7 +680,7 @@ class DiscordBotMain extends ListenerAdapter {
         else if (msg.getMentionedMembers().size() == 1 && args.length == 3) {
             try {
                 embed.setAsSuccess("Successful Perm Bot Abuse");
-                embedBuilder.addField("System Message", core.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
+                embedBuilder.addField(fieldHeader, core.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
                         true, "staff", args[2], msg.getMember().getAsMention()),true);
                 botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                 msg.getGuild().addRoleToMember(msg.getMentionedMembers().get(0),
@@ -693,7 +695,7 @@ class DiscordBotMain extends ListenerAdapter {
         else if (msg.getMentionedMembers().isEmpty() && args.length == 2) {
             try {
                 embed.setAsSuccess("Successful Perm Bot Abuse");
-                embedBuilder.addField("System Message",
+                embedBuilder.addField(fieldHeader,
                         core.setBotAbuse(Long.parseLong(args[1]), true, "staff", null, msg.getMember().getAsMention()), true);
                 botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                 msg.getGuild().addRoleToMember(msg.getGuild().getMemberById(Long.parseLong(args[1])),
@@ -703,20 +705,20 @@ class DiscordBotMain extends ListenerAdapter {
             }
             catch (NumberFormatException ex) {
                 embed.setAsError("Error in Setting Perm Bot Abuse");
-                embedBuilder.addField("System Message",  "**:x: [System] Invalid User ID!**", true);
+                embedBuilder.addField(fieldHeader,  "**:x: [System] Invalid User ID!**", true);
                 botConfig.discussionChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
                 botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
             }
             catch (ArrayIndexOutOfBoundsException ex) {
                 embed.setAsError("Error in Setting Perm Bot Abuse");
-                embedBuilder.addField("System Message", "**:x: [System] Invalid Number of Arguements!**", true);
+                embedBuilder.addField(fieldHeader, "**:x: [System] Invalid Number of Arguements!**", true);
                 botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                 botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
             }
             catch (NullPointerException ex) {
                 embedBuilder.clearFields();
                 embed.setAsWarning("Exception Caught but Successful Perm Bot Abuse");
-                embedBuilder.addField("System Message", ":white_check_mark: " + msg.getMember().getEffectiveName()
+                embedBuilder.addField(fieldHeader, ":white_check_mark: " + msg.getMember().getEffectiveName()
                         + " Permanently Bot Abused " + args[1] + " who does not exist on the Discord Server", true);
                 botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
             }
@@ -727,7 +729,7 @@ class DiscordBotMain extends ListenerAdapter {
         else if (msg.getMentionedMembers().size() == 1 && args.length == 2) {
             try {
                 embed.setAsSuccess("Successful Perm Bot Abuse");
-                embedBuilder.addField("System Message", core.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
+                embedBuilder.addField(fieldHeader, core.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
                         true, "staff", null, msg.getMember().getAsMention()), true);
                 botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                 msg.getGuild().addRoleToMember(msg.getMentionedMembers().get(0),
@@ -741,7 +743,7 @@ class DiscordBotMain extends ListenerAdapter {
         }
         else {
             embed.setAsError("Mentioned Players Error");
-            embedBuilder.addField("System Message", "**:x: [System] Too Many Mentioned Players!**", true);
+            embedBuilder.addField(fieldHeader, "**:x: [System] Too Many Mentioned Players!**", true);
             botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
             botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
         }
@@ -758,7 +760,7 @@ class DiscordBotMain extends ListenerAdapter {
                 String result = core.undoBotAbuse(msg.getMember().getAsMention(), true, 0);
                 if (result.contains("FATAL ERROR")) {
                     embed.setAsStop("FATAL ERROR");
-                    embedBuilder.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
+                    embedBuilder.addField(fieldHeader, "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                             " while I reload and then you can try to run that command again**", true);
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -766,12 +768,12 @@ class DiscordBotMain extends ListenerAdapter {
                 }
                 else if (result.contains(":x:")) {
                     embed.setAsError("Error While Undoing");
-                    embedBuilder.addField("System Message", result, true);
+                    embedBuilder.addField(fieldHeader, result, true);
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                 }
                 else {
-                    embedBuilder.addField("System Message", result, true);
+                    embedBuilder.addField(fieldHeader, result, true);
                     log.info("[System] " + msg.getMember().getEffectiveName() + " just undid their last Bot Abuse");
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -783,7 +785,7 @@ class DiscordBotMain extends ListenerAdapter {
                 String result = core.undoBotAbuse(msg.getMember().getAsMention(), false, Long.parseLong(args[1]));
                 if (result.contains("FATAL ERROR")) {
                     embed.setAsStop("FATAL ERROR");
-                    embedBuilder.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
+                    embedBuilder.addField(fieldHeader, "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                             " while I reload and then you can try to run that command again**", true);
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -791,12 +793,12 @@ class DiscordBotMain extends ListenerAdapter {
                 }
                 else if (result.contains(":x:")) {
                     embed.setAsError("Error While Undoing");
-                    embedBuilder.addField("System Message", result, true);
+                    embedBuilder.addField(fieldHeader, result, true);
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                 }
                 else {
-                    embedBuilder.addField("System Message", result, true);
+                    embedBuilder.addField(fieldHeader, result, true);
                     log.info("[System] " + msg.getMember().getEffectiveName() + " just undid the Bot Abuse for "
                     + msg.getGuild().getMemberById(args[1]).getEffectiveName());
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -809,7 +811,7 @@ class DiscordBotMain extends ListenerAdapter {
                 String result = core.undoBotAbuse(msg.getMember().getAsMention(), false, msg.getMentionedMembers().get(0).getIdLong());
                 if (result.contains("FATAL ERROR")) {
                     embed.setAsStop("FATAL ERROR");
-                    embedBuilder.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
+                    embedBuilder.addField(fieldHeader, "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                             " while I reload and then you can try to run that command again**", true);
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -817,12 +819,12 @@ class DiscordBotMain extends ListenerAdapter {
                 }
                 if (result.contains(":x:")) {
                     embed.setAsError("Error While Undoing");
-                    embedBuilder.addField("System Message", result, true);
+                    embedBuilder.addField(fieldHeader, result, true);
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                 }
                 else {
-                    embedBuilder.addField("System Message", result, true);
+                    embedBuilder.addField(fieldHeader, result, true);
                     log.info("[System] " + msg.getMember().getEffectiveName() + " just undid the Bot Abuse for "
                             + msg.getMentionedMembers().get(0).getEffectiveName());
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -848,7 +850,7 @@ class DiscordBotMain extends ListenerAdapter {
             if (result.contains(":white_check_mark:")) {
                 embed.setAsSuccess("You Are Not Bot Abused");
             }
-            embedBuilder.addField("System Message", result , true);
+            embedBuilder.addField(fieldHeader, result , true);
             botConfig.helpChannel.sendMessage("Hey " + msg.getAuthor().getAsMention() + ",").queue();
             botConfig.helpChannel.sendMessage(embedBuilder.build()).queue();
             log.info(msg.getMember().getEffectiveName() + " just checked their own Bot Abuse status");
@@ -859,7 +861,7 @@ class DiscordBotMain extends ListenerAdapter {
             if (result.contains(":white_check_mark:")) {
                 embed.setAsSuccess("You Are Not Bot Abused");
             }
-            embedBuilder.addField("System Message", result, true);
+            embedBuilder.addField(fieldHeader, result, true);
             sendDM(msg.getAuthor(), embedBuilder.build());
             log.info(msg.getMember().getEffectiveName() + " just checked their own Bot Abuse status and opted for a DM");
         }
@@ -869,10 +871,10 @@ class DiscordBotMain extends ListenerAdapter {
                 String result = core.getInfo(Long.parseLong(args[1]), 100 ,true);
                 if (result.contains(":white_check_mark:")) {
                     embed.setAsError("Player Not Bot Abused");
-                    embedBuilder.addField("System Message", ":x: **This Player is Not Bot Abused**", true);
+                    embedBuilder.addField(fieldHeader, ":x: **This Player is Not Bot Abused**", true);
                 }
                 else {
-                    embedBuilder.addField("System Message", result, true);
+                    embedBuilder.addField(fieldHeader, result, true);
                 }
                 botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                 log.info(msg.getMember().getEffectiveName() + " just checked on "+
@@ -880,7 +882,7 @@ class DiscordBotMain extends ListenerAdapter {
             }
             catch (NumberFormatException ex) {
                 embed.setAsError("Check Info Error");
-                embedBuilder.addField("System Message",":x: **Invalid Discord ID**", true);
+                embedBuilder.addField(fieldHeader,":x: **Invalid Discord ID**", true);
                 botConfig.discussionChannel.sendMessage(msg.getAuthor().getAsMention());
                 botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                 log.info("Team Member " + msg.getMember().getEffectiveName() + " just entered an invalid Discord ID");
@@ -891,12 +893,12 @@ class DiscordBotMain extends ListenerAdapter {
             String result = core.getInfo(msg.getMentionedMembers().get(0).getIdLong(), 100 ,true);
             if (result.contains(":white_check_mark:")) {
                 embed.setAsError("Player Not Bot Abused");
-                embedBuilder.addField("System Message", ":x: **This Player is Not Bot Abused**", true);
+                embedBuilder.addField(fieldHeader, ":x: **This Player is Not Bot Abused**", true);
                 log.error(msg.getMember().getEffectiveName() + " just checked on " +
                         msg.getMentionedMembers().get(0).getEffectiveName() + "'s Bot Abuse Status but they were not Bot Abused");
             }
             else {
-                embedBuilder.addField("System Message", result, true);
+                embedBuilder.addField(fieldHeader, result, true);
                 log.info(msg.getMember().getEffectiveName() + " just checked on "+
                         msg.getMentionedMembers().get(0).getEffectiveName() + "'s Bot Abuse Status");
             }
@@ -912,7 +914,7 @@ class DiscordBotMain extends ListenerAdapter {
                 if (result.contains(":white_check_mark:")) {
                     embed.setAsError("You Are Not Bot Abused");
                 }
-                embedBuilder.addField("System Message", result, true);
+                embedBuilder.addField(fieldHeader, result, true);
                 botConfig.helpChannel.sendMessage("Hey " + msg.getAuthor().getAsMention() + ",").queue();
                 botConfig.helpChannel.sendMessage(embedBuilder.build()).queue();
                 log.info(msg.getMember().getEffectiveName() +
@@ -920,7 +922,7 @@ class DiscordBotMain extends ListenerAdapter {
             }
             else {
                 embed.setAsError("Check Info Error");
-                embedBuilder.addField("System Message",":x: **Invalid Timezone Offset**", true);
+                embedBuilder.addField(fieldHeader,":x: **Invalid Timezone Offset**", true);
                 botConfig.helpChannel.sendMessage(embedBuilder.build()).queue();
                 log.error(msg.getMember().getEffectiveName() + " just entered an invalid TimeZone offset into /check");
             }
@@ -932,14 +934,14 @@ class DiscordBotMain extends ListenerAdapter {
                 if (result.contains(":white_check_mark:")) {
                     embed.setAsSuccess("You Are Not Bot Abused");
                 }
-                embedBuilder.addField("System Message", result, true);
+                embedBuilder.addField(fieldHeader, result, true);
                 sendDM(msg.getAuthor(), embedBuilder.build());
                 log.info(msg.getMember().getEffectiveName() +
                         " just checked on their own Bot Abuse status while opting for a DM");
             }
             else {
                 embed.setAsError("TimeZone Offset Error");
-                embedBuilder.addField("System Message", ":x: " + msg.getAuthor().getAsMention() + " **Invalid Timezone Offset**", true);
+                embedBuilder.addField(fieldHeader, ":x: " + msg.getAuthor().getAsMention() + " **Invalid Timezone Offset**", true);
                 botConfig.helpChannel.sendMessage(embedBuilder.build()).queue();
                 log.error(msg.getMember().getEffectiveName() +
                         " just entered an invalid Discord ID while opting for a DM");
@@ -952,12 +954,12 @@ class DiscordBotMain extends ListenerAdapter {
                     String result =  core.getInfo(Long.parseLong(args[2]), Float.parseFloat(args[1]), true);
                     if (result.contains(":white_check_mark:")) {
                         embed.setAsError("Player Not Bot Abused");
-                        embedBuilder.addField("System Message", ":x: **This Player is Not Bot Abused**", true);
+                        embedBuilder.addField(fieldHeader, ":x: **This Player is Not Bot Abused**", true);
                         log.error(msg.getMember().getEffectiveName() + " just checked on " +
                                 msg.getMentionedMembers().get(0).getEffectiveName() + "'s Bot Abuse Status but they were not Bot Abused");
                     }
                     else {
-                        embedBuilder.addField("System Message", result, true);
+                        embedBuilder.addField(fieldHeader, result, true);
                     }
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                     log.info(msg.getMember().getEffectiveName() +
@@ -968,10 +970,10 @@ class DiscordBotMain extends ListenerAdapter {
                     String result = core.getInfo(msg.getMentionedMembers().get(0).getIdLong(), Float.parseFloat(args[1]), true);
                     if (result.contains(":white_check_mark:")) {
                         embed.setAsError("Player Not Bot Abused");
-                        embedBuilder.addField("System Message", ":x: **This Player is Not Bot Abused**", true);
+                        embedBuilder.addField(fieldHeader, ":x: **This Player is Not Bot Abused**", true);
                     }
                     else {
-                        embedBuilder.addField("System Message", result, true);
+                        embedBuilder.addField(fieldHeader, result, true);
                     }
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                     log.info(msg.getMember().getEffectiveName() +
@@ -981,7 +983,7 @@ class DiscordBotMain extends ListenerAdapter {
             }
             else {
                 embed.setAsError("Check Info Error");
-                embedBuilder.addField("System Message", ":x: **[System] Invalid Timezone Offset**", true);
+                embedBuilder.addField(fieldHeader, ":x: **[System] Invalid Timezone Offset**", true);
                 botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                 log.error("Team Member " + msg.getMember().getEffectiveName() + " just entered an invalid TimeZone offset.");
             }
@@ -989,7 +991,7 @@ class DiscordBotMain extends ListenerAdapter {
         }
         else {
             embed.setAsError("Permission Error");
-            embedBuilder.addField("System Message","You Don't have Permission to check on someone else's Bot Abuse status", true);
+            embedBuilder.addField(fieldHeader,"You Don't have Permission to check on someone else's Bot Abuse status", true);
             botConfig.helpChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
             botConfig.helpChannel.sendMessage(embedBuilder.build()).queue();
             log.info("Successfully Denied Permission to " + msg.getMember().getEffectiveName() +
@@ -1008,7 +1010,7 @@ class DiscordBotMain extends ListenerAdapter {
                 msg.getGuild().removeRoleFromMember(msg.getMentionedMembers().get(index).getIdLong(),
                         botConfig.botAbuseRole).completeAfter(50, TimeUnit.MILLISECONDS);
                 embed.setAsInfo("Bot Abuse Role Removed");
-                embedBuilder.addField("System Message", "**Successfully Removed Bot Abuse Role from "
+                embedBuilder.addField(fieldHeader, "**Successfully Removed Bot Abuse Role from "
                         + msg.getMentionedMembers().get(index).getAsMention() + " as their Records just got Cleared**", true);
                 botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                 embedBuilder.clearFields();
@@ -1020,7 +1022,7 @@ class DiscordBotMain extends ListenerAdapter {
                 int clearedRecords = core.clearRecords(msg.getMentionedMembers().get(index).getIdLong());
                 if (clearedRecords == -1) {
                     embed.setAsStop("FATAL ERROR");
-                    embedBuilder.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
+                    embedBuilder.addField(fieldHeader, "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                             " while I reload and then you can try to run that command again**", true);
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -1029,13 +1031,13 @@ class DiscordBotMain extends ListenerAdapter {
                 }
                 else if (clearedRecords == 0) {
                     embed.setAsError("No Records Cleared");
-                    embedBuilder.addField("System Message","** [System] No Records Found for " + msg.getMentionedMembers().get(0).getEffectiveName() + "**", true);
+                    embedBuilder.addField(fieldHeader,"** [System] No Records Found for " + msg.getMentionedMembers().get(0).getEffectiveName() + "**", true);
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                     log.error("No Records Cleared for " + msg.getMentionedMembers().get(index).getEffectiveName());
                 }
                 else {
-                    embedBuilder.addField("System Message", ":white_check_mark: **[System] Successfully Cleared " +
+                    embedBuilder.addField(fieldHeader, ":white_check_mark: **[System] Successfully Cleared " +
                             clearedRecords + " Records from " + msg.getMentionedMembers().get(index).getAsMention() + "**", true);
                     botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                     log.info("Successfully Cleared " + clearedRecords + " Records from " +
@@ -1058,7 +1060,7 @@ class DiscordBotMain extends ListenerAdapter {
                     msg.getGuild().removeRoleFromMember(Long.parseLong(args[index]),
                             botConfig.botAbuseRole).completeAfter(50, TimeUnit.MILLISECONDS);
                     embed.setAsInfo("Bot Abuse Role Removed");
-                    embedBuilder.addField("System Message", "**Successfully Removed Bot Abuse Role from "
+                    embedBuilder.addField(fieldHeader, "**Successfully Removed Bot Abuse Role from "
                             + msg.getGuild().getMemberById(Long.parseLong(args[index])).getEffectiveName() +
                             " as their Records just got Cleared**", true);
                     log.info("Successfully Removed Bot Abuse Role from " +
@@ -1068,7 +1070,7 @@ class DiscordBotMain extends ListenerAdapter {
                 int clearedRecords = core.clearRecords(Long.parseLong(args[index]));
                 if (clearedRecords == -1) {
                     embed.setAsStop("FATAL ERROR");
-                    embedBuilder.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
+                    embedBuilder.addField(fieldHeader, "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                             " while I reload and then you can try to run that command again**", true);
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -1077,7 +1079,7 @@ class DiscordBotMain extends ListenerAdapter {
                 }
                 if (clearedRecords == 0) {
                     embed.setAsError("No Records Cleared");
-                    embedBuilder.addField("System Message", "**[System] No Records Found for " + args[index] + "**", true);
+                    embedBuilder.addField(fieldHeader, "**[System] No Records Found for " + args[index] + "**", true);
                     botConfig.discussionChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                     log.error("No Records Cleared for " + args[index]);
@@ -1100,7 +1102,7 @@ class DiscordBotMain extends ListenerAdapter {
                     int clearedRecords = core.clearRecords(Long.parseLong(args[index]));
                     if (clearedRecords == -1) {
                         embed.setAsStop("FATAL ERROR");
-                        embedBuilder.addField("System Message", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
+                        embedBuilder.addField(fieldHeader, "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                                 " while I reload and then you can try to run that command again**", true);
                         botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -1114,7 +1116,7 @@ class DiscordBotMain extends ListenerAdapter {
                         log.error("No Records Cleared for " + args[index]);
                     }
                     else {
-                        embedBuilder.addField("System Message", ":white_check_mark: **[System] Successfully Cleared " +
+                        embedBuilder.addField(fieldHeader, ":white_check_mark: **[System] Successfully Cleared " +
                                 clearedRecords + " Records from " + args[index] + "**", true);
                         botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                         log.info("Successfully Cleared " + clearedRecords + " Records from " + args[index]);
@@ -1145,7 +1147,7 @@ class DiscordBotMain extends ListenerAdapter {
                 }
                 log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
                         + msg.getMentionedMembers().get(0).getEffectiveName() + " to " + msg.getMentionedMembers().get(1).getEffectiveName());
-                embedBuilder.addField("System Message",
+                embedBuilder.addField(fieldHeader,
                         core.transferRecords(msg.getMentionedMembers().get(0).getIdLong(), msg.getMentionedMembers().get(1).getIdLong()), true);
                 botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
             }
@@ -1161,14 +1163,14 @@ class DiscordBotMain extends ListenerAdapter {
                         }
                         catch (ErrorResponseException ex) {
                             embed.setAsWarning("Exception Caught - Player Does Not Exist");
-                            embedBuilder.addField("System Message", "**[System] Could Not Remove the Bot Abuse Role from "
+                            embedBuilder.addField(fieldHeader, "**[System] Could Not Remove the Bot Abuse Role from "
                                     + args[1] + " because they do not exist in the Discord Server**", true );
                             botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                             embedBuilder.clearFields();
                         }
                     }
                     embed.setAsSuccess("Successful Transfer of Records");
-                    embedBuilder.addField("System Message",
+                    embedBuilder.addField(fieldHeader,
                             core.transferRecords(Long.parseLong(args[1]), msg.getMentionedMembers().get(0).getIdLong()), true);
                     botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                     try {
@@ -1190,7 +1192,7 @@ class DiscordBotMain extends ListenerAdapter {
                         }
                         catch (ErrorResponseException e) {
                             embed.setAsWarning("Exception Caught - Player Does Not Exist");
-                            embedBuilder.addField("System Message", "**[System] Could Not Add the Bot Abuse Role to "
+                            embedBuilder.addField(fieldHeader, "**[System] Could Not Add the Bot Abuse Role to "
                                     + args[2] + " because they do not exist in the Discord Server**", true);
                             botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                             embedBuilder.clearFields();
@@ -1199,7 +1201,7 @@ class DiscordBotMain extends ListenerAdapter {
                                 botConfig.botAbuseRole).completeAfter(50, TimeUnit.MILLISECONDS);
                     }
                     embed.setAsSuccess("Successful Transfer of Records");
-                    embedBuilder.addField("System Message",
+                    embedBuilder.addField(fieldHeader,
                             core.transferRecords(msg.getMentionedMembers().get(0).getIdLong(), Long.parseLong(args[2])), true);
                     botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                     try {
@@ -1222,7 +1224,7 @@ class DiscordBotMain extends ListenerAdapter {
                     }
                     catch (ErrorResponseException ex) {
                         embed.setAsWarning("Exception Caught - Player Does Not Exist");
-                        embedBuilder.addField("System Message", "**[System] Could Not Add the Bot Abuse Role to "
+                        embedBuilder.addField(fieldHeader, "**[System] Could Not Add the Bot Abuse Role to "
                                 + args[2] + " because they do not exist in the Discord Server**", true);
                         botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                         log.warn("Could Not Add the Bot Abuse Role to " +
@@ -1234,7 +1236,7 @@ class DiscordBotMain extends ListenerAdapter {
                     }
                     catch (ErrorResponseException ex) {
                         embed.setAsWarning("Exception Caught - Player Does Not Exist");
-                        embedBuilder.addField("System Message", "**[System] Could Not Remove the Bot Abuse Role from "
+                        embedBuilder.addField(fieldHeader, "**[System] Could Not Remove the Bot Abuse Role from "
                                 + args[1] + " because they do not exist in the Discord Server**", true);
                         botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                         log.warn("Could Not Remove the Bot Abuse Role from " + args[1] +
@@ -1256,7 +1258,7 @@ class DiscordBotMain extends ListenerAdapter {
             }
             else {
                 embed.setAsError("Error while Parsing Transfer Command");
-                embedBuilder.addField("System Message",
+                embedBuilder.addField(fieldHeader,
                         "[System] Invalid Number of Mentions!" +
                                 "\nUsage: /transfer <Old Mention or Discord ID> <New Mention or Discord ID>", true);
                 botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
@@ -1266,7 +1268,7 @@ class DiscordBotMain extends ListenerAdapter {
         }
         else {
             embed.setAsError("Error while Parsing Transfer Command");
-            embedBuilder.addField("System Message",
+            embedBuilder.addField(fieldHeader,
                     "[System] Invalid Number of Arguments!" +
                             "\nUsage: /transfer <Old Mention or Discord ID> <New Mention or Discord ID>", true);
             msg.getChannel().sendMessage(embedBuilder.build()).queue();
@@ -1288,10 +1290,10 @@ class DiscordBotMain extends ListenerAdapter {
                 if (result.contains(":x:")) {
                     embed.setAsError("Bot Abuse History Information");
                 }
-                embedBuilder.addField("System Message", result, true);
+                embedBuilder.addField(fieldHeader, result, true);
                 botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                 embedBuilder.clearFields();
-                embedBuilder.addField("System Message", ":information_source: **[System] " + msg.getAuthor().getAsMention() + " just checked the history of " +
+                embedBuilder.addField(fieldHeader, ":information_source: **[System] " + msg.getAuthor().getAsMention() + " just checked the history of " +
                         msg.getGuild().getMemberById(Long.parseLong(args[1])).getAsMention() + "**", true);
                 botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                 log.info(author.getEffectiveName() + " just checked the history of " +
@@ -1304,10 +1306,10 @@ class DiscordBotMain extends ListenerAdapter {
                     if (result.contains(":x:")) {
                         embed.setAsError("Bot Abuse History Information");
                     }
-                    embedBuilder.addField("System Message", result, true);
+                    embedBuilder.addField(fieldHeader, result, true);
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                     embedBuilder.clearFields();
-                    embedBuilder.addField("System Message", ":information_source: **[System] " + msg.getAuthor().getAsMention() + " just checked the history of " +
+                    embedBuilder.addField(fieldHeader, ":information_source: **[System] " + msg.getAuthor().getAsMention() + " just checked the history of " +
                             msg.getMentionedMembers().get(0).getAsMention() + "**", true);
                     botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                     log.info(msg.getMember().getEffectiveName() + " just checked the history of " +
@@ -1322,7 +1324,7 @@ class DiscordBotMain extends ListenerAdapter {
             // The Try code would throw a NullPointerException if the Discord ID Provided does not exist on the server.
             catch (NullPointerException f) {
                 embed.setAsWarning("Bot Abuse History - Player Does Not Exist in the Server");
-                embedBuilder.addField("System Message","**[System] " + msg.getAuthor().getAsMention() + " just checked the history of " +
+                embedBuilder.addField(fieldHeader,"**[System] " + msg.getAuthor().getAsMention() + " just checked the history of " +
                         args[1] + " who currently does not exist within the Discord Server**", true);
                 botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
                 log.info(msg.getMember().getEffectiveName() + " just checked the history of "  +
@@ -1345,7 +1347,7 @@ class DiscordBotMain extends ListenerAdapter {
                 if (result.contains(":white_check_mark:")) {
                     embed.setAsSuccess("Your Bot Abuse History");
                 }
-                embedBuilder.addField("System Message", result, true);
+                embedBuilder.addField(fieldHeader, result, true);
                 sendDM(msg.getAuthor(), embedBuilder.build());
                 log.info(msg.getMember().getEffectiveName() + " just checked their own Bot Abuse History");
             }
@@ -1363,14 +1365,14 @@ class DiscordBotMain extends ListenerAdapter {
                     if (result.contains(":white_check_mark:")) {
                         embed.setAsSuccess("Your Bot Abuse History");
                     }
-                    embedBuilder.addField("System Message", result, true);
+                    embedBuilder.addField(fieldHeader, result, true);
                     sendDM(msg.getAuthor(), embedBuilder.build());
                     log.info(msg.getMember().getEffectiveName() + " just checked their own Bot Abuse History" +
                             " using TimeZone offset " + args[1]);
                 }
                 else {
                     embed.setAsError("Error while Parsing Command");
-                    embedBuilder.addField("System Message", ":x: **Invalid Timezone Offset**", true);
+                    embedBuilder.addField(fieldHeader, ":x: **Invalid Timezone Offset**", true);
                     botConfig.helpChannel.sendMessage(msg.getMember().getAsMention());
                     botConfig.helpChannel.sendMessage(embedBuilder.build()).queue();
                 }
@@ -1390,7 +1392,7 @@ class DiscordBotMain extends ListenerAdapter {
                         if (result.contains(":x:")) {
                             embed.setAsError("Bot Abuse History");
                         }
-                        embedBuilder.addField("System Message", result, true);
+                        embedBuilder.addField(fieldHeader, result, true);
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                         log.info(msg.getMember().getEffectiveName() + " just checked the history of " +
                                 msg.getMentionedMembers().get(0).getEffectiveName() + " using TimeZone offset " + args[1]);
@@ -1400,7 +1402,7 @@ class DiscordBotMain extends ListenerAdapter {
                         if (result.contains(":x:")) {
                             embed.setAsError("Bot Abuse History");
                         }
-                        embedBuilder.addField("System Message", result, true);
+                        embedBuilder.addField(fieldHeader, result, true);
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
                         log.info(msg.getMember().getEffectiveName() + " just checked the history of " +
                                 msg.getGuild().getMemberById(Long.parseLong(args[2])).getEffectiveName() + " using TimeZone offset " + args[1]);
@@ -1423,7 +1425,7 @@ class DiscordBotMain extends ListenerAdapter {
         // No Permissions to check on someone elses Bot Abuse history
         else if (args.length > 1 && !isTeamMember) {
             embed.setAsError("Error - No Permissions");
-            embedBuilder.addField("System Message", ":x: " + msg.getAuthor().getAsMention() +
+            embedBuilder.addField(fieldHeader, ":x: " + msg.getAuthor().getAsMention() +
                     " **[System] You Don't Have Permission to check on someone elses Bot Abuse History**", true);
             botConfig.helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
             botConfig.helpChannel.sendMessage(embedBuilder.build()).queue();
@@ -1432,7 +1434,7 @@ class DiscordBotMain extends ListenerAdapter {
         }
         else {
             embed.setAsStop("FATAL ERROR");
-            embedBuilder.addField("System Message", ":x: **[System] Something went Seriously wrong when that happened**", true);
+            embedBuilder.addField(fieldHeader, ":x: **[System] Something went Seriously wrong when that happened**", true);
             msg.getChannel().sendMessage(embedBuilder.build()).queue();
         }
     }
@@ -1441,7 +1443,7 @@ class DiscordBotMain extends ListenerAdapter {
         String[] args = msg.getContentRaw().substring(1).split(" ");
         if (args.length == 1) {
             embed.setAsInfo("About /help");
-            embedBuilder.addField("System Message", "Syntax: `/help <Command Name>`", true);
+            embedBuilder.addField(fieldHeader, "Syntax: `/help <Command Name>`", true);
             if (isTeamMember) {
                 botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                 botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
@@ -1501,13 +1503,13 @@ class DiscordBotMain extends ListenerAdapter {
             }
             else if (isCommand(args[1]) && !isTeamMember) {
                 embed.setAsError("No Permissions to Get This Help");
-                embedBuilder.addField("System Message", ":x: **[System] You Do Not Have Permissions to See This Help**", true);
+                embedBuilder.addField(fieldHeader, ":x: **[System] You Do Not Have Permissions to See This Help**", true);
                 botConfig.helpChannel.sendMessage(msg.getMember().getAsMention());
                 botConfig.helpChannel.sendMessage(embedBuilder.build()).queue();
             }
             else {
                 embed.setAsError("Misspelled Command");
-                embedBuilder.addField("System Message", ":x: **[System] You Likely Misspelled the Name of the " +
+                embedBuilder.addField(fieldHeader, ":x: **[System] You Likely Misspelled the Name of the " +
                         "Command You Are Wanting to Lookup**", true);
                 msg.getChannel().sendMessage(msg.getMember().getAsMention());
                 msg.getChannel().sendMessage(embedBuilder.build()).queue();
@@ -1515,7 +1517,7 @@ class DiscordBotMain extends ListenerAdapter {
         }
         else if (args.length > 2) {
             embed.setAsError("Error While Fetching Help");
-            embedBuilder.addField("System Message", ":x: **[System] Too Many Arguements**", true);
+            embedBuilder.addField(fieldHeader, ":x: **[System] Too Many Arguements**", true);
             if (!isTeamMember) {
                 botConfig.helpChannel.sendMessage(msg.getMember().getAsMention()).queue();
                 botConfig.helpChannel.sendMessage(embedBuilder.build()).queue();
@@ -1533,7 +1535,7 @@ class DiscordBotMain extends ListenerAdapter {
         String[] splitString = stringToSplit.split("\n\n");
         int index = 0;
         while (index < splitString.length) {
-            embedBuilder.addField("System Message", splitString[index], true);
+            embedBuilder.addField(fieldHeader, splitString[index], true);
             if (!isTeamMember) {
                 sendDM(user, embedBuilder.build());
             }
@@ -1575,6 +1577,7 @@ abstract class BotConfiguration {
     String teamChannelID;
     String helpChannelID;
     String logChannelID;
+    String fieldHeader;
     MessageChannel discussionChannel;
     MessageChannel helpChannel;
     MessageChannel logChannel;
@@ -1600,6 +1603,7 @@ abstract class BotConfiguration {
         teamChannelID = configObj.get("teamDiscussionChannel").getAsString();
         helpChannelID = configObj.get("helpChannel").getAsString();
         logChannelID = configObj.get("logChannel").getAsString();
+        fieldHeader = configObj.get("fieldHeader").getAsString();
         roleScannerInterval = configObj.get("roleScannerInterval").getAsLong();
     }
     void finishSetup() {

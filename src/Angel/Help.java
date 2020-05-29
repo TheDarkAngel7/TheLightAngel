@@ -7,15 +7,16 @@ import net.dv8tion.jda.api.entities.MessageChannel;
 class Help {
     private EmbedDesigner embed;
     private EmbedBuilder embedBuilder;
+    private String fieldHeader;
 
-
-    Help(EmbedBuilder importBuilder, EmbedDesigner importEmbed) {
+    Help(EmbedBuilder importBuilder, EmbedDesigner importEmbed, String importHeader) {
         this.embedBuilder = importBuilder;
         this.embed = importEmbed;
+        this.fieldHeader = importHeader;
     }
     void botAbuseCommand() {
         embed.setAsHelp("/botabuse Command Help");
-        embedBuilder.addField("System Message", "**Full Syntax:\n `/botabuse <Mention or Discord ID> <Reason (“kick”, “offline”, or “staff”. You can also use “k”, “o”, or “s” for short)> [Image URL]`**\n" +
+        embedBuilder.addField(fieldHeader, "**Full Syntax:\n `/botabuse <Mention or Discord ID> <Reason (“kick”, “offline”, or “staff”. You can also use “k”, “o”, or “s” for short)> [Image URL]`**\n" +
                 "\n" +
                 "/botabuse allows you to Bot Abuse the target Mention or Discord ID along with the required reason, " +
                 "it’s straight forward on what this command needs. However, an Image URL argument is required for the most part but if you’re on mobile for instance," +
@@ -24,7 +25,7 @@ class Help {
     }
     void permBotAbuseCommand() {
         embed.setAsHelp("/permbotabuse Command Help");
-        embedBuilder.addField("System Message", "**Full Syntax:\n `/permbotabuse <Mention or Discord ID> [Image URL]`**\n" +
+        embedBuilder.addField(fieldHeader, "**Full Syntax:\n `/permbotabuse <Mention or Discord ID> [Image URL]`**\n" +
                 "\n" +
                 "This allows you to permanently Bot Abuse someone. If they’re currently bot abused, " +
                 "the expiry date gets overwritten to being Permanent. " +
@@ -32,7 +33,7 @@ class Help {
     }
     void undoCommand() {
         embed.setAsHelp("/undo Command Help");
-        embedBuilder.addField("System Message", "**Full Syntax:\n `/undo [Mention or Discord ID]`**\n" +
+        embedBuilder.addField(fieldHeader, "**Full Syntax:\n `/undo [Mention or Discord ID]`**\n" +
                 "\n" +
                 "This command is just like hitting the Undo button in word, " +
                 "or anywhere else you can think of. " +
@@ -43,14 +44,14 @@ class Help {
     void checkCommand(boolean isTeamMember, Guild guild, MessageChannel helpChannel) {
         embed.setAsHelp("/check Command Help");
         if (isTeamMember) {
-            embedBuilder.addField("System Message", "**Full Syntax:\n `/check [TimeZone Offset] <Mention or Discord ID>`**\n" +
+            embedBuilder.addField(fieldHeader, "**Full Syntax:\n `/check [TimeZone Offset] <Mention or Discord ID>`**\n" +
                     "\n" +
                     "This command allows you to check on someone’s Bot abuse status. " +
                     "You can put a number in between -12 and 14 in the TimeZone offset argument to convert the times to another time zone, " +
                     "it can accept numbers that are full hour, or a full hour and a half ahead or behind UTC, so 5.5 would be equal to GMT+5:30.)", true);
         }
         else {
-            embedBuilder.addField("System Message", "**Full Syntax:\n `/check [dm] [TimeZone]`**\n" +
+            embedBuilder.addField(fieldHeader, "**Full Syntax:\n `/check [dm] [TimeZone]`**\n" +
                     "\n" +
                     "/check allows you to check your own bot abuse status, " +
                     "instead of the staff having to guess when your bot abuse will expire, you can just have the bot tell you.\n\n" +
@@ -63,12 +64,12 @@ class Help {
     }
     void checkHistoryCommand() {
         embed.setAsHelp("/checkhistory Command Help");
-        embedBuilder.addField("System Message", "**Please use `/help check`, " +
+        embedBuilder.addField(fieldHeader, "**Please use `/help check`, " +
                 "this command carries the exact same concept and syntax as /check**", true);
     }
     void transferCommand() {
         embed.setAsHelp("/transfer Command Help");
-        embedBuilder.addField("System Message", "**Full Syntax:\n `/transfer <Old Mention or Discord ID> <New Mention or Discord ID>`**\n" +
+        embedBuilder.addField(fieldHeader, "**Full Syntax:\n `/transfer <Old Mention or Discord ID> <New Mention or Discord ID>`**\n" +
                 "\n" +
                 "For transferring all records from one discord account to a new discord account. " +
                 "This is useful for if someone uses a different discord account to evade being bot abused.\n" +
@@ -77,7 +78,7 @@ class Help {
     }
     void clearCommand() {
         embed.setAsHelp("/clear Command Help");
-        embedBuilder.addField("System Message", "**Full Syntax:\n" +
+        embedBuilder.addField(fieldHeader, "**Full Syntax:\n" +
                 "\n" +
                 "`/clear <Mention or Discord ID>`**\n" +
                 "\n" +
