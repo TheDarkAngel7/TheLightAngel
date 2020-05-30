@@ -210,8 +210,7 @@ class DiscordBotMain extends ListenerAdapter {
                 }
                 else {
                     embed.setAsError("Error - No Permissions");
-                    embedBuilder.addField(fieldHeader, ":x: "
-                            + msg.getAuthor().getAsMention() + " [System] You Lack Permissions to do that!", true);
+                    embedBuilder.addField(fieldHeader, "**:x: [System] You Lack Permissions to do that!**", true);
                     botConfig.helpChannel.sendMessage("Hey " + msg.getMember().getAsMention() + ",").queue();
                     botConfig.helpChannel.sendMessage(embedBuilder.build()).queue();
                 }
@@ -456,12 +455,7 @@ class DiscordBotMain extends ListenerAdapter {
                 if (msg.getAttachments().isEmpty()) {
                     String result = core.setBotAbuse(Long.parseLong(args[1]), false, args[2], args[3], msg.getMember().getAsMention());
                     if (result.contains("FATAL ERROR")) {
-                        embed.setAsStop("FATAL ERROR");
-                        embedBuilder.addField(fieldHeader, "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
-                                " while I reload and then you can try to run that command again**", true);
-                        botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
-                        botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
-                        failedIntegrityCheck();
+                        failedIntegrityCheck(msg.getMember(), "setBotAbuse - No Picture Attachment and Long Member Value");
                     }
                     else if (result.contains(":white_check_mark:")) {
                         embed.setAsSuccess("Successful Bot Abuse");
@@ -492,7 +486,7 @@ class DiscordBotMain extends ListenerAdapter {
                                 " while I reload and then you can try to run that command again**", true);
                         botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
-                        failedIntegrityCheck();
+                        failedIntegrityCheck(msg.getMember(), "setBotAbuse - Picture Attachment Found and Long Member Value");
                     }
                     else if (result.contains(":white_check_mark:")) {
                         embed.setAsSuccess("Successful Bot Abuse");
@@ -564,7 +558,7 @@ class DiscordBotMain extends ListenerAdapter {
                                 " while I reload and then you can try to run that command again**", true);
                         botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
-                        failedIntegrityCheck();
+                        failedIntegrityCheck(msg.getMember(), "setBotAbuse - No Picture Attachment and Mention Member Value");
                     }
                     else if (result.contains(":white_check_mark:")) {
                         embed.setAsSuccess("Successful Bot Abuse");
@@ -595,7 +589,7 @@ class DiscordBotMain extends ListenerAdapter {
                                 " while I reload and then you can try to run that command again**", true);
                         botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
-                        failedIntegrityCheck();
+                        failedIntegrityCheck(msg.getMember(), "setBotAbuse - Picture Attachment Found and Mention Member Value");
                     }
                     else if (result.contains(":white_check_mark:")) {
                         embed.setAsSuccess("Successful Bot Abuse");
@@ -764,7 +758,7 @@ class DiscordBotMain extends ListenerAdapter {
                             " while I reload and then you can try to run that command again**", true);
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
-                    failedIntegrityCheck();
+                    failedIntegrityCheck(msg.getMember(), "undo Command - No Member of who to Undo");
                 }
                 else if (result.contains(":x:")) {
                     embed.setAsError("Error While Undoing");
@@ -789,7 +783,7 @@ class DiscordBotMain extends ListenerAdapter {
                             " while I reload and then you can try to run that command again**", true);
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
-                    failedIntegrityCheck();
+                    failedIntegrityCheck(msg.getMember(), "undo Command - Long Value of Member to Undo");
                 }
                 else if (result.contains(":x:")) {
                     embed.setAsError("Error While Undoing");
@@ -815,7 +809,7 @@ class DiscordBotMain extends ListenerAdapter {
                             " while I reload and then you can try to run that command again**", true);
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
-                    failedIntegrityCheck();
+                    failedIntegrityCheck(msg.getMember(), "undo Command - Mention Value of who to Undo");
                 }
                 if (result.contains(":x:")) {
                     embed.setAsError("Error While Undoing");
@@ -1026,7 +1020,7 @@ class DiscordBotMain extends ListenerAdapter {
                             " while I reload and then you can try to run that command again**", true);
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
-                    failedIntegrityCheck();
+                    failedIntegrityCheck(msg.getMember(), "clear Command - Mentioned Members");
                     break;
                 }
                 else if (clearedRecords == 0) {
@@ -1074,7 +1068,7 @@ class DiscordBotMain extends ListenerAdapter {
                             " while I reload and then you can try to run that command again**", true);
                     botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                     botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
-                    failedIntegrityCheck();
+                    failedIntegrityCheck(msg.getMember(), "clear Command - Long Value of Member");
                     break;
                 }
                 if (clearedRecords == 0) {
@@ -1106,7 +1100,7 @@ class DiscordBotMain extends ListenerAdapter {
                                 " while I reload and then you can try to run that command again**", true);
                         botConfig.discussionChannel.sendMessage(msg.getMember().getAsMention()).queue();
                         botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
-                        failedIntegrityCheck();
+                        failedIntegrityCheck(msg.getMember(), "clear Command - Player Is Not in Discord Server");
                         break;
                     }
                     if (clearedRecords == 0) {
@@ -1556,9 +1550,17 @@ class DiscordBotMain extends ListenerAdapter {
         }
         return false;
     }
-    private void failedIntegrityCheck() throws IOException, TimeoutException {
-        log.fatal("Integiry Check on ArrayList Objects Failed - Attempting Restart to Prevent Damage");
-        core.startup(true);
+    private void failedIntegrityCheck(Member author, String cause) throws IOException, TimeoutException {
+        embed.setAsStop("FATAL ERROR");
+        embedBuilder.addField(fieldHeader, "**Ouch! That Really Didn't Go Well! " +
+                "You may use */restart* to try to restart me. If you don't feel comfortable doing that... " + botConfig.owner.getAsMention()
+                + " has been notified.**" +
+                "\n\n**Cause: " + cause + "**" +
+                "\n\n**Commands have Been Suspended**", true);
+        botConfig.discussionChannel.sendMessage(author.getAsMention() + botConfig.owner.getAsMention()).queue();
+        botConfig.discussionChannel.sendMessage(embedBuilder.build()).queue();
+        log.fatal("Integiry Check on ArrayList Objects Failed - Cause: " + cause);
+        commandsSuspended = true;
     }
     private void sendDM(User user, MessageEmbed msg) {
         user.openPrivateChannel().flatMap(channel -> channel.sendMessage(msg)).queue();
@@ -1595,6 +1597,7 @@ abstract class BotConfiguration {
     // Token is one of them except it cannot be among the configurations to be reloaded, which is why the token is in
     // the constructor
     void initialSetup() {
+        // These are configuration settings that can be set without a guild object
         ownerDiscordID = configObj.get("ownerDiscordID").getAsString();
         adminRoleID = configObj.get("adminRoleID").getAsString();
         staffRoleID = configObj.get("staffRoleID").getAsString();
@@ -1607,6 +1610,7 @@ abstract class BotConfiguration {
         roleScannerInterval = configObj.get("roleScannerInterval").getAsLong();
     }
     void finishSetup() {
+        // These are configuration settings that have to be set with a guild object
         owner = guild.getMemberById(ownerDiscordID);
         discussionChannel = guild.getTextChannelById(teamChannelID);
         helpChannel = guild.getTextChannelById(helpChannelID);

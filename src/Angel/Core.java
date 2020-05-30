@@ -34,8 +34,8 @@ class Core { // This is where all the magic happens, where all the data is added
         fileHandler = new FileHandler(this);
     }
 
-    void startup(boolean reload) throws IOException, TimeoutException {
-        if (!reload) {
+    void startup(boolean restart) throws IOException, TimeoutException {
+        if (!restart) {
             config.setup(fileHandler.getConfig());
             log.info("[System] Core Initiated...");
         }
@@ -112,7 +112,6 @@ class Core { // This is where all the magic happens, where all the data is added
                         "**\nViolation Image: **" + this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) + "**";
             }
             else {
-                log.fatal("FATAL ERROR: The Setting of the Bot Abuse did not run correctly and as a result I got inconsistent data");
                 return "**[System] FATAL ERROR: The Setting of the Bot Abuse did not run correctly and as a result I got inconsistent data**";
             }
         } // If a /permbotabuse was run and the Bot Abuse is still current.
