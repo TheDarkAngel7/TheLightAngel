@@ -441,7 +441,7 @@ class Core { // This is where all the magic happens, where all the data is added
             return false;
         }
     }
-    long checkExpiredBotAbuse() throws Exception { // This is the method that gets run each second by the timer in Angel.DiscordBotMain
+    long checkExpiredBotAbuse() throws IOException { // This is the method that gets run each second by the timer in Angel.DiscordBotMain
         c = Calendar.getInstance();
         int index = this.discordID.size() - 1;
         while (index >= 0) {
