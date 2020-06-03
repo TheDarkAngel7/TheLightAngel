@@ -21,7 +21,7 @@ class Help {
                 "/botabuse allows you to Bot Abuse the target Mention or Discord ID along with the required reason, " +
                 "it’s straight forward on what this command needs. However, an Image URL argument is required for the most part but if you’re on mobile for instance," +
                 " the bot will accept an image attachment as the image. However, you need to use this command in the " +
-                "team discussion channel if you’re going to upload an image attachment due to the command has a 10 second delay before the command gets deleted.", true);
+                "team discussion channel if you’re going to upload an image attachment due to the command having a 10 second delay before the command gets deleted.", true);
     }
     void permBotAbuseCommand() {
         embed.setAsHelp("/permbotabuse Command Help");

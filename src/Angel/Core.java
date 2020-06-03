@@ -37,10 +37,10 @@ class Core { // This is where all the magic happens, where all the data is added
     void startup(boolean restart) throws IOException, TimeoutException {
         if (!restart) {
             config.setup(fileHandler.getConfig());
-            log.info("[System] Core Initiated...");
+            log.info("Core Initiated...");
         }
         else {
-            log.warn("[System] Program Restarting...");
+            log.warn("Program Restarting...");
             new ProcessBuilder().command("cmd.exe", "/c", "start", this.config.systemPath + "\\restart.bat").start();
             System.exit(1);
         }
@@ -196,13 +196,14 @@ class Core { // This is where all the magic happens, where all the data is added
             // The Expiry Date will be null if that's the case.
             permBotAbused = this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)) == null;
             if (!permBotAbused) {
-                return ":x: **[System] This Player is Already Bot Abused!**\nDiscord ID: **" + targetDiscordID + "**\nOffense Number: **"
-                        + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) + "**\nExpiry Date: **"
-                        + this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)) + "**";
+                return ":x: **[System] This Player is Already Bot Abused!**\nDiscord ID: **" + targetDiscordID +
+                        "**\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
+                        "**\nExpiry Date: **" + this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)) + "**";
             }
             else {
-                return ":x: **[System] This Player is Permanently Bot Abused!!**\nDiscord ID: **" + targetDiscordID + "**\nOffense Number: **"
-                        + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) + "**\nExpiry Date: **Never**";
+                return ":x: **[System] This Player is Permanently Bot Abused!!**\nDiscord ID: **" + targetDiscordID +
+                        "**\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
+                        "**\nExpiry Date: **Never**";
             }
         }
     }
@@ -226,7 +227,7 @@ class Core { // This is where all the magic happens, where all the data is added
             // discordID array has the ID already added to it and the expiryDates array hasn't been touched yet
             // so the size of discordID size would be 1 more than the size of the expiryDates array
             if (this.discordID.get(index) == targetDiscordID && this.expiryDates.get(index).after(cOld.getTime())) {
-                // Here we're checking to see if the discordID at the current index matches the targetDiscordID array
+                // Here we're checking to see if the discordID at the current index matches the targetDiscordID
                 // We  also check the expiryDate at that index and see if it is after the Date where the records would
                 // otherwise be ignored by the bot, records whose expiryDates are before the cOld time would be ignored.
                 prevOffenses++;

@@ -44,6 +44,8 @@ class DiscordBotMain extends ListenerAdapter {
     private boolean isRestart;
     private boolean isReload = false;
     private List<String> commands = new ArrayList<>();
+    private ArrayList<Long> pingCooldownDiscordIDs = new ArrayList<>();
+    private ArrayList<Date> pingCooldownOverTimes = new ArrayList<>();
     private Timer timer;
     private Timer timer2;
 
@@ -123,7 +125,6 @@ class DiscordBotMain extends ListenerAdapter {
         catch (IOException | TimeoutException e) {
             e.printStackTrace();
         }
-
     }
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
@@ -138,7 +139,7 @@ class DiscordBotMain extends ListenerAdapter {
         if (msg.getContentRaw().charAt(0) == '/' && !commandsSuspended && !args[0].equalsIgnoreCase("help")
                 && !args[0].equalsIgnoreCase("restart") && !args[0].equalsIgnoreCase("reload"))  {
             // Command Syntax /botabuse <Mention or Discord ID> <Reason (kick, offline, or staff)> <proof url>
-            if (args[0].equalsIgnoreCase("botabuse")) {
+            if (args[0].equalsIgnoreCase("botabuse") || args[0].equalsIgnoreCase("ba")) {
                 if ((isTeamMember || author == botConfig.owner) &&
                         (args.length == 3 || args.length == 4)) {
                     setBotAbuse(msg);
@@ -155,7 +156,7 @@ class DiscordBotMain extends ListenerAdapter {
                     sendToHelpChannel(true, msg.getMember());
                 }
             }
-            else if (args[0].equalsIgnoreCase("permbotabuse")) { // /permbotabuse <Mention or Discord ID> [Image]
+            else if (args[0].equalsIgnoreCase("permbotabuse") || args[0].equalsIgnoreCase("pba")) { // /permbotabuse <Mention or Discord ID> [Image]
                 if ((isStaffMember || author == botConfig.owner) && (args.length == 2 || args.length == 3)) {
                     permBotAbuse(msg);
                 }
@@ -185,7 +186,7 @@ class DiscordBotMain extends ListenerAdapter {
                 checkCommand(msg, isTeamMember);
             }
             else if (args[0].equalsIgnoreCase("transfer")) { // /transfer <Old Mention or Discord ID> <New Mention or Discord ID>
-                if ((isStaffMember) || author == botConfig.owner) {
+                if (isStaffMember || author == botConfig.owner) {
                     try {
                         transferRecords(msg);
                     }
@@ -200,7 +201,7 @@ class DiscordBotMain extends ListenerAdapter {
                 }
             }
             else if (args[0].equalsIgnoreCase("clear")) {
-                if ((isStaffMember) || author == botConfig.owner) {
+                if (isStaffMember || author == botConfig.owner) {
                     clearCommand(msg);
                 }
                 else {
@@ -210,11 +211,34 @@ class DiscordBotMain extends ListenerAdapter {
                 }
             }
             else if (args[0].equalsIgnoreCase("checkhistory")) {
-                try {
-                    checkHistory(msg, isTeamMember);
+                checkHistory(msg, isTeamMember);
+
+            }
+            else if (args[0].equalsIgnoreCase("ping")) {
+                embed.setAsInfo("My Ping Info");
+                embedBuilder.addField(fieldHeader, ":ping_pong: **Pong!**" +
+                        "\nPing Time to Discord's Gateway: **" + msg.getJDA().getGatewayPing() + "ms**", true);
+                if (isTeamMember) {
+                    sendToTeamDiscussionChannel(false, null);
                 }
-                catch (IllegalStateException ex) {
-                    // Take No Action
+                else {
+                    try {
+                        // If they use /ping before their cooldown time is over then we send them the ping information in a DM
+                        if (Calendar.getInstance().getTime().before(pingCooldownOverTimes.get(pingCooldownDiscordIDs.lastIndexOf(msg.getMember().getIdLong())))) {
+                            sendDM(msg.getMember().getUser(), embedBuilder);
+                        }
+                        // Otherwise we can send them this in the help channel.
+                        else {
+                            pingHandler(msg.getMember().getIdLong());
+                            sendToHelpChannel(true, msg.getMember());
+                        }
+                    }
+                    // This would run if their discord ID wasn't found in pingCooldownDiscordIDs,
+                    // a -1 would throw this exception
+                    catch (IndexOutOfBoundsException ex) {
+                        pingHandler(msg.getMember().getIdLong());
+                        sendToHelpChannel(true, msg.getMember());
+                    }
                 }
             }
         }
@@ -222,7 +246,7 @@ class DiscordBotMain extends ListenerAdapter {
             msg.getChannel().sendMessage(":blobnomping:").queue();
         }
         else if ((msg.getContentRaw().charAt(0) == '/' && args[0].equalsIgnoreCase("restart"))
-                && ((isStaffMember) || author == botConfig.owner)) {
+                && (isStaffMember || author == botConfig.owner)) {
             msg.delete().complete();
             try {
                 embed.setAsWarning("Restart Initiated");
@@ -244,7 +268,7 @@ class DiscordBotMain extends ListenerAdapter {
             }
         }
         else if ((msg.getContentRaw().charAt(0) == '/' && args[0].equalsIgnoreCase("reload"))
-                && ((isStaffMember) || author == botConfig.owner)) {
+                && (isStaffMember || author == botConfig.owner)) {
             embed.setAsWarning("Reloading Configuration");
             embedBuilder.addField(fieldHeader,
                     "**Reloading Configuration... Please Wait a Few Moments...**", true);
@@ -257,6 +281,7 @@ class DiscordBotMain extends ListenerAdapter {
             timerRunning = false;
             isReload = true;
             init(event);
+            log.info("Successfully Reloaded Configuration");
         }
         else if (msg.getContentRaw().charAt(0) == '/' && args[0].equalsIgnoreCase("help")) {
             helpCommand(msg, isTeamMember);
@@ -273,12 +298,13 @@ class DiscordBotMain extends ListenerAdapter {
                 sendToTeamDiscussionChannel(true, msg.getMember());
             }
         }
-        if ((args[0].equalsIgnoreCase("botabuse") || args[0].equalsIgnoreCase("permbotabuse"))
+        if ((args[0].equalsIgnoreCase("botabuse") || args[0].equalsIgnoreCase("permbotabuse")
+                || args[0].equalsIgnoreCase("ba") || args[0].equalsIgnoreCase("pba"))
                 && msg.getChannel() == botConfig.discussionChannel && msg.getAttachments().size() == 1) {
-            msg.delete().completeAfter(10, TimeUnit.SECONDS);
+            msg.delete().queueAfter(10, TimeUnit.SECONDS);
         }
         else if (!msg.getMentionedMembers().contains(msg.getGuild().getSelfMember())) {
-            msg.delete().complete();
+            msg.delete().queue();
         }
     }
     private void init(Event event) {
@@ -415,7 +441,7 @@ class DiscordBotMain extends ListenerAdapter {
                     }
 
                 }
-            }, 0, botConfig.roleScannerInterval);
+            }, 0, botConfig.roleScannerInterval * 60000);
         }
         else if (commandsSuspended) {
             embed.setAsStop("Commands Suspended");
@@ -583,6 +609,7 @@ class DiscordBotMain extends ListenerAdapter {
                         embedBuilder.addField(fieldHeader, result, true);
                         sendToTeamDiscussionChannel(false, null);
                     }
+                    saveImageAttachment(msg.getAttachments().get(0));
                 }
                 else if (msg.getAttachments().size() == 1 && msg.getChannel() != botConfig.discussionChannel) {
                     embed.setAsError("Channel Error for This Action");
@@ -800,7 +827,7 @@ class DiscordBotMain extends ListenerAdapter {
                 embed.setAsSuccess("You Are Not Bot Abused");
             }
             embedBuilder.addField(fieldHeader, result, true);
-            sendDM(msg.getAuthor(), embedBuilder.build());
+            sendDM(msg.getAuthor(), embedBuilder);
             log.info(msg.getMember().getEffectiveName() + " just checked their own Bot Abuse status and opted for a DM");
         }
         // /check <Discord ID>
@@ -871,7 +898,7 @@ class DiscordBotMain extends ListenerAdapter {
                     embed.setAsSuccess("You Are Not Bot Abused");
                 }
                 embedBuilder.addField(fieldHeader, result, true);
-                sendDM(msg.getAuthor(), embedBuilder.build());
+                sendDM(msg.getAuthor(), embedBuilder);
                 log.info(msg.getMember().getEffectiveName() +
                         " just checked on their own Bot Abuse status while opting for a DM");
             }
@@ -1256,7 +1283,7 @@ class DiscordBotMain extends ListenerAdapter {
                     embed.setAsSuccess("Your Bot Abuse History");
                 }
                 embedBuilder.addField(fieldHeader, result, true);
-                sendDM(msg.getAuthor(), embedBuilder.build());
+                sendDM(msg.getAuthor(), embedBuilder);
                 log.info(msg.getMember().getEffectiveName() + " just checked their own Bot Abuse History");
             }
             // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
@@ -1274,7 +1301,7 @@ class DiscordBotMain extends ListenerAdapter {
                         embed.setAsSuccess("Your Bot Abuse History");
                     }
                     embedBuilder.addField(fieldHeader, result, true);
-                    sendDM(msg.getAuthor(), embedBuilder.build());
+                    sendDM(msg.getAuthor(), embedBuilder);
                     log.info(msg.getMember().getEffectiveName() + " just checked their own Bot Abuse History" +
                             " using TimeZone offset " + args[1]);
                 }
@@ -1429,7 +1456,7 @@ class DiscordBotMain extends ListenerAdapter {
         while (index < splitString.length) {
             embedBuilder.addField(fieldHeader, splitString[index], true);
             if (!isTeamMember) {
-                sendDM(user, embedBuilder.build());
+                sendDM(user, embedBuilder);
             }
             else {
                 sendToTeamDiscussionChannel(false, null);
@@ -1464,8 +1491,9 @@ class DiscordBotMain extends ListenerAdapter {
     // as in some cases in the code I either don't ping the original command user or
     // I cannot give these methods a Member object
     ///////////////////////////////////////////////////////////
-    private void sendDM(User user, MessageEmbed msg) {
-        user.openPrivateChannel().flatMap(channel -> channel.sendMessage(msg)).queue();
+    private void sendDM(User user, EmbedBuilder embed) {
+        user.openPrivateChannel().flatMap(channel -> channel.sendMessage(embed.build())).queue();
+        embed.clearFields();
     }
     private void sendToHelpChannel(boolean tagAuthor, @Nullable Member author) {
         if (tagAuthor) {
@@ -1485,6 +1513,24 @@ class DiscordBotMain extends ListenerAdapter {
     private void sendToLogChannel() {
         botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
         embedBuilder.clearFields();
+    }
+    // This method is so that the image is requested at least once from Discord's servers.
+    // Discord's server will delete the image from their servers if the message the image is attached to is deleted
+    // and never loaded from a browser or another source.
+    private void saveImageAttachment(Message.Attachment attachment) throws InterruptedException, IOException {
+        ProcessBuilder cmd = new ProcessBuilder();
+        Thread.sleep(1000);
+        cmd.command("cmd.exe", "/c", "start iexplore " + attachment.getProxyUrl()).start();
+        Thread.sleep(5000);
+        cmd.command("cmd.exe", "/c", "taskkill /IM iexplore.exe").start();
+    }
+    // This Method handles adding discord IDs to the cooldown arrays, since this code can be initiated two separate ways
+    // best just to create a separate method for it.
+    private void pingHandler(long targetDisordID) {
+        Calendar c = Calendar.getInstance();
+        c.add(Calendar.MINUTE, botConfig.pingCoolDown);
+        pingCooldownDiscordIDs.add(targetDisordID);
+        pingCooldownOverTimes.add(c.getTime());
     }
 }
 abstract class BotConfiguration {
@@ -1508,7 +1554,8 @@ abstract class BotConfiguration {
     Role staffRole;
     Role teamRole;
     Role botAbuseRole;
-    long roleScannerInterval;
+    int roleScannerInterval;
+    int pingCoolDown;
 
     BotConfiguration(JsonObject importConfigObj) {
         configObj = importConfigObj;
@@ -1528,7 +1575,8 @@ abstract class BotConfiguration {
         helpChannelID = configObj.get("helpChannel").getAsString();
         logChannelID = configObj.get("logChannel").getAsString();
         fieldHeader = configObj.get("fieldHeader").getAsString();
-        roleScannerInterval = configObj.get("roleScannerInterval").getAsLong();
+        roleScannerInterval = configObj.get("roleScannerInterval").getAsInt();
+        pingCoolDown = configObj.get("pingCoolDown").getAsInt();
     }
     void finishSetup() {
         // These are configuration settings that have to be set with a guild object
