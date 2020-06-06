@@ -34,7 +34,7 @@ class FileHandler {
     void getDatabase() throws IllegalStateException, FileNotFoundException {
         JsonObject database = JsonParser.parseReader(new FileReader(jsonDataFile)).getAsJsonObject();
         core.discordID = gson.fromJson(database.get("DiscordID").getAsString(), longType);
-        core.issuingTeamMember = gson.fromJson(database.getAsJsonObject().get("TeamMembers").getAsString(), stringType);
+        core.issuingTeamMember = gson.fromJson(database.get("TeamMembers").getAsString(), stringType);
         core.repOffenses = gson.fromJson(database.get("RepOffenses").getAsString(), integerType);
         core.issuedDates = gson.fromJson(database.get("DatesIssued").getAsString(), dateType);
         core.expiryDates = gson.fromJson(database.get("ExpiryDates").getAsString(), dateType);
@@ -73,7 +73,6 @@ class FileHandler {
             log.info("Successfully Renamed Temp File to Original File");
         }
         else {
-            System.out.println("[System] Couldn't Rename Temp File");
             log.error("Could Not Rename Temp File");
         }
     }
