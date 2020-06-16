@@ -84,4 +84,25 @@ class Help {
                 "\n" +
                 "Completely wipes out the record of a discord account.",true);
     }
+    void reasonManagementCommand() {
+        embed.setAsHelp("/reasonsmanager Command Help");
+        embedBuilder.addField(fieldHeader, "`/reasonsmanager addreason <newKey> <Full Wording of the Reason>` \n" +
+                "\n" +
+                "`/reasonsmanager addkeymap <newKey> <existingKey>` \n" +
+                "\n" +
+                "`/reasonsmanager <remove|del> <existingKey>` \n" +
+                "\n" +
+                "**About addreason:** \n" +
+                "\n" +
+                "Adds a new Shortcut to a reason, whatever you enter into <newKey> is what you would enter into <reason> " +
+                "in /botabuse when a bot abuse is needed for someone. \n" +
+                "\n" +
+                "**About addkeymap:** \n" +
+                "\n" +
+                "If you would like to create multiple keys to do the same thing, you can use this command to do that. \n" +
+                "\n" +
+                "**About remove or del:** \n" +
+                "If you would like to delete a key and the associated reason then you’d use this command. " +
+                "**NOTE:** It does not delete any other keys that were mapped to the same reason. ", true);
+    }
 }

@@ -12,6 +12,7 @@ import java.lang.reflect.Type;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Hashtable;
 
 class FileHandler {
     private Core core;
@@ -23,6 +24,7 @@ class FileHandler {
     private Type integerType = new TypeToken<ArrayList<Integer>>(){}.getType();
     private Type stringType = new TypeToken<ArrayList<String>>(){}.getType();
     private Type dateType = new TypeToken<ArrayList<Date>>(){}.getType();
+    private Type dictionary = new TypeToken<Hashtable<String, String>>(){}.getType();
 
     FileHandler(Core importCore) {
         core = importCore;
@@ -41,6 +43,7 @@ class FileHandler {
         core.reasons = gson.fromJson(database.get("Reasons").getAsString(), stringType);
         core.proofImages = gson.fromJson(database.get("ProofImages").getAsString(), stringType);
         core.currentBotAbusers = gson.fromJson(database.get("CurrentBotAbusers").getAsString(), longType);
+        core.reasonsDictionary = gson.fromJson(database.get("ReasonsDictionary").getAsString(), dictionary);
         log.info("Database Successfully Setup");
     }
     void saveDatabase() throws IOException {
@@ -54,6 +57,7 @@ class FileHandler {
         jsonWriter.name("Reasons").value(gson.toJson(core.reasons));
         jsonWriter.name("ProofImages").value(gson.toJson(core.proofImages));
         jsonWriter.name("CurrentBotAbusers").value(gson.toJson(core.currentBotAbusers));
+        jsonWriter.name("ReasonsDictionary").value(gson.toJson(core.reasonsDictionary));
         jsonWriter.endObject();
         jsonWriter.close();
         log.info("JSONWriter Successfully Ran to Database Temp File");

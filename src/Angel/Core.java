@@ -7,15 +7,11 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 
 class Core { // This is where all the magic happens, where all the data is added and queried from the appropriate arrays to
     // Display all the requested data.
-    private DiscordBotMain discord;
     FileHandler fileHandler;
     private RabbitMQSend rabbit;
     private BotAbuseVariables botAbuseVars = new BotAbuseVariables();
@@ -30,6 +26,7 @@ class Core { // This is where all the magic happens, where all the data is added
     ArrayList<String> reasons = new ArrayList<>();
     ArrayList<String> proofImages = new ArrayList<>();
     ArrayList<Long> currentBotAbusers = new ArrayList<>();
+    Dictionary<String, String> reasonsDictionary = new Hashtable<>();
     private int indexOfLastOffense;
     private Calendar c;
 
@@ -59,24 +56,20 @@ class Core { // This is where all the magic happens, where all the data is added
             log.warn("No Data Existed in the Arrays - Data File is Empty");
         }
     }
-    void importDiscordInstance(DiscordBotMain importDiscord) {
-        discord = importDiscord;
-    }
-
     String setBotAbuse(long targetDiscordID, boolean isPermanent, String reason, @Nullable String imageURL, String teamMember)
             throws IOException, NullPointerException {
         if (!botAbuseIsCurrent(targetDiscordID)) {
-            if (!isPermanent && (reason.equals("k") || reason.equals("kick"))) {
-                this.reasons.add("Bumping a Kickvote");
-            }
-            else if (!isPermanent && (reason.equals("o") || reason.equals("offline"))) {
-                this.reasons.add("Bumping an Offline Message");
-            }
-            else if (reason.equals("s") || reason.equals("staff")) {
+            if (isPermanent) {
                 this.reasons.add("Contact SAFE Team");
             }
             else {
-                return ":x: [System] Invalid Reason!";
+                String getReason = reasonsDictionary.get(reason);
+                if (getReason != null) {
+                    this.reasons.add(getReason);
+                }
+                else {
+                    return "**:x: [System] Invalid Reason!\nReason: ***" + reason + "*";
+                }
             }
         }
         // We're checking to see if this player is currently Bot Abused - This Code would run if it was a moderator just using /botabuse like normal.
@@ -109,7 +102,7 @@ class Core { // This is where all the magic happens, where all the data is added
             if (arraySizesEqual()) {
                 fileHandler.saveDatabase();
                 this.sendMessage(0, targetDiscordID);
-                return ":white_check_mark: **[System] Successfully Bot Abused " + discord.guild.getMemberById(targetDiscordID).getAsMention() +
+                return ":white_check_mark: **[System] Successfully Bot Abused " + targetDiscordID +
                         "**\nIssuing Team Member: **" + this.issuingTeamMember.get(this.discordID.lastIndexOf(targetDiscordID)) +
                         "**\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
                         "**\nDate Issued: **" + this.issuedDates.get(this.discordID.lastIndexOf(targetDiscordID)) +
@@ -127,13 +120,14 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.issuingTeamMember.set(this.discordID.lastIndexOf(targetDiscordID), teamMember);
                 // The expiry date is changed to null for Permanent and the reason is updated to "Contact Staff"
                 this.expiryDates.set(this.discordID.lastIndexOf(targetDiscordID), null);
-                this.reasons.set(this.discordID.lastIndexOf(targetDiscordID), "Contact Staff");
+                this.reasons.set(this.discordID.lastIndexOf(targetDiscordID), "Contact SAFE Team");
                 if (this.config.testModeEnabled) {
                     System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                             "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
                 }
                 fileHandler.saveDatabase();
-                return ":white_check_mark: **[System - Admin Override] Successfully Overrode Bot Abuse for " + targetDiscordID + " and it is now "
+                return ":white_check_mark: **[System - Admin Override] Successfully Overrode Bot Abuse for "
+                        + targetDiscordID + " and it is now "
                         + this.getNewExpiryDate(targetDiscordID) + "**";
             }
             // Here we're saying player is already Permanently Bot Abused
@@ -177,7 +171,7 @@ class Core { // This is where all the magic happens, where all the data is added
             // Output to return from a perm Bot Abuse, we check to see if proofImages in the corresponding index is null, if so Violation image will say "None Provided"
             // If an image was provided then the else statement would run
             if (this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) == null) {
-                return ":white_check_mark: **[System] Successfully Bot Abused " + discord.guild.getMemberById(targetDiscordID).getAsMention() +
+                return ":white_check_mark: **[System] Successfully Bot Abused " + targetDiscordID +
                         "**\nIssuing Team Member: **" + this.issuingTeamMember.get(this.discordID.lastIndexOf(targetDiscordID)) +
                         "**\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
                         "**\nDate Issued: **" + this.issuedDates.get(this.discordID.lastIndexOf(targetDiscordID)) +
@@ -186,7 +180,7 @@ class Core { // This is where all the magic happens, where all the data is added
                         "**\nViolation Image: **None Provided**";
             }
             else {
-                return ":white_check_mark: **[System] Successfully Bot Abused " + discord.guild.getMemberById(targetDiscordID).getAsMention() +
+                return ":white_check_mark: **[System] Successfully Bot Abused " + targetDiscordID +
                         "**\nIssuing Team Member: **" + this.issuingTeamMember.get(this.discordID.lastIndexOf(targetDiscordID)) +
                         "**\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
                         "**\nDate Issued: **" + this.issuedDates.get(this.discordID.lastIndexOf(targetDiscordID)) +
@@ -198,13 +192,13 @@ class Core { // This is where all the magic happens, where all the data is added
         else {
             // Checking to see if a moderator tried to bot abuse someone that is Permanently Bot Abused.
             // The Expiry Date will be null if that's the case.
-            if (!botAbuseisPermanent(targetDiscordID)) {
-                return ":x: **[System] This Player is Already Bot Abused!**\nDiscord ID: **" + discord.guild.getMemberById(targetDiscordID).getAsMention() +
+            if (!botAbuseIsPermanent(targetDiscordID)) {
+                return ":x: **[System] This Player is Already Bot Abused!**\nDiscord Profile: **" + targetDiscordID +
                         "**\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
                         "**\nExpiry Date: **" + this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)) + "**";
             }
             else {
-                return ":x: **[System] This Player is Permanently Bot Abused!!**\nDiscord ID: **" + discord.guild.getMemberById(targetDiscordID).getAsMention() +
+                return ":x: **[System] This Player is Permanently Bot Abused!!**\nDiscord Profile: **" + targetDiscordID +
                         "**\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
                         "**\nExpiry Date: **Never**";
             }
@@ -239,32 +233,20 @@ class Core { // This is where all the magic happens, where all the data is added
         }
         if (prevOffenses < 4 && this.config.testModeEnabled) {
             // The Times are Short for Testing Purposes, they would usually be in days or months.
-            if (prevOffenses == 0) { // 0 Prior Offenses - 1st Offense
-                c.add(Calendar.MINUTE, 1);
-            }
-            else if (prevOffenses == 1) { // 1 Prior Offense - 2nd Offense
-                c.add(Calendar.MINUTE, 3);
-            }
-            else if (prevOffenses == 2) { // 2 Prior Offenses - 3rd Offense
-                c.add(Calendar.MINUTE, 5);
-            }
-            else if (prevOffenses == 3) { // 3 Prior Offenses - 4th Offense
-                c.add(Calendar.MINUTE, 10);
+            switch (prevOffenses) {
+                case 0: c.add(Calendar.MINUTE, 1); break; // 0 Prior Offenses - 1st Offense
+                case 1: c.add(Calendar.MINUTE, 3); break; // 1 Prior Offense - 2nd Offense
+                case 2: c.add(Calendar.MINUTE, 5); break; // 2 Prior Offenses - 3rd Offense
+                case 3: c.add(Calendar.MINUTE, 10); break; // 3 Prior Offenses - 4th Offense
             }
             return c.getTime(); // Set the Expiry Date
         }
         else if (prevOffenses < 4) {
-            if (prevOffenses == 0) { // 0 Prior Offenses - 1st Offense
-                c.add(Calendar.DAY_OF_MONTH, 7);
-            }
-            else if (prevOffenses == 1) { // 1 Prior Offense - 2nd Offense
-                c.add(Calendar.DAY_OF_MONTH, 14);
-            }
-            else if (prevOffenses == 2) { // 2 Prior Offenses - 3rd Offense
-                c.add(Calendar.DAY_OF_MONTH, 30);
-            }
-            else if (prevOffenses == 3) { // 3 Prior Offenses - 4th Offense
-                c.add(Calendar.DAY_OF_MONTH, 60);
+            switch (prevOffenses) {
+                case 0: c.add(Calendar.DAY_OF_MONTH, 7); break; // 0 Prior Offenses - 1st Offense
+                case 1: c.add(Calendar.DAY_OF_MONTH, 14); break; // 1 Prior Offense - 2nd Offense
+                case 2: c.add(Calendar.DAY_OF_MONTH, 30); break; // 2 Prior Offenses - 3rd Offense
+                case 3: c.add(Calendar.DAY_OF_MONTH, 60); break; // 3 Prior Offenses - 4th Offense
             }
             return c.getTime(); // Set the Expiry Date
         }
@@ -351,9 +333,8 @@ class Core { // This is where all the magic happens, where all the data is added
             }
             System.out.println(trueOffset);
             // Checking to see if the queried player is perm bot abused
-            if (botAbuseisPermanent(targetDiscordID)) {
-                dateIssued.setTime(this.issuedDates.get(this.discordID.lastIndexOf(targetDiscordID)));
-
+            dateIssued.setTime(this.issuedDates.get(this.discordID.lastIndexOf(targetDiscordID)));
+            if (botAbuseIsPermanent(targetDiscordID)) {
                 if (!isTeamMember) {
                     return ":information_source: " + targetDiscordID + " Bot Abuse Info: " +
                             "\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
@@ -375,7 +356,6 @@ class Core { // This is where all the magic happens, where all the data is added
                 }
             }
             else { // They Are Currently Bot Abused but not permanently
-                dateIssued.setTime(this.issuedDates.get(this.discordID.lastIndexOf(targetDiscordID)));
                 dateToExpire.setTime(this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)));
                 if (!isTeamMember && this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) == null) {
                     return ":information_source: " + targetDiscordID + " Bot Abuse Info: " +
@@ -415,7 +395,7 @@ class Core { // This is where all the magic happens, where all the data is added
         }
     }
     private String getNewExpiryDate(long targetDiscordID) { // This Method gets called only when a new Bot Abuse is applied
-        if (botAbuseisPermanent(targetDiscordID)) {
+        if (botAbuseIsPermanent(targetDiscordID)) {
             return "Permanent";
         }
         // They're Not Perm Bot Abused
@@ -427,7 +407,7 @@ class Core { // This is where all the magic happens, where all the data is added
         c = Calendar.getInstance();
         try {
             // The ExpiryDates array will have a null value for the targetDiscordID if it's a Permanent Bot Abuse - Return true
-            if (botAbuseisPermanent(targetDiscordID)) {
+            if (botAbuseIsPermanent(targetDiscordID)) {
                 return true;
             }
             else {
@@ -438,14 +418,15 @@ class Core { // This is where all the magic happens, where all the data is added
                 return this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)).after(c.getTime());
             }
         }
-        catch (IndexOutOfBoundsException ex) { // A -1 in the first if statement will cause this, a -1 indicates the target
-            // discord ID wasn't found in the discordID array, which means it's their first offense and they've never been
-            // Bot Abused before, so return false and set the indexOfLastOffense variable to -1
-            this.indexOfLastOffense = -1;
+        catch (IndexOutOfBoundsException ex) { // discordId.lastIndexOf(targetDiscordID) returning -1
+            // in the else statement will cause this, a -1 indicates the target discord ID wasn't found in the discordID
+            // array, which means it's their first offense and they've never been
+            // Bot Abused before, so return false. No need to set indexOfLastOffense to -1 as that'll already be done
+            // by the line before the return statement in the else
             return false;
         }
     }
-    boolean botAbuseisPermanent(long targetDiscordID) {
+    boolean botAbuseIsPermanent(long targetDiscordID) {
         return this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)) == null;
     }
     long checkExpiredBotAbuse() throws IOException { // This is the method that gets run each second by the timer in Angel.DiscordBotMain
@@ -455,7 +436,7 @@ class Core { // This is where all the magic happens, where all the data is added
             long targetDiscordID = this.discordID.get(index);
             Date targetDate = this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID));
             // This Catches the program from trying to remove a permanent Bot Abuse
-            if (targetDate == null) {
+            if (botAbuseIsPermanent(targetDiscordID)) {
                 // Take No Action
             }
             // If the targetDate is before the current time and the player is currently Bot Abused then remove their Bot Abuse
@@ -607,6 +588,37 @@ class Core { // This is where all the magic happens, where all the data is added
             output += "\n\nRecords Count: " + recordsCount;
             return output;
         }
+    }
+
+    String addReason(boolean mapToExistingKey, String mainKey, String keyReasonWild)
+            throws IOException {
+        String returnValue;
+        if (!mapToExistingKey) {
+            reasonsDictionary.put(mainKey, keyReasonWild);
+            returnValue = "**[System] Successfully Mapped the reason *" + keyReasonWild + "* to the reason key *" + mainKey + "***";
+        }
+        else {
+            reasonsDictionary.put(mainKey, reasonsDictionary.get(keyReasonWild));
+            returnValue = "**[System] Successfully Mapped the reason *" + reasonsDictionary.get(keyReasonWild) +
+                    "* to the reason key *" + mainKey + "***";
+        }
+        fileHandler.saveDatabase();
+        return returnValue;
+    }
+    String deleteReason(String key) throws IOException {
+        String returnValue;
+        String removedReason = reasonsDictionary.remove(key);
+        if (removedReason != null) {
+            returnValue = "**:white_check_mark: [System] Successfully Removed the reason *" + removedReason
+                    + "* which was mapped to key *" + key + "***";
+            log.info("Successfully Removed the Reason \"" + removedReason + "\" which was mapped to key \"" + key + "\"");
+            fileHandler.saveDatabase();
+        }
+        else {
+            returnValue = "**:x: [System] No Reason Existed under key *" + key + "***";
+            log.error("No Reason Found with key \"" + key + "\"");
+        }
+        return returnValue;
     }
     // Purpose 0 is a Bot Abuse Event
     // Purpose 1 is a Perm Bot Abuse Event
