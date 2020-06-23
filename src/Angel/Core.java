@@ -17,7 +17,7 @@ class Core { // This is where all the magic happens, where all the data is added
     private BotAbuseVariables botAbuseVars = new BotAbuseVariables();
     private UndoVariables undoVars = new UndoVariables();
     private final Logger log = LogManager.getLogger(Core.class);
-    private CoreConfiguration config = new CoreConfiguration() {};
+    private CoreConfiguration coreConfig = new CoreConfiguration() {};
     ArrayList<Long> discordID = new ArrayList<>();
     ArrayList<String> issuingTeamMember = new ArrayList<>();
     ArrayList<Integer> repOffenses = new ArrayList<>();
@@ -36,18 +36,18 @@ class Core { // This is where all the magic happens, where all the data is added
 
     void startup(boolean restart) throws IOException, TimeoutException {
         if (!restart) {
-            config.setup(fileHandler.getConfig());
+            coreConfig.setup(fileHandler.getConfig());
             log.info("Core Initiated...");
         }
         else {
             log.warn("Program Restarting...");
-            new ProcessBuilder().command("cmd.exe", "/c", "start", this.config.systemPath + "\\restart.bat").start();
+            new ProcessBuilder().command("cmd.exe", "/c", "start", this.coreConfig.systemPath + "\\restart.bat").start();
             System.exit(1);
         }
 
-        if (!config.testModeEnabled) {
+        if (!coreConfig.testModeEnabled) {
             rabbit = new RabbitMQSend();
-            rabbit.startup(config.host);
+            rabbit.startup(coreConfig.host);
         }
         try {
             fileHandler.getDatabase();
@@ -68,7 +68,7 @@ class Core { // This is where all the magic happens, where all the data is added
                     this.reasons.add(getReason);
                 }
                 else {
-                    return "**:x: [System] Invalid Reason!\nReason: ***" + reason + "*";
+                    return "**:x: [System] Invalid Reason!\nReason:** *" + reason + "*";
                 }
             }
         }
@@ -95,7 +95,7 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.proofImages.add(imageURL);
                 this.currentBotAbusers.add(targetDiscordID);
             }
-            if (this.config.testModeEnabled) {
+            if (this.coreConfig.testModeEnabled) {
                 System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                         "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
             }
@@ -121,7 +121,7 @@ class Core { // This is where all the magic happens, where all the data is added
                 // The expiry date is changed to null for Permanent and the reason is updated to "Contact Staff"
                 this.expiryDates.set(this.discordID.lastIndexOf(targetDiscordID), null);
                 this.reasons.set(this.discordID.lastIndexOf(targetDiscordID), "Contact SAFE Team");
-                if (this.config.testModeEnabled) {
+                if (this.coreConfig.testModeEnabled) {
                     System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                             "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
                 }
@@ -157,7 +157,7 @@ class Core { // This is where all the magic happens, where all the data is added
                 this.proofImages.add(imageURL);
                 this.currentBotAbusers.add(targetDiscordID);
             }
-            if (this.config.testModeEnabled) {
+            if (this.coreConfig.testModeEnabled) {
                 System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                         "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
             }
@@ -209,7 +209,7 @@ class Core { // This is where all the magic happens, where all the data is added
         c = Calendar.getInstance();
         Calendar cOld = Calendar.getInstance();
 
-        if (this.config.testModeEnabled) {
+        if (this.coreConfig.testModeEnabled) {
             cOld.add(Calendar.HOUR_OF_DAY, -1); // Minus 1 Hour for Testing Purposes
         }
         else {
@@ -231,7 +231,7 @@ class Core { // This is where all the magic happens, where all the data is added
             }
             index++;
         }
-        if (prevOffenses < 4 && this.config.testModeEnabled) {
+        if (prevOffenses < 4 && this.coreConfig.testModeEnabled) {
             // The Times are Short for Testing Purposes, they would usually be in days or months.
             switch (prevOffenses) {
                 case 0: c.add(Calendar.MINUTE, 1); break; // 0 Prior Offenses - 1st Offense
@@ -262,11 +262,11 @@ class Core { // This is where all the magic happens, where all the data is added
             targetDiscordID = this.discordID.get(this.issuingTeamMember.lastIndexOf(teamMember));
         }
         cTooLate.setTime(this.issuedDates.get(this.issuingTeamMember.lastIndexOf(teamMember)));
-        if (this.config.testModeEnabled) {
+        if (this.coreConfig.testModeEnabled) {
             cTooLate.add(Calendar.SECOND, 30);
         }
         else {
-            cTooLate.add(Calendar.DAY_OF_MONTH, 5);
+            cTooLate.add(Calendar.DAY_OF_MONTH, coreConfig.maxDaysAllowedForUndo);
         }
         if (c.getTime().before(cTooLate.getTime()) && botAbuseIsCurrent(targetDiscordID) && isUndoingLast) {
             int index = this.issuingTeamMember.lastIndexOf(teamMember);
@@ -423,6 +423,7 @@ class Core { // This is where all the magic happens, where all the data is added
             // array, which means it's their first offense and they've never been
             // Bot Abused before, so return false. No need to set indexOfLastOffense to -1 as that'll already be done
             // by the line before the return statement in the else
+            this.indexOfLastOffense = -1;
             return false;
         }
     }
@@ -442,7 +443,7 @@ class Core { // This is where all the magic happens, where all the data is added
             // If the targetDate is before the current time and the player is currently Bot Abused then remove their Bot Abuse
             else if (targetDate.before(c.getTime()) && this.currentBotAbusers.contains(targetDiscordID)) {
                 this.currentBotAbusers.remove(targetDiscordID);
-                if (this.config.testModeEnabled) {
+                if (this.coreConfig.testModeEnabled) {
                     System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                             "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
                 }
@@ -500,7 +501,7 @@ class Core { // This is where all the magic happens, where all the data is added
             clearedRecords++;
         }
         this.currentBotAbusers.remove(targetDiscordID);
-        if (this.config.testModeEnabled) {
+        if (this.coreConfig.testModeEnabled) {
             System.out.println(this.discordID.toString() + "\n" + this.repOffenses.toString() +
                     "\n" + this.expiryDates.toString() + "\n" + this.reasons.toString() + "\n" + this.currentBotAbusers.toString());
         }
@@ -589,18 +590,18 @@ class Core { // This is where all the magic happens, where all the data is added
             return output;
         }
     }
-
-    String addReason(boolean mapToExistingKey, String mainKey, String keyReasonWild)
+    // keyReasonWild can either be used as mapping to an existing key or a new reason, nicknamed a "Wild Card"
+    String addReason(boolean mapToExistingKey, String newKey, String keyReasonWild)
             throws IOException {
         String returnValue;
         if (!mapToExistingKey) {
-            reasonsDictionary.put(mainKey, keyReasonWild);
-            returnValue = "**[System] Successfully Mapped the reason *" + keyReasonWild + "* to the reason key *" + mainKey + "***";
+            reasonsDictionary.put(newKey, keyReasonWild);
+            returnValue = "**[System] Successfully Mapped the reason *" + keyReasonWild + "* to the reason key *" + newKey + "***";
         }
         else {
-            reasonsDictionary.put(mainKey, reasonsDictionary.get(keyReasonWild));
+            reasonsDictionary.put(newKey, reasonsDictionary.get(keyReasonWild));
             returnValue = "**[System] Successfully Mapped the reason *" + reasonsDictionary.get(keyReasonWild) +
-                    "* to the reason key *" + mainKey + "***";
+                    "* to the reason key *" + newKey + "***";
         }
         fileHandler.saveDatabase();
         return returnValue;
@@ -637,7 +638,7 @@ class Core { // This is where all the magic happens, where all the data is added
             }
             botAbuseVars.reason = this.reasons.get(this.discordID.size() - 1);
             botAbuseVars.imageURL = this.proofImages.get(this.discordID.size() - 1);
-            if (!config.testModeEnabled) {
+            if (!coreConfig.testModeEnabled) {
                 rabbit.sendMessage(fileHandler.gson.toJson(botAbuseVars), "ReportCreatedEvent");
             }
             else {
@@ -646,7 +647,7 @@ class Core { // This is where all the magic happens, where all the data is added
         }
         else {
             undoVars.targetDiscordID = targetDiscordID;
-            if (!config.testModeEnabled) {
+            if (!coreConfig.testModeEnabled) {
                 rabbit.sendMessage(fileHandler.gson.toJson(undoVars), "ReportUndoEvent");
             }
             else {
@@ -719,10 +720,12 @@ abstract class CoreConfiguration {
     String systemPath;
     String host;
     boolean testModeEnabled;
+    int maxDaysAllowedForUndo;
     void setup(JsonObject configObj) {
         systemPath = configObj.get("systemPath").getAsString();
         host = configObj.get("host").getAsString();
         testModeEnabled = configObj.get("testModeEnabled").getAsBoolean();
+        maxDaysAllowedForUndo = configObj.get("maxDaysUndoIsAllowed").getAsInt();
     }
 }
 class BotAbuseVariables {

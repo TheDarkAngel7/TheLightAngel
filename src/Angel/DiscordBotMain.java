@@ -94,7 +94,7 @@ class DiscordBotMain extends ListenerAdapter {
         // If they're supposed to be Bot Abused and they don't have the role on join
         if (core.botAbuseIsCurrent(event.getMember().getIdLong()) &&
                 !event.getMember().getRoles().contains(botConfig.botAbuseRole)) {
-            event.getGuild().addRoleToMember(event.getMember().getIdLong(),
+            guild.addRoleToMember(event.getMember().getIdLong(),
                    botConfig.botAbuseRole).completeAfter(50, TimeUnit.MILLISECONDS);
             embed.setAsInfo("Join Event Information");
             embedBuilder.addField(fieldHeader, "**[System - Join Event] Added the Bot Abuse Role to "
@@ -106,7 +106,7 @@ class DiscordBotMain extends ListenerAdapter {
         // If they're not supposed to be Bot Abused and they do have the role
         else if (!core.botAbuseIsCurrent(event.getMember().getIdLong()) &&
                 event.getMember().getRoles().contains(botConfig.botAbuseRole)) {
-            event.getGuild().removeRoleFromMember(event.getMember().getIdLong(),
+            guild.removeRoleFromMember(event.getMember().getIdLong(),
                     botConfig.botAbuseRole).completeAfter(50, TimeUnit.MILLISECONDS);
             embed.setAsInfo("Join Event Information");
             embedBuilder.addField(fieldHeader, "**[System - Join Event] Removed the Bot Abuse Role from "
@@ -222,7 +222,7 @@ class DiscordBotMain extends ListenerAdapter {
             else if (args[0].equalsIgnoreCase("ping")) {
                 embed.setAsInfo("My Ping Info");
                 embedBuilder.addField(fieldHeader, ":ping_pong: **Pong!**" +
-                        "\nPing Time to Discord's Gateway: **" + msg.getJDA().getGatewayPing() + "ms**", true);
+                        "\nMy Ping Time to Discord's Gateway: **" + msg.getJDA().getGatewayPing() + "ms**", true);
                 if (isTeamMember) {
                     sendToTeamDiscussionChannel(false, null);
                 }
@@ -249,23 +249,22 @@ class DiscordBotMain extends ListenerAdapter {
                 }
             }
             else if (args[0].equalsIgnoreCase("reasonsmanager") || args[0].equalsIgnoreCase("rmgr")) {
-                if (isStaffMember) {
-                    try {
-                        reasonsCommand(msg);
-                    }
-                    catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                try {
+                    reasonsCommand(msg, msg.getContentRaw().substring(1).split(" "), isTeamMember, isStaffMember);
                 }
-                else {
-                    embed.setAsError("Error - No Permissions");
-                    embedBuilder.addField(fieldHeader, "**:x: [System] You Lack Permissions to do that!**", true);
-                    if (isTeamMember){
-                        sendToTeamDiscussionChannel(false, null);
-                    }
-                    else {
-                        sendToHelpChannel(true, msg.getChannel(), msg.getMember());
-                    }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            else if (args[0].equalsIgnoreCase("reasons")) {
+                String[] strings = new String[2];
+                strings[0] = "rmgr";
+                strings[1] = "list";
+                try {
+                    reasonsCommand(msg, strings, isTeamMember, isStaffMember);
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         }
@@ -332,13 +331,9 @@ class DiscordBotMain extends ListenerAdapter {
                 sendToTeamDiscussionChannel(true, msg.getMember());
             }
         }
-        if ((args[0].equalsIgnoreCase("botabuse") || args[0].equalsIgnoreCase("permbotabuse")
-                || args[0].equalsIgnoreCase("ba") || args[0].equalsIgnoreCase("pba"))
-                && msg.getChannel() == botConfig.discussionChannel && msg.getAttachments().size() == 1) {
-            msg.delete().queueAfter(10, TimeUnit.SECONDS);
-        }
-        else if (!msg.getMentionedMembers().contains(guild.getSelfMember())
-                && msg.getChannel() != botConfig.botSpamChannel) {
+        if (!msg.getMentionedMembers().contains(guild.getSelfMember())
+                && msg.getChannel() != botConfig && msg.getContentRaw().charAt(0) == '/'
+                && msg.getAttachments().isEmpty()) {
             msg.delete().queue();
         }
     }
@@ -350,6 +345,7 @@ class DiscordBotMain extends ListenerAdapter {
             log.fatal("Data File Damaged on Initiation");
             log.warn("Commands are now Suspended");
         }
+        // If the init method was initiated from a restart then this'll run.
         if (isRestart) {
             embed.setAsSuccess("Restart Complete");
             if (!commandsSuspended) {
@@ -360,12 +356,14 @@ class DiscordBotMain extends ListenerAdapter {
             }
             sendToTeamDiscussionChannel(false, null);
         }
+        // If init was initiated from a config reload then this'll run.
         if (isReload) {
             embed.setAsSuccess("Reload Complete");
             embedBuilder.addField(fieldHeader,
                     "**Reloading Config was Successfully Completed!**",true);
             sendToTeamDiscussionChannel(false, null);
         }
+        // If the timers aren't running and commands aren't suspended then this'll run. Or... if a reload came in.
         if ((!timerRunning && !commandsSuspended) || isReload) {
             if (!isRestart) {
                 botConfig.discussionChannel.sendMessage(":wave: Hey Folks! I'm Ready To Fly!").queue();
@@ -427,7 +425,7 @@ class DiscordBotMain extends ListenerAdapter {
                     }
                 }
             }, 0, 1000);
-            // 15 Minute Periodic Scan of Players that should be Bot Abused to ensure that they have the role
+            // Configurable Periodic Scan of Players that should be Bot Abused to ensure that they have the role
             // Followed by a Scan of All Players to look for any Bot Abuse roles that did not get removed when they should have
             timer2.schedule(new TimerTask() {
                 @Override
@@ -546,7 +544,6 @@ class DiscordBotMain extends ListenerAdapter {
                         sendToTeamDiscussionChannel(true, msg.getMember());
                         log.info(msg.getMember().getEffectiveName() + " Successfully Bot Abused "
                                 + guild.getMemberById(Long.parseLong(args[1])).getEffectiveName());
-                        saveImageAttachment(msg.getAttachments().get(0));
                     }
                     else if (result.contains(":x:")) {
                         embed.setAsError("Whoops... Something went wrong");
@@ -632,7 +629,6 @@ class DiscordBotMain extends ListenerAdapter {
                         sendToTeamDiscussionChannel(false, null);
                         log.info(msg.getMember().getEffectiveName() + " Successfully Bot Abused "
                                 + msg.getMentionedMembers().get(0).getEffectiveName());
-                        saveImageAttachment(msg.getAttachments().get(0));
                     }
                     else if (result.contains(":x:")) {
                         embed.setAsError("Whoops... Something went wrong");
@@ -1499,14 +1495,9 @@ class DiscordBotMain extends ListenerAdapter {
             }
         }
     }
-    private void reasonsCommand(Message msg) throws IOException {
-        String[] args = msg.getContentRaw().substring(1).split(" ");
-        if (args.length < 3) {
-            embed.setAsError("Error while Parsing Reason Command");
-            embedBuilder.addField(fieldHeader, "**:x: [System] Invalid Number of Arguements**", true);
-        }
+    private void reasonsCommand(Message msg, String[] args, boolean isTeamMember, boolean isStaffMember) throws IOException {
         // /rmgr addreason <key> <Reason (multiple Args)>
-        else if (args[1].equalsIgnoreCase("addreason")) {
+        if (args[1].equalsIgnoreCase("addreason") && isStaffMember) {
             int index = 3;
             String reason = "";
             while (index < args.length) {
@@ -1522,7 +1513,7 @@ class DiscordBotMain extends ListenerAdapter {
             log.info("Successful Reason Addition for \"" + reason + "\" mapped to the key \"" + args[2] + "\"");
         }
         // /rmgr addkeymap <newKey> <existingKey>
-        else if (args[1].equalsIgnoreCase("addkeymap")) {
+        else if (args[1].equalsIgnoreCase("addkeymap") && isStaffMember) {
             embed.setAsSuccess("Successful Key Mapping");
             embedBuilder.addField(fieldHeader, core.addReason(true, args[2], args[3]), true);
             sendToLogChannel();
@@ -1531,7 +1522,7 @@ class DiscordBotMain extends ListenerAdapter {
         // /rmgr remove <existingKey>
         // /rmgr del <existingKey>
         // /rmgr delete <existingKey>
-        else if (args[1].equalsIgnoreCase("remove") || args[1].contains("del")) {
+        else if (args[1].equalsIgnoreCase("remove") || args[1].contains("del") && isStaffMember) {
             String result = core.deleteReason(args[2]);
             if (result.contains(":white_check_mark:")) {
                 embed.setAsSuccess("Successful Reason Deletion");
@@ -1542,6 +1533,30 @@ class DiscordBotMain extends ListenerAdapter {
                 embed.setAsError("Error - Reason Removal");
                 embedBuilder.addField(fieldHeader, result, true);
                 sendToTeamDiscussionChannel(true, msg.getMember());
+            }
+        }
+        else if (args[1].equalsIgnoreCase("list") && isTeamMember) {
+            String result = "";
+            Iterator<String> keys = core.reasonsDictionary.keys().asIterator();
+            Iterator<String> elements = core.reasonsDictionary.elements().asIterator();
+            do {
+                result = result.concat("**Key: *" + keys.next()
+                        + "* is mapped to Reason: *" + elements.next() + "* **\n");
+
+            } while (keys.hasNext());
+            embed.setAsInfo("Reasons Dictionary");
+            embedBuilder.addField(fieldHeader, result, true);
+            sendToTeamDiscussionChannel(true, msg.getMember());
+            log.info(msg.getMember().getEffectiveName() + " just requested the reasons dictionary list");
+        }
+        else {
+            embed.setAsError("Error - No Permissions");
+            embedBuilder.addField(fieldHeader, "**:x: [System] You Lack Permissions to do that!**", true);
+            if (isTeamMember) {
+                sendToTeamDiscussionChannel(false, null);
+            }
+            else {
+                sendToHelpChannel(true, msg.getChannel(), msg.getMember());
             }
         }
     }
@@ -1620,16 +1635,6 @@ class DiscordBotMain extends ListenerAdapter {
         botConfig.logChannel.sendMessage(embedBuilder.build()).queue();
         embedBuilder.clearFields();
     }
-    // This method is so that the image is requested at least once from Discord's servers.
-    // Discord's server will delete the image from their servers if the message the image is attached to is deleted
-    // and never loaded from a browser or another source.
-    private void saveImageAttachment(Message.Attachment attachment) throws InterruptedException, IOException {
-        ProcessBuilder cmd = new ProcessBuilder();
-        Thread.sleep(1000);
-        cmd.command("cmd.exe", "/c", "start " + botConfig.webBrowser + " " + attachment.getProxyUrl()).start();
-        Thread.sleep(botConfig.webBrowserCloseDelay * 1000);
-        cmd.command("cmd.exe", "/c", "taskkill /IM " + botConfig.webBrowser + ".exe").start();
-    }
     // This Method handles adding discord IDs to the cooldown arrays, since this code can be initiated two separate ways
     // best just to create a separate method for it.
     private void pingHandler(long targetDisordID) {
@@ -1662,7 +1667,6 @@ abstract class BotConfiguration {
     String botSpamChannelID;
     String logChannelID;
     String fieldHeader;
-    String webBrowser;
     MessageChannel discussionChannel;
     MessageChannel helpChannel;
     MessageChannel botSpamChannel;
@@ -1673,7 +1677,6 @@ abstract class BotConfiguration {
     Role botAbuseRole;
     int roleScannerInterval;
     int pingCoolDown;
-    int webBrowserCloseDelay;
 
     BotConfiguration(JsonObject importConfigObj) {
         configObj = importConfigObj;
@@ -1694,10 +1697,8 @@ abstract class BotConfiguration {
         botSpamChannelID = configObj.get("botSpamChannel").getAsString();
         logChannelID = configObj.get("logChannel").getAsString();
         fieldHeader = configObj.get("fieldHeader").getAsString();
-        roleScannerInterval = configObj.get("roleScannerInterval").getAsInt();
-        pingCoolDown = configObj.get("pingCoolDown").getAsInt();
-        webBrowser = configObj.get("webBrowser").getAsString();
-        webBrowserCloseDelay = configObj.get("webBrowserCloseDelay").getAsInt();
+        roleScannerInterval = configObj.get("roleScannerIntervalMinutes").getAsInt();
+        pingCoolDown = configObj.get("pingCoolDownMinutes").getAsInt();
     }
     void finishSetup() {
         // These are configuration settings that have to be set with a guild object

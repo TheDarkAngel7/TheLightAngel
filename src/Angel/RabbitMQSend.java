@@ -8,9 +8,9 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 class RabbitMQSend {
-    ConnectionFactory factory = new ConnectionFactory();
-    Connection connection = factory.newConnection();
-    Channel channel = connection.createChannel();
+    private ConnectionFactory factory = new ConnectionFactory();
+    private Connection connection = factory.newConnection();
+    private Channel channel = connection.createChannel();
 
     RabbitMQSend() throws IOException, TimeoutException {
     }

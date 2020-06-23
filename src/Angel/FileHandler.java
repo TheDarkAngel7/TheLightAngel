@@ -8,9 +8,13 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import java.lang.reflect.Type;
+
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Hashtable;
 
@@ -61,17 +65,9 @@ class FileHandler {
         jsonWriter.endObject();
         jsonWriter.close();
         log.info("JSONWriter Successfully Ran to Database Temp File");
-        if (jsonDataFile.delete()) {
-            log.info("Successfully Deleted Original File");
-        }
-        else {
-            log.warn("Could Not Delete Original Data File - Trying Again Over and Over...");
-            while (jsonDataFile.exists()) {
-                System.out.println("Result of Deletion: " + jsonDataFile.delete());
-            }
-            log.info("Deletion Finally Ran");
-        }
-
+        File backupFile = new File("db-backups/data - " +
+                Calendar.getInstance().getTime().toString().replace(':', ' ') + ".json");
+        Files.move(Paths.get(jsonDataFile.getAbsolutePath()), Paths.get(backupFile.getAbsolutePath()));
         // Rename the file
         if (jsonTempDataFile.renameTo(jsonDataFile)) {
             log.info("Successfully Renamed Temp File to Original File");

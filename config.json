@@ -3,8 +3,9 @@
 	"host": "localhost",
 	"testModeEnabled": true,
 	"token": "<Bot Token Here>",
-	"roleScannerInterval": 15,
-	"pingCoolDown": 15,
+	"roleScannerIntervalMinutes": 15,
+	"pingCoolDownMinutes": 15,
+	"maxDaysUndoIsAllowed": 5,
 	"fieldHeader": "System Message",
 	"ownerDiscordID": "<Owner Discord ID Here>",
 	"adminRoleID": "702223865606176841",
@@ -14,7 +15,5 @@
 	"teamDiscussionChannel": "664525869913473054",
 	"helpChannel": "666801237781643296",
 	"botSpamChannel": "720791570600820838",
-	"logChannel": "697643345471602740",
-	"webBrowser": "iexplore",
-	"webBrowserCloseDelay": 5
+	"logChannel": "697643345471602740"
 }
