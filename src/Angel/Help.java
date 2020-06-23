@@ -16,12 +16,14 @@ class Help {
     }
     void botAbuseCommand() {
         embed.setAsHelp("/botabuse Command Help");
-        embedBuilder.addField(fieldHeader, "**Full Syntax:\n `/botabuse <Mention or Discord ID> <Reason (“kick”, “offline”, or “staff”. You can also use “k”, “o”, or “s” for short)> [Image URL]`**\n" +
+        embedBuilder.addField(fieldHeader, "**Full Syntax:\n `/botabuse <Mention or Discord ID> <Reason (You'd input a reason key here)> [Image URL]`**\n" +
                 "\n" +
                 "/botabuse allows you to Bot Abuse the target Mention or Discord ID along with the required reason, " +
-                "it’s straight forward on what this command needs. However, an Image URL argument is required for the most part but if you’re on mobile for instance," +
-                " the bot will accept an image attachment as the image. However, you need to use this command in the " +
-                "team discussion channel if you’re going to upload an image attachment due to the command having a 10 second delay before the command gets deleted.", true);
+                "it’s straight forward on what this command needs. An Image URL argument is required for the most part, but if you’re on mobile," +
+                " the bot will accept an image attachment to replace this argument. However, you need to use this command in the " +
+                "team discussion channel if you’re going to upload an image attachment due to the command not getting deleted on use.\n\n" +
+                "If you're not sure what you'd input for `<Reason>`, being it requires a reason key and not the entire reason spelled out," +
+                "use `/reasons` or `/rmgr list` to get what keys direct me to what reasons.", true);
     }
     void permBotAbuseCommand() {
         embed.setAsHelp("/permbotabuse Command Help");
@@ -57,8 +59,8 @@ class Help {
                     "instead of the staff having to guess when your bot abuse will expire, you can just have the bot tell you.\n\n" +
                     "About `[dm]`: If you would like to opt for TheLightAngel to send you the information via a DM " +
                     "instead of the default location in " + guild.getTextChannelById(helpChannel.getIdLong()).getAsMention() + ", you can place a \"dm\" right after the \"/check\".\n\n" +
-                    "About `[TimeZone]`: Because the bot records the times in Central Time/US, *what if someone used this command " +
-                    "and wanted to see the times in their own time zone?* **That's where this argument comes into play!**  " +
+                    "About `[TimeZone]`: Because I record the times in my own time zone, *what if someone used this command " +
+                    "and wanted to see the times in their time zone?* **That's where this argument comes into play!**  " +
                     "Right now the bot is compatible with Time Zones that are a full hour, or a full hour and a half ahead or behind UTC.", true);
         }
     }
