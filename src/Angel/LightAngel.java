@@ -21,20 +21,17 @@ class LightAngel {
     static DiscordBotMain discord;
     static File dataFile = new File("data/data.json");
     static {
-        System.out.println("[System] TheLightAngel is Starting! Please Wait...");
         log.info("New Log Starting at time: " + Calendar.getInstance().getTime());
         log.info("TheLightAngel is Starting! Please Wait...");
         try {
             if (!dataFile.exists()) {
                 if (dataFile.createNewFile()) {
                     ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(dataFile));
-                    System.out.println("[System] Successfully Created new Data File");
                     log.info("Successfully Created new Data File");
                     objectOutputStream.close();
                 }
             }
             else {
-                System.out.println("[System] Successfully Found Existing Data File");
                 log.info("Successfully Found Existing Data File");
             }
         }

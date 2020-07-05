@@ -1,10 +1,10 @@
 package Angel;
 
-import com.google.gson.JsonObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -17,7 +17,7 @@ class Core { // This is where all the magic happens, where all the data is added
     private BotAbuseVariables botAbuseVars = new BotAbuseVariables();
     private UndoVariables undoVars = new UndoVariables();
     private final Logger log = LogManager.getLogger(Core.class);
-    private CoreConfiguration coreConfig = new CoreConfiguration() {};
+    CoreConfiguration coreConfig;
     ArrayList<Long> discordID = new ArrayList<>();
     ArrayList<String> issuingTeamMember = new ArrayList<>();
     ArrayList<Integer> repOffenses = new ArrayList<>();
@@ -30,13 +30,14 @@ class Core { // This is where all the magic happens, where all the data is added
     private int indexOfLastOffense;
     private Calendar c;
 
-    Core() {
+    Core() throws FileNotFoundException {
         fileHandler = new FileHandler(this);
+        coreConfig = new CoreConfiguration(fileHandler.getConfig()) {};
     }
 
     void startup(boolean restart) throws IOException, TimeoutException {
         if (!restart) {
-            coreConfig.setup(fileHandler.getConfig());
+            coreConfig.setup();
             log.info("Core Initiated...");
         }
         else {
@@ -206,31 +207,7 @@ class Core { // This is where all the magic happens, where all the data is added
     }
 
     private Date setExpiryDate(long targetDiscordID) {
-        c = Calendar.getInstance();
-        Calendar cOld = Calendar.getInstance();
-
-        if (this.coreConfig.testModeEnabled) {
-            cOld.add(Calendar.HOUR_OF_DAY, -1); // Minus 1 Hour for Testing Purposes
-        }
-        else {
-            // Take off 6 months
-            cOld.add(Calendar.MONTH, -6);
-        }
-        int index = 0;
-        int prevOffenses = 0;
-
-        while (index < this.discordID.size() - 1 && this.expiryDates.size() != 0) {
-            // We check for discordID.size() - 1 & expiryDates.size() != 0 because the
-            // discordID array has the ID already added to it and the expiryDates array hasn't been touched yet
-            // so the size of discordID size would be 1 more than the size of the expiryDates array
-            if (this.discordID.get(index) == targetDiscordID && this.expiryDates.get(index).after(cOld.getTime())) {
-                // Here we're checking to see if the discordID at the current index matches the targetDiscordID
-                // We  also check the expiryDate at that index and see if it is after the Date where the records would
-                // otherwise be ignored by the bot, records whose expiryDates are before the cOld time would be ignored.
-                prevOffenses++;
-            }
-            index++;
-        }
+        int prevOffenses = this.getHotOffenses(targetDiscordID);
         if (prevOffenses < 4 && this.coreConfig.testModeEnabled) {
             // The Times are Short for Testing Purposes, they would usually be in days or months.
             switch (prevOffenses) {
@@ -250,15 +227,14 @@ class Core { // This is where all the magic happens, where all the data is added
             }
             return c.getTime(); // Set the Expiry Date
         }
-        else {
-            // Add Null if this is their 5th offense - Permanent Bot Abuse
-            return null;
-        }
+        // Add Null if this is their 5th offense - Permanent Bot Abuse
+        else return null;
     }
     String undoBotAbuse(String teamMember, boolean isUndoingLast, long targetDiscordID) throws Exception {
-        c = Calendar.getInstance();
         Calendar cTooLate = Calendar.getInstance();
-        if (targetDiscordID == 0) {
+        if (isUndoingLast) {
+            // targetDiscordID would be 0 if this condition is true,
+            // this gets the Discord ID of the player that they bot abused last
             targetDiscordID = this.discordID.get(this.issuingTeamMember.lastIndexOf(teamMember));
         }
         cTooLate.setTime(this.issuedDates.get(this.issuingTeamMember.lastIndexOf(teamMember)));
@@ -309,19 +285,12 @@ class Core { // This is where all the magic happens, where all the data is added
                     "\nPlease Wait While I Restart...**";
         }
     }
-    String getInfo(long targetDiscordID, float timeOffset, boolean isTeamMember) { // This method is for queries
-        int index = 0;
-        int prevOffenses = 0;
+    String getInfo(long targetDiscordID, double timeOffset, boolean isTeamMember) { // This method is for queries
+        int prevOffenses = this.getLifetimeOffenses(targetDiscordID);
 
         SimpleDateFormat sdfDateIssued = new SimpleDateFormat("MM-dd-yy HH:mm:ss zzz");
-        SimpleDateFormat sdfDateExpired= new SimpleDateFormat("MM-dd-yy HH:mm:ss zzz");
+        SimpleDateFormat sdfDateExpired = new SimpleDateFormat("MM-dd-yy HH:mm:ss zzz");
 
-        while (index < this.discordID.size()) {
-            if (this.discordID.get(index) == targetDiscordID) {
-                prevOffenses++;
-            }
-            index++;
-        }
         if (botAbuseIsCurrent(targetDiscordID)) {
             Calendar dateIssued = Calendar.getInstance();
             Calendar dateToExpire = Calendar.getInstance();
@@ -391,7 +360,9 @@ class Core { // This is where all the magic happens, where all the data is added
         // They're Not Bot Abused
         else {
             return ":white_check_mark: Lucky for you... you're not Bot Abused Currently" +
-                    "\n\n:information_source: You have had " + prevOffenses + " Previous Offenses";
+                    "\n" +
+                    "\nNumber of Lifetime Bot Abuses: **" + this.getLifetimeOffenses(targetDiscordID) + "**" +
+                    "\nNumber of Hot Bot Abuses: **" + this.getHotOffenses(targetDiscordID) + "**";
         }
     }
     private String getNewExpiryDate(long targetDiscordID) { // This Method gets called only when a new Bot Abuse is applied
@@ -403,8 +374,48 @@ class Core { // This is where all the magic happens, where all the data is added
             return this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)).toString();
         }
     }
+    int getHotOffenses(long targetDiscordID) {
+        Calendar cOld = Calendar.getInstance();
+
+        if (this.coreConfig.testModeEnabled) {
+            cOld.add(Calendar.HOUR_OF_DAY, -1); // Minus 1 Hour for Testing Purposes
+        }
+        else {
+            // Take off 6 months
+            cOld.add(Calendar.MONTH, -6);
+        }
+        int index = 0;
+        int prevOffenses = 0;
+        // We check for discordID.size() - 1 & expiryDates.size() != 0 because the
+        // discordID array has the ID already added to it and the expiryDates array hasn't been touched yet
+        // so the size of discordID size would be 1 more than the size of the expiryDates array
+        while (index < this.discordID.size() - 1 && this.expiryDates.size() != 0) {
+            // Here we're checking to see if the discordID at the current index matches the targetDiscordID
+            // We also check the expiryDate at that index and see if it is after the Date where the records would
+            // otherwise be ignored by the bot, records whose expiryDates are before the cOld time would be ignored.
+            if (this.discordID.get(index) == targetDiscordID && this.expiryDates.get(index).after(cOld.getTime())) {
+                prevOffenses++;
+            }
+            index++;
+        }
+        return prevOffenses;
+    }
+    // There's a difference between Hot Offenses and Lifetime Offenses
+    // Hot Offenses are offenses that took place less than 6 months ago (or the soon to be configured time frame)
+    // Lifetime Offenses are offenses that took place and they add up forever, reguardless of how long ago they took place
+    int getLifetimeOffenses(long targetDiscordID) {
+        int index = 0;
+        int prevOffenses = 0;
+
+        while (index < this.discordID.size()) {
+            if (this.discordID.get(index) == targetDiscordID) {
+                prevOffenses++;
+            }
+            index++;
+        }
+        return prevOffenses;
+    }
     boolean botAbuseIsCurrent(long targetDiscordID) { // Returns True if the targetDiscordID is Bot Abused
-        c = Calendar.getInstance();
         try {
             // The ExpiryDates array will have a null value for the targetDiscordID if it's a Permanent Bot Abuse - Return true
             if (botAbuseIsPermanent(targetDiscordID)) {
@@ -431,6 +442,7 @@ class Core { // This is where all the magic happens, where all the data is added
         return this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)) == null;
     }
     long checkExpiredBotAbuse() throws IOException { // This is the method that gets run each second by the timer in Angel.DiscordBotMain
+        // Because this method gets run every second, we advance the calendar object too.
         c = Calendar.getInstance();
         int index = this.discordID.size() - 1;
         while (index >= 0) {
@@ -514,7 +526,7 @@ class Core { // This is where all the magic happens, where all the data is added
             return -1;
         }
     }
-    String seeHistory(long targetDiscordID, float timeOffset, boolean isTeamMember) {
+    String seeHistory(long targetDiscordID, double timeOffset, boolean isTeamMember) {
         int index = 0;
         int recordsCount = 0;
         String output = "**/checkhistory Results";
@@ -586,10 +598,12 @@ class Core { // This is where all the magic happens, where all the data is added
         }
         // Otherwise return the constructed string from the while loop and above.
         else {
-            output += "\n\nRecords Count: " + recordsCount;
+            output = output.concat("\n\nRecords Count: " + recordsCount
+            + "\nHot Records Count: " + getHotOffenses(targetDiscordID));
             return output;
         }
     }
+    // Reasons Manager Methods
     // keyReasonWild can either be used as mapping to an existing key or a new reason, nicknamed a "Wild Card"
     String addReason(boolean mapToExistingKey, String newKey, String keyReasonWild)
             throws IOException {
@@ -659,14 +673,14 @@ class Core { // This is where all the magic happens, where all the data is added
     // this checks whether or not the string from the message checks out to be a valid number the program can use
     boolean checkOffset(String offset) {
         try {
-            float parsedOffset = Float.parseFloat(offset);
+            double parsedOffset = Double.parseDouble(offset);
             return parsedOffset <= 14 && parsedOffset >= -12;
         }
         catch (NumberFormatException ex) {
             return false;
         }
     }
-    String offsetParsing(float timeOffset) {
+    String offsetParsing(double timeOffset) {
         // What we do here is basically we process the timeOffset entered by the user into
         String strippedTimeOffset = String.valueOf(timeOffset);
         // Dividing any number that has a .5 trailing by .5 would return a positive or negative odd number,
@@ -714,18 +728,6 @@ class Core { // This is where all the magic happens, where all the data is added
     boolean arraySizesEqual() {
         return (this.discordID.size() == this.issuingTeamMember.size()) && (this.repOffenses.size() == this.issuedDates.size()) &&
                 (this.expiryDates.size() == this.reasons.size()) && (this.reasons.size() == this.proofImages.size());
-    }
-}
-abstract class CoreConfiguration {
-    String systemPath;
-    String host;
-    boolean testModeEnabled;
-    int maxDaysAllowedForUndo;
-    void setup(JsonObject configObj) {
-        systemPath = configObj.get("systemPath").getAsString();
-        host = configObj.get("host").getAsString();
-        testModeEnabled = configObj.get("testModeEnabled").getAsBoolean();
-        maxDaysAllowedForUndo = configObj.get("maxDaysUndoIsAllowed").getAsInt();
     }
 }
 class BotAbuseVariables {

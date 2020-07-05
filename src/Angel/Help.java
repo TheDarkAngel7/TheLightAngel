@@ -1,18 +1,18 @@
 package Angel;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.MessageChannel;
 
 class Help {
+    private DiscordBotMain discord;
     private EmbedDesigner embed;
     private EmbedBuilder embedBuilder;
     private String fieldHeader;
 
-    Help(EmbedBuilder importBuilder, EmbedDesigner importEmbed, String importHeader) {
-        this.embedBuilder = importBuilder;
-        this.embed = importEmbed;
-        this.fieldHeader = importHeader;
+    Help(DiscordBotMain importBotInstance) {
+        this.discord = importBotInstance;
+        this.embed = discord.embed;
+        this.embedBuilder = discord.embedBuilder;
+        this.fieldHeader = discord.fieldHeader;
     }
     void botAbuseCommand() {
         embed.setAsHelp("/botabuse Command Help");
@@ -43,7 +43,7 @@ class Help {
                 "However, including a Mention or Discord ID with the command will undo the bot abuse for that player. " +
                 "However this command will only work for Bot Abuses that were issued 5 days or less ago.", true);
     }
-    void checkCommand(boolean isTeamMember, Guild guild, MessageChannel helpChannel) {
+    void checkCommand(boolean isTeamMember) {
         embed.setAsHelp("/check Command Help");
         if (isTeamMember) {
             embedBuilder.addField(fieldHeader, "**Full Syntax:\n `/check [TimeZone Offset] <Mention or Discord ID>`**\n" +
@@ -58,7 +58,7 @@ class Help {
                     "/check allows you to check your own bot abuse status, " +
                     "instead of the staff having to guess when your bot abuse will expire, you can just have the bot tell you.\n\n" +
                     "About `[dm]`: If you would like to opt for TheLightAngel to send you the information via a DM " +
-                    "instead of the default location in " + guild.getTextChannelById(helpChannel.getIdLong()).getAsMention() + ", you can place a \"dm\" right after the \"/check\".\n\n" +
+                    "instead of the default location in " + discord.guild.getTextChannelById(discord.botConfig.helpChannel.getIdLong()).getAsMention() + ", you can place a \"dm\" right after the \"/check\".\n\n" +
                     "About `[TimeZone]`: Because I record the times in my own time zone, *what if someone used this command " +
                     "and wanted to see the times in their time zone?* **That's where this argument comes into play!**  " +
                     "Right now the bot is compatible with Time Zones that are a full hour, or a full hour and a half ahead or behind UTC.", true);
@@ -94,6 +94,8 @@ class Help {
                 "\n" +
                 "`/reasonsmanager <remove|del> <existingKey>` \n" +
                 "\n" +
+                "`/reasonsmanager list`\n" +
+                "\n" +
                 "**About addreason:** \n" +
                 "\n" +
                 "Adds a new Shortcut to a reason, whatever you enter into <newKey> is what you would enter into <reason> " +
@@ -104,7 +106,11 @@ class Help {
                 "If you would like to create multiple keys to do the same thing, you can use this command to do that. \n" +
                 "\n" +
                 "**About remove or del:** \n" +
-                "If you would like to delete a key and the associated reason then you’d use this command. " +
-                "**NOTE:** It does not delete any other keys that were mapped to the same reason. ", true);
+                "If you would like to delete a key and the associated reason then you’d use this command. \n" +
+                "**NOTE:** It does not delete any other keys that were mapped to the same reason. \n" +
+                "\n" +
+                "**About list:** \n" +
+                "\n" +
+                "This lists all of the keys and the reasons the keys are mapped to.", true);
     }
 }
