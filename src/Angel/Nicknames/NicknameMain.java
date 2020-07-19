@@ -298,7 +298,6 @@ public class NicknameMain extends ListenerAdapter {
             String defaultTitle = "Nickname Request List";
             try {
             result = nickCore.getList(guild);
-            System.out.println(nickCore.discordID.size());
             splitString = result.split("\n\n");
             embed.setAsInfo(defaultTitle, result);
             if (msg.getChannelType() == ChannelType.PRIVATE) {
@@ -447,9 +446,7 @@ public class NicknameMain extends ListenerAdapter {
                 }
                 else {
                     String[] getNewNicknameArray = result.split("New Nickname: ");
-                    System.out.println(getNewNicknameArray[1]);
                     String getNewNickname = getNewNicknameArray[1].substring(2, getNewNicknameArray[1].lastIndexOf('*') - 1);
-                    System.out.println(getNewNickname);
                     if (requestAccepted) {
                         ignoreNewNickname = true;
                         if (getNewNickname == null) {
@@ -476,9 +473,7 @@ public class NicknameMain extends ListenerAdapter {
                 }
                 else {
                     String[] getNewNicknameArray = result.split("New Nickname: ");
-                    System.out.println(getNewNicknameArray[1]);
                     String getNewNickname = getNewNicknameArray[1].substring(2, getNewNicknameArray[1].lastIndexOf('*') - 1);
-                    System.out.println(getNewNickname);
                     if (requestAccepted) {
                         ignoreNewNickname = true;
                         if (getNewNickname == null) {
