@@ -1,0 +1,21 @@
+{
+  "systemPath": "<System Path Here>",
+  "testModeEnabled": true,
+  "token": "<Token Here>",
+  "fieldHeader": "System Message",
+  "ownerDiscordID": "<Owner Discord ID Here>",
+  "adminRole": "702223865606176841",
+  "staffRole": "666047627166744597",
+  "teamRole": "664556958686380083",
+  "teamDiscussionChannel": "664525869913473054",
+  "helpChannel": "666801237781643296",
+  "botSpamChannel": "720791570600820838",
+  "managementChannel": "729129709916651562",
+  "logChannel": "697643345471602740",
+  "checkIconURL": "https://i.imgur.com/bakLhaw.png",
+  "warningIconURL": "https://i.imgur.com/5SD8jxX.png",
+  "errorIconURL": "https://i.imgur.com/KmZRhnK.png",
+  "infoIconURL": "https://i.imgur.com/WM8qFWT.png",
+  "stopIconURL": "https://i.imgur.com/LR6Q5jE.png",
+  "helpIconURL": "https://i.imgur.com/saZzlXr.png"
+}
