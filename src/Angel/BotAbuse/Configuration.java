@@ -13,6 +13,7 @@ abstract class BotConfiguration {
     Role botAbuseRole;
     int roleScannerInterval;
     int pingCoolDown;
+    boolean rabbitMQEnabled;
 
     BotConfiguration(JsonObject importConfigObj, MainConfiguration importMainConfig) {
         configObj = importConfigObj;
@@ -24,6 +25,7 @@ abstract class BotConfiguration {
     void initialSetup() {
         // These are configuration settings that can be set without a guild object
         botAbuseRoleID = configObj.get("botAbuseRoleID").getAsString();
+        rabbitMQEnabled = configObj.get("rabbitMQEnabled").getAsBoolean();
         roleScannerInterval = configObj.get("roleScannerIntervalMinutes").getAsInt();
         pingCoolDown = configObj.get("pingCoolDownMinutes").getAsInt();
     }

@@ -10,14 +10,15 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 
-class BACore { // This is where all the magic happens, where all the data is added and queried from the appropriate arrays to
+class BotAbuseCore { // This is where all the magic happens, where all the data is added and queried from the appropriate arrays to
     // Display all the requested data.
     Angel.BotAbuse.FileHandler fileHandler;
     private RabbitMQSend rabbit;
     private BotAbuseVariables botAbuseVars = new BotAbuseVariables();
     private UndoVariables undoVars = new UndoVariables();
-    private final Logger log = LogManager.getLogger(BACore.class);
+    private final Logger log = LogManager.getLogger(BotAbuseCore.class);
     CoreConfiguration coreConfig;
+    BotConfiguration botConfig;
     MainConfiguration mainConfig;
     ArrayList<Long> discordID = new ArrayList<>();
     ArrayList<String> issuingTeamMember = new ArrayList<>();
@@ -31,14 +32,14 @@ class BACore { // This is where all the magic happens, where all the data is add
     private int indexOfLastOffense;
     private Calendar c;
 
-    BACore() throws IOException {
+    BotAbuseCore() throws IOException {
         this.fileHandler= new Angel.BotAbuse.FileHandler(this);
         coreConfig = new CoreConfiguration((fileHandler.getConfig())) {};
     }
     void startup() throws IOException, TimeoutException {
         coreConfig.setup();
         log.info("Bot Abuse Core Initiated...");
-        if (!mainConfig.testModeEnabled) {
+        if (botConfig.rabbitMQEnabled) {
             rabbit = new RabbitMQSend();
             rabbit.startup(coreConfig.host);
         }
@@ -46,12 +47,16 @@ class BACore { // This is where all the magic happens, where all the data is add
             fileHandler.getDatabase();
         }
         catch (IllegalStateException ex) {
-            log.warn("No Data Existed in the Arrays - Data File is Empty");
+            log.warn("No Data Existed in the Bot Abuse Arrays - Data File is Empty");
         }
     }
     void reloadCoreConfig() throws IOException {
         coreConfig.reload(fileHandler.getConfig());
     }
+    void setBotConfig(BotConfiguration importBotConfig) {
+        botConfig = importBotConfig;
+    }
+
     String setBotAbuse(long targetDiscordID, boolean isPermanent, String reason, @Nullable String imageURL, String teamMember)
             throws IOException, NullPointerException {
         if (!botAbuseIsCurrent(targetDiscordID)) {
@@ -421,14 +426,13 @@ class BACore { // This is where all the magic happens, where all the data is add
                 // return true if the Bot Abuse is still current
                 // return false if the Bot Abuse is not current
                 this.indexOfLastOffense = discordID.lastIndexOf(targetDiscordID);
-                return this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)).after(c.getTime());
+                return c.getTime().before(this.expiryDates.get(this.discordID.lastIndexOf(targetDiscordID)));
             }
         }
         catch (IndexOutOfBoundsException ex) { // discordId.lastIndexOf(targetDiscordID) returning -1
             // in the else statement will cause this, a -1 indicates the target discord ID wasn't found in the discordID
             // array, which means it's their first offense and they've never been
-            // Bot Abused before, so return false. No need to set indexOfLastOffense to -1 as that'll already be done
-            // by the line before the return statement in the else
+            // Bot Abused before, so return false.
             this.indexOfLastOffense = -1;
             return false;
         }

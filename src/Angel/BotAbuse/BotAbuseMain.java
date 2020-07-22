@@ -29,7 +29,7 @@ public class BotAbuseMain extends ListenerAdapter {
     private Angel.FileHandler mainFileHandler;
     MainConfiguration mainConfig;
     public BotConfiguration botConfig;
-    public BACore BACore;
+    public BotAbuseCore BACore;
     // embed calls things from the EmbedDesigner class, which houses the urls for the thumbnails, colors,
     // and each method in this class needs a title as an arguement.
     // embedBuilder calls the builder directly, which calls for adding fields and clearing them.
@@ -52,18 +52,19 @@ public class BotAbuseMain extends ListenerAdapter {
     private Timer timer;
     private Timer timer2;
 
-    public BotAbuseMain(boolean isRestart, MainConfiguration importMainConfig, EmbedHandler importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException, TimeoutException {
-        BACore = new BACore();
+    public BotAbuseMain(boolean getCommandsSuspended, boolean isRestart, MainConfiguration importMainConfig, EmbedHandler importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException, TimeoutException {
+        commandsSuspended = getCommandsSuspended;
+        BACore = new BotAbuseCore();
         discord = importDiscordBot;
         this.fileHandler = BACore.fileHandler;
         mainConfig = importMainConfig;
         BACore.mainConfig = importMainConfig;
         this.guild = importGuild;
-        mainConfig.guild = importGuild;
-        BACore.startup();
         botConfig = new BotConfiguration(fileHandler.getConfig(), mainConfig) {};
         botConfig.guild = importGuild;
         botConfig.initialSetup();
+        BACore.setBotConfig(botConfig);
+        BACore.startup();
         this.fieldHeader = mainConfig.fieldHeader;
         this.isRestart = isRestart;
         this.embed = importEmbed;
@@ -73,18 +74,18 @@ public class BotAbuseMain extends ListenerAdapter {
                 Arrays.asList("botAbuse", "ba", "permBotAbuse", "pba", "undo", "check",
                         "checkHistory", "clear", "transfer", "ping", "reasonsmanager", "rmgr"));
 
-        if (!botConfig.configsExist() || !mainConfig.discordGuildConfigurationsExist()) {
+        if (!botConfig.configsExist() && !commandsSuspended) {
             commandsSuspended = true;
             log.fatal("Not All of the Configuration Settings were found in the discord server! Please verify the IDs of" +
                     " all of the channels, roles, and the Owner's Discord ID in the configuration file. " +
                     "Commands have been suspended, when you fix the configuration file " +
                     "you may use \"/reload\" to reload the file or \"/restart\" to restart the bot");
         }
-        else {
+        else if (!commandsSuspended) {
             botConfig.discordSetup();
-            mainConfig.discordSetup();
+            init();
         }
-        init();
+        else log.fatal("Commands are Suspended from Parent Class");
     }
 
     @Override
@@ -153,7 +154,7 @@ public class BotAbuseMain extends ListenerAdapter {
         boolean isStaffMember = discord.isStaffMember(event.getAuthor().getIdLong());
 
         String[] args = msg.getContentRaw().substring(1).split(" ");
-        if (msg.getContentRaw().charAt(0) == '/' && !commandsSuspended && !args[0].equalsIgnoreCase("help")
+        if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && !commandsSuspended && !args[0].equalsIgnoreCase("help")
                 && !args[0].equalsIgnoreCase("restart") && !args[0].equalsIgnoreCase("reload"))  {
             // Command Syntax /botabuse <Mention or Discord ID> <Reason (kick, offline, or staff)> <proof url>
             if (args[0].equalsIgnoreCase("botabuse") || args[0].equalsIgnoreCase("ba")) {
@@ -270,7 +271,7 @@ public class BotAbuseMain extends ListenerAdapter {
         }
         // Commands Above this line will not run while commands are suspended
         // Commands Below this line will run even while commands are suspended
-        else if (msg.getContentRaw().charAt(0) == '/' && args[0].equalsIgnoreCase("help")) {
+        else if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && args[0].equalsIgnoreCase("help")) {
             helpCommand(msg, isTeamMember);
         }
         else if (commandsSuspended) {
@@ -287,7 +288,7 @@ public class BotAbuseMain extends ListenerAdapter {
         }
         if (!msg.getMentionedMembers().contains(guild.getSelfMember())
                 && msg.getChannel() != mainConfig.botSpamChannel && msg.getChannel() != mainConfig.managementChannel
-                && msg.getContentRaw().charAt(0) == '/' && msg.getAttachments().isEmpty()) {
+                && msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && msg.getAttachments().isEmpty()) {
             msg.delete().queue();
         }
     }
@@ -1515,13 +1516,13 @@ public class BotAbuseMain extends ListenerAdapter {
         }
         return false;
     }
-    private void failedIntegrityCheck(Member author, String cause, MessageChannel channel) throws IOException {
+    private void failedIntegrityCheck(Member author, String cause, MessageChannel channel) {
         embed.setAsStop("FATAL ERROR",
         "**Ouch! That Really Didn't Go Well! **" +
                 "\n**You may use */restart* to try to restart me. If you don't feel comfortable doing that... " + mainConfig.owner.getAsMention()
                 + " has been notified.**" +
                 "\n\n**Cause: " + cause + "**" +
-                "\n\n**Commands have Been Suspended**");
+                "\n\n**Bot Abuse Commands have Been Suspended**");
         embed.sendToTeamDiscussionChannel(channel, author);
         log.fatal("Integrity Check on ArrayList Objects Failed - Cause: " + cause);
         commandsSuspended = true;
@@ -1542,11 +1543,12 @@ public class BotAbuseMain extends ListenerAdapter {
                 log.info("Successfully Reloaded Discord Bot Configuration");
             }
             else {
-                log.fatal("Configuration Problem Found on Reload - One or More of the Configurations Don't Exist" +
+                log.fatal("Bot Abuse Configuration Problem Found on Reload - One or More of the Configurations Don't Exist" +
                         " in the discord server");
             }
-        } catch (FileNotFoundException e) {
-            embed.setAsStop("Config File Not Found", "**:x: [System] Configuration File Not Found**");
+        }
+        catch (FileNotFoundException e) {
+            embed.setAsStop("Bot Abuse Config File Not Found", "**:x: [System] Configuration File Not Found**");
             log.error("Configuration File Not Found on Reload");
             embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
         } catch (IOException ex) {

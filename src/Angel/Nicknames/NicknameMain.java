@@ -34,25 +34,26 @@ public class NicknameMain extends ListenerAdapter {
     private boolean commandsSuspended = false;
     private boolean ignoreNewNickname = false;
 
-    public NicknameMain(MainConfiguration importMainConfig, EmbedHandler importEmbed, Guild importGuild, DiscordBotMain importDiscord) throws IOException {
+    public NicknameMain(boolean getCommandsSuspended, MainConfiguration importMainConfig, EmbedHandler importEmbed, Guild importGuild, DiscordBotMain importDiscord) throws IOException {
         this.mainConfig = importMainConfig;
         this.embed = importEmbed;
         this.guild = importGuild;
         this.discord = importDiscord;
-
-        this.nickCore = new NickCore(guild);
-        this.fileHandler = new FileHandler(nickCore);
+        commandsSuspended = getCommandsSuspended;
         try {
+            this.nickCore = new NickCore(guild);
+            this.fileHandler = new FileHandler(nickCore);
             nickConfig = new NickConfiguration(fileHandler.getConfig(), fileHandler.gson) {};
             nickConfig.setup();
             nickCore.startup();
+            nickCore.setNickConfig(nickConfig);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
         int index = 0;
-        while (index < nickConfig.restrictedRoles.size()) {
+        while (index < nickConfig.restrictedRoles.size() && !commandsSuspended) {
             try {
                 restrictedRoles.add(guild.getRoleById(nickConfig.restrictedRoles.get(index)));
             }
@@ -72,7 +73,9 @@ public class NicknameMain extends ListenerAdapter {
             embed.setAsInfo("Automatic Nickname Addition",
             "**Your name on this discord server was automatically set back to your old discord name**" +
                     " \n\nThis is due to the fact that you're in a role that prohibits name changes, your name in the SAFE Crew discord server" +
-                    " must match your social club profile name");
+                    " must match your social club profile name. Don't worry or panic, " +
+                    "this was just a message to say that a nickname was applied in our server so that your " +
+                    "displayed name continues to match your social club name. No action is required.");
             embed.sendDM(event.getUser());
         }
     }
@@ -157,7 +160,7 @@ public class NicknameMain extends ListenerAdapter {
         if (event.getAuthor().isBot()) return;
         Message msg = event.getMessage();
         String[] args = msg.getContentRaw().substring(1).split(" ");
-        if (msg.getContentRaw().charAt(0) == '/' && !commandsSuspended) {
+        if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && !commandsSuspended) {
             if (args[0].equalsIgnoreCase("nickname") || args[0].equalsIgnoreCase("nn")) {
                 if (inNickRestrictedRole(event.getAuthor().getIdLong()) || discord.isTeamMember(event.getAuthor().getIdLong())) {
                     try {
@@ -173,7 +176,7 @@ public class NicknameMain extends ListenerAdapter {
                 }
             }
         }
-        else if (msg.getContentRaw().charAt(0) == '/' && commandsSuspended) {
+        else if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && commandsSuspended) {
             String defaultTitle = "Commands Suspended";
             if (!discord.isTeamMember(event.getAuthor().getIdLong())) {
                 embed.setAsStop(defaultTitle,"**Commands are Temporarily Suspended on the Nickname Feature side...**" +
@@ -200,9 +203,17 @@ public class NicknameMain extends ListenerAdapter {
 
         if (args[1].equalsIgnoreCase("request") || args[1].equalsIgnoreCase("req")) {
             if (nickCore.discordID.contains(targetDiscordID)) {
-                embed.setAsWarning("Nickname Request Pending", "**You already have a pending nickname change" +
-                        " request, please be patient while the staff reviews your old nickname and your requested new nickname.**" +
-                        "\n\n**If you haven't changed your name on Social Club please do, otherwise your request will be denied**");
+                if (!nickCore.newNickname.get(nickCore.discordID.indexOf(msg.getAuthor().getIdLong())).equals(args[2])) {
+                    embed.setAsError("Nickname Request Pending", "**You Already have a pending nickname change request**" +
+                            "\n\nThe New Nickname you have requested is: **" + nickCore.newNickname.get(nickCore.discordID.indexOf(targetDiscordID)) +
+                    "**\n\n*If this new nickname is not correct, please use `/nickname withdraw` (or `/nn wd` for short) to withdraw this pending request, then you can run this command again.*");
+                }
+                else {
+                    embed.setAsWarning("Nickname Request Pending", "**You already have a pending nickname change" +
+                            " request for this new name, please be patient while the staff reviews your old nickname and your requested new nickname.**" +
+                            "\n\n**If you haven't changed your name on Social Club please do, otherwise your request will be denied**");
+                }
+                embed.sendToHelpChannel(msg.getChannel(), msg.getMember());
             }
             // /nickname request (No Name Afterwards) They were likely sent a DM with a message to use this command due
             // to them trying to change it themselves while in the restricted role
@@ -296,6 +307,7 @@ public class NicknameMain extends ListenerAdapter {
         else if (args[1].equalsIgnoreCase("list") && discord.isTeamMember(msg.getAuthor().getIdLong())) {
             String[] splitString = new String[0];
             String defaultTitle = "Nickname Request List";
+            log.info("Team Member " + msg.getMember().getEffectiveName() + " just requested a list of nicknames");
             try {
             result = nickCore.getList(guild);
             splitString = result.split("\n\n");
@@ -408,12 +420,16 @@ public class NicknameMain extends ListenerAdapter {
         String result = "";
         long targetDiscordID = 0;
         int targetRequestID = 0;
+        String oldNickname = "";
+        String newNickname = "";
         if (args.length == 3) {
             int index = 0;
             boolean isMention = false;
             try {
                 targetRequestID = Integer.parseInt(args[2]);
                 targetDiscordID = nickCore.discordID.get(nickCore.requestID.indexOf(targetRequestID));
+                oldNickname = nickCore.oldNickname.get(nickCore.requestID.indexOf(targetRequestID));
+                newNickname = nickCore.newNickname.get(nickCore.requestID.indexOf(targetRequestID));
                 if (requestAccepted) {
                     result = nickCore.acceptRequest(-1, targetRequestID);
                 }
@@ -428,7 +444,9 @@ public class NicknameMain extends ListenerAdapter {
             }
             catch (NumberFormatException ex) {
                 isMention = true;
-                targetDiscordID = msg.getAuthor().getIdLong();
+                targetDiscordID = msg.getMentionedMembers().get(0).getIdLong();
+                oldNickname = nickCore.oldNickname.get(nickCore.discordID.indexOf(targetDiscordID));
+                newNickname = nickCore.newNickname.get(nickCore.discordID.indexOf(targetDiscordID));
                 if (requestAccepted) {
                     result = nickCore.acceptRequest(targetDiscordID, -1);
                 }
@@ -452,18 +470,36 @@ public class NicknameMain extends ListenerAdapter {
                         if (getNewNickname == null) {
                             guild.getMemberById(targetDiscordID).modifyNickname(
                                     guild.getMemberById(targetDiscordID).getUser().getName()).queue();
+                            log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully accepted the nickname request of player " +
+                                    guild.getMemberById(targetDiscordID).getUser().getAsTag() + "," +
+                                    " their nickname was erased and now it matches their discord name.");
                         }
-                        else guild.getMemberById(targetDiscordID).modifyNickname(getNewNickname).queue();
-                        embed.setAsSuccess("Successful Nickname Request Acceptance", result);
-                        embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
-                        String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
-                                "Your new name on the Discord Server is now " + getNewNickname;
-                        embed.setAsSuccess("Successful Nickname Request Acceptance", messageToPlayer);
-                        embed.sendDM(guild.getMemberById(targetDiscordID).getUser());
+                        else {
+                            guild.getMemberById(targetDiscordID).modifyNickname(getNewNickname).queue();
+                            embed.setAsSuccess("Nickname Request Acceptanced", result);
+                            embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
+                            String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
+                                    "Your new name on the Discord Server is now " + getNewNickname;
+                            embed.setAsSuccess("Successful Nickname Request Acceptance", messageToPlayer);
+                            embed.sendDM(guild.getMemberById(targetDiscordID).getUser());
+                            log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully accepted the nickname request of player " +
+                                    guild.getMemberById(targetDiscordID).getUser().getAsTag() + "," +
+                                    " they had nickname " + oldNickname + " and their new nickname is " + newNickname);
+                        }
                     }
                     else {
-                        embed.setAsError("Successful Nickname Request Denial", result);
+                        embed.setAsSuccess("Successful Nickname Request Denial", result);
                         embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
+                        String messageToPlayer = "**Your Nickname Request was Denied** \n" +
+                                "*This was most likely because you haven't changed your " +
+                                "Social Club name to match your requested nickname*"
+                                + "\nIf you are sure it wasn't for that reason, you can ask a SAFE Team Member and they will tell you why" +
+                                " your request was denied.";
+                        embed.setAsError("Nickname Request Denied", messageToPlayer);
+                        embed.sendDM(guild.getMemberById(targetDiscordID).getUser());
+                        log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully rejected the nickname request of player " +
+                                guild.getMemberById(targetDiscordID).getUser().getAsTag() + "," +
+                                " their nickname remains " + oldNickname);
                     }
                 }
             }
@@ -479,18 +515,29 @@ public class NicknameMain extends ListenerAdapter {
                         if (getNewNickname == null) {
                             guild.getMemberById(targetDiscordID).modifyNickname(
                                     guild.getMemberById(targetDiscordID).getUser().getName()).queue();
+                            log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully accepted the nickname request of player " +
+                                    guild.getMemberById(targetDiscordID).getUser().getAsTag() + "," +
+                                    " their nickname was erased and now it matches their discord name.");
                         }
-                        else guild.getMemberById(targetDiscordID).modifyNickname(getNewNickname).queue();
-                        embed.setAsSuccess("Successful Nickname Request Acceptance", result);
-                        embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
-                        String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
-                                "Your new name on the Discord Server is now " + getNewNickname;
-                        embed.setAsSuccess("Successful Nickname Request Acceptance", messageToPlayer);
-                        embed.sendDM(guild.getMemberById(targetDiscordID).getUser());
+                        else {
+                            guild.getMemberById(targetDiscordID).modifyNickname(getNewNickname).queue();
+                            embed.setAsSuccess("Successful Nickname Request Acceptance", result);
+                            embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
+                            String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
+                                    "Your new name on the Discord Server is now " + getNewNickname;
+                            embed.setAsSuccess("Successful Nickname Request Acceptance", messageToPlayer);
+                            embed.sendDM(guild.getMemberById(targetDiscordID).getUser());
+                            log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully accepted the nickname request of player " +
+                                    guild.getMemberById(targetDiscordID).getUser().getAsTag() + ", " +
+                                    "they had nickname " + oldNickname + " and their new nickname is " + newNickname);
+                        }
                     }
                     else {
                         embed.setAsError("Successful Nickname Request Denial", result);
                         embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
+                        log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully rejected the nickname request of player " +
+                                guild.getMemberById(targetDiscordID).getUser().getAsTag() + "," +
+                                " their nickname remains " + oldNickname);
                     }
                 }
             }
@@ -524,9 +571,23 @@ public class NicknameMain extends ListenerAdapter {
                 "\n**You may use */restart* to try to restart me. If you don't feel comfortable doing that... " + mainConfig.owner.getAsMention()
                 + " has been notified.**" +
                 "\n\n**Cause: " + cause + "**" +
-                "\n\n**Commands have Been Suspended**");
+                "\n\n**Nickname Commands have Been Suspended**");
         embed.sendToTeamDiscussionChannel(channel, author);
         log.fatal("Integrity Check on ArrayList Objects Failed - Cause: " + cause);
         commandsSuspended = true;
+    }
+    public void reloadConfig(Message msg) {
+        try {
+            nickConfig.reload(fileHandler.getConfig());
+            log.info("Nickname Configuration Successfully Reloaded");
+        }
+        catch (FileNotFoundException ex) {
+            embed.setAsStop("Nickname Config File Not Found", "**nickconfig.json was not found in the config folder**");
+            embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
+            log.fatal("Nickname Config File Not Found");
+        }
+        catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 }

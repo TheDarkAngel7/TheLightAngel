@@ -8,10 +8,11 @@ import net.dv8tion.jda.api.entities.TextChannel;
 
 public abstract class MainConfiguration {
     JsonObject configObj;
-    public Guild guild;
+    Guild guild;
     public String systemPath;
     String token;
     public boolean testModeEnabled;
+    public char commandPrefix;
     public String fieldHeader;
     public Member owner;
     String ownerDiscordID;
@@ -39,13 +40,15 @@ public abstract class MainConfiguration {
     String stopIconURL;
     String helpIconURL;
 
-    public MainConfiguration(JsonObject importConfigObj) {
+    MainConfiguration(JsonObject importConfigObj) {
         configObj = importConfigObj;
         systemPath = configObj.get("systemPath").getAsString();
         token = configObj.get("token").getAsString();
         testModeEnabled = configObj.get("testModeEnabled").getAsBoolean();
     }
-    public void initialSetup() {
+    void initialSetup() {
+        commandPrefix = configObj.get("commandPrefix").getAsString().charAt(0);
+
         ownerDiscordID = configObj.get("ownerDiscordID").getAsString();
         adminRoleID = configObj.get("adminRole").getAsString();
         staffRoleID = configObj.get("staffRole").getAsString();
@@ -64,7 +67,7 @@ public abstract class MainConfiguration {
         stopIconURL = configObj.get("stopIconURL").getAsString();
         helpIconURL = configObj.get("helpIconURL").getAsString();
     }
-    public void discordSetup() {
+    void discordSetup() {
         owner = guild.getMemberById(ownerDiscordID);
 
         discussionChannel = guild.getTextChannelById(teamChannelID);
@@ -77,7 +80,7 @@ public abstract class MainConfiguration {
         staffRole = guild.getRoleById(staffRoleID);
         teamRole = guild.getRoleById(teamRoleID);
     }
-    public boolean discordGuildConfigurationsExist() {
+    boolean discordGuildConfigurationsExist() {
         return guild.getMembers().contains(guild.getMemberById(ownerDiscordID))
                 && guild.getTextChannels().contains(guild.getTextChannelById(teamChannelID))
                 && guild.getTextChannels().contains(guild.getTextChannelById(logChannelID))

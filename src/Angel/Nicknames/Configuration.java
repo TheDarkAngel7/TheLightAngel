@@ -17,7 +17,11 @@ abstract class NickConfiguration {
         configObj = importConfigObj;
         gson = importGsonInstance;
     }
-    public void setup() {
+    void setup() {
         restrictedRoles = gson.fromJson(configObj.get("rolesNotAllowedToChangeName").getAsString(), longType);
+    }
+    void reload(JsonObject reloadedObject) {
+        configObj = reloadedObject;
+        setup();
     }
 }

@@ -53,7 +53,7 @@ class LightAngel {
             e.printStackTrace();
         }
     }
-    public static void main(String[] args) throws LoginException, IOException, TimeoutException {
+    public static void main(String[] args) throws LoginException, IOException {
         boolean isRestart = Boolean.parseBoolean(args[0]);
         MainConfiguration mainConfig = new MainConfiguration(fileHandler.getMainConfig()) {};
         mainConfig.initialSetup();

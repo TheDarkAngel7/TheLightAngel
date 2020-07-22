@@ -20,7 +20,7 @@ import java.util.Hashtable;
 
 class FileHandler {
     Gson gson = new Gson();
-    private BACore baCore;
+    private BotAbuseCore baCore;
     private final Logger log = LogManager.getLogger(Angel.FileHandler.class);
     private File jsonBADataFile = new File("data/BAdata.json");
     private File jsonTempBADataFile = new File("data/BAdatatemp.json");
@@ -30,7 +30,7 @@ class FileHandler {
     private Type dateType = new TypeToken<ArrayList<Date>>(){}.getType();
     private Type dictionary = new TypeToken<Hashtable<String, String>>(){}.getType();
 
-    FileHandler(BACore baCore) {
+    FileHandler(BotAbuseCore baCore) {
         this.baCore = baCore;
     }
 

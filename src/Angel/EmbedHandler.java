@@ -21,7 +21,7 @@ public abstract class EmbedHandler {
     private Message messageEmbed;
     private boolean embedReady = false;
 
-    public EmbedHandler(MainConfiguration mainConfig) {
+    EmbedHandler(MainConfiguration mainConfig) {
         this.mainConfig = mainConfig;
         checkIcon = mainConfig.checkIconURL;
         warningIcon = mainConfig.warningIconURL;

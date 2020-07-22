@@ -13,6 +13,7 @@ class NickCore {
     private final Logger log = LogManager.getLogger(NickCore.class);
     private Angel.Nicknames.FileHandler fileHandler;
     private Guild guild;
+    private NickConfiguration nickConfig;
     ArrayList<Integer> requestID = new ArrayList<>();
     ArrayList<Long> discordID = new ArrayList<>();
     ArrayList<String> oldNickname = new ArrayList<>();
@@ -25,7 +26,15 @@ class NickCore {
 
     void startup() throws IOException {
         log.info("Nickname Core Initiated...");
-        fileHandler.getDatabase();
+        try {
+            fileHandler.getDatabase();
+        }
+        catch (IllegalStateException ex) {
+            log.warn("No Data Existed in the Nickname Arrays - Data File is Empty");
+        }
+    }
+    void setNickConfig(NickConfiguration importedNickConfig) {
+        nickConfig = importedNickConfig;
     }
 
     String submitRequest(long targetDiscordID, @Nullable String oldNick, @Nullable String newNick) throws IOException {
@@ -91,7 +100,7 @@ class NickCore {
         }
         else {
             String[] nicknames = returnValue.split(",");
-            String result = "Successfully Accepted the Request ";
+            String result = "Successfully Accepted the Request";
             if (targetDiscordID == -1) {
                 result = result.concat("\nDiscord ID: **" + nicknames[1]
                         + "**\nOld Nickname: **" + nicknames[2]
