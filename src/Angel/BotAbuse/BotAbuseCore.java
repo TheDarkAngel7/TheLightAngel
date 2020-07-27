@@ -266,8 +266,10 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
             this.currentBotAbusers.remove(targetDiscordID);
         }
         else if (!(c.getTime().before(cTooLate.getTime())) && botAbuseIsCurrent(targetDiscordID)) {
-            log.error("Undo Failed for " + targetDiscordID + " as this bot abuse is older than 5 days");
-            return ":x: **[System] Undo Failed because Bot Abuses Older than 5 Days Cannot Be Undone.**";
+            log.error("Undo Failed for " + targetDiscordID + " as this bot abuse is older than the configured "
+                    + coreConfig.maxDaysAllowedForUndo + " days");
+            return ":x: **[System] Undo Failed because Bot Abuses Older than " + coreConfig.maxDaysAllowedForUndo
+                    + " Days Cannot Be Undone.**";
         }
         else {
             log.error("Undo Failed for " + targetDiscordID + " as this player's bot abuse is no longer current");

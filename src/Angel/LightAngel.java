@@ -15,7 +15,6 @@ import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.concurrent.TimeoutException;
 
 class LightAngel {
     public static final Logger log = LogManager.getLogger(LightAngel.class);
@@ -39,7 +38,7 @@ class LightAngel {
             }
             if (!nickDataFile.exists()) {
                 if (nickDataFile.createNewFile()) {
-                    ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(BADataFile));
+                    ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(nickDataFile));
                     log.info("Successfully Created new Nickname Request Data File");
                     objectOutputStream.close();
                 }

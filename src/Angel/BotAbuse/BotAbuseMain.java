@@ -89,16 +89,6 @@ public class BotAbuseMain extends ListenerAdapter {
     }
 
     @Override
-    public void onResume(@Nonnull ResumedEvent event) {
-        init();
-    }
-
-    @Override
-    public void onReconnect(@Nonnull ReconnectedEvent event) {
-        init();
-    }
-
-    @Override
     public void onGuildMemberJoin(@Nonnull GuildMemberJoinEvent event) {
         try {
             Thread.sleep(10000);
@@ -128,10 +118,9 @@ public class BotAbuseMain extends ListenerAdapter {
             log.info("Join Event - Removed Bot Abuse Role from " + event.getMember().getEffectiveName());
         }
     }
-    @Override
-    public void onDisconnect(@Nonnull DisconnectEvent event) {
+    public void saveDatabase() {
         try {
-            log.error("Disconneted from Discord Websocket - Saving Data...");
+            log.error("Disconneted from Discord Websocket - Saving Data for Bot Abuse...");
             if (BACore.arraySizesEqual()) {
                 fileHandler.saveDatabase();
             }
@@ -141,6 +130,15 @@ public class BotAbuseMain extends ListenerAdapter {
             }
         }
         catch (IOException | TimeoutException e) {
+            e.printStackTrace();
+        }
+    }
+    public void resumeBot() {
+        try {
+            fileHandler.getDatabase();
+            init();
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -292,7 +290,7 @@ public class BotAbuseMain extends ListenerAdapter {
             msg.delete().queue();
         }
     }
-    public void init() {
+    private void init() {
         // Here we're running an integrity check on the data that was loaded, if the data loaded is no good...
         // then we suspend all commands and we don't start the timers.
         if (!BACore.arraySizesEqual() && !commandsSuspended) {
@@ -425,11 +423,10 @@ public class BotAbuseMain extends ListenerAdapter {
         }
         else if (commandsSuspended) {
             try {
-                embed.setAsStop("Commands Suspended", ":x: **[System] Either the Data File has been Damaged or there's configuration problems" +
-                        "\n\nCommands Have Been Suspended**");
+                embed.setAsStop("Commands Suspended", ":x: **[System] Either the Data File has been Damaged or there's configuration problems**" +
+                        "\n\n**Commands Are Suspended**");
                 mainConfig.discussionChannel.sendMessage(mainConfig.owner.getAsMention()).queue();
                 embed.sendToTeamDiscussionChannel(mainConfig.discussionChannel,null);
-                embedBuilder.clearFields();
             }
             catch (NullPointerException ex) {
                 log.fatal("Definitely Configuration Problems - When trying to send the stop message something " +
@@ -732,13 +729,13 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
                 else if (result.contains(":x:")) {
                     embed.setAsError("Error While Undoing", result);
-                    embed.sendToTeamDiscussionChannel(msg.getChannel(),msg.getMember());
+                    embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
                 }
                 else {
                     embed.setAsSuccess(defaultTitle, result);
                     log.info(msg.getMember().getEffectiveName() + " just undid the Bot Abuse for "
                     + guild.getMemberById(args[1]).getEffectiveName());
-                    embed.sendToTeamDiscussionChannel(msg.getChannel(),msg.getMember());
+                    embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
                 }
             }
             else if (args.length == 2 && msg.getMentionedMembers().size() == 1) {
@@ -1463,7 +1460,7 @@ public class BotAbuseMain extends ListenerAdapter {
 
             } while (keys.hasNext());
             embed.setAsInfo("Reasons Dictionary", result);
-            embed.sendToTeamDiscussionChannel(msg.getChannel(),msg.getMember());
+            embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
             log.info(msg.getMember().getEffectiveName() + " just requested the reasons dictionary list");
         }
         else {
@@ -1488,7 +1485,6 @@ public class BotAbuseMain extends ListenerAdapter {
             embed.setAsInfo("Bot Abuse History", splitString[index]);
             // Sometimes the addfield doesn't add the splitString correctly and there isn't a field,
             // so we restart the loop from the beginning if that happens.
-            if (embedBuilder.getFields().isEmpty()) continue;
             if (!isTeamMember) {
                 embed.sendDM(msg.getAuthor());
             }

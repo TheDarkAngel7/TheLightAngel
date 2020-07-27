@@ -6,7 +6,9 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
+import net.dv8tion.jda.api.events.ReconnectedEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
@@ -56,6 +58,18 @@ public class DiscordBotMain extends ListenerAdapter {
     }
 
     @Override
+    public void onReconnect(@Nonnull ReconnectedEvent event) {
+        baFeature.resumeBot();
+        nickFeature.resumeBot();
+    }
+
+    @Override
+    public void onDisconnect(@Nonnull DisconnectEvent event) {
+        baFeature.saveDatabase();
+        nickFeature.saveDatabase();
+    }
+
+    @Override
     public void onMessageReceived(@Nonnull MessageReceivedEvent event) {
         if (event.getAuthor().isBot() || event.getMessage().getChannelType() == ChannelType.PRIVATE) return;
         Message msg = event.getMessage();
@@ -89,7 +103,7 @@ public class DiscordBotMain extends ListenerAdapter {
 
     private void restartBot() throws IOException {
         log.warn("Program Restarting...");
-        new ProcessBuilder().command("cmd.exe", "/c", "start", mainConfig.systemPath + "\\restart.bat").start();
+        new ProcessBuilder().command("cmd.exe", "/c", "start", "/D", mainConfig.systemPath, "/MIN", "TheLightAngel Restarted", "restart.bat").start();
         System.exit(1);
     }
 
