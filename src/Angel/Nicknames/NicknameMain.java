@@ -13,6 +13,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,14 +32,14 @@ public class NicknameMain extends ListenerAdapter {
     private ArrayList<Long> tempDiscordID = new ArrayList<>();
     private ArrayList<String> tempOldNick = new ArrayList<>();
     private ArrayList<String> tempNewNick = new ArrayList<>();
-    private boolean commandsSuspended = false;
+    public boolean commandsSuspended = false;
     private boolean ignoreNewNickname = false;
 
-    public NicknameMain(boolean getCommandsSuspended, MainConfiguration importMainConfig, EmbedHandler importEmbed, Guild importGuild, DiscordBotMain importDiscord) throws IOException {
+    public NicknameMain(boolean getCommandsSuspended, MainConfiguration importMainConfig, EmbedHandler importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException {
         this.mainConfig = importMainConfig;
         this.embed = importEmbed;
         this.guild = importGuild;
-        this.discord = importDiscord;
+        this.discord = importDiscordBot;
         commandsSuspended = getCommandsSuspended;
         try {
             this.nickCore = new NickCore(guild);
@@ -52,16 +53,8 @@ public class NicknameMain extends ListenerAdapter {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        int index = 0;
-        while (index < nickConfig.restrictedRoles.size() && !commandsSuspended) {
-            try {
-                restrictedRoles.add(guild.getRoleById(nickConfig.restrictedRoles.get(index)));
-            }
-            catch (NullPointerException ex) {
-                commandsSuspended = true;
-                break;
-            }
-            index++;
+        if (!commandsSuspended) {
+            setupRestrictedRoles(false);
         }
     }
 
@@ -77,6 +70,17 @@ public class NicknameMain extends ListenerAdapter {
                     "this was just a message to say that a nickname was applied in our server so that your " +
                     "displayed name continues to match your social club name. No action is required.");
             embed.sendDM(event.getUser());
+        }
+        else if (guild.getMember(event.getUser()).getNickname() == null && !inNickRestrictedRole(event.getUser().getIdLong())) {
+            addNameHistory(event.getUser().getIdLong(), event.getOldName(), null);
+            String defaultMessage = event.getUser().getAsTag() + " updated their discord username from "
+                    + event.getOldName() + " to " + event.getNewName() + " and they had no nickname to prevent the effective name change";
+            String defaultDiscordMessage = event.getUser().getAsMention() + " updated their discord username from **"
+                    + event.getOldName() + "** to **" + event.getNewName() + "**." +
+                    "\n\nThis got logged by me as *they had no nickname, so their effective nickname changed as a result of this action*";
+            log.info(defaultMessage);
+            embed.setAsInfo("Discord Username Changed", defaultDiscordMessage);
+            embed.sendToLogChannel();
         }
     }
 
@@ -101,9 +105,7 @@ public class NicknameMain extends ListenerAdapter {
                     embed.sendDM(event.getUser());
                     event.getMember().modifyNickname(event.getOldNickname()).queue();
                 }
-                else {
-                    return;
-                }
+                else return;
             }
             else {
                 tempDiscordID.add(event.getUser().getIdLong());
@@ -111,30 +113,44 @@ public class NicknameMain extends ListenerAdapter {
 
                 if (event.getOldNickname() != null && event.getNewNickname() != null) {
                     results = results.concat(
-                            "\n\nOld NickName: **" + event.getOldNickname() + "**\nNew Nickname: **" + event.getNewNickname() + "**"
+                            "\n\nOld Nickname: **" + event.getOldNickname() + "**\nNew Nickname: **" + event.getNewNickname() + "**"
                     );
                 }
                 else if (event.getOldNickname() == null && event.getNewNickname() != null) {
                     results = results.concat(
-                            "\n\nOld NickName: **No Nickname Found" + "**\nNew Nickname: **" + event.getNewNickname() + "**"
+                            "\n\nOld Nickname: **No Nickname Found" + "**\nNew Nickname: **" + event.getNewNickname() + "**"
                     );
                 }
                 else if (event.getOldNickname() != null && event.getNewNickname() == null) {
                     results = results.concat(
-                            "\n\nOld NickName: **" + event.getOldNickname() + "**\nNew Nickname: *Reset*"
+                            "\n\nOld Nickname: **" + event.getOldNickname() + "**\nNew Nickname: *Reset*"
                     );
                 }
                 tempOldNick.add(event.getOldNickname());
                 tempNewNick.add(event.getNewNickname());
 
                 results = results.concat("\n\nIf you wish to place a request to change your nickname please respond with" +
-                        " `/nickname request` (or `/nn req` for short) and this will be submitted to the SAFE Team");
+                        " `" + mainConfig.commandPrefix + "nickname request` (or `"
+                        + mainConfig.commandPrefix + "nn req` for short) and this will be submitted to the SAFE Team");
 
                 embed.setAsError("You Cannot Modify Your Nickname", results);
                 embed.sendDM(event.getUser());
                 ignoreNewNickname = true;
                 event.getMember().modifyNickname(event.getOldNickname()).queue();
             }
+        }
+        else if (!discord.isTeamMember(event.getUser().getIdLong()) && !inNickRestrictedRole(event.getUser().getIdLong())
+                && !ignoreNewNickname) {
+            String defaultMessage = event.getUser().getAsTag() + " updated their nickname from "
+                    + event.getOldNickname() + " to " + event.getNewNickname()
+                    + " as they did not have a role that prohibits it";
+            String defaultDiscordMessage = event.getUser().getAsMention() + " updated their nickname from **"
+                    + event.getOldNickname() + "** to **" + event.getNewNickname() + "**. " +
+                    "\n*They were able to perform this action because they did not have a role that prohibits it*";
+            embed.setAsInfo("Discord Nickname Updated", defaultDiscordMessage);
+            embed.sendToLogChannel();
+            addNameHistory(event.getUser().getIdLong(), event.getOldNickname(), null);
+            log.info(defaultMessage);
         }
         else {
             ignoreNewNickname = false;
@@ -185,8 +201,9 @@ public class NicknameMain extends ListenerAdapter {
         if (event.getAuthor().isBot()) return;
         Message msg = event.getMessage();
         String[] args = msg.getContentRaw().substring(1).split(" ");
-        if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && !commandsSuspended) {
-            if (args[0].equalsIgnoreCase("nickname") || args[0].equalsIgnoreCase("nn")) {
+        if (discord.mainCommands.contains(args[0])) return;
+        if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix) {
+            if (args[0].equalsIgnoreCase("nickname") || args[0].equalsIgnoreCase("nn") && !commandsSuspended) {
                 if (inNickRestrictedRole(event.getAuthor().getIdLong()) || discord.isTeamMember(event.getAuthor().getIdLong())) {
                     try {
                         nicknameCommand(msg);
@@ -200,18 +217,18 @@ public class NicknameMain extends ListenerAdapter {
                     embed.sendToHelpChannel(msg.getChannel(), msg.getMember());
                 }
             }
-        }
-        else if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && commandsSuspended) {
-            String defaultTitle = "Commands Suspended";
-            if (!discord.isTeamMember(event.getAuthor().getIdLong())) {
-                embed.setAsStop(defaultTitle,"**Commands are Temporarily Suspended on the Nickname Feature side...**" +
-                        "\n**Sorry for the inconvience...**");
-                embed.sendToHelpChannel(msg.getChannel(), msg.getMember());
-            }
-            else {
-                embed.setAsStop(defaultTitle,"**Commands are Temporarily Suspended on the Nickname Feature side...**" +
-                        "\n**Please Post The Action you were trying to do in either a DM with" + mainConfig.owner.getAsMention() + " or in this channel.**");
-                embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
+            else if (commandsSuspended) {
+                String defaultTitle = "Commands Suspended";
+                if (!discord.isTeamMember(event.getAuthor().getIdLong())) {
+                    embed.setAsStop(defaultTitle, "**Commands are Temporarily Suspended on the Nickname Feature side...**" +
+                            "\n**Sorry for the inconvience...**");
+                    embed.sendToHelpChannel(msg.getChannel(), msg.getMember());
+                }
+                else {
+                    embed.setAsStop(defaultTitle, "**Commands are Temporarily Suspended on the Nickname Feature side...**" +
+                            "\n**Please Post The Action you were trying to do in either a DM with" + mainConfig.owner.getAsMention() + " or in this channel.**");
+                    embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
+                }
             }
         }
     }
@@ -228,10 +245,11 @@ public class NicknameMain extends ListenerAdapter {
 
         if (args[1].equalsIgnoreCase("request") || args[1].equalsIgnoreCase("req")) {
             if (nickCore.discordID.contains(targetDiscordID)) {
-                if (!nickCore.newNickname.get(nickCore.discordID.indexOf(msg.getAuthor().getIdLong())).equals(args[2])) {
+                if (!nickCore.newNickname.get(nickCore.discordID.indexOf(targetDiscordID)).equals(args[2])) {
                     embed.setAsError("Nickname Request Pending", "**You Already have a pending nickname change request**" +
                             "\n\nThe New Nickname you have requested is: **" + nickCore.newNickname.get(nickCore.discordID.indexOf(targetDiscordID)) +
-                    "**\n\n*If this new nickname is not correct, please use `/nickname withdraw` (or `/nn wd` for short) to withdraw this pending request, then you can run this command again.*");
+                    "**\n\n*If this new nickname is not correct, please use `" + mainConfig.commandPrefix + "nickname withdraw`" +
+                            " (or `" + mainConfig.commandPrefix + "nn wd` for short) to withdraw this pending request, then you can run this command again.*");
                 }
                 else {
                     embed.setAsWarning("Nickname Request Pending", "**You already have a pending nickname change" +
@@ -251,33 +269,40 @@ public class NicknameMain extends ListenerAdapter {
                     tempOldNick.remove(index);
                     tempNewNick.remove(index);
                     if (result.contains("FATAL ERROR")) {
-                        failedIntegrityCheck(msg.getMember(), "Nickname: Request Submission with No Nickname Provided", msg.getChannel());
+                        discord.failedIntegrityCheck(this.getClass().getName(), msg.getMember(), "Nickname: Request Submission with No Nickname Provided", msg.getChannel());
                     }
                     else {
                         embed.setAsSuccess("Nickname Request Submitted", DMResponse.concat(SocialClubInfo));
                         embed.sendDM(msg.getAuthor());
                         embed.setAsInfo("Nickname Request Received", result);
                         embed.sendToLogChannel();
+                        mainConfig.discussionChannel.sendMessage("@here Whenever one of you get a chance, please review the following nickname request:").queue();
+                        embed.setAsInfo("Nickname Request Received", result);
+                        embed.sendToTeamDiscussionChannel(msg.getChannel(), guild.getMember(msg.getAuthor()));
                         log.info("New Nickname Request Received from " + channel.getUser().getName());
                     }
                 }
                 else {
                     embed.setAsError("Nickname Request Error",
                     "**You cannot do that**, the proper usage for this command is:" +
-                            "\n`/nickname request <newNickname>`");
+                            "\n`" + mainConfig.commandPrefix + "nickname request <newNickname>`");
                     embed.sendDM(msg.getAuthor());
                 }
             }
             else if (args.length == 3 && msg.getChannelType() != ChannelType.PRIVATE) {
                 result = nickCore.submitRequest(targetDiscordID, msg.getMember().getNickname(), args[2]);
                 if (result.contains("FATAL ERROR")) {
-                    failedIntegrityCheck(msg.getMember(), "Nickname: Request Submission with a Nickname Provided", msg.getChannel());
+                    discord.failedIntegrityCheck(this.getClass().getName(), msg.getMember(), "Nickname: Request Submission with a Nickname Provided", msg.getChannel());
                 }
                 else {
                     embed.setAsSuccess("Nickname Request Submitted", result.concat(SocialClubInfo));
                     embed.sendToHelpChannel(msg.getChannel(), msg.getMember());
                     embed.setAsInfo("Nickname Request Received", result);
                     embed.sendToLogChannel();
+                    mainConfig.discussionChannel.sendMessage("@here Whenever one of you get a chance, please review the following nickname request:");
+                    embed.setAsInfo("Nickname Request Received", result);
+                    embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
+                    log.info("New Nickname Request Received from " + msg.getMember().getUser().getName());
                 }
             }
             else if (args.length == 3) {
@@ -297,10 +322,10 @@ public class NicknameMain extends ListenerAdapter {
                 result = nickCore.withdrawRequest(msg.getAuthor().getIdLong(), false);
 
                 if (result.contains("FATAL ERROR")) {
-                    failedIntegrityCheck(msg.getMember(), "Nickname: Request Withdraw", msg.getChannel());
+                    discord.failedIntegrityCheck(this.getClass().getName(), msg.getMember(), "Nickname: Request Withdraw", msg.getChannel());
                     return;
                 }
-                result = result.replace("?", oldNickname);
+                result = result.replace("?", guild.getMemberById(targetDiscordID).getAsMention());
                 embed.setAsSuccess("Successful Withdraw of Name Request", result);
 
                 if (msg.getChannelType() == ChannelType.PRIVATE) {
@@ -329,12 +354,51 @@ public class NicknameMain extends ListenerAdapter {
                 requestHandler(msg, false);
             }
         }
+        else if ((args[1].equalsIgnoreCase("history") || args[1].equalsIgnoreCase("h"))
+                && discord.isTeamMember(msg.getAuthor().getIdLong())) {
+            if (args.length == 3) {
+                ArrayList<String> oldNickArray = null;
+                try {
+                    oldNickArray = nickCore.getHistory(Long.parseLong(args[2]));
+                }
+                catch (NumberFormatException ex) {
+                    try {
+                        oldNickArray = nickCore.getHistory(msg.getMentionedMembers().get(0).getIdLong());
+                    }
+                    catch (IndexOutOfBoundsException e) {
+                        embed.setAsError("Invalid Mention", "**The Mention you entered isn't a valid one**\n " +
+                                "This could be because you misspelled the player's name when you tried to `@[Playername]`");
+                        embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
+                        return;
+                    }
+                }
+
+                if (oldNickArray == null) {
+                    embed.setAsError("No Name History", ":x: **This Player Has No Name History**");
+                }
+                else {
+                    result = "This Player's Name History is as Follows:";
+                    int index = 0;
+                    do {
+                        result = result.concat("\n**- " + oldNickArray.get(index++) + "**");
+                    } while (index < oldNickArray.size());
+
+                    embed.setAsInfo("Name History", result);
+                }
+            }
+            else {
+                embed.setAsError("Invalid Number of Arguements",
+                        "**You Entered an Invalid Number of Arguements**" +
+                                "\nFull Syntax: `/nickname history <Mention or Discord ID>`");
+            }
+            embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
+        }
         else if (args[1].equalsIgnoreCase("list") && discord.isTeamMember(msg.getAuthor().getIdLong())) {
             String[] splitString = new String[0];
             String defaultTitle = "Nickname Request List";
             log.info("Team Member " + msg.getMember().getEffectiveName() + " just requested a list of nicknames");
             try {
-            result = nickCore.getList(guild);
+            result = nickCore.getList();
             splitString = result.split("\n\n");
             embed.setAsInfo(defaultTitle, result);
             if (msg.getChannelType() == ChannelType.PRIVATE) {
@@ -396,7 +460,7 @@ public class NicknameMain extends ListenerAdapter {
                         oldNickname = memberInQuestion.getNickname();
                         if (oldNickname == null) oldNickname = "None";
                         ignoreNewNickname = true;
-                        if (args[3].equalsIgnoreCase("Reset") || args[3].equalsIgnoreCase("reset")) {
+                        if (args[3].equalsIgnoreCase("reset")) {
                             memberInQuestion.modifyNickname(memberInQuestion.getUser().getName()).queue();
                             newNickname = memberInQuestion.getUser().getName() + " (Their Discord Name)";
                             successfulExecution = true;
@@ -413,7 +477,7 @@ public class NicknameMain extends ListenerAdapter {
                     }
                     else {
                         embed.setAsError("Too Many Mentioned Players", "**You have too many mentioned players in this command**" +
-                                "\nSyntax Reminder: `/nickname forcechange <Mention or Discord ID> <New Nickname>`");
+                                "\nSyntax Reminder: `" + mainConfig.commandPrefix + "nickname forcechange <Mention or Discord ID> <New Nickname>`");
                         embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
                     }
                 }
@@ -431,7 +495,7 @@ public class NicknameMain extends ListenerAdapter {
             }
             else if (discord.isTeamMember(msg.getAuthor().getIdLong()) && args.length != 4) {
                 embed.setAsError("Incorrect Arguments", "**You did not use the correct number of arguments**" +
-                        "\nSyntax Reminder: `/nickname forcechange <Mention or Discord ID> <New Nickname>`");
+                        "\nSyntax Reminder: `" + mainConfig.commandPrefix + "nickname forcechange <Mention or Discord ID> <New Nickname>`");
                 embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
             }
             else {
@@ -447,6 +511,7 @@ public class NicknameMain extends ListenerAdapter {
         int targetRequestID = 0;
         String oldNickname = "";
         String newNickname = "";
+        Member memberInQuestion = null;
         if (args.length == 3) {
             int index = 0;
             boolean isMention = false;
@@ -455,8 +520,10 @@ public class NicknameMain extends ListenerAdapter {
                 targetDiscordID = nickCore.discordID.get(nickCore.requestID.indexOf(targetRequestID));
                 oldNickname = nickCore.oldNickname.get(nickCore.requestID.indexOf(targetRequestID));
                 newNickname = nickCore.newNickname.get(nickCore.requestID.indexOf(targetRequestID));
+                memberInQuestion = guild.getMemberById(targetDiscordID);
                 if (requestAccepted) {
                     result = nickCore.acceptRequest(-1, targetRequestID);
+                    addNameHistory(targetDiscordID, oldNickname, msg);
                 }
                 else {
                     result = nickCore.denyRequest(-1, targetRequestID);
@@ -472,8 +539,10 @@ public class NicknameMain extends ListenerAdapter {
                 targetDiscordID = msg.getMentionedMembers().get(0).getIdLong();
                 oldNickname = nickCore.oldNickname.get(nickCore.discordID.indexOf(targetDiscordID));
                 newNickname = nickCore.newNickname.get(nickCore.discordID.indexOf(targetDiscordID));
+                memberInQuestion = guild.getMemberById(targetDiscordID);
                 if (requestAccepted) {
                     result = nickCore.acceptRequest(targetDiscordID, -1);
+                    addNameHistory(targetDiscordID, oldNickname, msg);
                 }
                 else {
                     result = nickCore.denyRequest(targetDiscordID, -1);
@@ -485,22 +554,27 @@ public class NicknameMain extends ListenerAdapter {
             }
             else if (isMention) {
                 if (result.contains("FATAL ERROR")) {
-                    failedIntegrityCheck(msg.getMember(), "Nickname: Request Handler - Mention", msg.getChannel());
+                    discord.failedIntegrityCheck(this.getClass().getName(), msg.getMember(), "Nickname: Request Handler - Mention", msg.getChannel());
                 }
                 else {
                     String[] getNewNicknameArray = result.split("New Nickname: ");
                     String getNewNickname = getNewNicknameArray[1].substring(2, getNewNicknameArray[1].lastIndexOf('*') - 1);
                     if (requestAccepted) {
                         ignoreNewNickname = true;
-                        if (getNewNickname == null) {
-                            guild.getMemberById(targetDiscordID).modifyNickname(
-                                    guild.getMemberById(targetDiscordID).getUser().getName()).queue();
+                        if (newNickname == null) {
+                            memberInQuestion.modifyNickname(memberInQuestion.getUser().getName()).queue();
+                            embed.setAsSuccess("Successful Nickname Request Acceptance", result);
+                            embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
+                            String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
+                                    "Your new name on the Discord Server now matches your discord username";
+                            embed.setAsSuccess("Successful Nickname Request Acceptance", messageToPlayer);
+                            embed.sendDM(guild.getMemberById(targetDiscordID).getUser());
                             log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully accepted the nickname request of player " +
                                     guild.getMemberById(targetDiscordID).getUser().getAsTag() + "," +
                                     " their nickname was erased and now it matches their discord name.");
                         }
                         else {
-                            guild.getMemberById(targetDiscordID).modifyNickname(getNewNickname).queue();
+                            memberInQuestion.modifyNickname(getNewNickname).queue();
                             embed.setAsSuccess("Nickname Request Acceptanced", result);
                             embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
@@ -530,28 +604,33 @@ public class NicknameMain extends ListenerAdapter {
             }
             else {
                 if (result.contains("FATAL ERROR")) {
-                    failedIntegrityCheck(msg.getMember(), "Nickname: Request Handler - Request ID", msg.getChannel());
+                    discord.failedIntegrityCheck(this.getClass().getName(), msg.getMember(), "Nickname: Request Handler - Request ID", msg.getChannel());
                 }
                 else {
                     String[] getNewNicknameArray = result.split("New Nickname: ");
                     String getNewNickname = getNewNicknameArray[1].substring(2, getNewNicknameArray[1].lastIndexOf('*') - 1);
                     if (requestAccepted) {
                         ignoreNewNickname = true;
-                        if (getNewNickname == null) {
-                            guild.getMemberById(targetDiscordID).modifyNickname(
-                                    guild.getMemberById(targetDiscordID).getUser().getName()).queue();
+                        if (newNickname == null) {
+                            memberInQuestion.modifyNickname(memberInQuestion.getUser().getName()).queue();
+                            embed.setAsSuccess("Successful Nickname Request Acceptance", result);
+                            embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
+                            String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
+                                    "Your new name on the Discord Server now matches your discord username";
+                            embed.setAsSuccess("Successful Nickname Request Acceptance", messageToPlayer);
+                            embed.sendDM(memberInQuestion.getUser());
                             log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully accepted the nickname request of player " +
                                     guild.getMemberById(targetDiscordID).getUser().getAsTag() + "," +
                                     " their nickname was erased and now it matches their discord name.");
                         }
                         else {
-                            guild.getMemberById(targetDiscordID).modifyNickname(getNewNickname).queue();
+                            memberInQuestion.modifyNickname(getNewNickname).queue();
                             embed.setAsSuccess("Successful Nickname Request Acceptance", result);
                             embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
                                     "Your new name on the Discord Server is now " + getNewNickname;
                             embed.setAsSuccess("Successful Nickname Request Acceptance", messageToPlayer);
-                            embed.sendDM(guild.getMemberById(targetDiscordID).getUser());
+                            embed.sendDM(memberInQuestion.getUser());
                             log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully accepted the nickname request of player " +
                                     guild.getMemberById(targetDiscordID).getUser().getAsTag() + ", " +
                                     "they had nickname " + oldNickname + " and their new nickname is " + newNickname);
@@ -566,11 +645,17 @@ public class NicknameMain extends ListenerAdapter {
                     }
                 }
             }
+            if (nickCore.arraySizesEqual()) {
+                nickCore.fileHandler.saveDatabase();
+            }
+            else {
+                discord.failedIntegrityCheck(this.getClass().getName(), msg.getMember(), "Request Handler - Final Integrity Check", msg.getChannel());
+            }
         }
         else {
             embed.setAsError("Invaid Number of Arguements",
             "**You Entered an Invalid Number of Arguements**" +
-                    "\n\nUsage: `/nickname accept <Mention or Request ID>`");
+                    "\n\nUsage: `" + mainConfig.commandPrefix + "nickname accept <Mention or Request ID>`");
             embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
         }
     }
@@ -582,37 +667,83 @@ public class NicknameMain extends ListenerAdapter {
         else {
             int index = 0;
             while (index < restrictedRoles.size()) {
-                if (hasRoles.contains(restrictedRoles.get(index))) {
+                if (hasRoles.contains(restrictedRoles.get(index++))) {
                     return true;
                 }
             }
             return false;
         }
     }
-
-    private void failedIntegrityCheck(Member author, String cause, MessageChannel channel) throws IOException {
-        embed.setAsStop("FATAL ERROR",
-                "**Ouch! That Really Didn't Go Well! **" +
-                "\n**You may use */restart* to try to restart me. If you don't feel comfortable doing that... " + mainConfig.owner.getAsMention()
-                + " has been notified.**" +
-                "\n\n**Cause: " + cause + "**" +
-                "\n\n**Nickname Commands have Been Suspended**");
-        embed.sendToTeamDiscussionChannel(channel, author);
-        log.fatal("Integrity Check on ArrayList Objects Failed - Cause: " + cause);
-        commandsSuspended = true;
-    }
     public void reloadConfig(Message msg) {
         try {
             nickConfig.reload(fileHandler.getConfig());
+            setupRestrictedRoles(true);
             log.info("Nickname Configuration Successfully Reloaded");
         }
         catch (FileNotFoundException ex) {
             embed.setAsStop("Nickname Config File Not Found", "**nickconfig.json was not found in the config folder**");
             embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
-            log.fatal("Nickname Config File Not Found");
+            log.fatal("Nickname Config File Not Found on Reload");
         }
         catch (IOException ex) {
             ex.printStackTrace();
         }
+    }
+    private void setupRestrictedRoles(boolean isReload) {
+        int index = 0;
+        boolean successfulRun = true;
+        String defaultOutput = "The Name Restricted Roles are: ";
+        if (isReload) {
+            restrictedRoles.clear();
+            commandsSuspended = false;
+        }
+        while (index < nickConfig.restrictedRoles.size()) {
+            try {
+                restrictedRoles.add(guild.getRoleById(nickConfig.restrictedRoles.get(index)));
+                defaultOutput = defaultOutput.concat("\n" + restrictedRoles.get(index).getAsMention());
+            }
+            catch (NullPointerException ex) {
+                commandsSuspended = true;
+                if (isReload) {
+                    embed.setAsStop("Name Restricted Roles Not Found",
+                            "I could not find one or more of the restricted roles " +
+                                    "in the config file when it was reloaded" +
+                                    "\n\n**Commands Have Been Suspended on the Nickname Feature Side**");
+                    log.fatal("Name Restricted Roles Not Found on Reload");
+                }
+                else {
+                    embed.setAsStop("Name Restricted Roles Not Found",
+                            "I could not find one or more of the restricted roles " +
+                                    "in the config file when I was started" +
+                                    "\n\n**Commands Have Been Suspended on the Nickname Feature Side**");
+                    log.fatal("Name Restricted Roles Not Found on Startup");
+                }
+                embed.sendToLogChannel();
+                successfulRun = false;
+                break;
+            }
+            index++;
+        }
+        if (successfulRun) {
+            embed.setAsSuccess("Name Restricted Roles Setup", defaultOutput);
+            embed.sendToLogChannel();
+            log.info("Name Restricted Roles Setup");
+        }
+    }
+    private void addNameHistory(long targetDiscordID, String oldName, @Nullable Message msg) {
+        ArrayList<String> oldNickArray = nickCore.oldNickDictionary.get(targetDiscordID);
+        if (oldNickArray == null) oldNickArray = new ArrayList<>();
+        if (oldName == null) oldName = guild.getJDA().getUserById(targetDiscordID).getName();
+        oldNickArray.add(oldName);
+        nickCore.oldNickDictionary.put(targetDiscordID, oldNickArray);
+        if (nickCore.arraySizesEqual()) {
+            try {
+                nickCore.fileHandler.saveDatabase();
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        else discord.failedIntegrityCheck(this.getClass().getName(), msg.getMember(), "Name History", msg.getChannel());
     }
 }

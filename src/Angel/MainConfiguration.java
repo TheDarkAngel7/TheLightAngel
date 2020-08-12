@@ -40,12 +40,17 @@ public abstract class MainConfiguration {
     String stopIconURL;
     String helpIconURL;
 
+    int pingCoolDown;
+
+    String blobNomPingID;
+
     MainConfiguration(JsonObject importConfigObj) {
         configObj = importConfigObj;
         systemPath = configObj.get("systemPath").getAsString();
         token = configObj.get("token").getAsString();
         testModeEnabled = configObj.get("testModeEnabled").getAsBoolean();
     }
+
     void initialSetup() {
         commandPrefix = configObj.get("commandPrefix").getAsString().charAt(0);
 
@@ -59,6 +64,7 @@ public abstract class MainConfiguration {
         botSpamChannelID = configObj.get("botSpamChannel").getAsString();
         logChannelID = configObj.get("logChannel").getAsString();
         fieldHeader = configObj.get("fieldHeader").getAsString();
+        pingCoolDown = configObj.get("pingCoolDownMinutes").getAsInt();
 
         checkIconURL = configObj.get("checkIconURL").getAsString();
         warningIconURL = configObj.get("warningIconURL").getAsString();
@@ -66,6 +72,8 @@ public abstract class MainConfiguration {
         infoIconURL = configObj.get("infoIconURL").getAsString();
         stopIconURL = configObj.get("stopIconURL").getAsString();
         helpIconURL = configObj.get("helpIconURL").getAsString();
+
+        blobNomPingID = configObj.get("blobNomPingID").getAsString();
     }
     void discordSetup() {
         owner = guild.getMemberById(ownerDiscordID);
@@ -90,5 +98,14 @@ public abstract class MainConfiguration {
                 && guild.getRoles().contains(guild.getRoleById(adminRoleID))
                 && guild.getRoles().contains(guild.getRoleById(staffRoleID))
                 && guild.getRoles().contains(guild.getRoleById(teamRoleID));
+    }
+    boolean reload(JsonObject importReloadedConfig) {
+        configObj = importReloadedConfig;
+        initialSetup();
+        if (discordGuildConfigurationsExist()) {
+            discordSetup();
+            return true;
+        }
+        else return false;
     }
 }

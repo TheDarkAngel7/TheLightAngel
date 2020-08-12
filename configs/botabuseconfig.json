@@ -2,7 +2,8 @@
 	"host": "localhost",
 	"rabbitMQEnabled": false,
 	"roleScannerIntervalMinutes": 15,
-	"pingCoolDownMinutes": 15,
 	"maxDaysUndoIsAllowed": 5,
-	"botAbuseRoleID": "664619076324294666"
+	"botAbuseRoleID": "664619076324294666",
+	"botAbuseTimingsInDays": "[7,14,30,60]",
+	"oldOffensesConsideredHotInMonths": 6
 }

@@ -1,11 +1,14 @@
 package Angel;
 
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.events.GenericEvent;
+import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import javax.security.auth.login.LoginException;
 import java.io.File;
@@ -57,13 +60,15 @@ class LightAngel {
         MainConfiguration mainConfig = new MainConfiguration(fileHandler.getMainConfig()) {};
         mainConfig.initialSetup();
         EmbedHandler embed = new EmbedHandler(mainConfig) {};
-        discord = new DiscordBotMain(isRestart, mainConfig, embed);
+        discord = new DiscordBotMain(isRestart, mainConfig, embed, fileHandler);
+        embed.setDiscordInstance(discord);
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
-                GatewayIntent.GUILD_MESSAGES);
+                GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_EMOJIS);
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE,
                 CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE);
         JDABuilder.create(mainConfig.token, enabledIntents)
                 .disableCache(disabledFlags).addEventListeners(discord)
                 .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).build();
+
     }
 }

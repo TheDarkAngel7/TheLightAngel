@@ -2,8 +2,11 @@ package Angel.BotAbuse;
 
 import Angel.MainConfiguration;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
+
+import java.util.ArrayList;
 
 abstract class BotConfiguration {
     JsonObject configObj;
@@ -12,7 +15,6 @@ abstract class BotConfiguration {
     Guild guild;
     Role botAbuseRole;
     int roleScannerInterval;
-    int pingCoolDown;
     boolean rabbitMQEnabled;
 
     BotConfiguration(JsonObject importConfigObj, MainConfiguration importMainConfig) {
@@ -27,7 +29,6 @@ abstract class BotConfiguration {
         botAbuseRoleID = configObj.get("botAbuseRoleID").getAsString();
         rabbitMQEnabled = configObj.get("rabbitMQEnabled").getAsBoolean();
         roleScannerInterval = configObj.get("roleScannerIntervalMinutes").getAsInt();
-        pingCoolDown = configObj.get("pingCoolDownMinutes").getAsInt();
     }
     void discordSetup() {
         // These are configuration settings that have to be set with a guild object
@@ -53,15 +54,21 @@ abstract class BotConfiguration {
 }
 abstract class CoreConfiguration {
     JsonObject configObj;
+    FileHandler fileHandler;
     String host;
     int maxDaysAllowedForUndo;
+    int hotOffenseMonths;
+    ArrayList<Integer> botAbuseTimes;
 
-    CoreConfiguration(JsonObject importConfigObj) {
+    CoreConfiguration(JsonObject importConfigObj, FileHandler fileHandler) {
         configObj = importConfigObj;
         host = configObj.get("host").getAsString();
+        this.fileHandler = fileHandler;
         setup();
     }
     void setup() {
+        hotOffenseMonths = configObj.get("oldOffensesConsideredHotInMonths").getAsInt();
+        botAbuseTimes = fileHandler.gson.fromJson(configObj.get("botAbuseTimingsInDays").getAsString(), new TypeToken<ArrayList<Integer>>(){}.getType());
         maxDaysAllowedForUndo = configObj.get("maxDaysUndoIsAllowed").getAsInt();
     }
 

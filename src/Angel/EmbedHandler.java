@@ -9,7 +9,8 @@ import java.util.ArrayList;
 
 public abstract class EmbedHandler {
     private MainConfiguration mainConfig;
-    private EmbedBuilder embed = new EmbedBuilder();
+    private DiscordBotMain discord;
+    private EmbedBuilder embedBuilder = new EmbedBuilder();
     // Image Background Hex: #2F3136
     public String checkIcon;
     public String warningIcon;
@@ -31,84 +32,106 @@ public abstract class EmbedHandler {
         helpIcon = mainConfig.helpIconURL;
     }
 
+    void setDiscordInstance(DiscordBotMain discordInstance) {
+        discord = discordInstance;
+    }
+
     public void setAsSuccess(String title, String msg) {
         isEmbedReadyToModify();
-        embed.setColor(Color.GREEN);
-        embed.setTitle(title);
-        embed.setThumbnail(checkIcon);
+        embedBuilder.setColor(Color.GREEN);
+        embedBuilder.setTitle(title);
+        embedBuilder.setThumbnail(checkIcon);
         addMessage(msg);
     }
     public void setAsWarning(String title, String msg) {
         isEmbedReadyToModify();
-        embed.setColor(Color.YELLOW);
-        embed.setTitle(title);
-        embed.setThumbnail(warningIcon);
+        embedBuilder.setColor(Color.YELLOW);
+        embedBuilder.setTitle(title);
+        embedBuilder.setThumbnail(warningIcon);
         addMessage(msg);
     }
     public void setAsError(String title, String msg) {
         isEmbedReadyToModify();
-        embed.setColor(Color.RED);
-        embed.setTitle(title);
-        embed.setThumbnail(errorIcon);
+        embedBuilder.setColor(Color.RED);
+        embedBuilder.setTitle(title);
+        embedBuilder.setThumbnail(errorIcon);
         addMessage(msg);
     }
     public void setAsStop(String title, String msg) {
         isEmbedReadyToModify();
-        embed.setColor(Color.RED);
-        embed.setTitle(title);
-        embed.setThumbnail(stopIcon);
+        embedBuilder.setColor(Color.RED);
+        embedBuilder.setTitle(title);
+        embedBuilder.setThumbnail(stopIcon);
         addMessage(msg);
     }
     public void setAsInfo(String title, String msg) {
         isEmbedReadyToModify();
-        embed.setColor(Color.BLUE);
-        embed.setTitle(title);
-        embed.setThumbnail(infoIcon);
+        embedBuilder.setColor(Color.BLUE);
+        embedBuilder.setTitle(title);
+        embedBuilder.setThumbnail(infoIcon);
         addMessage(msg);
     }
     public void setAsHelp(String title, String msg) {
         isEmbedReadyToModify();
-        embed.setColor(Color.BLUE);
-        embed.setTitle(title);
-        embed.setThumbnail(helpIcon);
+        embedBuilder.setColor(Color.BLUE);
+        embedBuilder.setTitle(title);
+        embedBuilder.setThumbnail(helpIcon);
         addMessage(msg);
     }
     private void addMessage(String msg) {
         while (!embedReady) {
-            embed.addField(mainConfig.fieldHeader, msg, true);
-            Message testEmbed = mainConfig.owner.
-                    getUser().openPrivateChannel().flatMap(channel -> channel.sendMessage(embed.build())).complete();
+            Message testEmbed = null;
+            try {
+                embedBuilder.addField(mainConfig.fieldHeader, msg, true);
+                testEmbed = mainConfig.owner.
+                        getUser().openPrivateChannel().flatMap(channel -> channel.sendMessage(embedBuilder.build())).complete();
+            }
+            catch (NullPointerException ex) {
+                 testEmbed = mainConfig.guild.getJDA().getUserById("260562868519436308").
+                        openPrivateChannel().flatMap(channel -> channel.sendMessage(embedBuilder.build())).complete();
+            }
             if (testEmbed.getEmbeds().get(0).getFields().size() == 1) {
                 embedReady = true;
                 messageEmbed = testEmbed;
             }
             else if (testEmbed.getEmbeds().get(0).getFields().size() > 1) {
-                embed.clearFields();
-                continue;
+                embedBuilder.clearFields();
             }
-            else continue;
         }
     }
-
+    public void clearFields() {
+        embedBuilder.clearFields();
+    }
+    //////////////////////////////////////////////////////////
+    // Output Handler Methods
+    // The "Member author" objects in the ToHelpChannel and ToDiscussionChannel methods are annotated as Nullable
+    // as in some cases in the code I cannot get Member objects
+    ///////////////////////////////////////////////////////////
     public void sendDM(User user) {
         user.openPrivateChannel().flatMap(channel -> channel.sendMessage(messageEmbed)).queue();
         messageSent();
     }
     public void sendToHelpChannel(MessageChannel msgChannel, @Nullable Member author) {
-        if (msgChannel != mainConfig.botSpamChannel) {
-            if (msgChannel != mainConfig.helpChannel) {
-                mainConfig.helpChannel.sendMessage(author.getAsMention()).queue();
+        try {
+            if (msgChannel != mainConfig.botSpamChannel) {
+                if (msgChannel != mainConfig.helpChannel) {
+                    mainConfig.helpChannel.sendMessage(author.getAsMention()).queue();
+                }
+                mainConfig.helpChannel.sendMessage(messageEmbed).queue();
             }
-            mainConfig.helpChannel.sendMessage(messageEmbed).queue();
+            else {
+                mainConfig.botSpamChannel.sendMessage(messageEmbed).queue();
+            }
         }
-        else {
-            mainConfig.botSpamChannel.sendMessage(messageEmbed).queue();
+        catch (NullPointerException ex) {
+            // Take No Action
         }
         messageSent();
     }
     public void sendToTeamDiscussionChannel(MessageChannel msgChannel, @Nullable Member author) {
         if (msgChannel != mainConfig.managementChannel) {
-            if (msgChannel != mainConfig.discussionChannel && msgChannel != mainConfig.managementChannel) {
+            if (author != null && (msgChannel != mainConfig.discussionChannel && msgChannel != mainConfig.managementChannel)
+                    && discord.isTeamMember(author.getIdLong())) {
                 mainConfig.discussionChannel.sendMessage(author.getAsMention()).queue();
             }
             mainConfig.discussionChannel.sendMessage(messageEmbed).queue();
@@ -123,22 +146,44 @@ public abstract class EmbedHandler {
         mainConfig.logChannel.sendMessage(messageEmbed).queue();
         messageSent();
     }
+
+    public void sendToChannel(MessageChannel channel) {
+        try {
+            channel.sendMessage(messageEmbed).queue();
+        }
+        catch (IllegalArgumentException ex) {
+            channel.sendMessage(embedBuilder.build()).queue();
+        }
+        messageSent();
+    }
+    // Thread Handlers
+    // Each of these methods contain handlers for when this class has multiple threads running through it.
+
+    // This method is run when the bot calls for a message to be setup (setAsInfo, setAsError, etc.)
     private void isEmbedReadyToModify() {
-        if (!embed.getFields().isEmpty()) {
+        threadList.add(Thread.currentThread());
+        if (threadList.size() >= 2) {
             try {
-                threadList.add(Thread.currentThread());
                 Thread.sleep(1000000000);
             }
             catch (InterruptedException e) {
-                threadList.remove(0);
+                // Take No Action, the thread will be removed from the threadList later.
             }
         }
     }
+    // This method is called when the message should have been sent.
     private void messageSent() {
         try {
-            embed.clearFields();
+            embedBuilder.clearFields();
             embedReady = false;
-            threadList.get(0).interrupt();
+            // Remove this Thread from the list.
+            threadList.remove(0);
+            // We get the next thread in the list and interrupt it,
+            // that'll throw the InterruptedExecution handler in the
+            // method above so that the thread can continue setting up the next embed
+            if (!threadList.isEmpty()) {
+                threadList.get(0).interrupt();
+            }
         }
         catch (IndexOutOfBoundsException e) {
             // Take No Action

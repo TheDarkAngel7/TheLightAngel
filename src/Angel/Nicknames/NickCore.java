@@ -5,20 +5,21 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
-import javax.annotation.ParametersAreNullableByDefault;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Dictionary;
+import java.util.Hashtable;
 
 class NickCore {
     private final Logger log = LogManager.getLogger(NickCore.class);
-    private Angel.Nicknames.FileHandler fileHandler;
+    Angel.Nicknames.FileHandler fileHandler;
     private Guild guild;
     private NickConfiguration nickConfig;
     ArrayList<Integer> requestID = new ArrayList<>();
     ArrayList<Long> discordID = new ArrayList<>();
     ArrayList<String> oldNickname = new ArrayList<>();
     ArrayList<String> newNickname = new ArrayList<>();
-
+    Dictionary<Long, ArrayList<String>> oldNickDictionary = new Hashtable<>();
     NickCore(Guild importGuild) {
         fileHandler = new FileHandler(this);
         guild = importGuild;
@@ -31,6 +32,7 @@ class NickCore {
         }
         catch (IllegalStateException ex) {
             log.warn("No Data Existed in the Nickname Arrays - Data File is Empty");
+            fileHandler.fileReader.close();
         }
     }
     void setNickConfig(NickConfiguration importedNickConfig) {
@@ -144,7 +146,7 @@ class NickCore {
         }
         else return "FATAL ERROR";
     }
-    String getList(Guild guild) {
+    String getList() {
         int index = 0;
         String result = "";
         if (discordID.isEmpty()) return null;
@@ -160,18 +162,17 @@ class NickCore {
         return result;
     }
     private String getDataAtIndexAndRemove(int index) throws IOException, IndexOutOfBoundsException {
-        String returnValue = requestID.get(index) + "," + discordID.get(index) + "," + oldNickname.get(index) + "," + newNickname.get(index);
-        requestID.remove(index);
-        discordID.remove(index);
-        oldNickname.remove(index);
-        newNickname.remove(index);
+        String returnValue = requestID.remove(index) + "," + discordID.remove(index) + ","
+                + oldNickname.remove(index) + "," + newNickname.remove(index);
         if (!arraySizesEqual()) {
             return "FATAL ERROR: Error Occured While Getting the Nickname at target index and removing";
         }
         else {
-            fileHandler.saveDatabase();
             return returnValue;
         }
+    }
+    ArrayList<String> getHistory(long targetDiscordID) {
+        return oldNickDictionary.get(targetDiscordID);
     }
     boolean arraySizesEqual() {
         return requestID.size() == discordID.size() && oldNickname.size() == newNickname.size();
