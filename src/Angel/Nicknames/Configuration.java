@@ -8,10 +8,11 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 
 abstract class NickConfiguration {
-    Gson gson;
-    JsonObject configObj;
+    private final Gson gson;
+    private JsonObject configObj;
     ArrayList<Long> restrictedRoles;
-    private Type longType = new TypeToken<ArrayList<Long>>(){}.getType();
+    int requestCoolDown;
+    private final Type longType = new TypeToken<ArrayList<Long>>(){}.getType();
 
     NickConfiguration(JsonObject importConfigObj, Gson importGsonInstance) {
         configObj = importConfigObj;
@@ -19,6 +20,7 @@ abstract class NickConfiguration {
     }
     void setup() {
         restrictedRoles = gson.fromJson(configObj.get("rolesNotAllowedToChangeName").getAsString(), longType);
+        requestCoolDown = configObj.get("requestCoolDownInMinutes").getAsInt();
     }
     void reload(JsonObject reloadedObject) {
         configObj = reloadedObject;

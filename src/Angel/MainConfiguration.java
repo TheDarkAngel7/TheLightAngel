@@ -7,10 +7,10 @@ import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 public abstract class MainConfiguration {
-    JsonObject configObj;
+    private JsonObject configObj;
     Guild guild;
     public String systemPath;
-    String token;
+    public String token;
     public boolean testModeEnabled;
     public char commandPrefix;
     public String fieldHeader;
@@ -42,6 +42,8 @@ public abstract class MainConfiguration {
 
     int pingCoolDown;
 
+    public long highPingTime;
+
     String blobNomPingID;
 
     MainConfiguration(JsonObject importConfigObj) {
@@ -72,6 +74,8 @@ public abstract class MainConfiguration {
         infoIconURL = configObj.get("infoIconURL").getAsString();
         stopIconURL = configObj.get("stopIconURL").getAsString();
         helpIconURL = configObj.get("helpIconURL").getAsString();
+
+        highPingTime = configObj.get("highPingTime").getAsLong();
 
         blobNomPingID = configObj.get("blobNomPingID").getAsString();
     }

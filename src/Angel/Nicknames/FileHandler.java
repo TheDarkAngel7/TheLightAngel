@@ -19,14 +19,14 @@ import java.util.Hashtable;
 
 class FileHandler {
     private final Logger log = LogManager.getLogger(FileHandler.class);
-    private NickCore nickCore;
+    private final NickCore nickCore;
     Gson gson = new Gson();
-    private File jsonNickDataFile = new File("data/nickdata.json");
-    private File jsonTempNickDataFile = new File("data/nicktempdata.json");
-    private Type longType = new TypeToken<ArrayList<Long>>(){}.getType();
-    private Type integerType = new TypeToken<ArrayList<Integer>>(){}.getType();
-    private Type stringType = new TypeToken<ArrayList<String>>(){}.getType();
-    private Type oldNickDictionaryType = new TypeToken<Hashtable<Long, ArrayList<String>>>(){}.getType();
+    private final File jsonNickDataFile = new File("data/nickdata.json");
+    private final File jsonTempNickDataFile = new File("data/nicktempdata.json");
+    private final Type longType = new TypeToken<ArrayList<Long>>(){}.getType();
+    private final Type integerType = new TypeToken<ArrayList<Integer>>(){}.getType();
+    private final Type stringType = new TypeToken<ArrayList<String>>(){}.getType();
+    private final Type oldNickDictionaryType = new TypeToken<Hashtable<Long, ArrayList<String>>>(){}.getType();
     FileReader fileReader;
 
     FileHandler(NickCore nickCore) {

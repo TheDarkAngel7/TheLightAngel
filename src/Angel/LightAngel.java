@@ -1,15 +1,16 @@
 package Angel;
 
+import com.neovisionaries.ws.client.DualStackMode;
+import com.neovisionaries.ws.client.WebSocketFactory;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.events.GenericEvent;
-import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
+import net.dv8tion.jda.api.utils.cache.CacheView;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
+import javax.net.SocketFactory;
 import javax.security.auth.login.LoginException;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -20,8 +21,8 @@ import java.util.Calendar;
 import java.util.Collection;
 
 class LightAngel {
-    public static final Logger log = LogManager.getLogger(LightAngel.class);
-    static FileHandler fileHandler;
+    private static final Logger log = LogManager.getLogger(LightAngel.class);
+    private static FileHandler fileHandler;
     static DiscordBotMain discord;
     static File BADataFile = new File("data/BAdata.json");
     static File nickDataFile = new File("data/nickdata.json");
@@ -68,7 +69,6 @@ class LightAngel {
                 CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE);
         JDABuilder.create(mainConfig.token, enabledIntents)
                 .disableCache(disabledFlags).addEventListeners(discord)
-                .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).build();
-
+                .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.NONE).build();
     }
 }

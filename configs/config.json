@@ -14,6 +14,7 @@
   "managementChannel": "729129709916651562",
   "logChannel": "697643345471602740",
   "pingCoolDownMinutes": 15,
+  "highPingTime": 300,
   "checkIconURL": "https://i.imgur.com/bakLhaw.png",
   "warningIconURL": "https://i.imgur.com/5SD8jxX.png",
   "errorIconURL": "https://i.imgur.com/KmZRhnK.png",

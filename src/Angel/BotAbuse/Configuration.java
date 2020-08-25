@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.entities.Role;
 import java.util.ArrayList;
 
 abstract class BotConfiguration {
-    JsonObject configObj;
+    private JsonObject configObj;
     MainConfiguration mainConfig;
     String botAbuseRoleID;
     Guild guild;

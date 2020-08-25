@@ -36,6 +36,14 @@ public abstract class EmbedHandler {
         discord = discordInstance;
     }
 
+    ///////////////////////////////////////////////////////////////
+    // EmbedBuilder handlers
+    // the coder would select the kind of embed they want
+    // whether that's a Success, Warning, Info, Error, or a Stop
+    // then they would code where to send it too by calling
+    // one of the output handler methods.
+    ///////////////////////////////////////////////////////////////
+
     public void setAsSuccess(String title, String msg) {
         isEmbedReadyToModify();
         embedBuilder.setColor(Color.GREEN);
@@ -112,9 +120,10 @@ public abstract class EmbedHandler {
         messageSent();
     }
     public void sendToHelpChannel(MessageChannel msgChannel, @Nullable Member author) {
+        TextChannel channel = discord.guild.getTextChannelById(msgChannel.getIdLong());
         try {
-            if (msgChannel != mainConfig.botSpamChannel) {
-                if (msgChannel != mainConfig.helpChannel) {
+            if (channel != mainConfig.botSpamChannel) {
+                if (channel != mainConfig.helpChannel) {
                     mainConfig.helpChannel.sendMessage(author.getAsMention()).queue();
                 }
                 mainConfig.helpChannel.sendMessage(messageEmbed).queue();
@@ -129,8 +138,9 @@ public abstract class EmbedHandler {
         messageSent();
     }
     public void sendToTeamDiscussionChannel(MessageChannel msgChannel, @Nullable Member author) {
-        if (msgChannel != mainConfig.managementChannel) {
-            if (author != null && (msgChannel != mainConfig.discussionChannel && msgChannel != mainConfig.managementChannel)
+        TextChannel channel = discord.guild.getTextChannelById(msgChannel.getIdLong());
+        if (channel != mainConfig.managementChannel) {
+            if (author != null && (channel != mainConfig.discussionChannel && channel != mainConfig.managementChannel)
                     && discord.isTeamMember(author.getIdLong())) {
                 mainConfig.discussionChannel.sendMessage(author.getAsMention()).queue();
             }
@@ -161,10 +171,10 @@ public abstract class EmbedHandler {
 
     // This method is run when the bot calls for a message to be setup (setAsInfo, setAsError, etc.)
     private void isEmbedReadyToModify() {
-        threadList.add(Thread.currentThread());
-        if (threadList.size() >= 2) {
+        if (!threadList.contains(Thread.currentThread())) threadList.add(Thread.currentThread());
+        while (threadList.get(0) != Thread.currentThread()) {
             try {
-                Thread.sleep(1000000000);
+                Thread.sleep(1000);
             }
             catch (InterruptedException e) {
                 // Take No Action, the thread will be removed from the threadList later.
@@ -177,13 +187,7 @@ public abstract class EmbedHandler {
             embedBuilder.clearFields();
             embedReady = false;
             // Remove this Thread from the list.
-            threadList.remove(0);
-            // We get the next thread in the list and interrupt it,
-            // that'll throw the InterruptedExecution handler in the
-            // method above so that the thread can continue setting up the next embed
-            if (!threadList.isEmpty()) {
-                threadList.get(0).interrupt();
-            }
+            threadList.remove(Thread.currentThread());
         }
         catch (IndexOutOfBoundsException e) {
             // Take No Action

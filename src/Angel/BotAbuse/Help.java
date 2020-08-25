@@ -2,16 +2,16 @@ package Angel.BotAbuse;
 
 import Angel.EmbedHandler;
 
-public class Help {
+class Help {
     private BotAbuseMain baMain;
     private EmbedHandler embed;
 
-    public Help(EmbedHandler importDesigner, BotAbuseMain botAbuseMain) {
+    Help(EmbedHandler importDesigner, BotAbuseMain botAbuseMain) {
         this.embed = importDesigner;
         baMain = botAbuseMain;
     }
 
-    public void botAbuseCommand() {
+    void botAbuseCommand() {
         embed.setAsHelp("/botabuse Command Help",
         "**Full Syntax:\n `/botabuse <Mention or Discord ID> <Reason (You'd input a reason key here)> [Image URL]`**\n" +
                 "\n" +
@@ -22,7 +22,7 @@ public class Help {
                 "If you're not sure what you'd input for `<Reason>`, being it requires a reason key and not the entire reason spelled out," +
                 "use `/reasons` or `/rmgr list` to get what keys direct me to what reasons.");
     }
-    public void permBotAbuseCommand() {
+    void permBotAbuseCommand() {
         embed.setAsHelp("/permbotabuse Command Help",
         "**Full Syntax:\n `/permbotabuse <Mention or Discord ID> [Image URL]`**\n" +
                 "\n" +
@@ -30,7 +30,7 @@ public class Help {
                 "the expiry date gets overwritten to being Permanent. " +
                 "If they’re not currently bot abused, then it’ll just add a new offense being permanent with the reason “Contact Staff”.");
     }
-    public void undoCommand() {
+    void undoCommand() {
         embed.setAsHelp("/undo Command Help",
         "**Full Syntax:\n `/undo [Mention or Discord ID]`**\n" +
                 "\n" +
@@ -40,7 +40,7 @@ public class Help {
                 "However, including a Mention or Discord ID with the command will undo the bot abuse for that player. " +
                 "However this command will only work for Bot Abuses that were issued 5 days or less ago.");
     }
-    public void checkCommand(boolean isTeamMember) {
+    void checkCommand(boolean isTeamMember) {
         String defaultTitle = "/check Command Help";
         if (isTeamMember) {
             embed.setAsHelp(defaultTitle,"**Full Syntax:\n `/check [TimeZone Offset] <Mention or Discord ID>`**\n" +
@@ -55,18 +55,18 @@ public class Help {
                     "/check allows you to check your own bot abuse status, " +
                     "instead of the staff having to guess when your bot abuse will expire, you can just have the bot tell you.\n\n" +
                     "About `[dm]`: If you would like to opt for TheLightAngel to send you the information via a DM " +
-                    "instead of the default location in " + baMain.guild.getTextChannelById(baMain.mainConfig.helpChannel.getAsMention()).getAsMention() + ", you can place a \"dm\" right after the \"/check\".\n\n" +
+                    "instead of the default location in " + baMain.guild.getTextChannelById(baMain.mainConfig.helpChannel.getIdLong()).getAsMention() + ", you can place a \"dm\" right after the \"/check\".\n\n" +
                     "About `[TimeZone]`: Because I record the times in my own time zone, *what if someone used this command " +
                     "and wanted to see the times in their time zone?* **That's where this argument comes into play!**  " +
                     "Right now the bot is compatible with Time Zones that are a full hour, or a full hour and a half ahead or behind UTC.");
         }
     }
-    public void checkHistoryCommand() {
+    void checkHistoryCommand() {
         embed.setAsHelp("/checkhistory Command Help",
         "**Please use `/help check`, " +
                 "this command carries the exact same concept and syntax as /check**");
     }
-    public void transferCommand() {
+    void transferCommand() {
         embed.setAsHelp("/transfer Command Help",
         "**Full Syntax:\n `/transfer <Old Mention or Discord ID> <New Mention or Discord ID>`**\n" +
                 "\n" +
@@ -75,7 +75,7 @@ public class Help {
                 "\n" +
                 "**Please Note that if the new discord account has existing records, those records will be kept as well.**");
     }
-    public void clearCommand() {
+    void clearCommand() {
         embed.setAsHelp("/clear Command Help",
         "**Full Syntax:\n" +
                 "\n" +
@@ -83,7 +83,7 @@ public class Help {
                 "\n" +
                 "Completely wipes out the record of a discord account.");
     }
-    public void reasonManagementCommand() {
+    void reasonManagementCommand() {
         embed.setAsHelp("/reasonsmanager Command Help",
         "`/reasonsmanager addreason <newKey> <Full Wording of the Reason>` \n" +
                 "\n" +

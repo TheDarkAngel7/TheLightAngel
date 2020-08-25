@@ -1,3 +1,4 @@
 {
-  "rolesNotAllowedToChangeName": "[722479448342921216]"
+  "rolesNotAllowedToChangeName": "[722479448342921216]",
+  "requestCoolDownInMinutes": 60
 }

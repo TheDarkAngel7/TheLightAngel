@@ -53,7 +53,7 @@ class NickCore {
         String result =
                 "**:white_check_mark: New Nickname Change Request Received**" +
                 "\n\nID: " + id +
-                "\nDiscord ID: " + targetDiscordID;
+                "\nDiscord: <@!" + targetDiscordID + ">";
 
         if (oldNick != null && newNick != null) {
             result = result.concat(
@@ -72,6 +72,14 @@ class NickCore {
                     "\nOld Nickname: **" + oldNick +
                             "**\nNew Nickname: **" + guild.getMemberById(targetDiscordID).getUser().getName() + " (Reset to Discord Username)**"
             );
+        }
+        else {
+            int index = requestID.indexOf(id);
+            requestID.remove(index);
+            discordID.remove(index);
+            oldNickname.remove(index);
+            newNickname.remove(index);
+            return "None";
         }
         // oldNick and newNick is impossible to be both null,
         // because that'd be considered a discord name change, nicknames would not be involved
@@ -104,8 +112,8 @@ class NickCore {
             String[] nicknames = returnValue.split(",");
             String result = "Successfully Accepted the Request";
             if (targetDiscordID == -1) {
-                result = result.concat("\nDiscord ID: **" + nicknames[1]
-                        + "**\nOld Nickname: **" + nicknames[2]
+                result = result.concat("\nDiscord: <@!" + nicknames[1] + ">"
+                        + "\nOld Nickname: **" + nicknames[2]
                         + "**\nNew Nickname: **" + nicknames[3] + "**");
             }
             else {
@@ -124,24 +132,33 @@ class NickCore {
         result = result.replace("Accepted", "Rejected");
         return result;
     }
-    String withdrawRequest(long targetDiscordID, boolean triggeredOnGuildLeave) throws IOException {
+    String withdrawRequest(long targetDiscordID, boolean triggeredOnGuildLeave, boolean triggeredOnRoleRemove) throws IOException {
         int index = discordID.indexOf(targetDiscordID);
         if (index == -1) return null;
         String result = "";
-
-        requestID.remove(index);
-        discordID.remove(index);
-        oldNickname.remove(index);
-        newNickname.remove(index);
-
+        String defaultReturn = "Successfully Withdrew Nickname Request for ?";
+        defaultReturn = defaultReturn.concat(
+                        "\n\n**Request Details:**" +
+                        "\nRequest ID: **" + requestID.remove(index) +
+                        "**\nDiscord: <@!" + discordID.remove(index) + ">" +
+                        "\nOld Nickname: **" + oldNickname.remove(index) +
+                        "**\nNew Nickname: **" + newNickname.remove(index)) + "**";
         if (arraySizesEqual()) {
             fileHandler.saveDatabase();
-            String defaultReturn = "Successfully Withdrew Nickname Request for ?";
-            if (!triggeredOnGuildLeave) return defaultReturn;
-            else {
-                String returnValue = defaultReturn.replace("?", String.valueOf(targetDiscordID));
-                returnValue = returnValue.concat(" who left the Discord Server");
+
+            if (!triggeredOnGuildLeave && !triggeredOnRoleRemove) return defaultReturn;
+            else if (triggeredOnGuildLeave && !triggeredOnRoleRemove) {
+                String returnValue = defaultReturn.replace("?", String.valueOf(targetDiscordID).concat(" who left the Discord Server"));
                 return returnValue;
+            }
+            else if (!triggeredOnGuildLeave && triggeredOnRoleRemove) {
+                String returnValue = defaultReturn.replace("?", "? who had all nickname restricted roles removed.");
+
+                return returnValue;
+            }
+            else {
+                log.fatal("Boolean Values in withdrawing requests were both unexpectedly true");
+                return "FATAL ERROR: Boolean values were messed up";
             }
         }
         else return "FATAL ERROR";
@@ -153,8 +170,8 @@ class NickCore {
         while (index < discordID.size()) {
             result = result.concat(
                     "\n\nRequest ID: **" + requestID.get(index) +
-                            "**\nDiscord ID: **" + guild.getMemberById(discordID.get(index)).getIdLong() +
-                            "**\nOld Nickname: **" + oldNickname.get(index) +
+                            "**\nDiscord Account: <@!" + discordID.get(index) + ">" +
+                            "\nOld Nickname: **" + oldNickname.get(index) +
                             "**\nRequested New Nickname: **" + newNickname.get(index++) + "**"
             );
             result = result.replaceAll("null", "None");
