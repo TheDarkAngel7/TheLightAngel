@@ -135,7 +135,7 @@ public class DiscordBotMain extends ListenerAdapter {
         }
         else if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix) {
             if (args[0].equalsIgnoreCase("restart")
-                    && (isStaffMember(event.getAuthor().getIdLong()) || event.getAuthor() == mainConfig.owner)) {
+                    && (isStaffMember(event.getAuthor().getIdLong()))) {
                 msg.delete().complete();
                 try {
                     embed.setAsWarning("Restart Initiated", "**Restart Initiated by " + msg.getMember().getAsMention()
@@ -149,7 +149,7 @@ public class DiscordBotMain extends ListenerAdapter {
                 }
             }
             else if (args[0].equalsIgnoreCase("reload")
-                    && (isStaffMember(event.getAuthor().getIdLong()) || event.getMember() == mainConfig.owner)) {
+                    && isStaffMember(event.getAuthor().getIdLong())) {
                 embed.setAsWarning("Reloading Configuration", "**Reloading Configuration... Please Wait a Few Moments...**");
                 embed.sendToTeamDiscussionChannel(msg.getChannel(), null);
                 try {
@@ -290,7 +290,8 @@ public class DiscordBotMain extends ListenerAdapter {
                     defaultOutput = defaultOutput.replaceAll("true", "Operational");
                     embed.setAsSuccess(defaultTitle, defaultOutput);
                 }
-                embed.sendToChannel(event.getMessage().getChannel());
+                if (!isTeamMember(event.getAuthor().getIdLong())) embed.sendDM(event.getAuthor());
+                else embed.sendToTeamDiscussionChannel(event.getChannel(), event.getMember());
             }
         }
         if (!msg.getMentionedMembers().contains(guild.getSelfMember())
@@ -307,11 +308,13 @@ public class DiscordBotMain extends ListenerAdapter {
     }
     // Permission Checkers that this class and the other features use:
     public boolean isTeamMember(long targetDiscordID) {
-        return guild.getMemberById(targetDiscordID).getRoles().contains(mainConfig.teamRole);
+        return guild.getMemberById(targetDiscordID).getRoles().contains(mainConfig.teamRole) ||
+                guild.getMemberById(targetDiscordID).equals(mainConfig.owner);
     }
     public boolean isStaffMember(long targetDiscordID) {
         return guild.getMemberById(targetDiscordID).getRoles().contains(mainConfig.staffRole) ||
-                guild.getMemberById(targetDiscordID).getRoles().contains(mainConfig.adminRole);
+                guild.getMemberById(targetDiscordID).getRoles().contains(mainConfig.adminRole) ||
+                guild.getMemberById(targetDiscordID).equals(mainConfig.owner);
     }
     private boolean isValidCommand(String cmd) {
         int index = 0;

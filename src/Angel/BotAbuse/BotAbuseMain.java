@@ -175,11 +175,11 @@ public class BotAbuseMain extends ListenerAdapter {
                 && !args[0].equalsIgnoreCase("restart") && !args[0].equalsIgnoreCase("reload"))  {
             // Command Syntax /botabuse <Mention or Discord ID> <Reason (kick, offline, or staff)> <proof url>
             if (args[0].equalsIgnoreCase("botabuse") || args[0].equalsIgnoreCase("ba")) {
-                if ((isTeamMember || author == mainConfig.owner) &&
+                if (isTeamMember &&
                         (args.length == 3 || args.length == 4)) {
                     setBotAbuse(msg);
                 }
-                else if ((args.length < 3 || args.length > 4) && (isTeamMember || author == mainConfig.owner)) {
+                else if ((args.length < 3 || args.length > 4) && isTeamMember) {
                     embed.setAsError("Error - Invalid Number of Arguements", "**[System] You Entered an Invalid Number of Arguments**");
                     embed.sendToTeamDiscussionChannel(msg.getChannel(),msg.getMember());
                 }
@@ -189,10 +189,10 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
             }
             else if (args[0].equalsIgnoreCase("permbotabuse") || args[0].equalsIgnoreCase("pba")) { // /permbotabuse <Mention or Discord ID> [Image]
-                if ((isStaffMember || author == mainConfig.owner) && (args.length == 2 || args.length == 3)) {
+                if (isStaffMember && (args.length == 2 || args.length == 3)) {
                     permBotAbuse(msg);
                 }
-                else if ((isStaffMember || author == mainConfig.owner) && (args.length < 2 || args.length > 3)) {
+                else if (isStaffMember && (args.length < 2 || args.length > 3)) {
                     embed.setAsError("Error - Invalid Number of Arguements", ":x: **[System] You Entered an Invalid Number of Arguments**");
                     embed.sendToTeamDiscussionChannel(msg.getChannel(),msg.getMember());
                 }
@@ -215,7 +215,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 checkCommand(msg, isTeamMember);
             }
             else if (args[0].equalsIgnoreCase("transfer")) { // /transfer <Old Mention or Discord ID> <New Mention or Discord ID>
-                if (isStaffMember || author == mainConfig.owner) {
+                if (isStaffMember) {
                     try {
                         transferRecords(msg);
                     }
@@ -229,7 +229,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
             }
             else if (args[0].equalsIgnoreCase("clear")) {
-                if (isStaffMember || author == mainConfig.owner) {
+                if (isStaffMember) {
                     clearCommand(msg);
                 }
                 else {
@@ -830,9 +830,9 @@ public class BotAbuseMain extends ListenerAdapter {
                         guild.getMemberById(Long.parseLong(args[1])).getEffectiveName() + "'s Bot Abuse Status");
             }
             catch (NumberFormatException ex) {
-                embed.setAsError("Check Info Error", ":x: **Invalid Discord ID**");
+                embed.setAsError("Check Info Error", ":x: **Invalid Input**");
                 embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
-                log.info("Team Member " + msg.getMember().getEffectiveName() + " just entered an invalid Discord ID");
+                log.info("Team Member " + msg.getMember().getEffectiveName() + " just entered an invalid input for the Discord ID");
             }
         }
         // /check <Mention>
@@ -895,17 +895,24 @@ public class BotAbuseMain extends ListenerAdapter {
         else if (isTeamMember && args.length == 3) {
             if (BACore.checkOffset(args[1])) {
                 if (msg.getMentionedMembers().isEmpty()) {
-                    String result = BACore.getInfo(Long.parseLong(args[2]), Double.parseDouble(args[1]), true);
-                    if (result.contains(":white_check_mark:")) {
-                        embed.setAsError("Player Not Bot Abused", ":x: **This Player is Not Bot Abused**");
-                        log.error(msg.getMember().getEffectiveName() + " just checked on " +
-                                msg.getMentionedMembers().get(0).getEffectiveName() + "'s Bot Abuse Status but they were not Bot Abused");
+                    try {
+                        String result = BACore.getInfo(Long.parseLong(args[2]), Double.parseDouble(args[1]), true);
+                        if (result.contains(":white_check_mark:")) {
+                            embed.setAsError("Player Not Bot Abused", ":x: **This Player is Not Bot Abused**");
+                            log.error(msg.getMember().getEffectiveName() + " just checked on " +
+                                    msg.getMentionedMembers().get(0).getEffectiveName() + "'s Bot Abuse Status but they were not Bot Abused");
+                        }
+                        else embed.setAsInfo(defaultTitle, result);
+                        embed.sendToTeamDiscussionChannel(msg.getChannel(), null);
+                        log.info(msg.getMember().getEffectiveName() +
+                                " just checked on " + guild.getMemberById(Long.parseLong(args[2])).getEffectiveName()
+                                + "'s Bot Abuse status using TimeZone offset " + args[1]);
                     }
-                    else embed.setAsInfo(defaultTitle, result);
-                    embed.sendToTeamDiscussionChannel(msg.getChannel(),null);
-                    log.info(msg.getMember().getEffectiveName() +
-                            " just checked on " + guild.getMemberById(Long.parseLong(args[2])).getEffectiveName()
-                            + "'s Bot Abuse status using TimeZone offset " + args[1]);
+                    catch (NumberFormatException f) {
+                        embed.setAsError("Invalid Mention", ":x: **The Mention You Entered is Invalid**" +
+                                "\nTry right clicking on their name and click mention, copy and paste that mention into that argument");
+                        embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
+                    }
                 }
                 else if (msg.getMentionedMembers().size() == 1) {
                     String result = BACore.getInfo(msg.getMentionedMembers().get(0).getIdLong(), Double.parseDouble(args[1]), true);
@@ -1218,12 +1225,19 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
                 // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
                 catch (IllegalArgumentException e) {
-                    this.lengthyHistory(
-                            BACore.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), 100, true),
-                            msg, null);
+                    try {
+                        this.lengthyHistory(
+                                BACore.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), 100, true),
+                                msg, null);
+                        log.info(msg.getMember().getEffectiveName() + " just checked the history of " +
+                                msg.getMentionedMembers().get(0).getEffectiveName());
+                    }
+                    catch (IndexOutOfBoundsException f) {
+                        embed.setAsError("Invalid Mention", ":x: **The Mention You Entered is Invalid**" +
+                                "\nTry right clicking on their name and click mention, copy and paste that mention into that argument");
+                        embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
+                    }
                 }
-                log.info(msg.getMember().getEffectiveName() + " just checked the history of " +
-                        msg.getMentionedMembers().get(0).getEffectiveName());
             }
             // The Try code would throw a NullPointerException if the Discord ID Provided does not exist on the server.
             catch (NullPointerException f) {
@@ -1320,10 +1334,17 @@ public class BotAbuseMain extends ListenerAdapter {
                                 guild.getMemberById(Long.parseLong(args[2])).getEffectiveName() + " using TimeZone offset " + args[1]);
                     }
                     catch (NumberFormatException e) {
-                        this.lengthyHistory(BACore.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), Double.parseDouble(args[1]), true),
-                                msg, args[1]);
-                        log.info(msg.getMember().getEffectiveName() + " just checked the history of " +
-                                msg.getMentionedMembers().get(0).getEffectiveName() + " using TimeZone offset " + args[1]);
+                        try {
+                            this.lengthyHistory(BACore.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), Double.parseDouble(args[1]), true),
+                                    msg, args[1]);
+                            log.info(msg.getMember().getEffectiveName() + " just checked the history of " +
+                                    msg.getMentionedMembers().get(0).getEffectiveName() + " using TimeZone offset " + args[1]);
+                        }
+                        catch (IndexOutOfBoundsException f) {
+                            embed.setAsError("Invalid Mention", ":x: **The Mention You Entered is Invalid**" +
+                                    "\nTry right clicking on their name and click mention, copy and paste that mention into that argument");
+                            embed.sendToTeamDiscussionChannel(msg.getChannel(), msg.getMember());
+                        }
                     }
                 }
             }
