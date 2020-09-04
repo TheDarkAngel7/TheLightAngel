@@ -1,4 +1,5 @@
 {
   "rolesNotAllowedToChangeName": "[722479448342921216]",
-  "requestCoolDownInMinutes": 60
+  "requestCoolDownInMinutes": 60,
+  "pingEveryoneOnlineOnRequest": false
 }
