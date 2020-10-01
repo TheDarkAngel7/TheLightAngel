@@ -54,13 +54,17 @@ class LightAngel {
     }
     public static void main(String[] args) throws LoginException, IOException {
         boolean isRestart;
-        if (args.length > 1) {
+        if (args.length == 1) {
             isRestart = Boolean.parseBoolean(args[0]);
         }
+        else if (args.length > 1) {
+            log.warn("Invalid Number of Arguments on Startup - Reverting to an startup argument of \"false\"");
+            isRestart = false;
+        }
         else isRestart = false;
-        MainConfiguration mainConfig = new MainConfiguration(fileHandler.getMainConfig()) {};
+        MainConfiguration mainConfig = new ModifyMainConfiguration(fileHandler.getMainConfig());
         mainConfig.initialSetup();
-        EmbedHandler embed = new EmbedHandler(mainConfig) {};
+        EmbedHandler embed = new EmbedHandler(mainConfig);
         discord = new DiscordBotMain(isRestart, mainConfig, embed, fileHandler);
         embed.setDiscordInstance(discord);
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
@@ -68,7 +72,7 @@ class LightAngel {
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE,
                 CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE);
         JDABuilder.create(mainConfig.token, enabledIntents)
-                .disableCache(disabledFlags).addEventListeners(discord)
+                .disableCache(disabledFlags).addEventListeners(discord).setRequestTimeoutRetry(true)
                 .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.NONE).build();
     }
 }

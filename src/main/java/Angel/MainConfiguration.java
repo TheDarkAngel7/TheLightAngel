@@ -13,8 +13,9 @@ public abstract class MainConfiguration {
     public String token;
     public String timeZone;
     public boolean testModeEnabled;
-    boolean deleteOriginalCommands;
-    boolean forceToDedicatedChannel;
+    boolean deleteOriginalNonStaffCommands;
+    boolean deleteOriginalStaffCommands;
+    public boolean forceToDedicatedChannel;
     public char commandPrefix;
     public String fieldHeader;
     public Member owner;
@@ -87,7 +88,8 @@ public abstract class MainConfiguration {
 
         blobNomPingID = configObj.get("blobNomPingID").getAsString();
 
-        deleteOriginalCommands = configObj.get("deleteOriginalCommands").getAsBoolean();
+        deleteOriginalNonStaffCommands = configObj.get("deleteOriginalNonStaffCommands").getAsBoolean();
+        deleteOriginalStaffCommands = configObj.get("deleteOriginalStaffCommands").getAsBoolean();
         forceToDedicatedChannel = configObj.get("forceAllNonTeamOutputToDedicatedChannel").getAsBoolean();
     }
     void discordSetup() {
@@ -101,7 +103,6 @@ public abstract class MainConfiguration {
         if (!dedicatedOutputChannelID.equalsIgnoreCase("None")) {
             dedicatedOutputChannel = guild.getTextChannelById(dedicatedOutputChannelID);
         }
-
         adminRole = guild.getRoleById(adminRoleID);
         staffRole = guild.getRoleById(staffRoleID);
         teamRole = guild.getRoleById(teamRoleID);
@@ -126,4 +127,14 @@ public abstract class MainConfiguration {
         }
         else return false;
     }
+    abstract void setConfig(String key, String value);
+    abstract void setConfig(String key, boolean value);
+    abstract void setConfig(String key, int value);
+
+    abstract void setRoleConfig(String key, long newRoleID);
+    abstract void setRoleConfig(String key, Role newRole);
+
+    abstract void setChannelConfig(String key, long newChannelID);
+    abstract void setChannelConfig(String key, TextChannel newChannel);
+    abstract boolean isValidConfig(String key);
 }

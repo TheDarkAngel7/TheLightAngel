@@ -22,7 +22,7 @@ import java.util.Hashtable;
 class FileHandler {
     Gson gson = new Gson();
     private BotAbuseCore baCore;
-    private final Logger log = LogManager.getLogger(Angel.FileHandler.class);
+    private final Logger log = LogManager.getLogger(FileHandler.class);
     private File jsonBADataFile = new File("data/BAdata.json");
     private File jsonTempBADataFile = new File("data/BAdatatemp.json");
     private Type longType = new TypeToken<ArrayList<Long>>(){}.getType();
@@ -42,7 +42,7 @@ class FileHandler {
         return element.getAsJsonObject();
     }
 
-    void getDatabase() throws IllegalStateException, IOException {
+    void getDatabase() throws IOException {
         // This is to ensure the fileReader closes at the end of this method
         FileReader fileReader = new FileReader(jsonBADataFile);
         JsonObject database = JsonParser.parseReader(fileReader).getAsJsonObject();

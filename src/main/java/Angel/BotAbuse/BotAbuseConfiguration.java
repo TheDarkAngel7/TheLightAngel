@@ -8,27 +8,36 @@ import net.dv8tion.jda.api.entities.Role;
 
 import java.util.ArrayList;
 
-abstract class BotConfiguration {
+public abstract class BotAbuseConfiguration {
     private JsonObject configObj;
+    BotAbuseMain baMain;
+    FileHandler fileHandler;
     MainConfiguration mainConfig;
     String botAbuseRoleID;
     Guild guild;
     Role botAbuseRole;
     int roleScannerInterval;
-    boolean rabbitMQEnabled;
+    int maxDaysAllowedForUndo;
+    int hotOffenseMonths;
+    ArrayList<Integer> botAbuseTimes;
 
-    BotConfiguration(JsonObject importConfigObj, MainConfiguration importMainConfig) {
-        configObj = importConfigObj;
-        mainConfig = importMainConfig;
+    BotAbuseConfiguration(JsonObject configObj, BotAbuseMain baMain, FileHandler fileHandler, MainConfiguration mainConfig) {
+        this.configObj = configObj;
+        this.baMain = baMain;
+        this.fileHandler = fileHandler;
+        this.mainConfig = mainConfig;
     }
+
     // Initial setup contains all of the configuration fields that need to be read.
     // Token is one of them except it cannot be among the configurations to be reloaded,
     // which is why the token is in the constructor
     void initialSetup() {
         // These are configuration settings that can be set without a guild object
         botAbuseRoleID = configObj.get("botAbuseRoleID").getAsString();
-        rabbitMQEnabled = configObj.get("rabbitMQEnabled").getAsBoolean();
         roleScannerInterval = configObj.get("roleScannerIntervalMinutes").getAsInt();
+        hotOffenseMonths = configObj.get("oldOffensesConsideredHotInMonths").getAsInt();
+        botAbuseTimes = fileHandler.gson.fromJson(configObj.get("botAbuseTimingsInDays").getAsString(), new TypeToken<ArrayList<Integer>>(){}.getType());
+        maxDaysAllowedForUndo = configObj.get("maxDaysUndoIsAllowed").getAsInt();
     }
     void discordSetup() {
         // These are configuration settings that have to be set with a guild object
@@ -51,29 +60,10 @@ abstract class BotConfiguration {
     boolean configsExist() {
         return guild.getRoles().contains(guild.getRoleById(botAbuseRoleID));
     }
-}
-abstract class CoreConfiguration {
-    JsonObject configObj;
-    FileHandler fileHandler;
-    String host;
-    int maxDaysAllowedForUndo;
-    int hotOffenseMonths;
-    ArrayList<Integer> botAbuseTimes;
-
-    CoreConfiguration(JsonObject importConfigObj, FileHandler fileHandler) {
-        configObj = importConfigObj;
-        host = configObj.get("host").getAsString();
-        this.fileHandler = fileHandler;
-        setup();
-    }
-    void setup() {
-        hotOffenseMonths = configObj.get("oldOffensesConsideredHotInMonths").getAsInt();
-        botAbuseTimes = fileHandler.gson.fromJson(configObj.get("botAbuseTimingsInDays").getAsString(), new TypeToken<ArrayList<Integer>>(){}.getType());
-        maxDaysAllowedForUndo = configObj.get("maxDaysUndoIsAllowed").getAsInt();
-    }
-
-    void reload(JsonObject importNewConfigObj) {
-        configObj = importNewConfigObj;
-        setup();
-    }
+    public abstract void setConfig(String key, int value);
+    public abstract boolean setNewBotAbuseRole(long newRoleID);
+    public abstract void setNewBotAbuseRole(Role newRole);
+    public abstract String addExpiryTime(int newTime);
+    public abstract String removeExpiryTime(int removeThisTime, boolean fromInvalidTime);
+    public abstract boolean isValidConfig(String key);
 }

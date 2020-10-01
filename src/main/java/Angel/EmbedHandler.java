@@ -6,30 +6,23 @@ import net.dv8tion.jda.api.entities.*;
 import javax.annotation.Nullable;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Dictionary;
+import java.util.Hashtable;
 
-public abstract class EmbedHandler {
+public class EmbedHandler {
     private MainConfiguration mainConfig;
     private DiscordBotMain discord;
-    private EmbedBuilder embedBuilder = new EmbedBuilder();
+    private EmbedBuilder embedBuilder;
+    private EmbedType type = EmbedType.EMBED_NONE;
+    // Dictionary<Command Message Object, Output Message Object>
+    private Dictionary<Message, Message> commandMessageMap = new Hashtable();
     // Image Background Hex: #2F3136
-    public String checkIcon;
-    public String warningIcon;
-    public String errorIcon;
-    public String infoIcon;
-    public String stopIcon;
-    String helpIcon;
     private ArrayList<Thread> threadList = new ArrayList<>();
     private Message messageEmbed;
     private boolean embedReady = false;
 
     EmbedHandler(MainConfiguration mainConfig) {
         this.mainConfig = mainConfig;
-        checkIcon = mainConfig.checkIconURL;
-        warningIcon = mainConfig.warningIconURL;
-        errorIcon = mainConfig.errorIconURL;
-        infoIcon = mainConfig.infoIconURL;
-        stopIcon = mainConfig.stopIconURL;
-        helpIcon = mainConfig.helpIconURL;
     }
 
     void setDiscordInstance(DiscordBotMain discordInstance) {
@@ -46,44 +39,32 @@ public abstract class EmbedHandler {
 
     public void setAsSuccess(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder.setColor(Color.GREEN);
-        embedBuilder.setTitle(title);
-        embedBuilder.setThumbnail(checkIcon);
+        embedBuilder = type.getBuilder(type.EMBED_SUCCESS, mainConfig).setTitle(title);
         addMessage(msg);
     }
     public void setAsWarning(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder.setColor(Color.YELLOW);
-        embedBuilder.setTitle(title);
-        embedBuilder.setThumbnail(warningIcon);
+        embedBuilder = type.getBuilder(type.EMBED_WARNING, mainConfig).setTitle(title);
         addMessage(msg);
     }
     public void setAsError(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder.setColor(Color.RED);
-        embedBuilder.setTitle(title);
-        embedBuilder.setThumbnail(errorIcon);
+        embedBuilder = type.getBuilder(type.EMBED_ERROR, mainConfig).setTitle(title);
         addMessage(msg);
     }
     public void setAsStop(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder.setColor(Color.RED);
-        embedBuilder.setTitle(title);
-        embedBuilder.setThumbnail(stopIcon);
+        embedBuilder = type.getBuilder(type.EMBED_STOP, mainConfig).setTitle(title);
         addMessage(msg);
     }
     public void setAsInfo(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder.setColor(Color.BLUE);
-        embedBuilder.setTitle(title);
-        embedBuilder.setThumbnail(infoIcon);
+        embedBuilder = type.getBuilder(type.EMBED_INFO, mainConfig).setTitle(title);
         addMessage(msg);
     }
     public void setAsHelp(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder.setColor(Color.BLUE);
-        embedBuilder.setTitle(title);
-        embedBuilder.setThumbnail(helpIcon);
+        embedBuilder = type.getBuilder(type.EMBED_HELP, mainConfig).setTitle(title);
         addMessage(msg);
     }
     private void addMessage(String msg) {
@@ -91,12 +72,12 @@ public abstract class EmbedHandler {
             Message testEmbed = null;
             try {
                 embedBuilder.addField(mainConfig.fieldHeader, msg, true);
-                testEmbed = mainConfig.owner.
-                        getUser().openPrivateChannel().flatMap(channel -> channel.sendMessage(embedBuilder.build())).complete();
+                testEmbed = mainConfig.owner.getUser()
+                        .openPrivateChannel().flatMap(channel -> channel.sendMessage(embedBuilder.build())).complete();
             }
             catch (NullPointerException ex) {
-                 testEmbed = mainConfig.guild.getJDA().getUserById("260562868519436308").
-                        openPrivateChannel().flatMap(channel -> channel.sendMessage(embedBuilder.build())).complete();
+                testEmbed = mainConfig.guild.getJDA().retrieveUserById("260562868519436308").complete()
+                        .openPrivateChannel().flatMap(channel -> channel.sendMessage(embedBuilder.build())).complete();
             }
             if (testEmbed.getEmbeds().get(0).getFields().size() == 1) {
                 embedReady = true;
@@ -110,34 +91,62 @@ public abstract class EmbedHandler {
     public void clearFields() {
         embedBuilder.clearFields();
     }
-    //////////////////////////////////////////////////////////
+    public void editEmbed(Message originalCmd, String newTitle, String newMsg, boolean keepOriginalDesign, @Nullable EmbedType requestedType) {
+        isEmbedReadyToModify();
+        Message botResponse = commandMessageMap.get(originalCmd);
+        MessageEmbed msgEmbed = botResponse.getEmbeds().get(0);
+        if (keepOriginalDesign) {
+            embedBuilder.setColor(msgEmbed.getColor());
+            embedBuilder.setTitle(msgEmbed.getTitle());
+            embedBuilder.setThumbnail(msgEmbed.getThumbnail().getUrl());
+        }
+        else embedBuilder = type.getBuilder(requestedType, mainConfig);
+
+        embedBuilder.addField(mainConfig.fieldHeader, msgEmbed.getFields().get(0).getValue(), true);
+        if (newTitle == null && newMsg != null) {
+            embedBuilder.clearFields().addField(mainConfig.fieldHeader, newMsg, true);
+        }
+        else if (newMsg == null) {
+            embedBuilder.setTitle(newTitle);
+        }
+        else {
+            embedBuilder.clearFields().addField(mainConfig.fieldHeader, newMsg, true);
+            embedBuilder.setTitle(newTitle);
+        }
+        botResponse.getChannel().editMessageById(botResponse.getIdLong(), embedBuilder.build()).queue();
+        messageSent();
+    }
+    ///////////////////////////////////////////////////////////
     // Output Handler Methods
     // The "Member author" objects in the ToHelpChannel and ToDiscussionChannel methods are annotated as Nullable
     // as in some cases in the code I cannot get Member objects
     ///////////////////////////////////////////////////////////
-    public void sendDM(User user) {
-        user.openPrivateChannel().flatMap(channel -> channel.sendMessage(messageEmbed)).queue();
+    public void sendDM(@Nullable Message msg, User user) {
+        user.openPrivateChannel().flatMap(channel -> channel.sendMessage(messageEmbed)).queue(m -> {
+                if (msg != null) commandMessageMap.put(msg, m);
+        });
         messageSent();
     }
-    public void sendToHelpChannel(MessageChannel msgChannel, @Nullable Member author) {
+    public void sendToHelpChannel(Message msg, @Nullable Member author) {
         try {
-            if (!msgChannel.equals(mainConfig.botSpamChannel) &&
-                    (!mainConfig.forceToDedicatedChannel ||
+            if (!msg.getChannel().equals(mainConfig.botSpamChannel) &&
+                    (!mainConfig.forceToDedicatedChannel || msg.getChannel().equals(mainConfig.helpChannel) ||
                             mainConfig.dedicatedOutputChannelID.equalsIgnoreCase("None"))) {
-                if (!msgChannel.equals(mainConfig.helpChannel)) {
+                if (author != null && !msg.getChannel().equals(mainConfig.helpChannel)) {
                     mainConfig.helpChannel.sendMessage(author.getAsMention()).queue();
                 }
-                mainConfig.helpChannel.sendMessage(messageEmbed).queue();
+                mainConfig.helpChannel.sendMessage(messageEmbed).queue(m -> commandMessageMap.put(msg, m));
             }
-            else if (mainConfig.forceToDedicatedChannel || !msgChannel.equals(mainConfig.dedicatedOutputChannel)) {
-                if (msgChannel.equals(mainConfig.botSpamChannel)) {
-                    mainConfig.botSpamChannel.sendMessage(messageEmbed).queue();
-                    return;
+            else if (mainConfig.forceToDedicatedChannel || !msg.getChannel().equals(mainConfig.dedicatedOutputChannel)) {
+                if (msg.getChannel().equals(mainConfig.botSpamChannel)) {
+                    mainConfig.botSpamChannel.sendMessage(messageEmbed).queue(m -> commandMessageMap.put(msg, m));
                 }
-                else if (!msgChannel.equals(mainConfig.dedicatedOutputChannel)) {
-                    mainConfig.dedicatedOutputChannel.sendMessage(author.getAsMention()).queue();
+                else {
+                    if (author != null && !msg.getChannel().equals(mainConfig.dedicatedOutputChannel)) {
+                        mainConfig.dedicatedOutputChannel.sendMessage(author.getAsMention()).queue();
+                    }
+                    mainConfig.dedicatedOutputChannel.sendMessage(messageEmbed).queue(m -> commandMessageMap.put(msg, m));
                 }
-                mainConfig.dedicatedOutputChannel.sendMessage(messageEmbed).queue();
             }
         }
         catch (NullPointerException ex) {
@@ -145,16 +154,16 @@ public abstract class EmbedHandler {
         }
         messageSent();
     }
-    public void sendToTeamDiscussionChannel(MessageChannel msgChannel, @Nullable Member author) {
-        if (!msgChannel.equals(mainConfig.managementChannel)) {
-            if (author != null && (!msgChannel.equals(mainConfig.discussionChannel) && !msgChannel.equals(mainConfig.managementChannel))
+    public void sendToTeamDiscussionChannel(Message msg, @Nullable Member author) {
+        if (!msg.getChannel().equals(mainConfig.managementChannel)) {
+            if (author != null && (!msg.getChannel().equals(mainConfig.discussionChannel) && !msg.getChannel().equals(mainConfig.managementChannel))
                     && discord.isTeamMember(author.getIdLong())) {
                 mainConfig.discussionChannel.sendMessage(author.getAsMention()).queue();
             }
-            mainConfig.discussionChannel.sendMessage(messageEmbed).queue();
+            mainConfig.discussionChannel.sendMessage(messageEmbed).queue(m -> commandMessageMap.put(msg, m));
         }
         else {
-            mainConfig.managementChannel.sendMessage(messageEmbed).queue();
+            mainConfig.managementChannel.sendMessage(messageEmbed).queue(m -> commandMessageMap.put(msg, m));
         }
         messageSent();
     }
@@ -190,14 +199,9 @@ public abstract class EmbedHandler {
     }
     // This method is called when the message should have been sent.
     private void messageSent() {
-        try {
-            embedBuilder.clearFields();
-            embedReady = false;
-            // Remove this Thread from the list.
-            threadList.remove(Thread.currentThread());
-        }
-        catch (IndexOutOfBoundsException e) {
-            // Take No Action
-        }
+        embedBuilder.clearFields();
+        embedReady = false;
+        // Remove this Thread from the list.
+        threadList.remove(Thread.currentThread());
     }
 }

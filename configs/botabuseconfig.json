@@ -1,6 +1,4 @@
 {
-	"host": "localhost",
-	"rabbitMQEnabled": false,
 	"roleScannerIntervalMinutes": 15,
 	"maxDaysUndoIsAllowed": 5,
 	"botAbuseRoleID": "664619076324294666",

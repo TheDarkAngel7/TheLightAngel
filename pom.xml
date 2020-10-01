@@ -6,12 +6,12 @@
 
     <groupId>com.angeliccoding</groupId>
     <artifactId>TheLightAngel</artifactId>
-    <version>0.5-SNAPSHOT</version>
+    <version>0.6-SNAPSHOT</version>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>13</maven.compiler.source>
+        <maven.compiler.target>13</maven.compiler.target>
     </properties>
     <repositories>
         <repository>
@@ -29,7 +29,7 @@
         <dependency>
             <groupId>net.dv8tion</groupId>
             <artifactId>JDA</artifactId>
-            <version>4.2.0_203</version>
+            <version>4.2.0_207</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -40,11 +40,6 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <version>2.13.3</version>
-        </dependency>
-        <dependency>
-            <groupId>com.rabbitmq</groupId>
-            <artifactId>amqp-client</artifactId>
-            <version>5.9.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
