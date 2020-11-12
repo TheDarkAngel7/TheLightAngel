@@ -31,22 +31,16 @@ class ModifyNickConfiguration extends NickConfiguration {
         }
     }
 
-    public void addNewNameRestrictedRole(long newRoleID) {
-        restrictedRoles.add(guild.getRoleById(newRoleID));
+    public void addNewNameRestrictedRole(long newRoleID) throws NullPointerException {
+        addNewNameRestrictedRole(guild.getRoleById(newRoleID));
     }
 
     public void addNewNameRestrictedRole(Role newRole) {
         restrictedRoles.add(newRole);
     }
 
-    public boolean removeNewNameRestrictedRole(long roleToDelete) {
-        Role role = guild.getRoleById(roleToDelete);
-        int index = restrictedRoles.indexOf(role);
-        if (index == -1) return false;
-        else {
-            restrictedRoles.remove(role);
-            return true;
-        }
+    public boolean removeNewNameRestrictedRole(long roleToDeleteID) throws NullPointerException {
+        return removeNewNameRestrictedRole(guild.getRoleById(roleToDeleteID));
     }
 
     public boolean removeNewNameRestrictedRole(Role roleToDelete) {

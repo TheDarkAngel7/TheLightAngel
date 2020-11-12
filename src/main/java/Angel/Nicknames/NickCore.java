@@ -176,7 +176,7 @@ class NickCore {
         return result;
     }
     String replaceNulls(long targetDiscordID, String oldString) {
-        String result = "";
+        String result = oldString;
         if (oldString.contains("New Nickname: **null**")) {
             result = oldString.replace("null",
                     guild.getMemberById(targetDiscordID).getUser().getName() + " (Reset to Discord Username)");

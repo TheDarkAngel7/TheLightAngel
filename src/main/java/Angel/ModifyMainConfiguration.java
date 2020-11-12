@@ -61,12 +61,8 @@ class ModifyMainConfiguration extends MainConfiguration {
             case "teamrole": teamRole = newRole; break;
         }
     }
-    void setRoleConfig(String key, long newRoleID) {
-        switch (key.toLowerCase()) {
-            case "adminrole": adminRole = guild.getRoleById(newRoleID); break;
-            case "staffrole": staffRole = guild.getRoleById(newRoleID); break;
-            case "teamrole": teamRole = guild.getRoleById(newRoleID); break;
-        }
+    void setRoleConfig(String key, long newRoleID) throws NullPointerException {
+        setRoleConfig(key, guild.getRoleById(newRoleID));
     }
     void setChannelConfig(String key, TextChannel newChannel) {
         switch (key.toLowerCase()) {
@@ -81,18 +77,8 @@ class ModifyMainConfiguration extends MainConfiguration {
             case "dedicatedoutputchannel": dedicatedOutputChannel = newChannel; break;
         }
     }
-    void setChannelConfig(String key, long newChannelID) {
-        switch (key.toLowerCase()) {
-            case "teamdiscussionhannel":
-            case "discussionchannel": discussionChannel = guild.getTextChannelById(newChannelID); break;
-            case "helpchannel": helpChannel = guild.getTextChannelById(newChannelID); break;
-            case "botspamchannel": botSpamChannel = guild.getTextChannelById(newChannelID); break;
-            case "botmanagementchannel":
-            case "managementchannel": managementChannel = guild.getTextChannelById(newChannelID); break;
-            case "logchannel": logChannel = guild.getTextChannelById(newChannelID); break;
-            case "thelightangelchannel":
-            case "dedicatedoutputchannel": dedicatedOutputChannel = guild.getTextChannelById(newChannelID); break;
-        }
+    void setChannelConfig(String key, long newChannelID) throws NullPointerException {
+        setChannelConfig(key, guild.getTextChannelById(newChannelID));
     }
     boolean isValidConfig(String key) {
         return configs.contains(key.toLowerCase());

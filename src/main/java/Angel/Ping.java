@@ -9,7 +9,7 @@ import java.io.InputStreamReader;
 
 class Ping {
     private final Logger log = LogManager.getLogger(Ping.class);
-    String reader = "";
+    private String reader = "";
 
     long getGatewayNetPing() {
         long returnValue = 0;

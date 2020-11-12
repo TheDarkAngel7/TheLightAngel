@@ -37,7 +37,7 @@ public class DiscordBotMain extends ListenerAdapter {
     public boolean isStarting = true;
     private ArrayList<Date> pingCooldownOverTimes = new ArrayList<>();
     private ArrayList<Long> pingCooldownDiscordIDs = new ArrayList<>();
-    public List<String> mainCommands = new ArrayList<>(Arrays.asList("reload", "restart", "ping", "status", "help", "set"));
+    public final List<String> mainCommands = new ArrayList<>(Arrays.asList("reload", "restart", "ping", "status", "help", "set"));
     private Ping ping = new Ping();
 
     DiscordBotMain(boolean isRestart, MainConfiguration mainConfig, EmbedHandler embed, FileHandler fileHandler) {
@@ -65,7 +65,7 @@ public class DiscordBotMain extends ListenerAdapter {
             embed.setAsSuccess(defaultTitle,
                     "**Please wait for all my features to finish loading and connecting.**" +
                     "\n**Check on their status with `" + mainConfig.commandPrefix + "status`**");
-            embed.sendToChannel(mainConfig.discussionChannel);
+            embed.sendToChannel(null, mainConfig.discussionChannel);
         }
         Thread.currentThread().setName("Main Thread");
         nickInit = new NicknameInit(commandsSuspended, mainConfig, embed, guild, this);
@@ -130,10 +130,10 @@ public class DiscordBotMain extends ListenerAdapter {
                                 mainConfig.helpChannel.getAsMention());
             }
             else {
-                embed.setAsError("No Messages Here",
+                embed.setAsStop("No Messages Here",
                         "*I know what you're trying to do*... what did you think I only base this filter on the first character?");
             }
-            embed.sendToChannel(msg.getChannel());
+            embed.sendToChannel(msg, msg.getChannel());
             msg.delete().queue();
             return;
         }
@@ -155,26 +155,25 @@ public class DiscordBotMain extends ListenerAdapter {
             }
             else if (args.length > 1 && nickFeature.isCommand(args[0], args[1])) {
                 if (nickFeature.isBusy) {
-                    embed.setAsWarning("Nickname Feature Busy", "**The Bot Abuse Side is Currently Busy**" +
+                    embed.setAsWarning("Nickname Feature Busy", "**The Nickname Side is Currently Busy**" +
                             "\n\nYour command was received and will be processed when it's available");
                     warningNeeded = true;
                 }
                 else if (!nickFeature.isConnected) {
                     embed.setAsWarning("Nickname Feature Disconnected",
-                            "**The Bot Abuse Side is Not Connected to Discord's Gateway**" +
+                            "**The Nickname Side is Not Connected to Discord's Gateway**" +
                                     "\n\nPlease Try Again Later...");
                     warningNeeded = true;
                 }
             }
             if (warningNeeded && !isTeamMember(msg.getAuthor().getIdLong())) {
-                embed.sendToHelpChannel(msg, msg.getMember());
+                embed.sendToHelpChannel(msg, msg.getAuthor());
             }
             else if (warningNeeded && isTeamMember(msg.getAuthor().getIdLong())) {
-                embed.sendToTeamDiscussionChannel(msg, msg.getMember());
+                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
             }
         }
-
-        if (msg.getMentionedMembers().contains(guild.getSelfMember())) {
+        if (!msg.getChannelType().equals(ChannelType.PRIVATE) && msg.getMentionedMembers().contains(guild.getSelfMember())) {
             msg.getChannel().sendMessage("<:blobnomping:" + mainConfig.blobNomPingID + ">").queue();
             log.info("Nommed the Ping from " + msg.getAuthor().getAsTag());
         }
@@ -185,13 +184,16 @@ public class DiscordBotMain extends ListenerAdapter {
                     msg.delete().queue();
                 }
                 catch (NoClassDefFoundError ex) {
-                    // Take No Action
+                    // Take No Action - This is an indicator that the jar file for the program was overwritten while the bot is running
+                }
+                catch (IllegalStateException ex) {
+                    // Take No Action - This is an indicator that the command was used via DM
                 }
                 try {
-                    embed.setAsWarning("Restart Initiated", "**Restart Initiated by " + msg.getMember().getAsMention()
+                    embed.setAsWarning("Restart Initiated", "**Restart Initiated by " + msg.getAuthor().getAsMention()
                             + "\nPlease Allow up to 10 seconds for this to complete**");
-                    log.warn(msg.getMember().getEffectiveName() + " Invoked a Restart");
-                    embed.sendToTeamDiscussionChannel(msg, msg.getMember());
+                    log.warn(msg.getAuthor().getAsTag() + " Invoked a Restart");
+                    embed.sendToTeamDiscussionChannel(msg, null);
                     Thread.sleep(5000);
                     restartBot();
                 }
@@ -210,7 +212,7 @@ public class DiscordBotMain extends ListenerAdapter {
                         log.info("Successfully Reloaded All Configurations");
                         embed.editEmbed(msg, "Configuration Reloaded",
                                 "**All Configurations Successfully Reloaded from config files**",
-                                false, EmbedType.EMBED_SUCCESS);
+                                EmbedDesign.SUCCESS);
                     }
                     else {
                         baFeature.commandsSuspended = true;
@@ -227,29 +229,32 @@ public class DiscordBotMain extends ListenerAdapter {
                 String originalOutput = ":ping_pong: **Pong!**" +
                         "\n**Pinging Discord's Gateway... Please Wait...**";
                 embed.setAsInfo("My Ping Info", originalOutput);
-                if (isTeamMember(event.getAuthor().getIdLong())) {
+                if (isTeamMember(event.getAuthor().getIdLong()) && !msg.getChannelType().equals(ChannelType.PRIVATE)) {
                     embed.sendToTeamDiscussionChannel(msg,null);
                 }
                 else {
                     try {
+                        if (msg.getChannelType().equals(ChannelType.PRIVATE)) {
+                            embed.sendDM(msg, msg.getAuthor());
+                        }
                         // If they use /ping before their cooldown time is over then we send them the ping information in a DM
-                        if (Calendar.getInstance().getTime()
-                                .before(pingCooldownOverTimes.get(pingCooldownDiscordIDs.lastIndexOf(msg.getMember().getIdLong())))
+                        else if (Calendar.getInstance().getTime().before
+                                (pingCooldownOverTimes.get(pingCooldownDiscordIDs.lastIndexOf(msg.getMember().getIdLong())))
                                 && !msg.getChannel().equals(mainConfig.botSpamChannel)
                                 && !msg.getChannel().equals(mainConfig.dedicatedOutputChannel)) {
-                            embed.sendDM(msg, msg.getMember().getUser());
+                            embed.sendDM(msg, msg.getAuthor());
                         }
                         // Otherwise we can send them this in the help channel.
                         else {
                             pingHandler(msg.getMember().getIdLong());
-                            embed.sendToHelpChannel(msg, msg.getMember());
+                            embed.sendToHelpChannel(msg, msg.getAuthor());
                         }
                     }
                     // This would run if their discord ID wasn't found in pingCooldownDiscordIDs,
                     // a -1 would throw this exception
                     catch (IndexOutOfBoundsException ex) {
                         pingHandler(msg.getMember().getIdLong());
-                        embed.sendToHelpChannel(msg, msg.getMember());
+                        embed.sendToHelpChannel(msg, msg.getAuthor());
                     }
                 }
                 embed.editEmbed(msg, null, originalOutput.replace("**Pinging Discord's Gateway... Please Wait...**",
@@ -257,49 +262,55 @@ public class DiscordBotMain extends ListenerAdapter {
                                 "\n\n*__Request to Ack Pings__*" +
                                 "\nMain Thread: **" + msg.getJDA().getGatewayPing() + "ms**" +
                                 "\nBot Abuse Thread: **" + baInit.getPing() + "ms**" +
-                                "\nNickname Thread: **" + nickInit.getPing() + "ms**"), true, null);
+                                "\nNickname Thread: **" + nickInit.getPing() + "ms**"));
             }
             else if (args[0].equalsIgnoreCase("status")) {
                 if (isTeamMember(msg.getAuthor().getIdLong())) {
-                    log.info(msg.getMember().getEffectiveName() + " just requested my status");
+                    try {
+                        log.info(guild.getMember(msg.getAuthor()).getEffectiveName() + " just requested my status");
+                    }
+                    catch (NullPointerException ex) {
+                        log.info(msg.getAuthor().getAsTag() + " just requested my status");
+                    }
                     String defaultTitle = "My Status";
                     String originalOutput = "**Retrieving Status... Please Wait...**";
                     embed.setAsInfo(defaultTitle, originalOutput);
-                    embed.sendToTeamDiscussionChannel(msg, msg.getMember());
+                    if (!msg.getChannelType().equals(ChannelType.PRIVATE)) embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    else embed.sendDM(msg, msg.getAuthor());
                     try { Thread.sleep(2000); } catch (InterruptedException e) {}
                     String defaultOutput = "*__Bot Abuse Feature__*";
                     defaultOutput = defaultOutput.concat("\nStatus: **?**");
 
                     if (baFeature.commandsSuspended && !baFeature.isBusy && baFeature.isConnected) defaultOutput =
                             defaultOutput.replace("?", "Limited");
-                    else if (baInit.jda.getGatewayPing() >= mainConfig.highPingTime && baFeature.isConnected)
+                    else if (baInit.getPing() >= mainConfig.highPingTime && baFeature.isConnected)
                         defaultOutput = defaultOutput.replace("?", ":warning: High Ping");
                     else if (baFeature.isConnected && !baFeature.isBusy && !baFeature.commandsSuspended)
                         defaultOutput = defaultOutput.replace("?", "Waiting for Command...");
                     else if (baFeature.isBusy) defaultOutput = defaultOutput.replace("?", ":warning: Busy");
                     else if (!baFeature.isConnected &&
-                            (baInit.jda.getStatus() == JDA.Status.ATTEMPTING_TO_RECONNECT ||
-                                    baInit.jda.getStatus() == JDA.Status.CONNECTING_TO_WEBSOCKET ||
-                                    baInit.jda.getStatus() == JDA.Status.LOGGING_IN ||
-                                    baInit.jda.getStatus() == JDA.Status.AWAITING_LOGIN_CONFIRMATION ||
-                                    baInit.jda.getStatus() == JDA.Status.WAITING_TO_RECONNECT)) {
+                            (baInit.getStatus() == JDA.Status.ATTEMPTING_TO_RECONNECT ||
+                                    baInit.getStatus() == JDA.Status.CONNECTING_TO_WEBSOCKET ||
+                                    baInit.getStatus() == JDA.Status.LOGGING_IN ||
+                                    baInit.getStatus() == JDA.Status.AWAITING_LOGIN_CONFIRMATION ||
+                                    baInit.getStatus() == JDA.Status.WAITING_TO_RECONNECT)) {
                         defaultOutput = defaultOutput.replace("?", ":warning: Connecting");
                     }
-                    else if (!baFeature.isConnected && (baInit.jda.getStatus() == JDA.Status.INITIALIZED ||
-                            baInit.jda.getStatus() == JDA.Status.INITIALIZING)) {
+                    else if (!baFeature.isConnected && (baInit.getStatus() == JDA.Status.INITIALIZED ||
+                            baInit.getStatus() == JDA.Status.INITIALIZING)) {
                         defaultOutput = defaultOutput.replace("?", ":warning: Starting");
                     }
-                    else if (!baFeature.isConnected && baInit.jda.getStatus() == JDA.Status.DISCONNECTED) {
+                    else if (!baFeature.isConnected && baInit.getStatus() == JDA.Status.DISCONNECTED) {
                         defaultOutput = defaultOutput.replace("?", ":warning: Disconnected");
                     }
-                    else if (!baFeature.isConnected && baInit.jda.getStatus() == JDA.Status.RECONNECT_QUEUED) {
+                    else if (!baFeature.isConnected && baInit.getStatus() == JDA.Status.RECONNECT_QUEUED) {
                         defaultOutput = defaultOutput.replace("?", ":warning: Connection Queued");
                     }
                     else defaultOutput = defaultOutput.replace("?", "Unknown");
 
                     defaultOutput = defaultOutput.concat(
                             "\nCommand Status: **" + !baFeature.commandsSuspended +
-                                    "**\nPing Time: **" + baInit.jda.getGatewayPing() + "ms" +
+                                    "**\nPing Time: **" + baInit.getPing() + "ms" +
                                     "**\n\nTimer 1 Status: **" + (baFeature.timer1Running && !baFeature.timersSuspended) +
                                     "**\n*Timer 1 is what ticks every second. Each second the bot checks all the expiry times against the current time.*" +
                                     "\n\nTimer 2 Status: **" + (baFeature.timer2Running && !baFeature.timersSuspended) +
@@ -309,11 +320,11 @@ public class DiscordBotMain extends ListenerAdapter {
                                     "\n\n\n*__Nickname Feature__*" +
                                     "\nStatus: **?**" +
                                     "\nCommand Status: **" + !nickFeature.commandsSuspended +
-                                    "**\nPing Time: **" + nickInit.jda.getGatewayPing() + "ms**");
+                                    "**\nPing Time: **" + nickInit.getPing() + "ms**");
 
                     if (nickFeature.commandsSuspended && !nickFeature.isBusy && nickFeature.isConnected) defaultOutput =
                             defaultOutput.replace("?", "Limited");
-                    else if (nickInit.jda.getGatewayPing() >= mainConfig.highPingTime && baFeature.isConnected)
+                    else if (nickInit.getPing() >= mainConfig.highPingTime && baFeature.isConnected)
                         defaultOutput =
                                 defaultOutput.replace("?", ":warning: High Ping");
                     else if (nickFeature.isConnected && !nickFeature.isBusy && !nickFeature.commandsSuspended)
@@ -321,59 +332,65 @@ public class DiscordBotMain extends ListenerAdapter {
                                 defaultOutput.replace("?", "Waiting for Command...");
                     else if (nickFeature.isBusy) defaultOutput = defaultOutput.replace("?", ":warning: Busy");
                     else if (!nickFeature.isConnected &&
-                            (nickInit.jda.getStatus() == JDA.Status.ATTEMPTING_TO_RECONNECT ||
-                                    nickInit.jda.getStatus() == JDA.Status.CONNECTING_TO_WEBSOCKET ||
-                                    nickInit.jda.getStatus() == JDA.Status.LOGGING_IN ||
-                                    nickInit.jda.getStatus() == JDA.Status.AWAITING_LOGIN_CONFIRMATION ||
-                                    nickInit.jda.getStatus() == JDA.Status.WAITING_TO_RECONNECT)) {
+                            (nickInit.getStatus() == JDA.Status.ATTEMPTING_TO_RECONNECT ||
+                                    nickInit.getStatus() == JDA.Status.CONNECTING_TO_WEBSOCKET ||
+                                    nickInit.getStatus() == JDA.Status.LOGGING_IN ||
+                                    nickInit.getStatus() == JDA.Status.AWAITING_LOGIN_CONFIRMATION ||
+                                    nickInit.getStatus() == JDA.Status.WAITING_TO_RECONNECT)) {
                         defaultOutput = defaultOutput.replace("?", ":warning: Connecting");
                     }
-                    else if (!nickFeature.isConnected && (nickInit.jda.getStatus() == JDA.Status.INITIALIZED ||
-                            nickInit.jda.getStatus() == JDA.Status.INITIALIZING)) {
+                    else if (!nickFeature.isConnected && (nickInit.getStatus() == JDA.Status.INITIALIZED ||
+                            nickInit.getStatus() == JDA.Status.INITIALIZING)) {
                         defaultOutput = defaultOutput.replace("?", ":warning: Starting");
                     }
-                    else if (!nickFeature.isConnected && nickInit.jda.getStatus() == JDA.Status.DISCONNECTED) {
+                    else if (!nickFeature.isConnected && nickInit.getStatus() == JDA.Status.DISCONNECTED) {
                         defaultOutput = defaultOutput.replace("?", ":warning: Disconnected");
                     }
-                    else if (!nickFeature.isConnected && nickInit.jda.getStatus() == JDA.Status.RECONNECT_QUEUED) {
+                    else if (!nickFeature.isConnected && nickInit.getStatus() == JDA.Status.RECONNECT_QUEUED) {
                         defaultOutput = defaultOutput.replace("?", ":warning: Connection Queued");
                     }
                     else defaultOutput = defaultOutput.replace("?", "Unknown");
 
-                    EmbedType requestedType;
+                    EmbedDesign requestedType;
 
                     if (!defaultOutput.contains("true")) {
                         defaultOutput = defaultOutput.replaceAll("false", "Offline");
-                        requestedType = EmbedType.EMBED_ERROR;
+                        requestedType = EmbedDesign.ERROR;
                     }
                     else if (defaultOutput.contains("false") || defaultOutput.contains(":warning:") || defaultOutput.contains("Unknown")) {
                         defaultOutput = defaultOutput.replaceAll("false", ":warning: Suspended :warning:");
                         defaultOutput = defaultOutput.replaceAll("true", "Operational");
-                        requestedType = EmbedType.EMBED_WARNING;
+                        requestedType = EmbedDesign.WARNING;
                     }
                     else {
                         defaultOutput = defaultOutput.replaceAll("true", "Operational");
-                        requestedType = EmbedType.EMBED_SUCCESS;
+                        requestedType = EmbedDesign.SUCCESS;
                     }
-                    embed.editEmbed(msg, null, defaultOutput, false, requestedType);
+                    embed.editEmbed(msg, null, defaultOutput, requestedType);
                 }
                 else {
                     log.error(msg.getAuthor().getAsTag() + " just requested my status but did not have permission to");
                     embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions to View My Status**");
-                    embed.sendToHelpChannel(msg, msg.getMember());
+                    embed.sendToHelpChannel(msg, msg.getAuthor());
                 }
             }
             else if (args[0].equalsIgnoreCase("set")) {
-                if (msg.getChannel().equals(mainConfig.discussionChannel)
-                        || msg.getChannel().equals(mainConfig.managementChannel)) {
-                    configCommand(msg);
+                if (isStaffMember(msg.getAuthor().getIdLong())) {
+                    if (msg.getChannel().equals(mainConfig.discussionChannel)
+                            || msg.getChannel().equals(mainConfig.managementChannel)) {
+                        configCommand(msg);
+                    }
+                    else {
+                        msg.delete().queue();
+                        embed.setAsError("Not Usable in This Channel",
+                                "**:x: This Command Is Not Usable in <#" + msg.getChannel().getIdLong() + ">!**" +
+                                        "\n\nPlease use `" + mainConfig.commandPrefix + "set` in this channel or in " + mainConfig.managementChannel.getAsMention());
+                        embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    }
                 }
                 else {
-                    msg.delete().queue();
-                    embed.setAsError("Not Usable in This Channel",
-                            "**:x: This Command Is Not Usable in <#" + msg.getChannel().getIdLong() + ">!**" +
-                            "\n\nPlease use ` " + mainConfig.commandPrefix + "set` in this channel or in " + mainConfig.managementChannel.getAsMention());
-                    embed.sendToTeamDiscussionChannel(msg, msg.getMember());
+                    embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions To Do That!**");
+                    embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
                 }
             }
             else if (args[0].equalsIgnoreCase("help")) {
@@ -386,17 +403,17 @@ public class DiscordBotMain extends ListenerAdapter {
                 else if (isValidCommand(args)) helpCommand(msg);
                 else {
                     embed.setAsError("Invalid Command", ":x: **The Command you asked for help for does not exist anywhere within me...**");
-                    embed.sendToChannel(msg.getChannel());
+                    embed.sendToChannel(msg, msg.getChannel());
                 }
             }
         }
-        if (!msg.getMentionedMembers().contains(guild.getSelfMember())
+        if (!msg.getChannelType().equals(ChannelType.PRIVATE) && !msg.getMentionedMembers().contains(guild.getSelfMember())
                 && !msg.getChannel().equals(mainConfig.botSpamChannel) && !msg.getChannel().equals(mainConfig.managementChannel)
                 && msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && msg.getAttachments().isEmpty()
                 && mainConfig.deleteOriginalNonStaffCommands) {
             msg.delete().queue();
         }
-        else if (!msg.getMentionedMembers().contains(guild.getSelfMember()) &&
+        else if (!msg.getChannelType().equals(ChannelType.PRIVATE) && !msg.getMentionedMembers().contains(guild.getSelfMember()) &&
                 isTeamMember(msg.getAuthor().getIdLong()) && isValidCommand(args) &&
                 (!msg.getChannel().equals(mainConfig.discussionChannel) || mainConfig.deleteOriginalStaffCommands) &&
                 !msg.getChannel().equals(mainConfig.managementChannel) && msg.getAttachments().isEmpty()) {
@@ -405,8 +422,11 @@ public class DiscordBotMain extends ListenerAdapter {
     }
     private void helpCommand(Message msg) {
         String[] args = msg.getContentRaw().substring(1).split(" ");
-
-        if (args.length == 2) {
+        if (args.length == 1) {
+            embed.setAsInfo("About " + mainConfig.commandPrefix + "help",
+                    "Syntax: `" + mainConfig.commandPrefix + "help <Command Name>`");
+        }
+        else if (args.length == 2) {
             switch (args[1].toLowerCase()) {
                 case "restart":
                     if (isTeamMember(msg.getAuthor().getIdLong())) {
@@ -456,9 +476,9 @@ public class DiscordBotMain extends ListenerAdapter {
                     }
                     break;
             }
-            if (isTeamMember(msg.getAuthor().getIdLong())) embed.sendToTeamDiscussionChannel(msg, msg.getMember());
-            else embed.sendToChannel(msg.getChannel());
         }
+        if (isTeamMember(msg.getAuthor().getIdLong())) embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+        else embed.sendToChannel(msg, msg.getChannel());
     }
     private void configCommand(Message msg) {
         String[] args = msg.getContentRaw().substring(1).split(" ");
@@ -472,12 +492,12 @@ public class DiscordBotMain extends ListenerAdapter {
                 "You need to change the configuration file if you want this change to stick after a restart.**";
         String defaultErrorOutput = "**Could Not Update key**" +
                 "\n\n*This is Likely because the Configuration Key you Entered Does Not Exist or the Syntax is Invalid*" +
-                "\n**Syntax**: `syn`";
+                "\n**Syntax**: syn";
         if (isStaffMember(msg.getAuthor().getIdLong())) {
             // /set role <Config Key> <Mentioned Role>
             if (args[1].equalsIgnoreCase("role") && args.length == 4) {
-                String roleSyntax = "/set role <\"adminRole\", \"staffRole\", \"teamRole\", or \"botAbuseRole\"> " +
-                        "<Role Mention or ID>";
+                String roleSyntax = "`/set role <\"adminRole\", \"staffRole\", \"teamRole\", or \"botAbuseRole\"> " +
+                        "<Role Mention or ID>`";
                 try {
                     if (mainConfig.isValidConfig(args[2])) {
                         mainConfig.setRoleConfig(args[2], Long.parseLong(args[3]));
@@ -537,9 +557,9 @@ public class DiscordBotMain extends ListenerAdapter {
             }
             // /set channel <Config Key> <New Channel Mention or ID>
             else if ((args[1].equalsIgnoreCase("channel") || args[1].equalsIgnoreCase("cha")) && args.length == 4) {
-                String channelSyntax = "/set channel <\"helpChannel\", \"botSpamChannel\", \"theLightAngelChannel\", " +
+                String channelSyntax = "`/set channel <\"helpChannel\", \"botSpamChannel\", \"theLightAngelChannel\", " +
                         "\"teamDiscussionChannel\", \"botManagementChannel\", or \"logChannel\" > " +
-                        "<Channel Mention or ID>";
+                        "<Channel Mention or ID>`";
                 try {
                     mainConfig.setChannelConfig(args[2], Long.parseLong(args[3]));
                     embed.setAsSuccess(defaultTitle,
@@ -575,17 +595,61 @@ public class DiscordBotMain extends ListenerAdapter {
             // /set config <Config Key> <New Value>
             else if (args[1].equalsIgnoreCase("config") && args.length == 4) {
                 try {
-                    String integerDefaultSyntax = "/set config " +
+                    String integerDefaultSyntax = "`/set config` " +
                             "\n**2nd Argument Options:**" +
                             "\n\n*__Main Configuration__*" +
-                            "\n<\"pingCooldown\" (\"pingCD\" for short), or \"highPingTime\" (\"highPing\" for short)> " +
+                            "\n`<\"pingCooldown\" (\"pingCD\" for short), or \"highPingTime\" (\"highPing\" for short)>` " +
                             "\n\n*__Bot Abuse Configuration__*" +
-                            "\n<\"roleScannerInterval\" (\"roleScanInt\" for short), \"hotOffenseMonths\" (\"hotMonths\" for short), or" +
-                            "\"maxDaysAllowedForUndo\" (\"maxDaysUndo\" for short)>" +
+                            "\n`<\"roleScannerInterval\" (\"roleScanInt\" for short), \"hotOffenseMonths\" (\"hotMonths\" for short), " +
+                            "\"maxDaysAllowedForUndo\" (\"maxDaysUndo\" for short), or \"hotOffenseWarning\" (\"hotWarning\" for short)>`" +
                             "\n\n*__Nickname Configuration__*" +
-                            "\n<\"requestCooldown\" (or \"requestCD\" or \"reqCD\" for short)>" +
-                            "\n\nFollowed by: <New Integer Value>";
-                    if (mainConfig.isValidConfig(args[2])) {
+                            "\n`<\"requestCooldown\" (or \"requestCD\" or \"reqCD\" for short)>`" +
+                            "\n\nFollowed by: `<New Integer Value>`";
+                    // Handling for maxDaysAllowedForUndo
+                    if (args[2].equalsIgnoreCase("maxDaysUndo") ||
+                            args[2].equalsIgnoreCase("maxDaysAllowedForUndo")) {
+                        try {
+                            if (baFeature.setNewMaxDaysAllowedForUndo(Integer.parseInt(args[3]))) {
+                                embed.setAsSuccess(defaultTitle,
+                                        defaultOutput.replace("key", args[2]).replace("value", args[3]));
+                                successfulRun = true;
+                            }
+                            else {
+                                embed.setAsError("Cannot Update " + args[2],
+                                        "**There was an error while trying to update " + args[2] + "**" +
+                                                "\n\n**This value cannot exceed the time length of a Bot Abuse.** " +
+                                                "This is so that when a player has already served their time being Bot Abused, " +
+                                                "it is too late to undo it." +
+                                                "\n\n*Example: If the first offense is a 3 day Bot Abuse, " +
+                                                "you cannot set this value equal to or more than that, the only legal values would be 1 or 2 days.*");
+                            }
+                        }
+                        catch (NumberFormatException ex) {
+                            embed.setAsError(defaultErrorTitle,
+                                    defaultErrorOutput.replace("key", args[2]).replace("syn", integerDefaultSyntax));
+                        }
+                    }
+                    else if (args[2].equalsIgnoreCase("hotOffenseWarning") || args[2].equalsIgnoreCase("hotWarning")) {
+                        try {
+                            if (baFeature.setNewHotOffenseWarning(Integer.parseInt(args[3]))) {
+                                embed.setAsSuccess(defaultTitle,
+                                        defaultOutput.replace("key", args[2]).replace("value", args[3]));
+                                successfulRun = true;
+                            }
+                            else {
+                                embed.setAsError("Cannot Update " + args[2],
+                                        "**The New " + args[2] + " value cannot exceed the  Number of Temporary " +
+                                                "Bot Abuses Someone Gets Before the Permanent one.**" +
+                                                "\n\n*Example: If there's 4 Temporary Bot Abuses before the Permanent, " +
+                                                "this value cannot exceed 4*");
+                            }
+                        }
+                        catch (NumberFormatException ex) {
+                            embed.setAsError(defaultErrorTitle,
+                                    defaultErrorOutput.replace("key", args[2]).replace("syn", integerDefaultSyntax));
+                        }
+                    }
+                    else if (mainConfig.isValidConfig(args[2])) {
                         mainConfig.setConfig(args[2], Integer.parseInt(args[3]));
                         embed.setAsSuccess(defaultTitle,
                                 defaultOutput.replace("key", args[2]).replace("value", args[3]));
@@ -620,17 +684,25 @@ public class DiscordBotMain extends ListenerAdapter {
                                     defaultOutput.replace("key", args[2]).replace("value", args[3]));
                             successfulRun = true;
                         }
+                        else if (baFeature.botConfig.isValidConfig(args[2])) {
+                            baFeature.botConfig.setConfig(args[2], Boolean.valueOf(args[3]));
+                            embed.setAsSuccess(defaultTitle,
+                                    defaultOutput.replace("key", args[2]).replace("value", args[3]));
+                            successfulRun = true;
+                        }
                         else {
                             embed.setAsError(defaultErrorTitle, defaultErrorOutput.replace("key", args[2]).replace("syn",
-                                    "/set config " +
+                                    "`/set config` " +
                                             "\n**2nd Argument Options:**" +
                                             "\n\n*__Main Configuration__*" +
-                                            "\n<\"deleteOriginalNonStaffCommands\" (\"delNonStaffCmd\" for short), " +
+                                            "\n`<\"deleteOriginalNonStaffCommands\" (\"delNonStaffCmd\" for short), " +
                                             "\"deleteOriginalStaffCommands\" (\"delStaffCmd\" for short), or " +
-                                            "\"forceToLightAngelChannel\" (\"forceToLA\" for short)>" +
+                                            "\"forceToLightAngelChannel\" (\"forceToLA\" for short)>`" +
+                                            "\n\n*__Bot Abuse Configuration__*" +
+                                            "\n`<\"autoPermanent\" (\"autoPerm\" for short)>`" +
                                             "\n\n*__Nickname Configuration__*" +
-                                            "\n<\"pingStaffOnlineOnRequest\" (or \"pingStaffOnline\" for short)>" +
-                                            "\n\nFollowed By: <New Boolean Value>"));
+                                            "\n`<\"pingStaffOnlineOnRequest\" (or \"pingStaffOnline\" for short)>" +
+                                            "\n\nFollowed By: <New Boolean Value>`"));
                         }
                     }
                     else {
@@ -642,11 +714,11 @@ public class DiscordBotMain extends ListenerAdapter {
                         }
                         else {
                             embed.setAsError(defaultErrorTitle, defaultErrorOutput.replace("key", args[2]).replace("syn",
-                                    "/set config <\"timeZone\", \"checkIconURL\", \"errorIconURL\", " +
+                                    "`/set config <\"timeZone\", \"checkIconURL\", \"errorIconURL\", " +
                                             "\"infoIconURL\", \"stopIconURL\", \"helpIconURL\", \"blobNomPingID\", " +
                                             "\"commandPrefix\" (\"cmdPrefix\" for short), \"fieldHeader\", " +
                                             "or \"botabuselength\" (to add or remove times to the bot abuse punishments)>" +
-                                            "<New String Value>"));
+                                            "<New String Value>`"));
                         }
                     }
                 }
@@ -696,11 +768,11 @@ public class DiscordBotMain extends ListenerAdapter {
                 }
             }
             // /set config nameRestrictredRoles add/del/remove <Role Mention or ID>
-            else if (args[1].equalsIgnoreCase("config") &&
+            else if (args[1].equalsIgnoreCase("role") &&
                     (args[2].equalsIgnoreCase("nameRestrictedRoles") || args[2].equalsIgnoreCase("nameRoles"))
                     && args.length == 5) {
                 String defaultSuccessTitle = "Name Restricted Role ?";
-                String defaultSyntax = "/set config nameRoles/nameRestrictedRoles add/del/remove <Role Mention or ID>";
+                String defaultSyntax = "`/set config nameRoles/nameRestrictedRoles add/del/remove <Role Mention or ID>`";
                 String defaultSuccess = "Successfully ? ! The Roles Not Allowed to Change Names";
 
                 if (args[3].equalsIgnoreCase("add")) {
@@ -741,7 +813,8 @@ public class DiscordBotMain extends ListenerAdapter {
                 args[3].equalsIgnoreCase("remove")) {
                     try {
                         if (nickFeature.nickConfig.removeNewNameRestrictedRole(Long.parseLong(args[4]))) {
-                            embed.setAsSuccess(defaultSuccessTitle, defaultSuccess.replace("?", "Removed")
+                            embed.setAsSuccess(defaultSuccessTitle.replace("?", "Removed"),
+                                    defaultSuccess.replace("?", "Removed")
                                     .replace("!", guild.getRoleById(Long.parseLong(args[4])).getAsMention() + " From"));
                             log.info(msg.getMember().getEffectiveName() + " Successfully Removed " + guild.getRoleById(Long.parseLong(args[4])).getName() +
                                     " from the name restricted roles list");
@@ -756,7 +829,8 @@ public class DiscordBotMain extends ListenerAdapter {
                     catch (NumberFormatException ex) {
                         try {
                             if (nickFeature.nickConfig.removeNewNameRestrictedRole(msg.getMentionedRoles().get(0))) {
-                                embed.setAsSuccess(defaultSuccessTitle, defaultSuccess.replace("?", "Removed")
+                                embed.setAsSuccess(defaultSuccessTitle.replace("?", "Removed"),
+                                        defaultSuccess.replace("?", "Removed")
                                         .replace("!", msg.getMentionedRoles().get(0).getAsMention() + " From"));
                                 log.info(msg.getMember().getEffectiveName() + " Successfully Added " + msg.getMentionedRoles().get(0).getName() +
                                         " from the name restricted roles list");
@@ -782,7 +856,12 @@ public class DiscordBotMain extends ListenerAdapter {
                     }
                 }
             }
-            embed.sendToChannel(msg.getChannel());
+            else {
+                embed.setAsError("Syntax Error", ":x: **I was expecting 4 or 5 arguments in this command...**");
+                embed.sendToChannel(msg, msg.getChannel());
+                return;
+            }
+            embed.sendToChannel(msg, msg.getChannel());
             if (successfulRun && (botAbuseTimingChanged || nameRestrictedRoleUpdated)) return;
             else if (successfulRun && !botAbuseTimingChanged) {
                 log.info(msg.getMember().getEffectiveName() + " successfully updated configuration key " + args[2] + " to " + args[3]);
@@ -796,8 +875,8 @@ public class DiscordBotMain extends ListenerAdapter {
         }
         else {
             embed.setAsError("Insufficient Permissions", ":x: **You Lack Permissions to do that!**");
-            if (isTeamMember(msg.getAuthor().getIdLong())) embed.sendToTeamDiscussionChannel(msg, msg.getMember());
-            else embed.sendToHelpChannel(msg, msg.getMember());
+            if (isTeamMember(msg.getAuthor().getIdLong())) embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+            else embed.sendToHelpChannel(msg, msg.getAuthor());
         }
     }
 
@@ -808,8 +887,8 @@ public class DiscordBotMain extends ListenerAdapter {
     }
     // Permission Checkers that this class and the other features use:
     public boolean isTeamMember(long targetDiscordID) {
-        return guild.getMemberById(targetDiscordID).getRoles().contains(mainConfig.teamRole) ||
-                guild.getMemberById(targetDiscordID).equals(mainConfig.owner);
+        return isStaffMember(targetDiscordID) ||
+                guild.getMemberById(targetDiscordID).getRoles().contains(mainConfig.teamRole);
     }
     public boolean isStaffMember(long targetDiscordID) {
         return guild.getMemberById(targetDiscordID).getRoles().contains(mainConfig.staffRole) ||
@@ -845,8 +924,8 @@ public class DiscordBotMain extends ListenerAdapter {
                         "If you don't feel comfortable doing that... " + mainConfig.owner.getAsMention()
                         + " has been notified.**" +
                         "\n\n**Cause: " + cause + "**" +
-                        "\n\n**Bot Abuse Commands have Been Suspended**");
-        embed.sendToTeamDiscussionChannel(msg, msg.getMember());
+                        "\n\n** " + obj + " Commands have Been Suspended**");
+        embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
         log.fatal("Integrity Check on ArrayList Objects Failed - Cause: " + cause);
         if (obj.contains("BotAbuseMain")) {
             baFeature.commandsSuspended = true;
@@ -856,5 +935,6 @@ public class DiscordBotMain extends ListenerAdapter {
             nickFeature.commandsSuspended = true;
         }
         else commandsSuspended = true;
+        return;
     }
 }

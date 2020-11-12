@@ -11,7 +11,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.lang.reflect.Type;
-import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -46,6 +46,7 @@ class FileHandler {
         // This is to ensure the fileReader closes at the end of this method
         FileReader fileReader = new FileReader(jsonBADataFile);
         JsonObject database = JsonParser.parseReader(fileReader).getAsJsonObject();
+        baCore.id = gson.fromJson(database.get("ID").getAsString(), integerType);
         baCore.discordID = gson.fromJson(database.get("DiscordID").getAsString(), longType);
         baCore.issuingTeamMember = gson.fromJson(database.get("TeamMembers").getAsString(), stringType);
         baCore.repOffenses = gson.fromJson(database.get("RepOffenses").getAsString(), integerType);
@@ -62,6 +63,7 @@ class FileHandler {
     void saveDatabase() throws IOException {
         JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(new FileOutputStream(jsonTempBADataFile)));
         jsonWriter.beginObject();
+        jsonWriter.name("ID").value(gson.toJson(baCore.id));
         jsonWriter.name("DiscordID").value(gson.toJson(baCore.discordID));
         jsonWriter.name("TeamMembers").value(gson.toJson(baCore.issuingTeamMember));
         jsonWriter.name("RepOffenses").value(gson.toJson(baCore.repOffenses));
@@ -81,7 +83,7 @@ class FileHandler {
                 Files.move(Paths.get(jsonBADataFile.getAbsolutePath()), Paths.get(backupFile.getAbsolutePath()));
                 break;
             }
-            catch (FileAlreadyExistsException ex) {
+            catch (FileSystemException ex) {
                 // Take No Action
             }
         }

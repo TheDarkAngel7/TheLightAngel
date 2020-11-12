@@ -11,7 +11,7 @@ import java.util.Comparator;
 class ModifyBotAbuseConfiguration extends BotAbuseConfiguration {
     private final ArrayList<String> configs = new ArrayList<>(
             Arrays.asList("botabuserole", "rolescanint", "rolescannerinterval", "hotmonths", "hotoffensemonths",
-                    "maxdaysundo", "maxdaysallowedforundo"));
+                    "maxdaysundo", "maxdaysallowedforundo", "autoperm", "autopermanent"));
 
     ModifyBotAbuseConfiguration(JsonObject configObj, BotAbuseMain baMain, FileHandler fileHandler, MainConfiguration mainConfig) {
         super(configObj, baMain, fileHandler, mainConfig);
@@ -24,8 +24,14 @@ class ModifyBotAbuseConfiguration extends BotAbuseConfiguration {
             case "rolescannerinterval": roleScannerInterval = value; break;
             case "hotmonths":
             case "hotoffensemonths": hotOffenseMonths = value; break;
-            case "maxdaysundo":
-            case "maxdaysallowedforundo": maxDaysAllowedForUndo = value; break;
+            case "hotwarning":
+            case "hotoffensewarning": hotOffenseWarning = value; break;
+        }
+    }
+    public void setConfig(String key, boolean value) {
+        switch (key.toLowerCase()) {
+            case "autoperm":
+            case "autopermanent": autoPermanent = value;
         }
     }
     public boolean setNewBotAbuseRole(long newRoleID) {
@@ -45,15 +51,17 @@ class ModifyBotAbuseConfiguration extends BotAbuseConfiguration {
     public String addExpiryTime(int newTime) {
         botAbuseTimes.add(newTime);
         botAbuseTimes.sort(Comparator.naturalOrder());
-        if (baMain.BACore.timingsAreValid()) return "**Successfully Added " + newTime + " Days**\n\n" + getExpiryTimeArray();
+        if (baMain.baCore.timingsAreValid()) return "**Successfully Added " + newTime + " Days**\n\n" + getExpiryTimeArray();
         else {
             removeExpiryTime(newTime, true);
             return ":x: **Cannot Add " + newTime + " Days**" +
                     "\n\nYour hotOffenseMonths setting is currently " + hotOffenseMonths + " Months, " +
                     "you cannot add a new time that is greater than half of that. " +
-                    "Your total number of days also cannot match or exceed the total number of days in " + hotOffenseMonths + " Months" +
-                    "\n*Example: If your hotOffenseMonths is 6 Months, you cannot add a 181 Day offense to that*" +
-                    "\n*Example: If your hotOffenseMonths is 6 Months, you cannot have a 60 day and 120 day serve period as that'd be 180 days total*";
+                    "Your total number of days also cannot match or exceed the total number of days in " + hotOffenseMonths + " Months." +
+                    "\nAlso your maxDaysAllowedForUndo setting cannot exceed any of the timings in the Bot Abuse Timings." +
+                    "\n\n*Example: If your hotOffenseMonths is 6 Months, you cannot add a 181 Day offense to that.*" +
+                    "\n*Example: If your hotOffenseMonths is 6 Months, you cannot have a 60 day and 120 day serve period as that'd be 180 days total.*" +
+                    "\n*Example: If your maxDaysAllowedForUndo is currently 5 days, you cannot had a 3 day bot abuse as you would then be able to undo a bot abuse after expiring.*";
         }
     }
 

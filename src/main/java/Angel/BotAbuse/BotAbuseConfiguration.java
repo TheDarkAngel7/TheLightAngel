@@ -19,6 +19,8 @@ public abstract class BotAbuseConfiguration {
     int roleScannerInterval;
     int maxDaysAllowedForUndo;
     int hotOffenseMonths;
+    int hotOffenseWarning;
+    boolean autoPermanent;
     ArrayList<Integer> botAbuseTimes;
 
     BotAbuseConfiguration(JsonObject configObj, BotAbuseMain baMain, FileHandler fileHandler, MainConfiguration mainConfig) {
@@ -38,6 +40,8 @@ public abstract class BotAbuseConfiguration {
         hotOffenseMonths = configObj.get("oldOffensesConsideredHotInMonths").getAsInt();
         botAbuseTimes = fileHandler.gson.fromJson(configObj.get("botAbuseTimingsInDays").getAsString(), new TypeToken<ArrayList<Integer>>(){}.getType());
         maxDaysAllowedForUndo = configObj.get("maxDaysUndoIsAllowed").getAsInt();
+        hotOffenseWarning = configObj.get("warnOnHotOffenseNumber").getAsInt();
+        autoPermanent = configObj.get("autoPermanent").getAsBoolean();
     }
     void discordSetup() {
         // These are configuration settings that have to be set with a guild object
@@ -61,6 +65,7 @@ public abstract class BotAbuseConfiguration {
         return guild.getRoles().contains(guild.getRoleById(botAbuseRoleID));
     }
     public abstract void setConfig(String key, int value);
+    public abstract void setConfig(String key, boolean value);
     public abstract boolean setNewBotAbuseRole(long newRoleID);
     public abstract void setNewBotAbuseRole(Role newRole);
     public abstract String addExpiryTime(int newTime);

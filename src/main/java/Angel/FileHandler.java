@@ -9,7 +9,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 
-public class FileHandler {
+class FileHandler {
 
     private final Logger log = LogManager.getLogger(FileHandler.class);
 

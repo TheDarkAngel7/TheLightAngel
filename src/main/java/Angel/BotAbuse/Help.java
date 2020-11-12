@@ -15,26 +15,30 @@ class Help {
         this.mainConfig = mainConfig;
     }
 
-    void botAbuseCommand() {
+    void botAbuseCommand(boolean isTeamMember) {
         embed.setAsHelp(mainConfig.commandPrefix + "botabuse Command Help",
         "**Full Syntax:\n `" + mainConfig.commandPrefix + "botabuse <Mention or Discord ID> <Reason (You'd input a reason key here)> [Image URL]`**\n" +
                 "\n" +
                 mainConfig.commandPrefix + "botabuse allows you to Bot Abuse the target Mention or Discord ID along with the required reason, " +
-                "it’s straight forward on what this command needs. An Image URL argument is required for the most part, but if you’re on mobile," +
-                " the bot will accept an image attachment to replace this argument. However, you need to use this command in the " +
+                "it’s straight forward on what this command needs. An Image URL argument is required for the most part, " +
+                "but the bot will accept an image attachment to the command to replace this argument. " +
+                "\nFor example, if you upload a picture from your phone as your Bot Abuse evidence, in the Comments (Optional) you'd insert the command." +
+                "However, you need to use this command in the " +
                 "team discussion channel if you’re going to upload an image attachment due to the command not getting deleted on use.\n\n" +
                 "If you're not sure what you'd input for `<Reason>`, being it requires a reason key and not the entire reason spelled out," +
                 "use `" + mainConfig.commandPrefix + "reasons` or `" + mainConfig.commandPrefix + "rmgr list` to get what keys direct me to what reasons.");
+        if (!isTeamMember) noPermissions();
     }
-    void permBotAbuseCommand() {
+    void permBotAbuseCommand(boolean isStaffMember) {
         embed.setAsHelp(mainConfig.commandPrefix + "permbotabuse Command Help",
         "**Full Syntax:\n `" + mainConfig.commandPrefix + "permbotabuse <Mention or Discord ID> [Image URL]`**\n" +
                 "\n" +
                 "This allows you to permanently Bot Abuse someone. If they’re currently bot abused, " +
                 "the expiry date gets overwritten to being Permanent. " +
-                "If they’re not currently bot abused, then it’ll just add a new offense being permanent with the reason “Contact Staff”.");
+                "If they’re not currently bot abused, then it’ll just add a new offense being permanent with the reason \"Contact SAFE Team\".");
+        if (!isStaffMember) noPermissions();
     }
-    void undoCommand() {
+    void undoCommand(boolean isTeamMember) {
         embed.setAsHelp(mainConfig.commandPrefix + "undo Command Help",
         "**Full Syntax:\n `" + mainConfig.commandPrefix + "undo [Mention or Discord ID]`**\n" +
                 "\n" +
@@ -43,6 +47,7 @@ class Help {
                 "A “" + mainConfig.commandPrefix + "undo” by itself will undo the last bot abuse that you applied. " +
                 "However, including a Mention or Discord ID with the command will undo the bot abuse for that player. " +
                 "However this command will only work for Bot Abuses that were issued 5 days or less ago.");
+        if (!isTeamMember) noPermissions();
     }
     void checkCommand(boolean isTeamMember) {
         String defaultTitle = mainConfig.commandPrefix + "check Command Help";
@@ -74,7 +79,7 @@ class Help {
         "**Please use `" + mainConfig.commandPrefix + "help check`, " +
                 "this command carries the exact same concept and syntax as " + mainConfig.commandPrefix + "check**");
     }
-    void transferCommand() {
+    void transferCommand(boolean isStaffMember) {
         embed.setAsHelp(mainConfig.commandPrefix + "transfer Command Help",
         "**Full Syntax:\n `" + mainConfig.commandPrefix + "transfer <Old Mention or Discord ID> <New Mention or Discord ID>`**\n" +
                 "\n" +
@@ -82,16 +87,18 @@ class Help {
                 "This is useful for if someone uses a different discord account to evade being bot abused.\n" +
                 "\n" +
                 "**Please Note that if the new discord account has existing records, those records will be kept as well.**");
+        if (!isStaffMember) noPermissions();
     }
-    void clearCommand() {
+    void clearCommand(boolean isStaffMember) {
         embed.setAsHelp(mainConfig.commandPrefix + "clear Command Help",
         "**Full Syntax:\n" +
                 "\n" +
                 "`" + mainConfig.commandPrefix + "clear <Mention or Discord ID>`**\n" +
                 "\n" +
                 "Completely wipes out the record of a discord account.");
+        if (!isStaffMember) noPermissions();
     }
-    void reasonManagementCommand() {
+    void reasonManagementCommand(boolean isTeamMember) {
         embed.setAsHelp(mainConfig.commandPrefix + "reasonsmanager Command Help",
         "`" + mainConfig.commandPrefix + "reasonsmanager addreason <newKey> <Full Wording of the Reason>` \n" +
                 "\n" +
@@ -117,5 +124,9 @@ class Help {
                 "**About list:** \n" +
                 "\n" +
                 "This lists all of the keys and the reasons the keys are mapped to.");
+        if (!isTeamMember) noPermissions();
+    }
+    private void noPermissions() {
+        embed.setAsError("No Permissions", ":x: **You Have No Permissions To See This Help Information**");
     }
 }

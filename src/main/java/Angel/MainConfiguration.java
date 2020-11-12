@@ -98,10 +98,13 @@ public abstract class MainConfiguration {
         discussionChannel = guild.getTextChannelById(teamChannelID);
         helpChannel = guild.getTextChannelById(helpChannelID);
         managementChannel = guild.getTextChannelById(managementChannelID);
-        botSpamChannel = guild.getTextChannelById(botSpamChannelID);
         logChannel = guild.getTextChannelById(logChannelID);
+
         if (!dedicatedOutputChannelID.equalsIgnoreCase("None")) {
             dedicatedOutputChannel = guild.getTextChannelById(dedicatedOutputChannelID);
+        }
+        if (!botSpamChannelID.equalsIgnoreCase("None")) {
+            botSpamChannel = guild.getTextChannelById(botSpamChannelID);
         }
         adminRole = guild.getRoleById(adminRoleID);
         staffRole = guild.getRoleById(staffRoleID);
@@ -136,5 +139,6 @@ public abstract class MainConfiguration {
 
     abstract void setChannelConfig(String key, long newChannelID);
     abstract void setChannelConfig(String key, TextChannel newChannel);
+
     abstract boolean isValidConfig(String key);
 }

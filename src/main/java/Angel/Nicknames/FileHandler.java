@@ -11,7 +11,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.lang.reflect.Type;
-import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -71,7 +71,7 @@ class FileHandler {
                 Files.move(Paths.get(jsonNickDataFile.getAbsolutePath()), Paths.get(backupFile.getAbsolutePath()));
                 break;
             }
-            catch (FileAlreadyExistsException ex) {
+            catch (FileSystemException ex) {
                 // Take No Action
             }
         }

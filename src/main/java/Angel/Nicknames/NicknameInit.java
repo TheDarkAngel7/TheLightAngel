@@ -24,8 +24,9 @@ public class NicknameInit implements Runnable {
     private final EmbedHandler embed;
     private final Guild guild;
     private final DiscordBotMain discord;
-    public JDA jda;
-    NicknameMain nickFeature;
+    private JDA jda;
+
+    private NicknameMain nickFeature;
 
     public NicknameInit(boolean commandsSuspended, MainConfiguration mainConfig, EmbedHandler embed, Guild guild, DiscordBotMain discord) {
         this.commandsSuspended = commandsSuspended;
@@ -64,5 +65,8 @@ public class NicknameInit implements Runnable {
     }
     public long getPing() {
         return jda.getGatewayPing();
+    }
+    public JDA.Status getStatus() {
+        return jda.getStatus();
     }
 }

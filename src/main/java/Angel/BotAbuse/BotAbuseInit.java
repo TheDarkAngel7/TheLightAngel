@@ -26,9 +26,9 @@ public class BotAbuseInit implements Runnable {
     private final EmbedHandler embed;
     private final Guild guild;
     private final DiscordBotMain discord;
-    public JDA jda;
+    private JDA jda;
 
-    BotAbuseMain baFeature;
+    private BotAbuseMain baFeature;
 
     public BotAbuseInit(boolean commandsSuspended, boolean isRestart, MainConfiguration mainConfig, EmbedHandler embed, Guild guild, DiscordBotMain discord) {
         this.commandsSuspended = commandsSuspended;
@@ -68,5 +68,8 @@ public class BotAbuseInit implements Runnable {
     }
     public long getPing() {
         return jda.getGatewayPing();
+    }
+    public JDA.Status getStatus() {
+        return jda.getStatus();
     }
 }

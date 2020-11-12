@@ -71,6 +71,20 @@ class Help {
             embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions to see this help**");
         }
     }
+    void historyCommand(boolean isTeamMember) {
+        if (isTeamMember) {
+            embed.setAsHelp(mainConfig.commandPrefix + "nickname history",
+                    "**Only usable by Staff Members (Jr. Staff+)**" +
+                            "\n\n`" + mainConfig.commandPrefix + "nickname history <Mention or Discord ID>`" +
+                            "\n`" + mainConfig.commandPrefix + "nn h <Mention or Request ID>`" +
+                            "\n" +
+                            "This prints all of the captured effective name changes of the player ID or mention given. " +
+                            "When I say \"effective name\", I mean the name that is displayed within our discord server.");
+        }
+        else {
+            embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions to see this help**");
+        }
+    }
     void forceChangeCommand() {
         embed.setAsHelp(mainConfig.commandPrefix + "nickname forcechange",
         "***Use this command to change someone else's nickname***" +
