@@ -95,9 +95,10 @@ public class NicknameMain extends ListenerAdapter {
     @Override
     public void onUserUpdateName(@Nonnull UserUpdateNameEvent event) {
         isBusy = true;
-        if (guild.getMember(event.getUser()).getNickname() == null && inNickRestrictedRole(event.getUser().getIdLong())) {
+        Member m = guild.retrieveMember(event.getUser(), true).complete();
+        if (m.getNickname() == null && inNickRestrictedRole(event.getUser().getIdLong())) {
             ignoreNewNickname = true;
-            guild.getMember(event.getUser()).modifyNickname(event.getOldName()).queue();
+            m.modifyNickname(event.getOldName()).queue();
             embed.setAsInfo("Automatic Nickname Addition",
             "**Your name on this discord server was automatically set back to your old discord name**" +
                     " \n\nThis is due to the fact that you're in a role that prohibits name changes, your name in the SAFE Crew discord server" +
@@ -106,7 +107,7 @@ public class NicknameMain extends ListenerAdapter {
                     "displayed name continues to match your social club name. No action is required.");
             embed.sendDM(null, event.getUser());
         }
-        else if (guild.getMember(event.getUser()).getNickname() == null && !inNickRestrictedRole(event.getUser().getIdLong())) {
+        else if (m.getNickname() == null && !inNickRestrictedRole(event.getUser().getIdLong())) {
             addNameHistory(event.getUser().getIdLong(), event.getOldName(), null);
             String defaultMessage = event.getUser().getAsTag() + " updated their discord username from "
                     + event.getOldName() + " to " + event.getNewName() + " and they had no nickname to prevent the effective name change";
@@ -160,7 +161,8 @@ public class NicknameMain extends ListenerAdapter {
                 }
                 else if (event.getOldNickname() != null && event.getNewNickname() == null) {
                     results = results.concat(
-                            "\n\nOld Nickname: **" + event.getOldNickname() + "**\nNew Nickname: *Reset*"
+                            "\n\nOld Nickname: **" + event.getOldNickname() +
+                                    "**\nNew Nickname: ** " + event.getUser().getName() + "** (Reset to Discord Username)"
                     );
                 }
                 tempOldNick.add(event.getOldNickname());
@@ -297,7 +299,7 @@ public class NicknameMain extends ListenerAdapter {
             @Override
             public void run() {
                 c = Calendar.getInstance();
-                c.setTimeZone(TimeZone.getTimeZone("GMT"));
+                c.setTimeZone(TimeZone.getTimeZone(mainConfig.timeZone));
             }
         }, 0, 1000);
     }
@@ -361,7 +363,6 @@ public class NicknameMain extends ListenerAdapter {
                 // to them trying to change it themselves while in the restricted role
                 else if (args.length == 2 && msg.getChannelType() == ChannelType.PRIVATE) {
                     startRequestCooldown(targetDiscordID);
-                    PrivateChannel channel = msg.getPrivateChannel();
                     int index = tempDiscordID.indexOf(targetDiscordID);
                     if (index != -1 && msg.getChannelType() == ChannelType.PRIVATE) {
                         result = nickCore.submitRequest(targetDiscordID, tempOldNick.get(index), tempNewNick.get(index));
@@ -381,7 +382,7 @@ public class NicknameMain extends ListenerAdapter {
                                 embed.setAsInfo("Nickname Request Received", result);
                                 embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
                             }
-                            log.info("New Nickname Request Received from " + channel.getUser().getName());
+                            log.info("New Nickname Request Received from " + msg.getAuthor().getAsTag());
                         }
                     }
                     else {
@@ -398,7 +399,6 @@ public class NicknameMain extends ListenerAdapter {
                         embed.sendToHelpChannel(msg, msg.getAuthor());
                         return;
                     }
-                    startRequestCooldown(targetDiscordID);
                     if (args[2].equalsIgnoreCase("reset") || args[2].equals(msg.getAuthor().getName())) {
                         result = nickCore.submitRequest(targetDiscordID, member.getNickname(), null);
                     }
@@ -412,6 +412,7 @@ public class NicknameMain extends ListenerAdapter {
                         discord.failedIntegrityCheck(this.getClass().getName(), msg, "Nickname: Request Submission with a Nickname Provided");
                     }
                     else {
+                        startRequestCooldown(targetDiscordID);
                         embed.setAsSuccess("Nickname Request Submitted", result.concat(SocialClubInfo));
                         embed.sendToHelpChannel(msg, msg.getAuthor());
                         embed.setAsInfo("Nickname Request Received", result);

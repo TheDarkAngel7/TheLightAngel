@@ -134,7 +134,7 @@ class BotAbuseTimers implements Runnable {
                     String defaultTitle = "Role Scanner Information";
                     baFeature.baCore.currentBotAbusers.forEach(id -> {
                         if (guild.isMember(guild.getJDA().retrieveUserById(id).complete())) {
-                            Member m = guild.getMemberById(id);
+                            Member m = guild.retrieveMemberById(id).complete();
                             if (serverMembers.contains(m) &&
                                     !m.getRoles().contains(baFeature.botConfig.botAbuseRole)) {
                                 guild.addRoleToMember(m,

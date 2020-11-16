@@ -1,6 +1,7 @@
 package Angel.Nicknames;
 
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.User;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -136,12 +137,12 @@ class NickCore {
         if (index == -1) return null;
         String result = "";
         String defaultReturn = "Successfully Withdrew Nickname Request for ?";
-        defaultReturn = defaultReturn.concat(
+        defaultReturn = defaultReturn.concat(replaceNulls(discordID.get(index),
                         "\n\n**Request Details:**" +
                         "\nRequest ID: **" + requestID.remove(index) +
                         "**\nDiscord: <@!" + discordID.remove(index) + ">" +
                         "\nOld Nickname: **" + oldNickname.remove(index) +
-                        "**\nNew Nickname: **" + newNickname.remove(index)) + "**";
+                        "**\nNew Nickname: **" + newNickname.remove(index) + "**"));
         if (arraySizesEqual()) {
             fileHandler.saveDatabase();
 
@@ -176,14 +177,15 @@ class NickCore {
         return result;
     }
     String replaceNulls(long targetDiscordID, String oldString) {
+        User targetUser = guild.getJDA().retrieveUserById(targetDiscordID).complete();
         String result = oldString;
         if (oldString.contains("New Nickname: **null**")) {
             result = oldString.replace("null",
-                    guild.getMemberById(targetDiscordID).getUser().getName() + " (Reset to Discord Username)");
+                    targetUser.getName() + " (Reset to Discord Username)");
         }
         else if (oldString.contains("Old Nickname: **null**")) {
             result = oldString.replace("null",
-                    guild.getMemberById(targetDiscordID).getUser().getName() + " (Current Discord Username)");
+                    targetUser.getName() + " (Current Discord Username)");
         }
         return result;
     }
