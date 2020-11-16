@@ -308,7 +308,7 @@ public class BotAbuseMain extends ListenerAdapter {
             try {
                 targetUser = msg.getJDA().retrieveUserById(Long.parseLong(args[1])).complete();
                 if (msg.getAttachments().isEmpty()) {
-                    String result = baCore.setBotAbuse(Long.parseLong(args[1]), false, args[2], args[3], msg.getMember().getAsMention());
+                    String result = baCore.setBotAbuse(Long.parseLong(args[1]), false, args[2], args[3], msg.getAuthor().getIdLong());
                     if (result.contains("FATAL ERROR")) {
                         discord.failedIntegrityCheck(this.getClass().getName(), msg, "Bot Abuse: setBotAbuse - No Picture Attachment and Long Member Value");
                     }
@@ -332,7 +332,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 else if (msg.getAttachments().size() == 1 &&
                         (msg.getChannel().equals(mainConfig.discussionChannel) || msg.getChannel().equals(mainConfig.managementChannel))) {
                     String result = baCore.setBotAbuse(Long.parseLong(args[1]),
-                            false, args[2], msg.getAttachments().get(0).getProxyUrl(), msg.getMember().getAsMention());
+                            false, args[2], msg.getAttachments().get(0).getProxyUrl(), msg.getMember().getIdLong());
                     if (result.contains("FATAL ERROR")) {
                         embed.setAsStop("FATAL ERROR", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                                 " while I reload and then you can try to run that command again**");
@@ -398,7 +398,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 targetUser = msg.getMentionedMembers().get(0).getUser();
                 if (msg.getAttachments().isEmpty()) {
                     String result = baCore.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
-                            false, args[2], args[3], msg.getMember().getAsMention());
+                            false, args[2], args[3], msg.getAuthor().getIdLong());
                     guild.addRoleToMember(msg.getMentionedMembers().get(0),
                             botConfig.botAbuseRole).queue();
                     if (result.contains("FATAL ERROR")) {
@@ -422,7 +422,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 else if (msg.getAttachments().size() == 1 &&
                         (msg.getChannel().equals(mainConfig.discussionChannel) || msg.getChannel().equals(mainConfig.managementChannel))) {
                     String result = baCore.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
-                            false, args[2], msg.getAttachments().get(0).getProxyUrl(), msg.getMember().getAsMention());
+                            false, args[2], msg.getAttachments().get(0).getProxyUrl(), msg.getAuthor().getIdLong());
                     guild.addRoleToMember(msg.getMentionedMembers().get(0),
                             botConfig.botAbuseRole).queue();
                     if (result.contains("FATAL ERROR")) {
@@ -486,7 +486,7 @@ public class BotAbuseMain extends ListenerAdapter {
             try {
                 targetUser = guild.getJDA().retrieveUserById(Long.parseLong(args[1])).complete();
                 embed.setAsSuccess(defaultTitle, baCore.setBotAbuse(Long.parseLong(args[1]),
-                        true, "staff", args[2] , msg.getMember().getAsMention()));
+                        true, "staff", args[2] , msg.getAuthor().getIdLong()));
                 embed.sendToLogChannel();
                 guild.addRoleToMember(guild.getMemberById(Long.parseLong(args[1])),
                         botConfig.botAbuseRole).queue();
@@ -521,7 +521,7 @@ public class BotAbuseMain extends ListenerAdapter {
             try {
                 embed.setAsSuccess(defaultTitle,
                 baCore.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
-                        true, "staff", args[2], msg.getMember().getAsMention()));
+                        true, "staff", args[2], msg.getAuthor().getIdLong()));
                 embed.sendToLogChannel();
                 guild.addRoleToMember(msg.getMentionedMembers().get(0),
                         botConfig.botAbuseRole).queue();
@@ -536,7 +536,7 @@ public class BotAbuseMain extends ListenerAdapter {
             try {
                 targetUser = guild.getJDA().retrieveUserById(Long.parseLong(args[1])).complete();
                 embed.setAsSuccess(defaultTitle,
-                        baCore.setBotAbuse(Long.parseLong(args[1]), true,"staff", null, msg.getMember().getAsMention()));
+                        baCore.setBotAbuse(Long.parseLong(args[1]), true,"staff", null, msg.getAuthor().getIdLong()));
                 embed.sendToLogChannel();
                 guild.addRoleToMember(guild.getMemberById(Long.parseLong(args[1])),
                         botConfig.botAbuseRole).queue();
@@ -566,7 +566,7 @@ public class BotAbuseMain extends ListenerAdapter {
         else if (msg.getMentionedMembers().size() == 1 && args.length == 2) {
             try {
                 embed.setAsSuccess(defaultTitle, baCore.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
-                        true, "staff", null, msg.getMember().getAsMention()));
+                        true, "staff", null, msg.getAuthor().getIdLong()));
                 embed.sendToLogChannel();
                 guild.addRoleToMember(msg.getMentionedMembers().get(0),
                         botConfig.botAbuseRole).queue();
@@ -590,12 +590,12 @@ public class BotAbuseMain extends ListenerAdapter {
         User targetUser = null;
         long lastDiscordID = 0;
         try {
-            lastDiscordID = baCore.discordID.get(baCore.issuingTeamMember.lastIndexOf(msg.getAuthor().getAsMention()));
+            lastDiscordID = baCore.discordID.get(baCore.issuingTeamMember.lastIndexOf(msg.getAuthor().getIdLong()));
             targetUser = guild.getJDA().retrieveUserById(lastDiscordID).complete();
             if (args.length == 1) {
-                guild.removeRoleFromMember(guild.getMemberById(baCore.discordID.get(baCore.issuingTeamMember.lastIndexOf(msg.getMember().getAsMention()))),
+                guild.removeRoleFromMember(guild.getMemberById(baCore.discordID.get(baCore.issuingTeamMember.lastIndexOf(msg.getMember().getIdLong()))),
                         botConfig.botAbuseRole).queue();
-                result = baCore.undoBotAbuse(msg.getMember().getAsMention(), true,  0 );
+                result = baCore.undoBotAbuse(msg.getAuthor().getIdLong(), true,  0);
                 if (result.contains("FATAL ERROR")) {
                     discord.failedIntegrityCheck(this.getClass().getName(), msg, "Bot Abuse: undo Command - No Member of who to Undo");
                 }
@@ -612,7 +612,7 @@ public class BotAbuseMain extends ListenerAdapter {
             else if (args.length == 2 && msg.getMentionedMembers().isEmpty()) {
                 guild.removeRoleFromMember(Long.parseLong(args[1]),
                         botConfig.botAbuseRole).queue();
-                result = baCore.undoBotAbuse(msg.getMember().getAsMention(), false, Long.parseLong(args[1]));
+                result = baCore.undoBotAbuse(msg.getAuthor().getIdLong(), false, Long.parseLong(args[1]));
                 if (result.contains("FATAL ERROR")) {
                     discord.failedIntegrityCheck(this.getClass().getName(), msg, "Bot Abuse: undo Command - Long Value of Member to Undo");
                 }
@@ -630,7 +630,7 @@ public class BotAbuseMain extends ListenerAdapter {
             else if (args.length == 2 && msg.getMentionedMembers().size() == 1) {
                 guild.removeRoleFromMember(msg.getMentionedMembers().get(0),
                         botConfig.botAbuseRole).queue();
-                result = baCore.undoBotAbuse(msg.getAuthor().getAsMention(), false, msg.getMentionedMembers().get(0).getIdLong());
+                result = baCore.undoBotAbuse(msg.getAuthor().getIdLong(), false, msg.getMentionedMembers().get(0).getIdLong());
                 if (result.contains("FATAL ERROR")) {
                     discord.failedIntegrityCheck(this.getClass().getName(), msg, "undo Command - Mention Value of who to Undo");
                 }

@@ -18,7 +18,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
     MainConfiguration mainConfig;
     ArrayList<Integer> id = new ArrayList<>();
     ArrayList<Long> discordID = new ArrayList<>();
-    ArrayList<String> issuingTeamMember = new ArrayList<>();
+    ArrayList<Long> issuingTeamMember = new ArrayList<>();
     ArrayList<Integer> repOffenses = new ArrayList<>();
     ArrayList<Date> issuedDates = new ArrayList<>();
     ArrayList<Date> expiryDates = new ArrayList<>();
@@ -45,7 +45,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         botConfig = importBotConfig;
     }
 
-    String setBotAbuse(long targetDiscordID, boolean isPermanent, String reason, @Nullable String imageURL, String teamMember)
+    String setBotAbuse(long targetDiscordID, boolean isPermanent, String reason, @Nullable String imageURL, long teamMember)
             throws IOException, NullPointerException {
         reason = reason.toLowerCase();
         SimpleDateFormat sdf = this.getDefaultSDF();
@@ -233,7 +233,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         } while (this.id.contains(newID) || newID < 100000);
         return newID;
     }
-    String undoBotAbuse(String teamMember, boolean isUndoingLast, long targetDiscordID) throws IOException {
+    String undoBotAbuse(long teamMember, boolean isUndoingLast, long targetDiscordID) throws IOException {
         Calendar cTooLate = Calendar.getInstance();
         int id;
         if (isUndoingLast) {
@@ -333,7 +333,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                 else {
                     return result.concat(
                             "\nBot Abuse ID: **" + this.id.get(this.discordID.lastIndexOf(targetDiscordID)) +
-                            "**\nIssuing Team Member: " + this.issuingTeamMember.get(this.discordID.lastIndexOf(targetDiscordID)) +
+                            "**\nIssuing Team Member: <@!" + this.issuingTeamMember.get(this.discordID.lastIndexOf(targetDiscordID)) + ">" +
                             "\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
                             "**\nDate Issued: **" + sdf.format(dateIssued.getTime()) +
                             "**\nExpiry Date: **Never" +
@@ -358,7 +358,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                 else {
                     return result.concat(
                             "\nBot Abuse ID: **" + this.id.get(this.discordID.lastIndexOf(targetDiscordID)) +
-                            "**\nIssuing Team Member: " + this.issuingTeamMember.get(this.discordID.lastIndexOf(targetDiscordID)) +
+                            "**\nIssuing Team Member: <@!" + this.issuingTeamMember.get(this.discordID.lastIndexOf(targetDiscordID)) + ">" +
                             "\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
                             "**\nDate Issued: **" + sdf.format(dateIssued.getTime()) +
                             "**\nExpiry Date: **" + sdf.format(dateToExpire.getTime()) +

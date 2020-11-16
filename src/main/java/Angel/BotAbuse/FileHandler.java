@@ -48,7 +48,7 @@ class FileHandler {
         JsonObject database = JsonParser.parseReader(fileReader).getAsJsonObject();
         baCore.id = gson.fromJson(database.get("ID").getAsString(), integerType);
         baCore.discordID = gson.fromJson(database.get("DiscordID").getAsString(), longType);
-        baCore.issuingTeamMember = gson.fromJson(database.get("TeamMembers").getAsString(), stringType);
+        baCore.issuingTeamMember = gson.fromJson(database.get("TeamMembers").getAsString(), longType);
         baCore.repOffenses = gson.fromJson(database.get("RepOffenses").getAsString(), integerType);
         baCore.issuedDates = gson.fromJson(database.get("DatesIssued").getAsString(), dateType);
         baCore.expiryDates = gson.fromJson(database.get("ExpiryDates").getAsString(), dateType);

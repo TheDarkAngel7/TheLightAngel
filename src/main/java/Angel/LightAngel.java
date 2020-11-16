@@ -28,9 +28,11 @@ class LightAngel {
         try {
             if (!BADataFile.exists()) {
                 if (BADataFile.createNewFile()) {
+                    FileOutputStream fos = new FileOutputStream(BADataFile);
                     ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(BADataFile));
                     log.info("Successfully Created new Bot Abuse Data File");
                     objectOutputStream.close();
+                    fos.close();
                 }
             }
             else {
@@ -38,9 +40,11 @@ class LightAngel {
             }
             if (!nickDataFile.exists()) {
                 if (nickDataFile.createNewFile()) {
-                    ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(nickDataFile));
+                    FileOutputStream fos = new FileOutputStream(nickDataFile);
+                    ObjectOutputStream objectOutputStream = new ObjectOutputStream(fos);
                     log.info("Successfully Created new Nickname Request Data File");
                     objectOutputStream.close();
+                    fos.close();
                 }
             }
             else {
