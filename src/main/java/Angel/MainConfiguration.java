@@ -116,7 +116,6 @@ public abstract class MainConfiguration {
                 && guild.getTextChannels().contains(guild.getTextChannelById(logChannelID))
                 && guild.getTextChannels().contains(guild.getTextChannelById(helpChannelID))
                 && guild.getTextChannels().contains(guild.getTextChannelById(managementChannelID))
-                && guild.getTextChannels().contains(guild.getTextChannelById(botSpamChannelID))
                 && guild.getRoles().contains(guild.getRoleById(adminRoleID))
                 && guild.getRoles().contains(guild.getRoleById(staffRoleID))
                 && guild.getRoles().contains(guild.getRoleById(teamRoleID));
