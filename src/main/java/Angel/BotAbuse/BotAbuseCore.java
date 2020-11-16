@@ -95,8 +95,8 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                 fileHandler.saveDatabase();
                 return ":white_check_mark: **Successfully Bot Abused <@!" + targetDiscordID + ">" +
                         "**\nBot Abuse ID: **" + this.id.get(this.discordID.lastIndexOf(targetDiscordID)) +
-                        "**\nIssuing Team Member: **" + this.issuingTeamMember.get(this.discordID.lastIndexOf(targetDiscordID)) +
-                        "**\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
+                        "**\nIssuing Team Member: <@!" + this.issuingTeamMember.get(this.discordID.lastIndexOf(targetDiscordID)) + ">" +
+                        "\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
                         "**\nDate Issued: **" + sdf.format(this.issuedDates.get(this.discordID.lastIndexOf(targetDiscordID))) +
                         "**\nExpiry Date: **" + getNewExpiryDate(targetDiscordID) +
                         "**\nReason: **" + this.reasons.get(this.discordID.lastIndexOf(targetDiscordID)) +
@@ -164,7 +164,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
             if (this.proofImages.get(this.discordID.lastIndexOf(targetDiscordID)) == null) {
                 return ":white_check_mark: **Successfully Bot Abused <@!" + targetDiscordID + ">" +
                         "**\nBot Abuse ID: **" + this.id.get(this.discordID.lastIndexOf(targetDiscordID)) +
-                        "**\nIssuing Team Member: **" + this.issuingTeamMember.get(this.discordID.lastIndexOf(targetDiscordID)) +
+                        "**\nIssuing Team Member: <!@" + this.issuingTeamMember.get(this.discordID.lastIndexOf(targetDiscordID)) + ">" +
                         "**\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
                         "**\nDate Issued: **" + sdf.format(this.issuedDates.get(this.discordID.lastIndexOf(targetDiscordID))) +
                         "**\nExpiry Date: **" + getNewExpiryDate(targetDiscordID) +
@@ -174,7 +174,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
             else {
                 return ":white_check_mark: **Successfully Bot Abused <@!" + targetDiscordID + ">" +
                         "**\nBot Abuse ID: **" + this.id.get(this.discordID.lastIndexOf(targetDiscordID)) +
-                        "**\nIssuing Team Member: **" + this.issuingTeamMember.get(this.discordID.lastIndexOf(targetDiscordID)) +
+                        "**\nIssuing Team Member: <!@" + this.issuingTeamMember.get(this.discordID.lastIndexOf(targetDiscordID)) + ">" +
                         "**\nOffense Number: **" + this.repOffenses.get(this.discordID.lastIndexOf(targetDiscordID)) +
                         "**\nDate Issued: **" + sdf.format(this.issuedDates.get(this.discordID.lastIndexOf(targetDiscordID))) +
                         "**\nExpiry Date: **" + getNewExpiryDate(targetDiscordID) +
