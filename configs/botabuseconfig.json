@@ -1,0 +1,9 @@
+{
+	"roleScannerIntervalMinutes": 15,
+	"maxDaysUndoIsAllowed": 5,
+	"botAbuseRoleID": "664619076324294666",
+	"botAbuseTimingsInDays": "[7,30,90]",
+	"oldOffensesConsideredHotInMonths": 6,
+	"warnOnHotOffenseNumber": 2,
+	"autoPermanent": false
+}
