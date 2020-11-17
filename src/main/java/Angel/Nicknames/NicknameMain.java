@@ -184,9 +184,9 @@ public class NicknameMain extends ListenerAdapter {
             String defaultMessage = event.getUser().getAsTag() + " updated their nickname from "
                     + event.getOldNickname() + " to " + event.getNewNickname()
                     + " as they did not have a role that prohibits it";
-            String defaultDiscordMessage = event.getUser().getAsMention() + " updated their nickname from **"
+            String defaultDiscordMessage = nickCore.replaceNulls(event.getUser().getIdLong(), event.getUser().getAsMention() + " updated their nickname from **"
                     + event.getOldNickname() + "** to **" + event.getNewNickname() + "**. " +
-                    "\n*They were able to perform this action because they did not have a role that prohibits it*";
+                    "\n*They were able to perform this action because they did not have a role that prohibits it*");
             embed.setAsInfo("Discord Nickname Updated", defaultDiscordMessage);
             embed.sendToLogChannel();
             addNameHistory(event.getUser().getIdLong(), event.getOldNickname(), null);
