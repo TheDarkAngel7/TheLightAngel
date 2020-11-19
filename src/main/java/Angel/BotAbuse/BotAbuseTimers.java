@@ -54,7 +54,7 @@ class BotAbuseTimers implements Runnable {
             log.info("Configuration File Timings are now valid again - Restarting Timers...");
         }
         // If the init method was initiated from a restart then this'll run.
-        if (baFeature.isRestart && baFeature.commandsSuspended) {
+        if (baFeature.restartValue == 1 && baFeature.commandsSuspended) {
             embed.setAsStop("Restart Error","**Restart Complete but the Data File is Still Not Usable**");
             embed.sendToChannel(null, mainConfig.discussionChannel);
         }
@@ -175,7 +175,7 @@ class BotAbuseTimers implements Runnable {
                         "threw a NullPointerException");
             }
         }
-        baFeature.isRestart = false;
+        baFeature.restartValue = 0;
         baFeature.isReload = false;
     }
 }

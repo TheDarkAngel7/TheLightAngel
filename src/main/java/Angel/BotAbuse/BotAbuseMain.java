@@ -41,12 +41,12 @@ public class BotAbuseMain extends ListenerAdapter {
     public boolean isConnected = false;
     public boolean isBusy = false;
     public User commandUser;
-    boolean isRestart;
+    int restartValue;
     boolean isReload = false;
     public final List<String> commands = new ArrayList<>(Arrays.asList("botAbuse", "ba", "permBotAbuse", "pba", "undo", "check",
             "checkHistory", "clear", "transfer", "reasonsmanager", "rmgr", "reasons", "r"));
 
-    BotAbuseMain(boolean getCommandsSuspended, boolean isRestart, MainConfiguration importMainConfig, EmbedHandler importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException, TimeoutException {
+    BotAbuseMain(boolean getCommandsSuspended, int restartValue, MainConfiguration importMainConfig, EmbedHandler importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException, TimeoutException {
         commandsSuspended = getCommandsSuspended;
         baCore = new BotAbuseCore();
         discord = importDiscordBot;
@@ -60,7 +60,7 @@ public class BotAbuseMain extends ListenerAdapter {
         baCore.setBotConfig(botConfig);
         baCore.startup();
         this.fieldHeader = mainConfig.fieldHeader;
-        this.isRestart = isRestart;
+        this.restartValue = restartValue;
         this.embed = importEmbed;
         this.help = new Help(this, embed, mainConfig);
         baTimers = new BotAbuseTimers(guild, this, embed, mainConfig, discord);
@@ -753,8 +753,6 @@ public class BotAbuseMain extends ListenerAdapter {
                         msg.getMentionedMembers().get(0).getEffectiveName() + "'s Bot Abuse Status");
             }
             embed.sendToTeamDiscussionChannel(msg, null);
-            log.info(msg.getMember().getEffectiveName() + " just checked on "+
-                    msg.getMentionedMembers().get(0).getEffectiveName() + "'s Bot Abuse Status");
 
         }
         // /check <Timezone Offset>

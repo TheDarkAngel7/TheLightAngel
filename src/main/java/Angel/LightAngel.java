@@ -58,18 +58,30 @@ class LightAngel {
     }
     public static void main(String[] args) throws LoginException, IOException {
         boolean isRestart;
+        int restartValue;
         if (args.length == 1) {
-            isRestart = Boolean.parseBoolean(args[0]);
+            // restartValue of 0 indicates Cold Start
+            // restartValue of 1 indicates Restart
+            // restartValue of 2 indicates Silent Start/Restart
+            if (args[0].equalsIgnoreCase("true") || args[0].equalsIgnoreCase("false")) {
+                isRestart = Boolean.parseBoolean(args[0]);
+                if (!isRestart) restartValue = 0;
+                else restartValue = 1;
+            }
+            else if (args[0].equalsIgnoreCase("-s") || args[0].equalsIgnoreCase("silent")) {
+                restartValue = 2;
+            }
+            else restartValue = 0;
         }
         else if (args.length > 1) {
-            log.warn("Invalid Number of Arguments on Startup - Reverting to an startup argument of \"false\"");
-            isRestart = false;
+            log.warn("Invalid Number of Arguments on Startup - Reverting to an restartValue of \"0\"");
+            restartValue = 0;
         }
-        else isRestart = false;
+        else restartValue = 0;
         MainConfiguration mainConfig = new ModifyMainConfiguration(fileHandler.getMainConfig());
         mainConfig.initialSetup();
         EmbedHandler embed = new EmbedHandler(mainConfig);
-        discord = new DiscordBotMain(isRestart, mainConfig, embed, fileHandler);
+        discord = new DiscordBotMain(restartValue, mainConfig, embed, fileHandler);
         embed.setDiscordInstance(discord);
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
                 GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_EMOJIS);

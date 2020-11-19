@@ -31,7 +31,7 @@ public class DiscordBotMain extends ListenerAdapter {
     private NicknameInit nickInit;
     private BotAbuseMain baFeature;
     private BotAbuseInit baInit;
-    private boolean isRestart;
+    private int restartValue;
     private final Logger log = LogManager.getLogger(DiscordBotMain.class);
     private boolean commandsSuspended = false;
     public boolean isStarting = true;
@@ -40,11 +40,11 @@ public class DiscordBotMain extends ListenerAdapter {
     public final List<String> mainCommands = new ArrayList<>(Arrays.asList("reload", "restart", "ping", "status", "help", "set"));
     private Ping ping = new Ping();
 
-    DiscordBotMain(boolean isRestart, MainConfiguration mainConfig, EmbedHandler embed, FileHandler fileHandler) {
+    DiscordBotMain(int restartValue, MainConfiguration mainConfig, EmbedHandler embed, FileHandler fileHandler) {
         this.mainConfig = mainConfig;
         this.fileHandler = fileHandler;
         this.embed = embed;
-        this.isRestart = isRestart;
+        this.restartValue = restartValue;
     }
 
     @Override
@@ -58,18 +58,20 @@ public class DiscordBotMain extends ListenerAdapter {
         }
         else {
             mainConfig.discordSetup();
-            String defaultTitle = "Startup Complete";
+            if (restartValue != 2) {
+                String defaultTitle = "Startup Complete";
 
-            if (isRestart) defaultTitle = defaultTitle.replace("Startup", "Restart");
+                if (restartValue == 1) defaultTitle = defaultTitle.replace("Startup", "Restart");
 
-            embed.setAsSuccess(defaultTitle,
-                    "**Please wait for all my features to finish loading and connecting.**" +
-                    "\n**Check on their status with `" + mainConfig.commandPrefix + "status`**");
-            embed.sendToChannel(null, mainConfig.discussionChannel);
+                embed.setAsSuccess(defaultTitle,
+                        "**Please wait for all my features to finish loading and connecting.**" +
+                                "\n**Check on their status with `" + mainConfig.commandPrefix + "status`**");
+                embed.sendToChannel(null, mainConfig.discussionChannel);
+            }
         }
         Thread.currentThread().setName("Main Thread");
         nickInit = new NicknameInit(commandsSuspended, mainConfig, embed, guild, this);
-        baInit = new BotAbuseInit(commandsSuspended, isRestart, mainConfig, embed, guild, this);
+        baInit = new BotAbuseInit(commandsSuspended, restartValue, mainConfig, embed, guild, this);
         Thread tNickFeature = new Thread(nickInit);
         Thread tBotAbuseFeature = new Thread(baInit);
         tNickFeature.start();
