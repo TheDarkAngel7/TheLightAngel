@@ -607,6 +607,9 @@ public class BotAbuseMain extends ListenerAdapter {
                     embed.setAsSuccess(defaultTitle, result);
                     log.info(msg.getMember().getEffectiveName() + " just undid their last Bot Abuse");
                     embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid their last bot abuse " +
+                            "\n **ID " + result.split("\n")[0].split("ID ")[1]);
+                    embed.sendToLogChannel();
                 }
             }
             else if (args.length == 2 && msg.getMentionedMembers().isEmpty()) {
@@ -626,6 +629,9 @@ public class BotAbuseMain extends ListenerAdapter {
                     + guild.getMemberById(args[1]).getEffectiveName());
                     embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
                 }
+                embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid their last bot abuse " +
+                        "\n **ID " + result.split("\n")[0].split("ID ")[1]);
+                embed.sendToLogChannel();
             }
             else if (args.length == 2 && msg.getMentionedMembers().size() == 1) {
                 guild.removeRoleFromMember(msg.getMentionedMembers().get(0),
@@ -644,6 +650,9 @@ public class BotAbuseMain extends ListenerAdapter {
                             + msg.getMentionedMembers().get(0).getEffectiveName());
                     embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
                 }
+                embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid their last bot abuse " +
+                        "\n **ID " + result.split("\n")[0].split("ID ")[1]);
+                embed.sendToLogChannel();
             }
         }
         catch (NullPointerException ex) {
@@ -655,6 +664,9 @@ public class BotAbuseMain extends ListenerAdapter {
                             " (ID: " + targetUser.getIdLong() + ")" + " from the Database**");
             embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
             log.info(msg.getMember().getEffectiveName() + " Successfully Undid Bot Abuse for " + lastDiscordID);
+            embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid their last bot abuse " +
+                    "\n **ID " + result.split("\n")[0].split("ID ")[1]);
+            embed.sendToLogChannel();
         }
         catch (IllegalArgumentException ex) {
             embed.clearFields();
@@ -665,6 +677,9 @@ public class BotAbuseMain extends ListenerAdapter {
                             " (ID: " + targetUser.getIdLong() + ")" + " from the Database**");
             embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
             log.info(msg.getMember().getEffectiveName() + " Successfully Undid Bot Abuse for " + lastDiscordID);
+            embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid their last bot abuse " +
+                    "\n **ID " + result.split("\n")[0].split("ID ")[1]);
+            embed.sendToLogChannel();
         }
         catch (IndexOutOfBoundsException ex) {
             embed.setAsError("Nothing to Undo", "**No Records found for undoing**");

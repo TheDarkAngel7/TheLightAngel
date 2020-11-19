@@ -16,6 +16,7 @@ public abstract class MainConfiguration {
     boolean deleteOriginalNonStaffCommands;
     boolean deleteOriginalStaffCommands;
     public boolean forceToDedicatedChannel;
+    public boolean forceToManagementChannel;
     public char commandPrefix;
     public String fieldHeader;
     public Member owner;
@@ -91,6 +92,7 @@ public abstract class MainConfiguration {
         deleteOriginalNonStaffCommands = configObj.get("deleteOriginalNonStaffCommands").getAsBoolean();
         deleteOriginalStaffCommands = configObj.get("deleteOriginalStaffCommands").getAsBoolean();
         forceToDedicatedChannel = configObj.get("forceAllNonTeamOutputToDedicatedChannel").getAsBoolean();
+        forceToManagementChannel = configObj.get("forceAllTeamOutputToManagementChannel").getAsBoolean();
     }
     void discordSetup() {
         owner = guild.getMemberById(ownerDiscordID);

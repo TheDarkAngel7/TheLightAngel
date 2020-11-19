@@ -150,7 +150,7 @@ public class EmbedHandler {
         else {
             try {
                 if (!msg.getChannel().equals(mainConfig.botSpamChannel) &&
-                        (!mainConfig.forceToDedicatedChannel || msg.getChannel().equals(mainConfig.helpChannel) ||
+                        (!mainConfig.forceToDedicatedChannel ||
                                 mainConfig.dedicatedOutputChannelID.equalsIgnoreCase("None"))) {
                     if (author != null && !msg.getChannel().equals(mainConfig.helpChannel)) {
                         mainConfig.helpChannel.sendMessage(author.getAsMention()).queue();
@@ -179,7 +179,8 @@ public class EmbedHandler {
     public void sendToTeamDiscussionChannel(Message msg, @Nullable User author) {
         if (msg.getChannelType().equals(ChannelType.PRIVATE)) sendDM(msg, author);
         else {
-            if (!msg.getChannel().equals(mainConfig.managementChannel)) {
+            if (!msg.getChannel().equals(mainConfig.managementChannel) && (!mainConfig.forceToManagementChannel ||
+                    mainConfig.managementChannelID.equalsIgnoreCase("None")))  {
                 if (author != null && (!msg.getChannel().equals(mainConfig.discussionChannel) && !msg.getChannel().equals(mainConfig.managementChannel))
                         && discord.isTeamMember(author.getIdLong())) {
                     mainConfig.discussionChannel.sendMessage(author.getAsMention()).queue();
@@ -187,6 +188,9 @@ public class EmbedHandler {
                 mainConfig.discussionChannel.sendMessage(messageEmbed).queue(m -> commandMessageMap.put(msg, m));
             }
             else {
+                if (author != null && !msg.getChannel().equals(mainConfig.managementChannel)) {
+                    mainConfig.managementChannel.sendMessage(author.getAsMention()).queue();
+                }
                 mainConfig.managementChannel.sendMessage(messageEmbed).queue(m -> commandMessageMap.put(msg, m));
             }
             messageSent();
