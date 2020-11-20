@@ -145,7 +145,7 @@ public class EmbedHandler {
         });
         messageSent();
     }
-    public void sendToHelpChannel(Message msg, @Nullable User author) {
+    public void sendToMemberOutput(Message msg, @Nullable User author) {
         if (msg.getChannelType().equals(ChannelType.PRIVATE)) sendDM(msg, author);
         else {
             try {
@@ -176,7 +176,7 @@ public class EmbedHandler {
             messageSent();
         }
     }
-    public void sendToTeamDiscussionChannel(Message msg, @Nullable User author) {
+    public void sendToTeamOutput(Message msg, @Nullable User author) {
         if (msg.getChannelType().equals(ChannelType.PRIVATE)) sendDM(msg, author);
         else {
             if (!msg.getChannel().equals(mainConfig.managementChannel) && (!mainConfig.forceToManagementChannel ||

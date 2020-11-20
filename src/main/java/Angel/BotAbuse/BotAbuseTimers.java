@@ -71,7 +71,7 @@ class BotAbuseTimers implements Runnable {
                     embed.setAsStop("Timer Error", "One Timer is Running and the Other Isn't..." +
                             "\n\n**Restarting To Fix the Issue... Please Wait...**");
                     embed.sendToLogChannel();
-                    discord.restartBot();
+                    discord.restartBot(false);
                 }
                 catch (IOException e) {
                     e.printStackTrace();

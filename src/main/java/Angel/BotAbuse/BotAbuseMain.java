@@ -176,11 +176,11 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
                 else if ((args.length < 3 || args.length > 4) && isTeamMember) {
                     embed.setAsError("Error - Invalid Number of Arguements", "**You Entered an Invalid Number of Arguments**");
-                    embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
                 }
                 else { // If they Don't have the Team role then it returns an error message
                     embed.setAsError("Error - No Permissions", ":x: **You Lack Permissions to do that!**");
-                    embed.sendToHelpChannel(msg, msg.getAuthor());
+                    embed.sendToMemberOutput(msg, msg.getAuthor());
                 }
             }
             else if (args[0].equalsIgnoreCase("permbotabuse") || args[0].equalsIgnoreCase("pba")) { // /permbotabuse <Mention or Discord ID> [Image]
@@ -189,11 +189,11 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
                 else if (isStaffMember && (args.length < 2 || args.length > 3)) {
                     embed.setAsError("Error - Invalid Number of Arguements", ":x: **You Entered an Invalid Number of Arguments**");
-                    embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
                 }
                 else {
                     embed.setAsError("Error - No Permissions", ":x: **You Lack Permissions to do that!**");
-                    embed.sendToHelpChannel(msg, msg.getAuthor());
+                    embed.sendToMemberOutput(msg, msg.getAuthor());
                 }
             }
             else if (args[0].equalsIgnoreCase("undo")) {
@@ -202,7 +202,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
                 else {
                     embed.setAsError("Error - No Permissions", ":x: **You Lack Permissions to do that!**");
-                    embed.sendToHelpChannel(msg, msg.getAuthor());
+                    embed.sendToMemberOutput(msg, msg.getAuthor());
                 }
             }
             else if (args[0].equalsIgnoreCase("check")) {
@@ -220,7 +220,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
                 else {
                     embed.setAsError("Error - No Permissions", ":x: **You Lack Permissions to do that!**");
-                    embed.sendToHelpChannel(msg, msg.getAuthor());
+                    embed.sendToMemberOutput(msg, msg.getAuthor());
                 }
             }
             else if (args[0].equalsIgnoreCase("clear")) {
@@ -229,7 +229,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
                 else {
                     embed.setAsError("Error - No Permissions", "**:x: You Lack Permissions to do that!**");
-                    embed.sendToHelpChannel(msg, msg.getAuthor());
+                    embed.sendToMemberOutput(msg, msg.getAuthor());
                 }
             }
             else if (args[0].equalsIgnoreCase("checkhistory")) {
@@ -260,12 +260,12 @@ public class BotAbuseMain extends ListenerAdapter {
                 if (!isTeamMember) {
                     embed.setAsStop("Commands Suspended",
                             "**Commands are Temporarily Suspended on the Bot Abuse Feature side...** \n**Sorry for the inconvience...**");
-                    embed.sendToHelpChannel(msg, msg.getAuthor());
+                    embed.sendToMemberOutput(msg, msg.getAuthor());
                 }
                 else {
                     embed.setAsStop("Commands Suspended", "**Commands are Temporarily Suspended on the Bot Abuse Feature side... **" +
                             "\n**Please Post The Action you were trying to do in either a DM with" + mainConfig.owner.getAsMention() + " or in this channel.**");
-                   embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                   embed.sendToTeamOutput(msg, msg.getAuthor());
                 }
             }
             catch (NullPointerException ex) {
@@ -319,13 +319,13 @@ public class BotAbuseMain extends ListenerAdapter {
                                 botConfig.botAbuseRole).queue();
                         embed.setAsSuccess(defaultTitle,":white_check_mark: " + " Successfully Bot Abused "
                                 + guild.getMemberById(Long.parseLong(args[1])).getAsMention());
-                        embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                        embed.sendToTeamOutput(msg, msg.getAuthor());
                         log.info(msg.getMember().getEffectiveName() + " Successfully Bot Abused "
                                 + guild.getMemberById(Long.parseLong(args[1])).getEffectiveName());
                     }
                     else if (result.contains(":x:")) {
                         embed.setAsError("Whoops... Something went wrong", result);
-                        embed.sendToTeamDiscussionChannel(msg, null);
+                        embed.sendToTeamOutput(msg, null);
                         wasAlreadyBotAbused = true;
                     }
                 }
@@ -336,7 +336,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     if (result.contains("FATAL ERROR")) {
                         embed.setAsStop("FATAL ERROR", "**Ouch! That Really Didn't Go Well! Give me a few seconds" +
                                 " while I reload and then you can try to run that command again**");
-                        embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                        embed.sendToTeamOutput(msg, msg.getAuthor());
                         discord.failedIntegrityCheck(this.getClass().getName(), msg, "Bot Abuse: setBotAbuse - Picture Attachment Found and Long Member Value");
                     }
                     else if (result.contains(":white_check_mark:")) {
@@ -347,13 +347,13 @@ public class BotAbuseMain extends ListenerAdapter {
                         embed.setAsSuccess(defaultTitle,":white_check_mark: " + " Successfully Bot Abused "
                                 + guild.getMemberById(Long.parseLong(args[1])).getAsMention() +
                                 "\n\n :warning: Image Attachment Detected, **Do Not Delete the original command!**");
-                        embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                        embed.sendToTeamOutput(msg, msg.getAuthor());
                         log.info(msg.getMember().getEffectiveName() + " Successfully Bot Abused "
                                 + guild.getMemberById(Long.parseLong(args[1])).getEffectiveName());
                     }
                     else if (result.contains(":x:")) {
                         embed.setAsError("Whoops... Something went wrong", result);
-                        embed.sendToTeamDiscussionChannel(msg, null);
+                        embed.sendToTeamOutput(msg, null);
                         wasAlreadyBotAbused = true;
                     }
                 }
@@ -364,19 +364,19 @@ public class BotAbuseMain extends ListenerAdapter {
                             "Do that again but please use this channel.**" +
                             "\n\n**:warning: DO NOT delete the command for me as your command will not be deleted " +
                             "in order for the attachment to be saved by Discord's servers**");
-                    embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
                 }
             }
             catch (NumberFormatException ex) {
                 embed.setAsError("Error While Setting Bot Abuse", ":x: The Discord ID cannot contain any letters or special characters");
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
             }
             catch (NullPointerException ex) {
                 embed.clearFields();
                 embed.setAsWarning("Exception Caught but Successful Bot Abuse", "Caught a NullPointerException" +
                         "\n**The Bot Abuse role could not be added to that Discord ID as they Don't Exist in the Server!**" +
                         "\n **Successfully Added A Bot Abuse for " + targetUser.getAsTag() + " (ID: " + targetUser.getIdLong() + ") to the Database**");
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
                 log.info(msg.getMember().getEffectiveName() + " Successfully Bot Abused " + args[1]);
             }
             catch (IllegalArgumentException ex) {
@@ -385,7 +385,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         "\n**The Bot Abuse role could not be added to that Discord ID as they Don't Exist in the Server!**" +
                         "\n **Successfully Added A Bot Abuse for " +
                         targetUser.getAsTag() + " (ID: " + targetUser.getIdLong() + ") to the Database**");
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
                 log.info(msg.getMember().getEffectiveName() + " Successfully Bot Abused "
                         + args[1]);
             }
@@ -409,13 +409,13 @@ public class BotAbuseMain extends ListenerAdapter {
                         embed.sendToLogChannel();
                         embed.setAsSuccess(defaultTitle,"**:white_check_mark: " +
                                 " Successfully Bot Abused " + msg.getMentionedMembers().get(0).getAsMention() + "**");
-                        embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                        embed.sendToTeamOutput(msg, msg.getAuthor());
                         log.info(msg.getMember().getEffectiveName() + " Successfully Bot Abused "
                                 + msg.getMentionedMembers().get(0).getEffectiveName());
                     }
                     else if (result.contains(":x:")) {
                         embed.setAsError("Whoops... Something went wrong", result);
-                        embed.sendToTeamDiscussionChannel(msg, null);
+                        embed.sendToTeamOutput(msg, null);
                         wasAlreadyBotAbused = true;
                     }
                 }
@@ -434,13 +434,13 @@ public class BotAbuseMain extends ListenerAdapter {
                         embed.setAsSuccess(defaultTitle, "**:white_check_mark: " + msg.getAuthor().getAsMention()
                                 + " Successfully Bot Abused " + msg.getMentionedMembers().get(0).getAsMention() + "**"
                         + "\n\n :warning: Image Attachment Detected, **Do Not Delete the original command!**");
-                        embed.sendToTeamDiscussionChannel(msg, null);
+                        embed.sendToTeamOutput(msg, null);
                         log.info(msg.getMember().getEffectiveName() + " Successfully Bot Abused "
                                 + msg.getMentionedMembers().get(0).getEffectiveName());
                     }
                     else if (result.contains(":x:")) {
                         embed.setAsError("Whoops... Something went wrong", result);
-                        embed.sendToTeamDiscussionChannel(msg, null);
+                        embed.sendToTeamOutput(msg, null);
                         wasAlreadyBotAbused = true;
                     }
                 }
@@ -451,7 +451,7 @@ public class BotAbuseMain extends ListenerAdapter {
                             "Do that again but please use this channel.**" +
                             "\n\n**:warning: DO NOT delete the command for me as your command will not be deleted " +
                             "in order for the attachment to be saved by Discord's servers**");
-                    embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
                 }
             }
             catch (Exception e) {
@@ -460,7 +460,7 @@ public class BotAbuseMain extends ListenerAdapter {
         }
         else if (msg.getMentionedMembers().size() > 1 ) {
             embed.setAsError("Target ID Error", ":x: Too many Target IDs");
-            embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+            embed.sendToTeamOutput(msg, msg.getAuthor());
         }
         if (!wasAlreadyBotAbused && targetUser != null && baCore.getHotOffenses(targetUser.getIdLong(), false) <= baCore.botConfig.botAbuseTimes.size()
                 && baCore.botConfig.hotOffenseWarning > 0) {
@@ -492,17 +492,17 @@ public class BotAbuseMain extends ListenerAdapter {
                         botConfig.botAbuseRole).queue();
                 embed.setAsSuccess(defaultTitle, msg.getAuthor().getAsMention() + " Permanently Bot Abused " +
                         guild.getMemberById(Long.parseLong(args[1])).getAsMention());
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
                 log.info("[Admin Override] " + msg.getMember().getEffectiveName() +
                         " Successfully Permanently Bot Abused " + guild.getMemberById(Long.parseLong(args[1])).getEffectiveName());
             }
             catch (NumberFormatException ex) {
                 embed.setAsError("Error While Setting Perm Bot Abuse", "Invalid User ID!");
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
             }
             catch (ArrayIndexOutOfBoundsException ex) {
                 embed.setAsError("Error While Setting Perm Bot Abuse", "Invalid Number of Arguments!");
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
             }
             catch (NullPointerException ex) {
                 embed.clearFields();
@@ -511,7 +511,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         "\n**The Bot Abuse role could not be added for " + targetUser.getAsTag() + " (ID: " + targetUser.getIdLong() + ")" +
                                 " as they Don't Exist in the Server!**" +
                         "\n **Successfully Added A Perm Bot Abuse for them to the Database**");
-                embed.sendToTeamDiscussionChannel(msg, null);
+                embed.sendToTeamOutput(msg, null);
             }
             catch (Exception e) {
                 e.printStackTrace();
@@ -545,11 +545,11 @@ public class BotAbuseMain extends ListenerAdapter {
             }
             catch (NumberFormatException ex) {
                 embed.setAsError("Error in Setting Perm Bot Abuse", "**:x: Invalid User ID!**");
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
             }
             catch (ArrayIndexOutOfBoundsException ex) {
                 embed.setAsError("Error in Setting Perm Bot Abuse", "**:x: Invalid Number of Arguements!**");
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
             }
             catch (NullPointerException ex) {
                 embed.clearFields();
@@ -557,7 +557,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         ":white_check_mark: " + msg.getMember().getEffectiveName()
                                 + " Permanently Bot Abused " + targetUser.getAsTag() + " (ID: " + targetUser.getIdLong() + ")" +
                                 " who does not exist on the Discord Server");
-                embed.sendToTeamDiscussionChannel(msg, null);
+                embed.sendToTeamOutput(msg, null);
             }
             catch (Exception ex) {
                 ex.printStackTrace();
@@ -579,7 +579,7 @@ public class BotAbuseMain extends ListenerAdapter {
         }
         else {
             embed.setAsError("Mentioned Players Error", "**:x: Too Many Mentioned Players!**");;
-            embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+            embed.sendToTeamOutput(msg, msg.getAuthor());
         }
     }
     private void undoCommand(Message msg) {
@@ -601,12 +601,12 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
                 else if (result.contains(":x:")) {
                     embed.setAsError("Error While Undoing", result);
-                    embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
                 }
                 else {
                     embed.setAsSuccess(defaultTitle, result);
                     log.info(msg.getMember().getEffectiveName() + " just undid their last Bot Abuse");
-                    embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
                     embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid their last bot abuse " +
                             "\n **ID " + result.split("\n")[0].split("ID ")[1]);
                     embed.sendToLogChannel();
@@ -621,13 +621,13 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
                 else if (result.contains(":x:")) {
                     embed.setAsError("Error While Undoing", result);
-                    embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
                 }
                 else {
                     embed.setAsSuccess(defaultTitle, result);
                     log.info(msg.getMember().getEffectiveName() + " just undid the Bot Abuse for "
                     + guild.getMemberById(args[1]).getEffectiveName());
-                    embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
                 }
                 embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid their last bot abuse " +
                         "\n **ID " + result.split("\n")[0].split("ID ")[1]);
@@ -642,13 +642,13 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
                 if (result.contains(":x:")) {
                     embed.setAsError("Error While Undoing", result);
-                    embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
                 }
                 else {
                     embed.setAsSuccess(defaultTitle, result);
                     log.info(msg.getMember().getEffectiveName() + " just undid the Bot Abuse for "
                             + msg.getMentionedMembers().get(0).getEffectiveName());
-                    embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
                 }
                 embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid their last bot abuse " +
                         "\n **ID " + result.split("\n")[0].split("ID ")[1]);
@@ -662,7 +662,7 @@ public class BotAbuseMain extends ListenerAdapter {
                             "\n**The Bot Abuse role could not be undone to that Discord ID as they Don't Exist in the Server!**" +
                             "\n **Successfully Removed A Bot Abuse for " + targetUser.getAsTag() +
                             " (ID: " + targetUser.getIdLong() + ")" + " from the Database**");
-            embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+            embed.sendToTeamOutput(msg, msg.getAuthor());
             log.info(msg.getMember().getEffectiveName() + " Successfully Undid Bot Abuse for " + lastDiscordID);
             embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid their last bot abuse " +
                     "\n **ID " + result.split("\n")[0].split("ID ")[1]);
@@ -675,7 +675,7 @@ public class BotAbuseMain extends ListenerAdapter {
                             "\n**The Bot Abuse role could not be undone to that Discord ID as they Don't Exist in the Server!**" +
                             "\n **Successfully Removed A Bot Abuse for " + targetUser.getAsTag() +
                             " (ID: " + targetUser.getIdLong() + ")" + " from the Database**");
-            embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+            embed.sendToTeamOutput(msg, msg.getAuthor());
             log.info(msg.getMember().getEffectiveName() + " Successfully Undid Bot Abuse for " + lastDiscordID);
             embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid their last bot abuse " +
                     "\n **ID " + result.split("\n")[0].split("ID ")[1]);
@@ -683,7 +683,7 @@ public class BotAbuseMain extends ListenerAdapter {
         }
         catch (IndexOutOfBoundsException ex) {
             embed.setAsError("Nothing to Undo", "**No Records found for undoing**");
-            embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+            embed.sendToTeamOutput(msg, msg.getAuthor());
         }
         catch (Exception ex) {
             ex.printStackTrace();
@@ -705,13 +705,13 @@ public class BotAbuseMain extends ListenerAdapter {
                     embed.setAsSuccess("You Are Not Bot Abused", result);
                 }
                 else embed.setAsInfo(defaultTitle, result);
-                embed.sendToHelpChannel(msg, msg.getAuthor());
+                embed.sendToMemberOutput(msg, msg.getAuthor());
                 log.info(msg.getAuthor().getAsTag() + " just checked on their own Bot Abuse status");
             }
             else {
                 embed.setAsError("No Permissions",
                         ":x: **You should not need to do that... you're a team member!**");
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
             }
         }
         // This handles if the player opts for a Direct Message instead "/check dm"
@@ -728,7 +728,7 @@ public class BotAbuseMain extends ListenerAdapter {
             else {
                 embed.setAsError("No Permissions",
                         ":x: **You should not need to do that... you're a team member!**");
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
             }
         }
         // /check <Discord ID>
@@ -742,13 +742,13 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
                 else
                     embed.setAsInfo(defaultTitle, result);
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
                 log.info(msg.getMember().getEffectiveName() + " just checked on "+
                         guild.getMemberById(Long.parseLong(args[1])).getEffectiveName() + "'s Bot Abuse Status");
             }
             catch (NumberFormatException ex) {
                 embed.setAsError("Check Info Error", ":x: **Invalid Input**");
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
                 log.info("Team Member " + msg.getMember().getEffectiveName() + " just entered an invalid input for the Discord ID");
             }
         }
@@ -767,7 +767,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 log.info(msg.getMember().getEffectiveName() + " just checked on "+
                         msg.getMentionedMembers().get(0).getEffectiveName() + "'s Bot Abuse Status");
             }
-            embed.sendToTeamDiscussionChannel(msg, null);
+            embed.sendToTeamOutput(msg, null);
 
         }
         // /check <Timezone Offset>
@@ -779,20 +779,20 @@ public class BotAbuseMain extends ListenerAdapter {
                         embed.setAsSuccess("You Are Not Bot Abused", result);
                     }
                     else embed.setAsInfo(defaultTitle, result);
-                    embed.sendToHelpChannel(msg, msg.getAuthor());
+                    embed.sendToMemberOutput(msg, msg.getAuthor());
                     log.info(msg.getAuthor().getAsTag() +
                             " just checked on their own Bot Abuse status using TimeZone offset " + args[1]);
                 }
                 else {
                     embed.setAsError("Check Info Error", ":x: **Invalid Timezone Offset**");
-                    embed.sendToHelpChannel(msg, null);
+                    embed.sendToMemberOutput(msg, null);
                     log.error(msg.getAuthor().getAsTag() + " just entered an invalid TimeZone offset into /check");
                 }
             }
             else {
                 embed.setAsError("No Permissions",
                         ":x: **You should not need to do that... you're a team member!**");
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
             }
         }
         // /check [dm] <Timezone Offset>
@@ -810,7 +810,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
                 else {
                     embed.setAsError("TimeZone Offset Error", ":x: **Invalid Timezone Offset**");
-                    embed.sendToHelpChannel(msg, null);
+                    embed.sendToMemberOutput(msg, null);
                     log.error(msg.getMember().getEffectiveName() +
                             " just entered an invalid Discord ID while opting for a DM");
                 }
@@ -818,7 +818,7 @@ public class BotAbuseMain extends ListenerAdapter {
             else {
                 embed.setAsError("No Permissions",
                         ":x: **You should not need to do that... you're a team member!**");
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
             }
         }
         // /check <Timezone Offset> <Mention or Discord ID>
@@ -835,7 +835,7 @@ public class BotAbuseMain extends ListenerAdapter {
                                     msg.getMentionedMembers().get(0).getEffectiveName() + "'s Bot Abuse Status but they were not Bot Abused");
                         }
                         else embed.setAsInfo(defaultTitle, result);
-                        embed.sendToTeamDiscussionChannel(msg, null);
+                        embed.sendToTeamOutput(msg, null);
                         log.info(msg.getMember().getEffectiveName() +
                                 " just checked on " + guild.getMemberById(Long.parseLong(args[2])).getEffectiveName()
                                 + "'s Bot Abuse status using TimeZone offset " + args[1]);
@@ -843,7 +843,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     catch (NumberFormatException f) {
                         embed.setAsError("Invalid Mention", ":x: **The Mention You Entered is Invalid**" +
                                 "\nTry right clicking on their name and click mention, copy and paste that mention into that argument");
-                        embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                        embed.sendToTeamOutput(msg, msg.getAuthor());
                     }
                 }
                 else if (msg.getMentionedUsers().size() == 1) {
@@ -855,7 +855,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     }
                     else embed.setAsInfo(defaultTitle, result);
 
-                    embed.sendToTeamDiscussionChannel(msg, null);
+                    embed.sendToTeamOutput(msg, null);
                     log.info(msg.getMember().getEffectiveName() +
                             " just checked on " + msg.getMentionedMembers().get(0).getEffectiveName()
                             + "'s Bot Abuse status using TimeZone offset " + args[1]);
@@ -863,14 +863,14 @@ public class BotAbuseMain extends ListenerAdapter {
             }
             else {
                 embed.setAsError("Check Info Error", ":x: **Invalid Timezone Offset**");
-                embed.sendToTeamDiscussionChannel(msg, null);
+                embed.sendToTeamOutput(msg, null);
                 log.error("Team Member " + msg.getMember().getEffectiveName() + " just entered an invalid TimeZone offset.");
             }
 
         }
         else {
             embed.setAsError("Permission Error", "You Don't have Permission to check on someone else's Bot Abuse status");
-            embed.sendToHelpChannel(msg, msg.getAuthor());
+            embed.sendToMemberOutput(msg, msg.getAuthor());
             log.info("Successfully Denied Permission to " + msg.getMember().getEffectiveName() +
                     " for checking on someone else's Bot Abuse status");
         }
@@ -901,7 +901,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 else if (clearedRecords == 0) {
                     embed.setAsError("No Records Cleared",
                             "**No Records Found for " + msg.getMentionedMembers().get(0).getEffectiveName() + "**");
-                    embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
                     log.error("No Records Cleared for " + msg.getMentionedMembers().get(index).getEffectiveName());
                 }
                 else {
@@ -944,7 +944,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 if (clearedRecords == 0) {
                     embed.setAsError("No Records Cleared",
                             "**No Records Found for " + args[index] + "**");
-                    embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
                     log.error("No Records Cleared for " + args[index]);
                 }
                 else {
@@ -971,7 +971,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     if (clearedRecords == 0) {
                         embed.setAsError("Error in Clearing Records", "No Records Cleared for "
                                 + targetUser.getAsTag() + " (ID: " + targetUser.getIdLong() + ")");
-                        embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                        embed.sendToTeamOutput(msg, msg.getAuthor());
                         log.error("No Records Cleared for " + targetUser.getAsTag() + " (ID: " + targetUser.getIdLong() + ")");
                     }
                     else {
@@ -1114,7 +1114,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 embed.setAsError("Error while Parsing Transfer Command",
                         "Invalid Number of Mentions!" +
                         "\nUsage: /transfer <Old Mention or Discord ID> <New Mention or Discord ID>");
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
             }
         }
         else {
@@ -1141,7 +1141,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     embed.setAsError(defaultTitle, result);
                 }
                 else embed.setAsInfo(defaultTitle, result);
-                embed.sendToTeamDiscussionChannel(msg, null);
+                embed.sendToTeamOutput(msg, null);
                 embed.setAsInfo(defaultTitle,":information_source: **" + msg.getAuthor().getAsMention() + " just checked the history of " +
                         guild.getMemberById(Long.parseLong(args[1])).getAsMention() + "**");
                 embed.sendToLogChannel();
@@ -1156,7 +1156,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         embed.setAsError(defaultTitle, result);
                     }
                     else embed.setAsInfo(defaultTitle, result);
-                    embed.sendToTeamDiscussionChannel(msg, null);
+                    embed.sendToTeamOutput(msg, null);
                     embed.setAsInfo(defaultTitle, ":information_source: **" + msg.getAuthor().getAsMention() + " just checked the history of " +
                             msg.getMentionedMembers().get(0).getAsMention() + "**");
                     embed.sendToLogChannel();
@@ -1173,7 +1173,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     catch (IndexOutOfBoundsException f) {
                         embed.setAsError("Invalid Mention", ":x: **The Mention You Entered is Invalid**" +
                                 "\nTry right clicking on their name and click mention, copy and paste that mention into that argument");
-                       embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                       embed.sendToTeamOutput(msg, msg.getAuthor());
                     }
                 }
             }
@@ -1219,7 +1219,7 @@ public class BotAbuseMain extends ListenerAdapter {
             else {
                 embed.setAsError("No Permissions",
                         ":x: **You should not need to do that... you're a team member!**");
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
             }
         }
         // /checkhistory <timeOffset>
@@ -1238,7 +1238,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     }
                     else {
                         embed.setAsError("Error while Parsing Command", ":x: **Invalid Timezone Offset**");
-                        embed.sendToHelpChannel(msg, msg.getAuthor());
+                        embed.sendToMemberOutput(msg, msg.getAuthor());
                     }
                 }
                 catch (IllegalArgumentException ex) {
@@ -1251,7 +1251,7 @@ public class BotAbuseMain extends ListenerAdapter {
             else {
                 embed.setAsError("No Permissions",
                         ":x: **You should not need to do that... you're a team member!**");
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
             }
         }
 
@@ -1266,7 +1266,7 @@ public class BotAbuseMain extends ListenerAdapter {
                             embed.setAsError(defaultTitle, result);
                         }
                         else embed.setAsInfo(defaultTitle, result);
-                        embed.sendToTeamDiscussionChannel(msg, null);
+                        embed.sendToTeamOutput(msg, null);
                         log.info(msg.getMember().getEffectiveName() + " just checked the history of " +
                                 msg.getMentionedMembers().get(0).getEffectiveName() + " using TimeZone offset " + args[1]);
                     }
@@ -1276,7 +1276,7 @@ public class BotAbuseMain extends ListenerAdapter {
                             embed.setAsError(defaultTitle, result);
                         }
                         else embed.setAsInfo(defaultTitle, result);
-                        embed.sendToTeamDiscussionChannel(msg, null);
+                        embed.sendToTeamOutput(msg, null);
                         log.info(msg.getMember().getEffectiveName() + " just checked the history of " +
                                 guild.getMemberById(Long.parseLong(args[2])).getEffectiveName() + " using TimeZone offset " + args[1]);
                     }
@@ -1298,7 +1298,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         catch (IndexOutOfBoundsException f) {
                             embed.setAsError("Invalid Mention", ":x: **The Mention You Entered is Invalid**" +
                                     "\nTry right clicking on their name and click mention, copy and paste that mention into that argument");
-                           embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                           embed.sendToTeamOutput(msg, msg.getAuthor());
                         }
                     }
                 }
@@ -1309,7 +1309,7 @@ public class BotAbuseMain extends ListenerAdapter {
             embed.setAsError("Error - No Permissions",
                     ":x: " + msg.getAuthor().getAsMention() +
                             " **You Don't Have Permission to check on someone elses Bot Abuse History**");
-            embed.sendToHelpChannel(msg, msg.getAuthor());
+            embed.sendToMemberOutput(msg, msg.getAuthor());
             log.warn(msg.getMember().getEffectiveName() +
                     " just tried to check someone elses Bot Abuse History but they did not have permission to");
         }
@@ -1344,10 +1344,10 @@ public class BotAbuseMain extends ListenerAdapter {
                     ":x: **Too Many Arguements**");
         }
         if (!isTeamMember) {
-            embed.sendToHelpChannel(msg, msg.getAuthor());
+            embed.sendToMemberOutput(msg, msg.getAuthor());
         }
         else {
-            embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+            embed.sendToTeamOutput(msg, msg.getAuthor());
         }
     }
     private void reasonsCommand(Message msg, String[] args, boolean isTeamMember, boolean isStaffMember) throws IOException {
@@ -1366,7 +1366,7 @@ public class BotAbuseMain extends ListenerAdapter {
             }
             result = baCore.addReason(false, args[2], reason);
             embed.setAsSuccess(defaultTitle, result);
-            embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+            embed.sendToTeamOutput(msg, msg.getAuthor());
             embed.setAsSuccess(defaultTitle, result.replace("Successfully", msg.getAuthor().getAsMention()));
             embed.sendToLogChannel();
             log.info("Successful Reason Addition for \"" + reason + "\" mapped to the key \"" + args[2] + "\"");
@@ -1376,7 +1376,7 @@ public class BotAbuseMain extends ListenerAdapter {
             String defaultTitle = "Successful Key Mapping";
             result = baCore.addReason(true, args[2], args[3]);
             embed.setAsSuccess(defaultTitle, result);
-            embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+            embed.sendToTeamOutput(msg, msg.getAuthor());
             embed.setAsSuccess(defaultTitle, result.replace("Successfully", msg.getAuthor().getAsMention()));
             embed.sendToLogChannel();
             log.info("Successful Key Map of \"" + args[2] + "\" to \"" + args[3] + "\"");
@@ -1389,13 +1389,13 @@ public class BotAbuseMain extends ListenerAdapter {
             String defaultTitle = "Successful Reason Deletion";
             if (result.contains(":white_check_mark:")) {
                 embed.setAsSuccess(defaultTitle, result);
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
                 embed.setAsSuccess(defaultTitle, result.replace("Successfully", msg.getAuthor().getAsMention()));
                 embed.sendToLogChannel();
             }
             else {
                 embed.setAsError("Error - Reason Removal", result);
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
             }
         }
         else if (args[1].equalsIgnoreCase("list") && isTeamMember) {
@@ -1412,16 +1412,16 @@ public class BotAbuseMain extends ListenerAdapter {
             catch (NoSuchElementException ex) {
                 embed.setAsError(defaultTitle, ":x: **The Reasons Dictionary is Empty**");
             }
-            embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+            embed.sendToTeamOutput(msg, msg.getAuthor());
             log.info(msg.getMember().getEffectiveName() + " just requested the reasons dictionary list");
         }
         else {
             embed.setAsError("Error - No Permissions", "**:x: You Lack Permissions to do that!**");
             if (isTeamMember) {
-                embed.sendToTeamDiscussionChannel(msg, null);
+                embed.sendToTeamOutput(msg, null);
             }
             else {
-                embed.sendToHelpChannel(msg, msg.getAuthor());
+                embed.sendToMemberOutput(msg, msg.getAuthor());
             }
             log.error(msg.getMember().getEffectiveName()
                     + " tried to run the reason manager and did not have permission to");
@@ -1467,7 +1467,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 embed.sendDM(msg, msg.getAuthor());
             }
             else {
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
             }
             index++;
         }
@@ -1498,7 +1498,7 @@ public class BotAbuseMain extends ListenerAdapter {
         catch (FileNotFoundException e) {
             embed.setAsStop("Bot Abuse Config File Not Found", "**:x: Configuration File Not Found**");
             log.error("Configuration File Not Found on Reload");
-            embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+            embed.sendToTeamOutput(msg, msg.getAuthor());
         }
         catch (IOException ex) {
             ex.printStackTrace();

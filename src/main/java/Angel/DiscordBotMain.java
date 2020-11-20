@@ -169,10 +169,10 @@ public class DiscordBotMain extends ListenerAdapter {
                 }
             }
             if (warningNeeded && !isTeamMember(msg.getAuthor().getIdLong())) {
-                embed.sendToHelpChannel(msg, msg.getAuthor());
+                embed.sendToMemberOutput(msg, msg.getAuthor());
             }
             else if (warningNeeded && isTeamMember(msg.getAuthor().getIdLong())) {
-                embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                embed.sendToTeamOutput(msg, msg.getAuthor());
             }
         }
         if (!msg.getChannelType().equals(ChannelType.PRIVATE) && msg.getMentionedMembers().contains(guild.getSelfMember())) {
@@ -184,6 +184,31 @@ public class DiscordBotMain extends ListenerAdapter {
                     && (isStaffMember(event.getAuthor().getIdLong()))) {
                 try {
                     msg.delete().queue();
+                    if (args.length == 1) {
+                        embed.setAsWarning("Restart Initiated", "**Restart Initiated by " + msg.getAuthor().getAsMention()
+                                + "\nPlease Allow up to 10 seconds for this to complete**");
+                        log.warn(msg.getAuthor().getAsTag() + " Invoked a Restart");
+                        embed.sendToTeamOutput(msg, null);
+                        Thread.sleep(5000);
+                        restartBot(false);
+                    }
+                    else if (args.length == 2) {
+                        if (args[1].equalsIgnoreCase("-s") || args[1].equalsIgnoreCase("silent")) {
+                            log.warn(msg.getAuthor().getAsTag() + " Invoked a Silent Restart");
+                            Thread.sleep(5000);
+                            restartBot(true);
+                        }
+                        else {
+                            embed.setAsError("Invalid Argument",
+                                    ":x: **That argument you gave with this command... I did not recognize it**");
+                            embed.sendToTeamOutput(msg, msg.getAuthor());
+                        }
+                    }
+                    else {
+                        embed.setAsError("Too Many Arguments!", ":x: **You just gave me too many arguments...**");
+                        embed.sendToTeamOutput(msg, msg.getAuthor());
+                    }
+
                 }
                 catch (NoClassDefFoundError ex) {
                     // Take No Action - This is an indicator that the jar file for the program was overwritten while the bot is running
@@ -191,22 +216,17 @@ public class DiscordBotMain extends ListenerAdapter {
                 catch (IllegalStateException ex) {
                     // Take No Action - This is an indicator that the command was used via DM
                 }
-                try {
-                    embed.setAsWarning("Restart Initiated", "**Restart Initiated by " + msg.getAuthor().getAsMention()
-                            + "\nPlease Allow up to 10 seconds for this to complete**");
-                    log.warn(msg.getAuthor().getAsTag() + " Invoked a Restart");
-                    embed.sendToTeamDiscussionChannel(msg, null);
-                    Thread.sleep(5000);
-                    restartBot();
-                }
-                catch (Exception e) {
+                catch (IOException e) {
                     e.printStackTrace();
+                }
+                catch (InterruptedException e) {
+                    // Take No Action
                 }
             }
             else if (args[0].equalsIgnoreCase("reload")
                     && isStaffMember(event.getAuthor().getIdLong())) {
                 embed.setAsWarning("Reloading Configuration", "**Reloading Configuration... Please Wait a Few Moments...**");
-                embed.sendToTeamDiscussionChannel(msg, null);
+                embed.sendToTeamOutput(msg, null);
                 try {
                     if (mainConfig.reload(fileHandler.getMainConfig())) {
                         baFeature.reload(msg);
@@ -232,7 +252,7 @@ public class DiscordBotMain extends ListenerAdapter {
                         "\n**Pinging Discord's Gateway... Please Wait...**";
                 embed.setAsInfo("My Ping Info", originalOutput);
                 if (isTeamMember(event.getAuthor().getIdLong()) && !msg.getChannelType().equals(ChannelType.PRIVATE)) {
-                    embed.sendToTeamDiscussionChannel(msg,null);
+                    embed.sendToTeamOutput(msg,null);
                 }
                 else {
                     try {
@@ -249,14 +269,14 @@ public class DiscordBotMain extends ListenerAdapter {
                         // Otherwise we can send them this in the help channel.
                         else {
                             pingHandler(msg.getMember().getIdLong());
-                            embed.sendToHelpChannel(msg, msg.getAuthor());
+                            embed.sendToMemberOutput(msg, msg.getAuthor());
                         }
                     }
                     // This would run if their discord ID wasn't found in pingCooldownDiscordIDs,
                     // a -1 would throw this exception
                     catch (IndexOutOfBoundsException ex) {
                         pingHandler(msg.getMember().getIdLong());
-                        embed.sendToHelpChannel(msg, msg.getAuthor());
+                        embed.sendToMemberOutput(msg, msg.getAuthor());
                     }
                 }
                 embed.editEmbed(msg, null, originalOutput.replace("**Pinging Discord's Gateway... Please Wait...**",
@@ -277,7 +297,7 @@ public class DiscordBotMain extends ListenerAdapter {
                     String defaultTitle = "My Status";
                     String originalOutput = "**Retrieving Status... Please Wait...**";
                     embed.setAsInfo(defaultTitle, originalOutput);
-                    if (!msg.getChannelType().equals(ChannelType.PRIVATE)) embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    if (!msg.getChannelType().equals(ChannelType.PRIVATE)) embed.sendToTeamOutput(msg, msg.getAuthor());
                     else embed.sendDM(msg, msg.getAuthor());
                     try { Thread.sleep(2000); } catch (InterruptedException e) {}
                     String defaultOutput = "*__Bot Abuse Feature__*";
@@ -373,7 +393,7 @@ public class DiscordBotMain extends ListenerAdapter {
                 else {
                     log.error(msg.getAuthor().getAsTag() + " just requested my status but did not have permission to");
                     embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions to View My Status**");
-                    embed.sendToHelpChannel(msg, msg.getAuthor());
+                    embed.sendToMemberOutput(msg, msg.getAuthor());
                 }
             }
             else if (args[0].equalsIgnoreCase("set")) {
@@ -387,12 +407,12 @@ public class DiscordBotMain extends ListenerAdapter {
                         embed.setAsError("Not Usable in This Channel",
                                 "**:x: This Command Is Not Usable in <#" + msg.getChannel().getIdLong() + ">!**" +
                                         "\n\nPlease use `" + mainConfig.commandPrefix + "set` in this channel or in " + mainConfig.managementChannel.getAsMention());
-                        embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                        embed.sendToTeamOutput(msg, msg.getAuthor());
                     }
                 }
                 else {
                     embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions To Do That!**");
-                    embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
                 }
             }
             else if (args[0].equalsIgnoreCase("help")) {
@@ -479,7 +499,7 @@ public class DiscordBotMain extends ListenerAdapter {
                     break;
             }
         }
-        if (isTeamMember(msg.getAuthor().getIdLong())) embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+        if (isTeamMember(msg.getAuthor().getIdLong())) embed.sendToTeamOutput(msg, msg.getAuthor());
         else embed.sendToChannel(msg, msg.getChannel());
     }
     private void configCommand(Message msg) {
@@ -877,14 +897,18 @@ public class DiscordBotMain extends ListenerAdapter {
         }
         else {
             embed.setAsError("Insufficient Permissions", ":x: **You Lack Permissions to do that!**");
-            if (isTeamMember(msg.getAuthor().getIdLong())) embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
-            else embed.sendToHelpChannel(msg, msg.getAuthor());
+            if (isTeamMember(msg.getAuthor().getIdLong())) embed.sendToTeamOutput(msg, msg.getAuthor());
+            else embed.sendToMemberOutput(msg, msg.getAuthor());
         }
     }
 
-    public void restartBot() throws IOException {
+    public void restartBot(boolean restartSilently) throws IOException {
         log.warn("Program Restarting...");
-        new ProcessBuilder().command("cmd.exe", "/c", "start", "/D", mainConfig.systemPath, "/MIN", "TheLightAngel Restarted", "restart.bat").start();
+        String fileName = "restart";
+        if (restartSilently) {
+            fileName = fileName.concat("Silent");
+        }
+        new ProcessBuilder().command("cmd.exe", "/c", "start", "/D", mainConfig.systemPath, "/MIN", "TheLightAngel Restarted", fileName + ".bat").start();
         System.exit(1);
     }
     // Permission Checkers that this class and the other features use:
@@ -927,7 +951,7 @@ public class DiscordBotMain extends ListenerAdapter {
                         + " has been notified.**" +
                         "\n\n**Cause: " + cause + "**" +
                         "\n\n** " + obj + " Commands have Been Suspended**");
-        embed.sendToTeamDiscussionChannel(msg, msg.getAuthor());
+        embed.sendToTeamOutput(msg, msg.getAuthor());
         log.fatal("Integrity Check on ArrayList Objects Failed - Cause: " + cause);
         if (obj.contains("BotAbuseMain")) {
             baFeature.commandsSuspended = true;
