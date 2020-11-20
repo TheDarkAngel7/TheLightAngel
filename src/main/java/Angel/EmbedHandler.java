@@ -180,7 +180,8 @@ public class EmbedHandler {
         if (msg.getChannelType().equals(ChannelType.PRIVATE)) sendDM(msg, author);
         else {
             if (!msg.getChannel().equals(mainConfig.managementChannel) && (!mainConfig.forceToManagementChannel ||
-                    mainConfig.managementChannelID.equalsIgnoreCase("None")))  {
+                    mainConfig.managementChannelID.equalsIgnoreCase("None")
+                    || msg.getChannel().equals(mainConfig.discussionChannel)))  {
                 if (author != null && (!msg.getChannel().equals(mainConfig.discussionChannel) && !msg.getChannel().equals(mainConfig.managementChannel))
                         && discord.isTeamMember(author.getIdLong())) {
                     mainConfig.discussionChannel.sendMessage(author.getAsMention()).queue();
