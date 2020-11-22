@@ -550,7 +550,8 @@ public class NicknameMain extends ListenerAdapter {
         else if ((args[1].equalsIgnoreCase("forcechange") || args[1].equalsIgnoreCase("fch"))) {
             boolean successfulExecution = false;
             String defaultTitle = "Successful Nickname Change";
-            String defaultBody = "Member: **<Member>" +
+            String defaultBody = "Staff Member: **" + msg.getAuthor().getAsMention() +
+                    "**\nMember: **<Member>" +
                     "**\nOld Nickname: **<oldNick>" +
                     "**\nNew Nickname: **<newNick>**";
             if (discord.isTeamMember(msg.getAuthor().getIdLong()) && args.length == 4) {
@@ -566,7 +567,7 @@ public class NicknameMain extends ListenerAdapter {
                     if (args[3].equalsIgnoreCase("Reset") || args[3].equalsIgnoreCase("reset") ||
                             args[3].equals(memberInQuestion.getUser().getName())) {
                         memberInQuestion.modifyNickname(memberInQuestion.getUser().getName()).queue();
-                        newNickname = memberInQuestion.getUser().getName() + " (Their Discord Name)";
+                        newNickname = memberInQuestion.getUser().getName() + " (Their Discord Username)";
                         successfulExecution = true;
                         log.info("Staff Member " + msg.getMember().getEffectiveName() + " successfully forcefully changed " + oldNickname +
                                 "'s effective name back to their discord username");
@@ -586,17 +587,19 @@ public class NicknameMain extends ListenerAdapter {
                                     "'s nickname to " + newNickname);
                         }
                     }
-                    embed.setAsSuccess("Nickname Updated", msg.getAuthor().getAsMention() + " successfully updated ");
+                    embed.setAsSuccess("Nickname Updated", msg.getAuthor().getAsMention() + " successfully updated " +
+                            memberInQuestion.getAsMention());
+                    embed.sendToTeamOutput(msg, null);
                 }
                 catch (NumberFormatException ex) {
                     if (msg.getMentionedMembers().size() == 1) {
                         memberInQuestion = msg.getMentionedMembers().get(0);
                         oldNickname = memberInQuestion.getNickname();
-                        if (oldNickname == null) oldNickname = "None";
+                        if (oldNickname == null) oldNickname = memberInQuestion.getUser().getName() + " (Their Discord Username)";
                         ignoreNewNickname = true;
                         if (args[3].equalsIgnoreCase("reset")) {
                             memberInQuestion.modifyNickname(memberInQuestion.getUser().getName()).queue();
-                            newNickname = memberInQuestion.getUser().getName() + " (Their Discord Name)";
+                            newNickname = memberInQuestion.getUser().getName() + " (Their Discord Username)";
                             successfulExecution = true;
                             log.info("Staff Member " + msg.getMember().getEffectiveName() + " successfully forcefully changed " + oldNickname +
                                     "'s effective name back to their discord username");
@@ -607,7 +610,7 @@ public class NicknameMain extends ListenerAdapter {
                             successfulExecution = true;
                             if (oldNickname.equals("None")) {
                                 log.info("Staff Member " + msg.getMember().getEffectiveName() + " successfully forcefully changed "
-                                        + memberInQuestion.getUser().getName() +
+                                        + memberInQuestion.getUser().getAsTag() +
                                         "'s nickname to " + newNickname);
                             }
                             else {
@@ -615,12 +618,14 @@ public class NicknameMain extends ListenerAdapter {
                                         "'s nickname to " + newNickname);
                             }
                         }
+                        embed.setAsSuccess("Nickname Updated", msg.getAuthor().getAsMention() + " successfully updated " +
+                                memberInQuestion.getAsMention());
                     }
                     else {
                         embed.setAsError("Too Many Mentioned Players", "**You have too many mentioned players in this command**" +
                                 "\nSyntax Reminder: `" + mainConfig.commandPrefix + "nickname forcechange <Mention or Discord ID> <New Nickname>`");
-                        embed.sendToTeamOutput(msg, null);
                     }
+                    embed.sendToTeamOutput(msg, null);
                 }
                 catch (NullPointerException ex) {
                     embed.setAsError("Player Not Found", "**This Player Was Not Found in this Discord Server**");
@@ -631,7 +636,7 @@ public class NicknameMain extends ListenerAdapter {
                             .replace("<oldNick>", oldNickname).replace("<newNick>", newNickname);
                     addNameHistory(targetDiscordID, oldNickname, msg);
                     embed.setAsSuccess(defaultTitle, defaultBody);
-                    embed.sendToTeamOutput(msg, null);
+                    embed.sendToLogChannel();
                 }
                 else ignoreNewNickname = false;
             }
@@ -646,7 +651,7 @@ public class NicknameMain extends ListenerAdapter {
             }
         }
         else if (isCommand(args[0], args[1]) && !discord.isTeamMember(msg.getAuthor().getIdLong())) {
-            embed.setAsError("No Permissions", "**You Lack Permissions To Perform `\\nickname "
+            embed.setAsError("No Permissions", "**You Lack Permissions To Perform `" + mainConfig.commandPrefix + "nickname "
                     + args[1] + "`**");
             embed.sendDM(msg, msg.getAuthor());
         }
