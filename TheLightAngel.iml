@@ -49,7 +49,7 @@
     <orderEntry type="library" name="Maven: org.codehaus.plexus:plexus-compiler-api:2.8.4" level="project" />
     <orderEntry type="library" name="Maven: org.codehaus.plexus:plexus-compiler-manager:2.8.4" level="project" />
     <orderEntry type="library" scope="RUNTIME" name="Maven: org.codehaus.plexus:plexus-compiler-javac:2.8.4" level="project" />
-    <orderEntry type="library" name="Maven: net.dv8tion:JDA:4.2.0_218" level="project" />
+    <orderEntry type="library" name="Maven: net.dv8tion:JDA:4.2.0_222" level="project" />
     <orderEntry type="library" name="Maven: com.google.code.findbugs:jsr305:3.0.2" level="project" />
     <orderEntry type="library" name="Maven: org.jetbrains:annotations:16.0.1" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.25" level="project" />

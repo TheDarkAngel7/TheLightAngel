@@ -53,8 +53,8 @@ class NickCore {
 
         String result =
                 "**:white_check_mark: New Nickname Change Request Received**" +
-                "\n\nID: " + id +
-                "\nDiscord: <@!" + targetDiscordID + ">";
+                "\n\nID: **" + id +
+                "**\nDiscord: <@!" + targetDiscordID + ">";
 
         if (oldNick != null && newNick != null) {
             result = result.concat(
