@@ -105,8 +105,15 @@ public class DiscordBotMain extends ListenerAdapter {
     public void onMessageReceived(@Nonnull MessageReceivedEvent event) {
         if (event.getAuthor().isBot()) return;
         Message msg = event.getMessage();
-        String[] args = msg.getContentRaw().substring(1).split(" ");
-
+        String[] args = null;
+        try {
+            args = msg.getContentRaw().substring(1).split(" ");
+        }
+        catch (StringIndexOutOfBoundsException ex) {
+            log.warn("A message that was just got sent in #" + msg.getChannel().getName() +
+                    " could not be processed as a sentence.");
+            return;
+        }
         if (event.getMessage().getContentRaw().charAt(0) == mainConfig.commandPrefix && isValidCommand(args)) {
             if (event.getMessage().getChannelType().equals(ChannelType.PRIVATE)) {
                 log.info(event.getAuthor().getAsTag() + "@DM: " + event.getMessage().getContentRaw());
@@ -800,7 +807,8 @@ public class DiscordBotMain extends ListenerAdapter {
                 if (args[3].equalsIgnoreCase("add")) {
                     try {
                         nickFeature.nickConfig.addNewNameRestrictedRole(Long.parseLong(args[4]));
-                        embed.setAsSuccess(defaultSuccessTitle, defaultSuccess.replace("?", "Added")
+                        embed.setAsSuccess(defaultSuccessTitle.replace("?", "Added"),
+                                defaultSuccess.replace("?", "Added")
                             .replace("!", guild.getRoleById(Long.parseLong(args[4])).getAsMention() + " To"));
                         log.info(msg.getMember().getEffectiveName() + " Successfully Added " + guild.getRoleById(Long.parseLong(args[4])).getName() +
                                 " to the name restricted roles list");
@@ -811,7 +819,8 @@ public class DiscordBotMain extends ListenerAdapter {
                     catch (NumberFormatException ex) {
                         try {
                             nickFeature.nickConfig.addNewNameRestrictedRole(msg.getMentionedRoles().get(0));
-                            embed.setAsSuccess(defaultSuccessTitle, defaultSuccess.replace("?", "Added")
+                            embed.setAsSuccess(defaultSuccessTitle.replace("?", "Added"),
+                                    defaultSuccess.replace("?", "Added")
                                     .replace("!", msg.getMentionedRoles().get(0).getAsMention() + " To"));
                             log.info(msg.getMember().getEffectiveName() + " Successfully Added " + msg.getMentionedRoles().get(0).getName() +
                             " to the name restricted roles list");

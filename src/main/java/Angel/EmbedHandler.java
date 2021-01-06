@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.entities.*;
 import javax.annotation.Nullable;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
@@ -19,6 +20,7 @@ public class EmbedHandler {
     private ArrayList<Thread> threadList = new ArrayList<>();
     private Message messageEmbed;
     private boolean embedReady = false;
+    private boolean multipleChannels = false;
 
     EmbedHandler(MainConfiguration mainConfig) {
         this.mainConfig = mainConfig;
@@ -143,7 +145,7 @@ public class EmbedHandler {
         user.openPrivateChannel().flatMap(channel -> channel.sendMessage(messageEmbed)).queue(m -> {
                 if (msg != null) commandMessageMap.put(msg, m);
         });
-        messageSent();
+        if (!multipleChannels) messageSent();
     }
     public void sendToMemberOutput(Message msg, @Nullable User author) {
         if (msg.getChannelType().equals(ChannelType.PRIVATE)) sendDM(msg, author);
@@ -173,7 +175,7 @@ public class EmbedHandler {
             catch (NullPointerException ex) {
                 // Take No Action
             }
-            messageSent();
+            if (!multipleChannels) messageSent();
         }
     }
     public void sendToTeamOutput(Message msg, @Nullable User author) {
@@ -194,13 +196,13 @@ public class EmbedHandler {
                 }
                 mainConfig.managementChannel.sendMessage(messageEmbed).queue(m -> commandMessageMap.put(msg, m));
             }
-            messageSent();
+            if (!multipleChannels) messageSent();
         }
     }
     // Tagging author is not necessary in the log channel
     public void sendToLogChannel() {
         mainConfig.logChannel.sendMessage(messageEmbed).queue();
-        messageSent();
+        if (!multipleChannels) messageSent();
     }
 
     public void sendToChannel(Message msg, MessageChannel channel) {
@@ -214,6 +216,27 @@ public class EmbedHandler {
                 if (msg != null) commandMessageMap.put(msg, m);
             });
         }
+        if (!multipleChannels) messageSent();
+    }
+    public void sendToChannels(Message msg, TargetChannelSet... sets) {
+        multipleChannels = true;
+        Arrays.stream(sets).forEach(set -> {
+            switch (set) {
+                case DM:
+                    sendDM(msg, msg.getAuthor());
+                    break;
+                case TEAM:
+                    sendToTeamOutput(msg, msg.getAuthor());
+                    break;
+                case MEMBER:
+                    sendToMemberOutput(msg, msg.getAuthor());
+                    break;
+                case LOG:
+                    sendToLogChannel();
+                    break;
+            }
+        });
+        multipleChannels = false;
         messageSent();
     }
     // Thread Handlers
