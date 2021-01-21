@@ -37,7 +37,7 @@ public class DiscordBotMain extends ListenerAdapter {
     public boolean isStarting = true;
     private ArrayList<Date> pingCooldownOverTimes = new ArrayList<>();
     private ArrayList<Long> pingCooldownDiscordIDs = new ArrayList<>();
-    public final List<String> mainCommands = new ArrayList<>(Arrays.asList("reload", "restart", "ping", "status", "help", "set"));
+    public final List<String> mainCommands = new ArrayList<>(Arrays.asList("search", "s", "reload", "restart", "ping", "status", "help", "set"));
     private Ping ping = new Ping();
 
     DiscordBotMain(int restartValue, MainConfiguration mainConfig, EmbedHandler embed, FileHandler fileHandler) {
@@ -187,7 +187,10 @@ public class DiscordBotMain extends ListenerAdapter {
             log.info("Nommed the Ping from " + msg.getAuthor().getAsTag());
         }
         else if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix) {
-            if (args[0].equalsIgnoreCase("restart")
+            if (args[0].equalsIgnoreCase("search") || args[0].equalsIgnoreCase("s")) {
+                searchCommand(msg);
+            }
+            else if (args[0].equalsIgnoreCase("restart")
                     && (isStaffMember(event.getAuthor().getIdLong()))) {
                 try {
                     msg.delete().queue();
@@ -499,6 +502,19 @@ public class DiscordBotMain extends ListenerAdapter {
                     if (isTeamMember(msg.getAuthor().getIdLong())) {
                         embed.setAsHelp(mainConfig.commandPrefix + "status Command",
                                 "Prints All Statuses of each features");
+                    }
+                    else {
+                        embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions To See This Information**");
+                    }
+                    break;
+                case "s":
+                case "search":
+                    if (isTeamMember(msg.getAuthor().getIdLong())) {
+                        embed.setAsHelp(mainConfig.commandPrefix + "search Command",
+                                "*This Allows Us to get mentions more easily without the need to switch channels*" +
+                                        "\nThis searches effective names followed by user names. " +
+                                        "You may also enter in a full user tag in and I'll get the mention for this player." +
+                                        "\n\nSyntax: `/search <Name>` or `/s <Name>`");
                     }
                     else {
                         embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions To See This Information**");
@@ -908,6 +924,69 @@ public class DiscordBotMain extends ListenerAdapter {
             embed.setAsError("Insufficient Permissions", ":x: **You Lack Permissions to do that!**");
             if (isTeamMember(msg.getAuthor().getIdLong())) embed.sendToTeamOutput(msg, msg.getAuthor());
             else embed.sendToMemberOutput(msg, msg.getAuthor());
+        }
+    }
+    private void searchCommand(Message msg) {
+        String[] args = msg.getContentRaw().substring(1).split(" ");
+        if (args.length >= 2) {
+            String query = "";
+            if (args.length == 2) {
+                query = args[1];
+            }
+            else {
+                int index = 1;
+                do {
+                    query = query.concat(args[index++]);
+                    if (index < args.length) query = query.concat(" ");
+                } while (index < args.length);
+            }
+            List<Member> searchResults = new ArrayList<>();
+            List<Member> effectiveNameSearch = guild.getMembersByEffectiveName(query, false);
+            List<Member> memberByNameSearch = guild.getMembersByName(query, false);
+            Member memberByTagSearch = null;
+            try {
+                memberByTagSearch = guild.getMemberByTag(query);
+            }
+            catch (IllegalArgumentException ex) {
+                log.warn("Could Not Find \"" + args[1] + "\" by tag.");
+            }
+            if (effectiveNameSearch.size() > 0) {
+                searchResults.addAll(effectiveNameSearch);
+            }
+            if (memberByNameSearch.size() > 0) {
+                memberByNameSearch.forEach(m -> {
+                    if (!searchResults.contains(m)) {
+                        searchResults.add(m);
+                    }
+                });
+            }
+            if (memberByTagSearch != null && !searchResults.contains(memberByTagSearch)) {
+                searchResults.add(memberByTagSearch);
+            }
+
+            String results = "**Your Search Yielded the Following Results:** \n";
+
+            int index = 0;
+            if (searchResults.size() == 0) {
+                embed.setAsError("No Results Found", "**:x: No Results found with that search query...**");
+                log.error("No Results returned with the search query \"" + query + "\"");
+            }
+            else {
+                do {
+                    results = results.concat("- " + searchResults.get(index++).getAsMention() + "\n");
+                } while (index < searchResults.size());
+                results = results.concat("\n*You may use these results to get a mention you need in your next command " +
+                        "or for any other purpose. Right click on the desired mention and click **Mention***");
+                log.info("Search Query \"" + query + "\" returned " + searchResults.size() + " result(s)");
+                embed.setAsInfo("Search Results", results);
+
+            }
+            embed.sendToTeamOutput(msg, msg.getAuthor());
+        }
+        else {
+            embed.setAsError("Error While Parsing Command",
+                    "**Invalid Number of Arguments! Syntax: `" + mainConfig.commandPrefix + "search <Name>`**");
+            embed.sendToTeamOutput(msg, msg.getAuthor());
         }
     }
 
