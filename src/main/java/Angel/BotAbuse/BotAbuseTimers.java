@@ -129,29 +129,27 @@ class BotAbuseTimers implements Runnable {
                 @Override
                 public void run() {
                     baFeature.timer2Running = true;
-                    List<Member> serverMembers = guild.getMembers();
                     String defaultTitle = "Role Scanner Information";
-                    baFeature.baCore.currentBotAbusers.forEach(id -> {
-                        guild.getJDA().retrieveUserById(id).queue(user -> {
-                            if (guild.isMember(user)) {
-                                guild.retrieveMember(user).queue(m -> {
-                                    if (serverMembers.contains(m) &&
-                                            !m.getRoles().contains(baFeature.botConfig.botAbuseRole)) {
-                                        guild.addRoleToMember(m,
-                                                baFeature.botConfig.botAbuseRole).queue();
-                                        embed.setAsInfo(defaultTitle, "[Role Scanner] Added Bot Abuse Role to "
-                                                + m.getAsMention() +
-                                                " because they didn't have the role... and they're supposed to have it.");
-                                        embed.sendToLogChannel();
-                                        log.info("Added Bot Abuse to " + m.getEffectiveName()
-                                                + " because they didn't have the role... and they're supposed to have it.");
-                                    }
-                                });
-                            }
-                            else log.warn(user.getAsTag() + " does not exist in the guild.");
+                    guild.loadMembers(m -> {
+                        baFeature.baCore.currentBotAbusers.forEach(id -> {
+                            guild.getJDA().retrieveUserById(id).queue(user -> {
+                                if (guild.isMember(user)) {
+                                    guild.retrieveMember(user).queue(member -> {
+                                        if (!member.getRoles().contains(baFeature.botConfig.botAbuseRole)) {
+                                            guild.addRoleToMember(member,
+                                                    baFeature.botConfig.botAbuseRole).queue();
+                                            embed.setAsInfo(defaultTitle, "[Role Scanner] Added Bot Abuse Role to "
+                                                    + member.getAsMention() +
+                                                    " because they didn't have the role... and they're supposed to have it.");
+                                            embed.sendToLogChannel();
+                                            log.info("Added Bot Abuse to " + member.getEffectiveName()
+                                                    + " because they didn't have the role... and they're supposed to have it.");
+                                        }
+                                    });
+                                }
+                                else log.warn(user.getAsTag() + " does not exist in the guild.");
+                            });
                         });
-                    });
-                    serverMembers.forEach(m -> {
                         if (m.getRoles().contains(baFeature.botConfig.botAbuseRole)
                                 && !baFeature.baCore.botAbuseIsCurrent(m.getIdLong())) {
                             guild.removeRoleFromMember(m, baFeature.botConfig.botAbuseRole).queue();

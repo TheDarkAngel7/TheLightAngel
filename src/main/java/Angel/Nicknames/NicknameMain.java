@@ -86,7 +86,7 @@ public class NicknameMain extends ListenerAdapter {
     }
 
     @Override
-    public void onReconnect(@NotNull ReconnectedEvent event) {
+    public void onReconnected(@NotNull ReconnectedEvent event) {
         isConnected = true;
     }
 

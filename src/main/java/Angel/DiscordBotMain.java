@@ -88,7 +88,7 @@ public class DiscordBotMain extends ListenerAdapter {
     }
 
     @Override
-    public void onReconnect(@Nonnull ReconnectedEvent event) {
+    public void onReconnected(@NotNull ReconnectedEvent event) {
         baFeature.resumeBot();
         nickFeature.resumeBot();
     }
@@ -963,11 +963,19 @@ public class DiscordBotMain extends ListenerAdapter {
             if (memberByTagSearch != null && !searchResults.contains(memberByTagSearch)) {
                 searchResults.add(memberByTagSearch);
             }
+            // The Methods Above are reliant on the search being exact
+            final String searchQuery = query;
+            guild.loadMembers(m -> {
+                // We use toLowerCase so that the search results are not case sensitive
+                if (m.getEffectiveName().toLowerCase().contains(searchQuery.toLowerCase()) ||
+                        m.getUser().getName().toLowerCase().contains(searchQuery.toLowerCase())) {
+                    if (!searchResults.contains(m)) searchResults.add(m);
+                }
+            });
 
             String results = "**Your Search Yielded the Following Results:** \n";
-
             int index = 0;
-            if (searchResults.size() == 0) {
+            if (searchResults.isEmpty()) {
                 embed.setAsError("No Results Found", "**:x: No Results found with that search query...**");
                 log.error("No Results returned with the search query \"" + query + "\"");
             }
