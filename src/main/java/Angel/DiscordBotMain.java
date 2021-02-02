@@ -23,10 +23,10 @@ import java.util.*;
 import java.util.List;
 
 public class DiscordBotMain extends ListenerAdapter {
-    MainConfiguration mainConfig;
-    EmbedHandler embed;
-    FileHandler fileHandler;
-    Guild guild;
+    private MainConfiguration mainConfig;
+    private EmbedHandler embed;
+    private FileHandler fileHandler;
+    private Guild guild;
     private NicknameMain nickFeature;
     private NicknameInit nickInit;
     private BotAbuseMain baFeature;
