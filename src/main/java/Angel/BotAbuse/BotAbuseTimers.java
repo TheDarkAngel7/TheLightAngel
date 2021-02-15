@@ -4,13 +4,11 @@ import Angel.DiscordBotMain;
 import Angel.EmbedHandler;
 import Angel.MainConfiguration;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -36,12 +34,6 @@ class BotAbuseTimers implements Runnable {
     public void run() {
         // Here we're running an integrity check on the data that was loaded, if the data loaded is no good...
         // then we suspend all commands and we don't start the timers.
-        if (!baFeature.baCore.arraySizesEqual() && !baFeature.commandsSuspended) {
-            baFeature.commandsSuspended = true;
-            baFeature.timersSuspended = true;
-            log.fatal("Data File Damaged on Initiation");
-            log.warn("Commands are now Suspended");
-        }
         // Here we're running a check on the configuration file, if the timings loaded are no good
         if (!baFeature.baCore.timingsAreValid() && !baFeature.commandsSuspended) {
             baFeature.commandsSuspended = true;
@@ -131,11 +123,12 @@ class BotAbuseTimers implements Runnable {
                     baFeature.timer2Running = true;
                     String defaultTitle = "Role Scanner Information";
                     guild.loadMembers(m -> {
-                        baFeature.baCore.currentBotAbusers.forEach(id -> {
-                            guild.getJDA().retrieveUserById(id).queue(user -> {
+                        baFeature.baCore.records.forEach(r -> {
+                            guild.getJDA().retrieveUserById(r.getDiscordID()).queue(user -> {
                                 if (guild.isMember(user)) {
                                     guild.retrieveMember(user).queue(member -> {
-                                        if (!member.getRoles().contains(baFeature.botConfig.botAbuseRole)) {
+                                        if (!member.getRoles().contains(baFeature.botConfig.botAbuseRole) &&
+                                        r.isCurrentlyBotAbused()) {
                                             guild.addRoleToMember(member,
                                                     baFeature.botConfig.botAbuseRole).queue();
                                             embed.setAsInfo(defaultTitle, "[Role Scanner] Added Bot Abuse Role to "
@@ -147,7 +140,6 @@ class BotAbuseTimers implements Runnable {
                                         }
                                     });
                                 }
-                                else log.warn(user.getAsTag() + " does not exist in the guild.");
                             });
                         });
                         if (m.getRoles().contains(baFeature.botConfig.botAbuseRole)

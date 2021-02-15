@@ -14,7 +14,6 @@ public class EmbedHandler {
     private MainConfiguration mainConfig;
     private DiscordBotMain discord;
     private EmbedBuilder embedBuilder;
-    private EmbedDesign design = EmbedDesign.NONE;
     // Dictionary<Command Message Object, Output Message Object>
     private Dictionary<Message, Message> commandMessageMap = new Hashtable();
     private ArrayList<Thread> threadList = new ArrayList<>();
@@ -24,7 +23,6 @@ public class EmbedHandler {
 
     EmbedHandler(MainConfiguration mainConfig) {
         this.mainConfig = mainConfig;
-        design.setConfig(mainConfig);
     }
 
     void setDiscordInstance(DiscordBotMain discordInstance) {
@@ -41,32 +39,32 @@ public class EmbedHandler {
 
     public void setAsSuccess(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder = design.getBuilder(design.SUCCESS).setTitle(title);
+        embedBuilder = getBuilder(EmbedDesign.SUCCESS).setTitle(title);
         addMessage(msg);
     }
     public void setAsWarning(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder = design.getBuilder(design.WARNING).setTitle(title);
+        embedBuilder = getBuilder(EmbedDesign.WARNING).setTitle(title);
         addMessage(msg);
     }
     public void setAsError(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder = design.getBuilder(design.ERROR).setTitle(title);
+        embedBuilder = getBuilder(EmbedDesign.ERROR).setTitle(title);
         addMessage(msg);
     }
     public void setAsStop(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder = design.getBuilder(design.STOP).setTitle(title);
+        embedBuilder = getBuilder(EmbedDesign.STOP).setTitle(title);
         addMessage(msg);
     }
     public void setAsInfo(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder = design.getBuilder(design.INFO).setTitle(title);
+        embedBuilder = getBuilder(EmbedDesign.INFO).setTitle(title);
         addMessage(msg);
     }
     public void setAsHelp(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder = design.getBuilder(design.HELP).setTitle(title);
+        embedBuilder = getBuilder(EmbedDesign.HELP).setTitle(title);
         addMessage(msg);
     }
     private void addMessage(String msg) {
@@ -103,7 +101,7 @@ public class EmbedHandler {
 
     public void editEmbed(Message originalCmd, String newTitle, String newMsg, EmbedDesign requestedType) {
         isEmbedReadyToModify();
-        embedBuilder = design.getBuilder(requestedType);
+        embedBuilder = getBuilder(requestedType);
         embedEditor(originalCmd, newTitle, newMsg);
     }
     private void embedEditor(Message originalCmd, String newTitle, String newMsg) {
@@ -239,6 +237,10 @@ public class EmbedHandler {
         multipleChannels = false;
         messageSent();
     }
+    public void deleteResultsByCommand(Message originalCmd) {
+        originalCmd.delete().queue();
+        commandMessageMap.remove(originalCmd).delete().queue();
+    }
     // Thread Handlers
     // Each of these methods contain handlers for when this class has multiple threads running through it.
 
@@ -260,5 +262,30 @@ public class EmbedHandler {
         embedReady = false;
         // Remove this Thread from the list.
         threadList.remove(Thread.currentThread());
+    }
+    // Image Background Hex: #2F3136
+    public EmbedBuilder getBuilder(EmbedDesign type) {
+        EmbedBuilder embed = new EmbedBuilder();
+        switch (type) {
+            case SUCCESS:
+                embed.setColor(Color.GREEN).setThumbnail(mainConfig.checkIconURL);
+                break;
+            case WARNING:
+                embed.setColor(Color.YELLOW).setThumbnail(mainConfig.warningIconURL);
+                break;
+            case ERROR:
+                embed.setColor(Color.RED).setThumbnail(mainConfig.errorIconURL);
+                break;
+            case STOP:
+                embed.setColor(Color.RED).setThumbnail(mainConfig.stopIconURL);
+                break;
+            case INFO:
+                embed.setColor(Color.BLUE).setThumbnail(mainConfig.infoIconURL);
+                break;
+            case HELP:
+                embed.setColor(Color.decode("#2F3136").brighter()).setThumbnail(mainConfig.helpIconURL);
+                break;
+        }
+        return embed;
     }
 }

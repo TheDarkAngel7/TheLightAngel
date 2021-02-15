@@ -131,13 +131,7 @@ public class BotAbuseMain extends ListenerAdapter {
     public void saveDatabase() {
         try {
             log.error("Disconneted from Discord Websocket - Saving Data for Bot Abuse...");
-            if (baCore.arraySizesEqual()) {
-                fileHandler.saveDatabase();
-            }
-            else {
-                log.fatal("Datafile is damaged on Disconnect - Reloading to Prevent Damage");
-                baCore.startup();
-            }
+            fileHandler.saveDatabase();
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -330,7 +324,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     }
                     else if (result.contains(":x:")) {
                         embed.setAsError("Whoops... Something went wrong", result);
-                        embed.sendToTeamOutput(msg, null);
+                        embed.sendToTeamOutput(msg, msg.getAuthor());
                         wasAlreadyBotAbused = true;
                     }
                 }
@@ -358,7 +352,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     }
                     else if (result.contains(":x:")) {
                         embed.setAsError("Whoops... Something went wrong", result);
-                        embed.sendToTeamOutput(msg, null);
+                        embed.sendToTeamOutput(msg, msg.getAuthor());
                         wasAlreadyBotAbused = true;
                     }
                 }
@@ -467,11 +461,11 @@ public class BotAbuseMain extends ListenerAdapter {
             embed.setAsError("Target ID Error", ":x: Too many Target IDs");
             embed.sendToTeamOutput(msg, msg.getAuthor());
         }
-        if (!wasAlreadyBotAbused && targetUser != null && baCore.getHotOffenses(targetUser.getIdLong(), false) <= baCore.botConfig.botAbuseTimes.size()
+        if (!wasAlreadyBotAbused && targetUser != null && baCore.getHotOffenses(targetUser.getIdLong()) <= baCore.botConfig.botAbuseTimes.size()
                 && baCore.botConfig.hotOffenseWarning > 0) {
             String helpStatement = "\n\nIf you have any questions reguarding this message or how to avoid a permanent bot abuse: " +
                     "Please contact the SAFE Team in the #" + mainConfig.helpChannel.getName() + " channel.";
-            int hotOffenses = baCore.getHotOffenses(targetUser.getIdLong(), false);
+            int hotOffenses = baCore.getHotOffenses(targetUser.getIdLong());
             if (hotOffenses >= baCore.botConfig.hotOffenseWarning) {
                 embed.setAsStop("Permanent Bot Abuse Ahead",
                         ":x: **You now have " + hotOffenses + " Hot Bot Abuses!**" +
@@ -593,10 +587,10 @@ public class BotAbuseMain extends ListenerAdapter {
         String result = "";
         long lastDiscordID = 0;
         try {
-            lastDiscordID = baCore.discordID.get(baCore.issuingTeamMember.lastIndexOf(msg.getAuthor().getIdLong()));
+            lastDiscordID = baCore.getLastRecordByTeamMember(msg.getAuthor().getIdLong()).getDiscordID();
             getUserByID(lastDiscordID);
             if (args.length == 1) {
-                guild.removeRoleFromMember(guild.getMemberById(baCore.discordID.get(baCore.issuingTeamMember.lastIndexOf(msg.getMember().getIdLong()))),
+                guild.removeRoleFromMember(guild.getMemberById(lastDiscordID),
                         botConfig.botAbuseRole).queue();
                 result = baCore.undoBotAbuse(msg.getAuthor().getIdLong(), true,  0);
                 if (result.contains("FATAL ERROR")) {
@@ -759,7 +753,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 if (result.contains(":white_check_mark:")) {
                     embed.setAsError("Player Not Bot Abused",":x: **This Player is Not Bot Abused**" +
                             "\n\n" + "Lifetime Offenses: **" + baCore.getLifetimeOffenses(Long.parseLong(args[1])) + "**" +
-                            "\nHot Offenses: **" + baCore.getHotOffenses(Long.parseLong(args[1]), false) + "**");
+                            "\nHot Offenses: **" + baCore.getHotOffenses(Long.parseLong(args[1])) + "**");
                 }
                 else
                     embed.setAsInfo(defaultTitle, result);
@@ -779,7 +773,7 @@ public class BotAbuseMain extends ListenerAdapter {
             if (result.contains(":white_check_mark:")) {
                 embed.setAsError("Player Not Bot Abused", ":x: **This Player is Not Bot Abused**" +
                         "\n\n" + "Lifetime Offenses: **" + baCore.getLifetimeOffenses(msg.getMentionedMembers().get(0).getIdLong()) + "**" +
-                        "\nHot Offenses: **" + baCore.getHotOffenses(msg.getMentionedMembers().get(0).getIdLong(), false) + "**");
+                        "\nHot Offenses: **" + baCore.getHotOffenses(msg.getMentionedMembers().get(0).getIdLong()) + "**");
                 log.error(msg.getMember().getEffectiveName() + " just checked on " +
                         msg.getMentionedMembers().get(0).getEffectiveName() + "'s Bot Abuse Status but they were not Bot Abused");
             }
@@ -789,7 +783,6 @@ public class BotAbuseMain extends ListenerAdapter {
                         msg.getMentionedMembers().get(0).getEffectiveName() + "'s Bot Abuse Status");
             }
             embed.sendToTeamOutput(msg, null);
-
         }
         // /check <Timezone Offset>
         else if (msg.getMentionedUsers().isEmpty() && args.length == 2) {
@@ -851,7 +844,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         if (result.contains(":white_check_mark:")) {
                             embed.setAsError("Player Not Bot Abused", ":x: **This Player is Not Bot Abused**" +
                                     "\n\n" + "Lifetime Offenses: **" + baCore.getLifetimeOffenses(Long.parseLong(args[2])) + "**" +
-                                    "\nHot Offenses: **" + baCore.getHotOffenses(Long.parseLong(args[2]), false) + "**");
+                                    "\nHot Offenses: **" + baCore.getHotOffenses(Long.parseLong(args[2])) + "**");
                             log.error(msg.getMember().getEffectiveName() + " just checked on " +
                                     msg.getMentionedMembers().get(0).getEffectiveName() + "'s Bot Abuse Status but they were not Bot Abused");
                         }
@@ -872,10 +865,9 @@ public class BotAbuseMain extends ListenerAdapter {
                     if (result.contains(":white_check_mark:")) {
                         embed.setAsError("Player Not Bot Abused", ":x: **This Player is Not Bot Abused**" +
                                 "\n\n" + "Lifetime Offenses: **" + baCore.getLifetimeOffenses(msg.getMentionedMembers().get(0).getIdLong()) + "**" +
-                                "\nHot Offenses: **" + baCore.getHotOffenses(msg.getMentionedMembers().get(0).getIdLong(), false) + "**");
+                                "\nHot Offenses: **" + baCore.getHotOffenses(msg.getMentionedMembers().get(0).getIdLong()) + "**");
                     }
                     else embed.setAsInfo(defaultTitle, result);
-
                     embed.sendToTeamOutput(msg, null);
                     log.info(msg.getMember().getEffectiveName() +
                             " just checked on " + msg.getMentionedMembers().get(0).getEffectiveName()
@@ -887,7 +879,6 @@ public class BotAbuseMain extends ListenerAdapter {
                 embed.sendToTeamOutput(msg, null);
                 log.error("Team Member " + msg.getMember().getEffectiveName() + " just entered an invalid TimeZone offset.");
             }
-
         }
         else {
             embed.setAsError("Permission Error", "You Don't have Permission to check on someone else's Bot Abuse status");
@@ -928,7 +919,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 else {
                     embed.setAsSuccess(defaultTitle, ":white_check_mark: **Successfully Cleared " +
                             clearedRecords + " Records from " + msg.getMentionedMembers().get(index).getAsMention() + "**");
-                    embed.sendToLogChannel();
+                    embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                     log.info("Successfully Cleared " + clearedRecords + " Records from " +
                             msg.getMentionedMembers().get(index).getEffectiveName());
                 }
@@ -1033,7 +1024,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
                         + msg.getMentionedMembers().get(0).getEffectiveName() + " to " + msg.getMentionedMembers().get(1).getEffectiveName());
                 embed.setAsSuccess(defaultTitle, baCore.transferRecords(msg.getMentionedMembers().get(0).getIdLong(), msg.getMentionedMembers().get(1).getIdLong()));
-                embed.sendToLogChannel();
+                embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
             }
             else if (msg.getMentionedMembers().size() == 1) {
                 try {
@@ -1049,12 +1040,12 @@ public class BotAbuseMain extends ListenerAdapter {
                             embed.setAsWarning("Exception Caught - Player Does Not Exist",
                                     "**Could Not Remove the Bot Abuse Role from "
                                             + args[1] + " because they do not exist in the Discord Server**");
-                            embed.sendToLogChannel();
+                            embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                         }
                     }
                     embed.setAsSuccess(defaultTitle,
                             baCore.transferRecords(Long.parseLong(args[1]), msg.getMentionedMembers().get(0).getIdLong()));
-                    embed.sendToLogChannel();
+                    embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                     try {
                         log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
                                 + guild.getMemberById(Long.parseLong(args[1])).getEffectiveName()
@@ -1076,14 +1067,14 @@ public class BotAbuseMain extends ListenerAdapter {
                             embed.setAsWarning("Exception Caught - Player Does Not Exist",
                                     "**Could Not Add the Bot Abuse Role to "
                                     + args[2] + " because they do not exist in the Discord Server**");
-                            embed.sendToLogChannel();
+                            embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                         }
                         guild.removeRoleFromMember(msg.getMentionedMembers().get(0).getIdLong(),
                                 botConfig.botAbuseRole).queue();
                     }
                     embed.setAsSuccess("Successful Transfer of Records",
                             baCore.transferRecords(msg.getMentionedMembers().get(0).getIdLong(), Long.parseLong(args[2])));
-                    embed.sendToLogChannel();
+                    embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                     try {
                         log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
                                 + msg.getMentionedMembers().get(0).getEffectiveName() + " to " +
@@ -1106,7 +1097,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         embed.setAsWarning("Exception Caught - Player Does Not Exist",
                                 "**Could Not Add the Bot Abuse Role to "
                                         + args[2] + " because they do not exist in the Discord Server**");
-                        embed.sendToLogChannel();
+                        embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                         log.warn("Could Not Add the Bot Abuse Role to " +
                                 args[2] + " because they do not exist in the Discord Server");
                     }
@@ -1118,14 +1109,14 @@ public class BotAbuseMain extends ListenerAdapter {
                         embed.setAsWarning("Exception Caught - Player Does Not Exist",
                                 "**Could Not Remove the Bot Abuse Role from "
                                         + args[1] + " because they do not exist in the Discord Server**");
-                        embed.sendToLogChannel();
+                        embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                         log.warn("Could Not Remove the Bot Abuse Role from " + args[1] +
                                 " because they do not exist in the Discord Server");
                     }
                 }
                 embed.setAsSuccess("Successful Transfer of Records",
                         baCore.transferRecords(Long.parseLong(args[1]), Long.parseLong(args[2])));
-                embed.sendToLogChannel();
+                embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                 try {
                     log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
                             + guild.getMemberById(Long.parseLong(args[1])).getEffectiveName() + " to " +

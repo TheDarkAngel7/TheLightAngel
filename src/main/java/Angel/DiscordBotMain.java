@@ -928,6 +928,9 @@ public class DiscordBotMain extends ListenerAdapter {
     }
     private void searchCommand(Message msg) {
         String[] args = msg.getContentRaw().substring(1).split(" ");
+        String title = "Search Results";
+        String results = "";
+        EmbedDesign embedType = EmbedDesign.INFO;
         if (args.length >= 2) {
             String query = "";
             if (args.length == 2) {
@@ -973,10 +976,13 @@ public class DiscordBotMain extends ListenerAdapter {
                 }
             });
 
-            String results = "**Your Search Yielded the Following Results:** \n";
+            results = "**Your Search Yielded the Following Results:** \n";
             int index = 0;
             if (searchResults.isEmpty()) {
-                embed.setAsError("No Results Found", "**:x: No Results found with that search query...**");
+                title = "No Results Found";
+                results = "**:x: No Results found with that search query...**";
+                embedType = EmbedDesign.ERROR;
+                embed.setAsError(title, results);
                 log.error("No Results returned with the search query \"" + query + "\"");
             }
             else {
@@ -986,16 +992,16 @@ public class DiscordBotMain extends ListenerAdapter {
                 results = results.concat("\n*You may use these results to get a mention you need in your next command " +
                         "or for any other purpose. Right click on the desired mention and click **Mention***");
                 log.info("Search Query \"" + query + "\" returned " + searchResults.size() + " result(s)");
-                embed.setAsInfo("Search Results", results);
-
+                embed.setAsInfo(title, results);
             }
-            embed.sendToTeamOutput(msg, msg.getAuthor());
         }
         else {
-            embed.setAsError("Error While Parsing Command",
-                    "**Invalid Number of Arguments! Syntax: `" + mainConfig.commandPrefix + "search <Name>`**");
-            embed.sendToTeamOutput(msg, msg.getAuthor());
+            title = "Error While Parsing Command";
+            results = "**Invalid Number of Arguments! Syntax: `" + mainConfig.commandPrefix + "search <Name>`**";
+            embedType = EmbedDesign.ERROR;
+            embed.setAsError(title, results);
         }
+        embed.sendToTeamOutput(msg, msg.getAuthor());
     }
 
     public void restartBot(boolean restartSilently) throws IOException {
