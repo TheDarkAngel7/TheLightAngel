@@ -912,7 +912,10 @@ public class NicknameMain extends ListenerAdapter {
         commandUser = null;
     }
     private boolean inNickRestrictedRole(long targetDiscordID) {
-        List<Role> hasRoles = guild.getMemberById(targetDiscordID).getRoles();
+        List<Role> hasRoles = new ArrayList<>();
+        guild.retrieveMemberById(targetDiscordID).queue(member -> {
+           member.getRoles().forEach(role -> hasRoles.add(role));
+        });
 
         if (hasRoles.isEmpty() || discord.isTeamMember(targetDiscordID)) return false;
         else {
