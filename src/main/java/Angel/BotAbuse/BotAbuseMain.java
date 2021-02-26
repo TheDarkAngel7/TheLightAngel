@@ -2,6 +2,7 @@ package Angel.BotAbuse;
 
 import Angel.*;
 import com.google.gson.JsonObject;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.*;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
@@ -1478,6 +1479,55 @@ public class BotAbuseMain extends ListenerAdapter {
     private void isNotBusy() {
         commandUser = null;
         isBusy = false;
+    }
+    public String getStatusString()  {
+        String defaultOutput = "*__Bot Abuse Feature__*";
+        defaultOutput = defaultOutput.concat("\nStatus: **?**");
+
+        switch (guild.getJDA().getStatus()) {
+            case AWAITING_LOGIN_CONFIRMATION:
+            case ATTEMPTING_TO_RECONNECT:
+            case LOGGING_IN:
+            case WAITING_TO_RECONNECT:
+            case CONNECTING_TO_WEBSOCKET:
+            case IDENTIFYING_SESSION:
+                defaultOutput = defaultOutput.replace("?", ":warning: Connecting");
+                break;
+            case INITIALIZED:
+            case INITIALIZING:
+            case LOADING_SUBSYSTEMS:
+                defaultOutput = defaultOutput.replace("?", ":warning: Starting");
+                break;
+            case DISCONNECTED:
+            case FAILED_TO_LOGIN:
+                defaultOutput = defaultOutput.replace("?", ":warning: Disconnected");
+                break;
+            case RECONNECT_QUEUED:
+                defaultOutput = defaultOutput.replace("?", ":warning: Connection Queued");
+                break;
+            case CONNECTED:
+                if (commandsSuspended && !isBusy && isConnected) defaultOutput =
+                        defaultOutput.replace("?", "Limited");
+                else if (guild.getJDA().getGatewayPing() >= mainConfig.highPingTime && isConnected)
+                    defaultOutput = defaultOutput.replace("?", ":warning: High Ping");
+                else if (isConnected && !isBusy && !commandsSuspended)
+                    defaultOutput = defaultOutput.replace("?", "Waiting for Command...");
+                else if (isBusy) defaultOutput = defaultOutput.replace("?", ":warning: Busy");
+                else defaultOutput = defaultOutput.replace("?", ":warning: Connected - Not Ready");
+            default:
+                defaultOutput = defaultOutput.replace("?", "Unknown");
+        }
+
+        defaultOutput = defaultOutput.concat(
+                "\nCommand Status: **" + !commandsSuspended +
+                        "**\nPing Time: **" + guild.getJDA().getGatewayPing() + "ms" +
+                        "**\n\nTimer 1 Status: **" + (timer1Running && !timersSuspended) +
+                        "**\n*Timer 1 is what ticks every second. Each second the bot checks all the expiry times against the current time.*" +
+                        "\n\nTimer 2 Status: **" + (timer2Running && !timersSuspended) +
+                        "**\n*Timer 2 Runs Every " + getRoleScannerInterval() +
+                        " Minutes and checks the integrity of the Bot Abuse roles each time it runs.*");
+
+        return defaultOutput;
     }
     ///////////////////////////////////////////////////////////
     // Miscellaneous Methods

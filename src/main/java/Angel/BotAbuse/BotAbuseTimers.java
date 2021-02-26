@@ -126,7 +126,7 @@ class BotAbuseTimers implements Runnable {
                         baFeature.baCore.records.forEach(r -> {
                             guild.getJDA().retrieveUserById(r.getDiscordID()).queue(user -> {
                                 if (guild.isMember(user)) {
-                                    guild.retrieveMember(user).queue(member -> {
+                                    guild.retrieveMemberById(r.getDiscordID(), true).queue(member -> {
                                         if (!member.getRoles().contains(baFeature.botConfig.botAbuseRole) &&
                                         r.isCurrentlyBotAbused()) {
                                             guild.addRoleToMember(member,

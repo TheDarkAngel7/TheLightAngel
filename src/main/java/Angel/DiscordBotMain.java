@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.ReconnectedEvent;
 import net.dv8tion.jda.api.events.ShutdownEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.CloseCode;
 import org.apache.logging.log4j.LogManager;
@@ -21,6 +22,7 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class DiscordBotMain extends ListenerAdapter {
     private MainConfiguration mainConfig;
@@ -116,10 +118,10 @@ public class DiscordBotMain extends ListenerAdapter {
         }
         if (event.getMessage().getContentRaw().charAt(0) == mainConfig.commandPrefix && isValidCommand(args)) {
             if (event.getMessage().getChannelType().equals(ChannelType.PRIVATE)) {
-                log.info(event.getAuthor().getAsTag() + "@DM: " + event.getMessage().getContentRaw());
+                log.debug(event.getAuthor().getAsTag() + "@DM: " + event.getMessage().getContentRaw());
             }
             else {
-                log.info(event.getAuthor().getAsTag() + "@" + event.getMessage().getChannel().getName() + ": " +
+                log.debug(event.getAuthor().getAsTag() + "@" + event.getMessage().getChannel().getName() + ": " +
                         event.getMessage().getContentRaw());
             }
         }
@@ -310,79 +312,8 @@ public class DiscordBotMain extends ListenerAdapter {
                     if (!msg.getChannelType().equals(ChannelType.PRIVATE)) embed.sendToTeamOutput(msg, msg.getAuthor());
                     else embed.sendDM(msg, msg.getAuthor());
                     try { Thread.sleep(2000); } catch (InterruptedException e) {}
-                    String defaultOutput = "*__Bot Abuse Feature__*";
-                    defaultOutput = defaultOutput.concat("\nStatus: **?**");
 
-                    if (baFeature.commandsSuspended && !baFeature.isBusy && baFeature.isConnected) defaultOutput =
-                            defaultOutput.replace("?", "Limited");
-                    else if (baInit.getPing() >= mainConfig.highPingTime && baFeature.isConnected)
-                        defaultOutput = defaultOutput.replace("?", ":warning: High Ping");
-                    else if (baFeature.isConnected && !baFeature.isBusy && !baFeature.commandsSuspended)
-                        defaultOutput = defaultOutput.replace("?", "Waiting for Command...");
-                    else if (baFeature.isBusy) defaultOutput = defaultOutput.replace("?", ":warning: Busy");
-                    else if (!baFeature.isConnected &&
-                            (baInit.getStatus() == JDA.Status.ATTEMPTING_TO_RECONNECT ||
-                                    baInit.getStatus() == JDA.Status.CONNECTING_TO_WEBSOCKET ||
-                                    baInit.getStatus() == JDA.Status.LOGGING_IN ||
-                                    baInit.getStatus() == JDA.Status.AWAITING_LOGIN_CONFIRMATION ||
-                                    baInit.getStatus() == JDA.Status.WAITING_TO_RECONNECT)) {
-                        defaultOutput = defaultOutput.replace("?", ":warning: Connecting");
-                    }
-                    else if (!baFeature.isConnected && (baInit.getStatus() == JDA.Status.INITIALIZED ||
-                            baInit.getStatus() == JDA.Status.INITIALIZING)) {
-                        defaultOutput = defaultOutput.replace("?", ":warning: Starting");
-                    }
-                    else if (!baFeature.isConnected && baInit.getStatus() == JDA.Status.DISCONNECTED) {
-                        defaultOutput = defaultOutput.replace("?", ":warning: Disconnected");
-                    }
-                    else if (!baFeature.isConnected && baInit.getStatus() == JDA.Status.RECONNECT_QUEUED) {
-                        defaultOutput = defaultOutput.replace("?", ":warning: Connection Queued");
-                    }
-                    else defaultOutput = defaultOutput.replace("?", "Unknown");
-
-                    defaultOutput = defaultOutput.concat(
-                            "\nCommand Status: **" + !baFeature.commandsSuspended +
-                                    "**\nPing Time: **" + baInit.getPing() + "ms" +
-                                    "**\n\nTimer 1 Status: **" + (baFeature.timer1Running && !baFeature.timersSuspended) +
-                                    "**\n*Timer 1 is what ticks every second. Each second the bot checks all the expiry times against the current time.*" +
-                                    "\n\nTimer 2 Status: **" + (baFeature.timer2Running && !baFeature.timersSuspended) +
-                                    "**\n*Timer 2 Runs Every " + baFeature.getRoleScannerInterval() +
-                                    " Minutes and checks the integrity of the Bot Abuse roles each time it runs.*" +
-
-                                    "\n\n\n*__Nickname Feature__*" +
-                                    "\nStatus: **?**" +
-                                    "\nCommand Status: **" + !nickFeature.commandsSuspended +
-                                    "**\nPing Time: **" + nickInit.getPing() + "ms**");
-
-                    if (nickFeature.commandsSuspended && !nickFeature.isBusy && nickFeature.isConnected) defaultOutput =
-                            defaultOutput.replace("?", "Limited");
-                    else if (nickInit.getPing() >= mainConfig.highPingTime && baFeature.isConnected)
-                        defaultOutput =
-                                defaultOutput.replace("?", ":warning: High Ping");
-                    else if (nickFeature.isConnected && !nickFeature.isBusy && !nickFeature.commandsSuspended)
-                        defaultOutput =
-                                defaultOutput.replace("?", "Waiting for Command...");
-                    else if (nickFeature.isBusy) defaultOutput = defaultOutput.replace("?", ":warning: Busy");
-                    else if (!nickFeature.isConnected &&
-                            (nickInit.getStatus() == JDA.Status.ATTEMPTING_TO_RECONNECT ||
-                                    nickInit.getStatus() == JDA.Status.CONNECTING_TO_WEBSOCKET ||
-                                    nickInit.getStatus() == JDA.Status.LOGGING_IN ||
-                                    nickInit.getStatus() == JDA.Status.AWAITING_LOGIN_CONFIRMATION ||
-                                    nickInit.getStatus() == JDA.Status.WAITING_TO_RECONNECT)) {
-                        defaultOutput = defaultOutput.replace("?", ":warning: Connecting");
-                    }
-                    else if (!nickFeature.isConnected && (nickInit.getStatus() == JDA.Status.INITIALIZED ||
-                            nickInit.getStatus() == JDA.Status.INITIALIZING)) {
-                        defaultOutput = defaultOutput.replace("?", ":warning: Starting");
-                    }
-                    else if (!nickFeature.isConnected && nickInit.getStatus() == JDA.Status.DISCONNECTED) {
-                        defaultOutput = defaultOutput.replace("?", ":warning: Disconnected");
-                    }
-                    else if (!nickFeature.isConnected && nickInit.getStatus() == JDA.Status.RECONNECT_QUEUED) {
-                        defaultOutput = defaultOutput.replace("?", ":warning: Connection Queued");
-                    }
-                    else defaultOutput = defaultOutput.replace("?", "Unknown");
-
+                    String defaultOutput = baFeature.getStatusString().concat(nickFeature.getStatusString());
                     EmbedDesign requestedType;
 
                     if (!defaultOutput.contains("true")) {
@@ -1015,13 +946,27 @@ public class DiscordBotMain extends ListenerAdapter {
     }
     // Permission Checkers that this class and the other features use:
     public boolean isTeamMember(long targetDiscordID) {
-        return isStaffMember(targetDiscordID) ||
-                guild.getMemberById(targetDiscordID).getRoles().contains(mainConfig.teamRole);
+        AtomicReference<Member> member = new AtomicReference<>();
+        try {
+            guild.retrieveMemberById(targetDiscordID, true).queue(m -> member.set(m));
+            return isStaffMember(targetDiscordID) ||
+                    member.get().getRoles().contains(mainConfig.teamRole);
+        }
+        catch (ErrorResponseException ex) {
+            return false;
+        }
     }
     public boolean isStaffMember(long targetDiscordID) {
-        return guild.getMemberById(targetDiscordID).getRoles().contains(mainConfig.staffRole) ||
-                guild.getMemberById(targetDiscordID).getRoles().contains(mainConfig.adminRole) ||
-                guild.getMemberById(targetDiscordID).equals(mainConfig.owner);
+        AtomicReference<Member> member = new AtomicReference<>();
+        try {
+            guild.retrieveMemberById(targetDiscordID, true).queue(m -> member.set(m));
+            return member.get().getRoles().contains(mainConfig.staffRole) ||
+                    member.get().getRoles().contains(mainConfig.adminRole) ||
+                    member.get().equals(mainConfig.owner);
+        }
+        catch (ErrorResponseException ex) {
+            return false;
+        }
     }
     // Is the command array provided a valid command anywhere in the program?
     private boolean isValidCommand(String[] cmd) {

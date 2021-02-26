@@ -1,8 +1,10 @@
 package Angel.Nicknames;
 
 import Angel.DiscordBotMain;
+import Angel.EmbedDesign;
 import Angel.EmbedHandler;
 import Angel.MainConfiguration;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
@@ -95,7 +97,7 @@ public class NicknameMain extends ListenerAdapter {
     public void onUserUpdateName(@Nonnull UserUpdateNameEvent event) {
         isBusy = true;
         try {
-            guild.retrieveMember(event.getUser()).queue(m -> {
+            guild.retrieveMember(event.getUser(), true).queue(m -> {
                 if (m.getNickname() == null && inNickRestrictedRole(event.getUser().getIdLong())) {
                     ignoreNewNickname = true;
                     m.modifyNickname(event.getOldName()).queue();
@@ -337,7 +339,7 @@ public class NicknameMain extends ListenerAdapter {
                 "\n*If you cannot change your social club name due to the cooldown please use `/nickname withdraw` (or `/nn wd` for short) now.*";
         long cmdUserID = msg.getAuthor().getIdLong();
         try {
-            guild.retrieveMemberById(cmdUserID).queue(member -> {
+            guild.retrieveMemberById(cmdUserID, true).queue(member -> {
                 try {
                     String result = "";
                     if (args[1].equalsIgnoreCase("request") || args[1].equalsIgnoreCase("req")) {
@@ -913,7 +915,7 @@ public class NicknameMain extends ListenerAdapter {
     }
     private boolean inNickRestrictedRole(long targetDiscordID) {
         List<Role> hasRoles = new ArrayList<>();
-        guild.retrieveMemberById(targetDiscordID).queue(member -> {
+        guild.retrieveMemberById(targetDiscordID, true).queue(member -> {
            member.getRoles().forEach(role -> hasRoles.add(role));
         });
 
@@ -1034,6 +1036,48 @@ public class NicknameMain extends ListenerAdapter {
             index++;
         }
         return false;
+    }
+    public String getStatusString() {
+        String defaultOutput =
+                "\n\n\n*__Nickname Feature__*" +
+                        "\nStatus: **?**" +
+                        "\nCommand Status: **" + !commandsSuspended +
+                        "**\nPing Time: **" + guild.getJDA().getGatewayPing() + "ms**";
+
+        switch (guild.getJDA().getStatus()) {
+            case AWAITING_LOGIN_CONFIRMATION:
+            case ATTEMPTING_TO_RECONNECT:
+            case LOGGING_IN:
+            case WAITING_TO_RECONNECT:
+            case CONNECTING_TO_WEBSOCKET:
+            case IDENTIFYING_SESSION:
+                defaultOutput = defaultOutput.replace("?", ":warning: Connecting");
+                break;
+            case INITIALIZED:
+            case INITIALIZING:
+            case LOADING_SUBSYSTEMS:
+                defaultOutput = defaultOutput.replace("?", ":warning: Starting");
+                break;
+            case DISCONNECTED:
+            case FAILED_TO_LOGIN:
+                defaultOutput = defaultOutput.replace("?", ":warning: Disconnected");
+                break;
+            case RECONNECT_QUEUED:
+                defaultOutput = defaultOutput.replace("?", ":warning: Connection Queued");
+                break;
+            case CONNECTED:
+                if (commandsSuspended && !isBusy && isConnected) defaultOutput =
+                        defaultOutput.replace("?", "Limited");
+                else if (guild.getJDA().getGatewayPing() >= mainConfig.highPingTime && isConnected)
+                    defaultOutput = defaultOutput.replace("?", ":warning: High Ping");
+                else if (isConnected && !isBusy && !commandsSuspended)
+                    defaultOutput = defaultOutput.replace("?", "Waiting for Command...");
+                else if (isBusy) defaultOutput = defaultOutput.replace("?", ":warning: Busy");
+                else defaultOutput = defaultOutput.replace("?", ":warning: Connected - Not Ready");
+            default:
+                defaultOutput = defaultOutput.replace("?", "Unknown");
+        }
+        return defaultOutput;
     }
     NicknameMain getThis() {
         return this;
