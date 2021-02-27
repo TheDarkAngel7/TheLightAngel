@@ -952,7 +952,7 @@ public class DiscordBotMain extends ListenerAdapter {
             return isStaffMember(targetDiscordID) ||
                     member.get().getRoles().contains(mainConfig.teamRole);
         }
-        catch (ErrorResponseException ex) {
+        catch (ErrorResponseException | NullPointerException ex) {
             return false;
         }
     }
@@ -964,7 +964,7 @@ public class DiscordBotMain extends ListenerAdapter {
                     member.get().getRoles().contains(mainConfig.adminRole) ||
                     member.get().equals(mainConfig.owner);
         }
-        catch (ErrorResponseException ex) {
+        catch (ErrorResponseException | NullPointerException ex) {
             return false;
         }
     }

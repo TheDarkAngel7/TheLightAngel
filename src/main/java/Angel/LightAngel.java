@@ -89,6 +89,6 @@ class LightAngel {
                 CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE);
         JDABuilder.create(mainConfig.token, enabledIntents)
                 .disableCache(disabledFlags).addEventListeners(discord).setRequestTimeoutRetry(true)
-                .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.NONE).build();
+                .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).build();
     }
 }

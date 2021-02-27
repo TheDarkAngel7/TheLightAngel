@@ -40,7 +40,7 @@ public class NicknameInit implements Runnable {
                 CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE);
         try {
             jda = JDABuilder.create(mainConfig.token, enabledIntents).disableCache(disabledFlags).setRequestTimeoutRetry(true)
-                    .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.NONE).setMaxReconnectDelay(120).build();
+                    .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).setMaxReconnectDelay(120).build();
             log.info("Nickname Feature JDA Instance Created");
         }
         catch (LoginException e) {

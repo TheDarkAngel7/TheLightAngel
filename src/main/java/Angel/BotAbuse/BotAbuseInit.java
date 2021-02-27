@@ -43,7 +43,7 @@ public class BotAbuseInit implements Runnable {
                 CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE);
         try {
             jda = JDABuilder.create(mainConfig.token, enabledIntents).disableCache(disabledFlags).setRequestTimeoutRetry(true)
-                    .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.NONE).setMaxReconnectDelay(60).build();
+                    .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).setMaxReconnectDelay(60).build();
             log.info("Bot Abuse Feature JDA Instance Created");
         }
         catch (LoginException e) {
