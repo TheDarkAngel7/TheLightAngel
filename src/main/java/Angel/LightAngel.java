@@ -42,13 +42,13 @@ class LightAngel {
                 if (nickDataFile.createNewFile()) {
                     FileOutputStream fos = new FileOutputStream(nickDataFile);
                     ObjectOutputStream objectOutputStream = new ObjectOutputStream(fos);
-                    log.info("Successfully Created new Nickname Request Data File");
+                    log.info("Successfully Created new Nickname Data File");
                     objectOutputStream.close();
                     fos.close();
                 }
             }
             else {
-                log.info("Successfully Found Existing Nickname Request Data File");
+                log.info("Successfully Found Existing Nickname Data File");
             }
             fileHandler = new FileHandler();
         }

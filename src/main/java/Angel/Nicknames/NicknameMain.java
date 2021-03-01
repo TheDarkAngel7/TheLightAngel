@@ -110,6 +110,7 @@ public class NicknameMain extends ListenerAdapter {
                     embed.sendDM(null, event.getUser());
                     String logMessage = event.getUser().getAsMention() + " was previously using their discord username " +
                             "as their social club name. They are in a role that prevents effective name changes so a nickname of **" + event.getOldName() + "** was set on them.";
+                    log.info(logMessage.replace(event.getUser().getAsMention(), event.getUser().getAsTag() + " (ID:" + event.getUser().getIdLong() + ")"));
                     embed.setAsInfo("Automatic Nickname Applied",
                             logMessage.replace("null", event.getUser().getAsTag() + " (Their Discord Username)"));
                     embed.sendToLogChannel();
@@ -196,6 +197,7 @@ public class NicknameMain extends ListenerAdapter {
                         "from changing. So it got reverted back to **" + event.getOldNickname() + "**";
                 embed.setAsSuccess("Nickname Change Prevented",
                         logMessage.replace("null", event.getUser().getAsTag() + " (Their Discord Username)"));
+                embed.sendToLogChannel();
             }
         }
         else if (!discord.isTeamMember(event.getUser().getIdLong()) && !inNickRestrictedRole(event.getUser().getIdLong())
@@ -231,6 +233,11 @@ public class NicknameMain extends ListenerAdapter {
         catch (IOException e) {
             e.printStackTrace();
         }
+        // Writing what their name was when they left the server
+        if (event.getMember() != null) {
+            addNameHistory(event.getUser().getIdLong(),  event.getMember().getEffectiveName(), null);
+        }
+        else addNameHistory(event.getUser().getIdLong(), event.getUser().getName(), null);
         isBusy = false;
     }
 
@@ -1011,6 +1018,7 @@ public class NicknameMain extends ListenerAdapter {
     private void addNameHistory(long targetDiscordID, String oldName, @Nullable Message msg) {
         ArrayList<String> oldNickArray = nickCore.oldNickDictionary.get(targetDiscordID);
         if (oldNickArray == null) oldNickArray = new ArrayList<>();
+        if (!oldNickArray.isEmpty() && oldNickArray.get(oldNickArray.size() - 1).equals(oldName)) return;
         if (oldName == null) oldName = guild.getMemberById(targetDiscordID).getUser().getName();
         oldNickArray.add(oldName);
         nickCore.oldNickDictionary.put(targetDiscordID, oldNickArray);
