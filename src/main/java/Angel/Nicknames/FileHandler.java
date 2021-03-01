@@ -1,5 +1,6 @@
 package Angel.Nicknames;
 
+import Angel.FileDatabases;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -18,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
 
-class FileHandler {
+class FileHandler implements FileDatabases {
     private final Logger log = LogManager.getLogger(FileHandler.class);
     private final NickCore nickCore;
     Gson gson = new Gson();
@@ -34,14 +35,14 @@ class FileHandler {
         this.nickCore = nickCore;
     }
 
-    JsonObject getConfig() throws IOException {
+    public JsonObject getConfig() throws IOException {
         fileReader = new FileReader("configs/nickconfig.json");
         JsonElement element = JsonParser.parseReader(fileReader);
         fileReader.close();
         return element.getAsJsonObject();
     }
 
-    void getDatabase() throws IOException {
+    public void getDatabase() throws IOException {
         // This is to ensure the fileReader closes at the end of this method
         fileReader = new FileReader(jsonNickDataFile);
         JsonObject database = JsonParser.parseReader(fileReader).getAsJsonObject();
@@ -53,7 +54,7 @@ class FileHandler {
         log.info("Nickname Database Successfully Setup");
         fileReader.close();
     }
-    void saveDatabase() throws IOException {
+    public void saveDatabase() throws IOException {
         JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(new FileOutputStream(jsonTempNickDataFile)));
         jsonWriter.beginObject();
         jsonWriter.name("RequestID").value(gson.toJson(nickCore.requestID));

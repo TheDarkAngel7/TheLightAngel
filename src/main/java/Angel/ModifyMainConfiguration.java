@@ -43,6 +43,8 @@ class ModifyMainConfiguration extends MainConfiguration {
             case "forcetola":
             case "forcetodedicatedchannel":
             case "forcedc": forceToDedicatedChannel = value; break;
+            case "forcetomanagementchannel":
+            case "forcetomc": forceToManagementChannel = value; break;
         }
     }
     void setConfig(String key, int value) {

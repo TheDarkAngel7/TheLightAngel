@@ -1,5 +1,6 @@
 package Angel.BotAbuse;
 
+import Angel.FileDatabases;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -14,64 +15,44 @@ import java.lang.reflect.Type;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Hashtable;
+import java.util.List;
 
-class FileHandler {
+class FileHandler implements FileDatabases {
     Gson gson = new Gson();
     private BotAbuseCore baCore;
     private final Logger log = LogManager.getLogger(FileHandler.class);
     private File jsonBADataFile = new File("data/BAdata.json");
     private File jsonTempBADataFile = new File("data/BAdatatemp.json");
-    private Type longType = new TypeToken<ArrayList<Long>>(){}.getType();
-    private Type integerType = new TypeToken<ArrayList<Integer>>(){}.getType();
-    private Type stringType = new TypeToken<ArrayList<String>>(){}.getType();
-    private Type dateType = new TypeToken<ArrayList<Date>>(){}.getType();
+    private Type recordsType = new TypeToken<List<BotAbuseRecord>>(){}.getType();
     private Type dictionary = new TypeToken<Hashtable<String, String>>(){}.getType();
 
     FileHandler(BotAbuseCore baCore) {
         this.baCore = baCore;
     }
 
-    JsonObject getConfig() throws IOException {
+    public JsonObject getConfig() throws IOException {
         FileReader fileReader = new FileReader("configs/botabuseconfig.json");
         JsonElement element = JsonParser.parseReader(fileReader);
         fileReader.close();
         return element.getAsJsonObject();
     }
 
-    void getDatabase() throws IOException {
+    public void getDatabase() throws IOException {
         // This is to ensure the fileReader closes at the end of this method
         FileReader fileReader = new FileReader(jsonBADataFile);
         JsonObject database = JsonParser.parseReader(fileReader).getAsJsonObject();
-        baCore.id = gson.fromJson(database.get("ID").getAsString(), integerType);
-        baCore.discordID = gson.fromJson(database.get("DiscordID").getAsString(), longType);
-        baCore.issuingTeamMember = gson.fromJson(database.get("TeamMembers").getAsString(), longType);
-        baCore.repOffenses = gson.fromJson(database.get("RepOffenses").getAsString(), integerType);
-        baCore.issuedDates = gson.fromJson(database.get("DatesIssued").getAsString(), dateType);
-        baCore.expiryDates = gson.fromJson(database.get("ExpiryDates").getAsString(), dateType);
-        baCore.reasons = gson.fromJson(database.get("Reasons").getAsString(), stringType);
-        baCore.proofImages = gson.fromJson(database.get("ProofImages").getAsString(), stringType);
-        baCore.currentBotAbusers = gson.fromJson(database.get("CurrentBotAbusers").getAsString(), longType);
+        baCore.records = gson.fromJson(database.get("records").getAsString(), recordsType);
         baCore.reasonsDictionary = gson.fromJson(database.get("ReasonsDictionary").getAsString(), dictionary);
         log.info("Bot Abuse Database Successfully Setup");
         fileReader.close();
     }
 
-    void saveDatabase() throws IOException {
+    public void saveDatabase() throws IOException {
         JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(new FileOutputStream(jsonTempBADataFile)));
         jsonWriter.beginObject();
-        jsonWriter.name("ID").value(gson.toJson(baCore.id));
-        jsonWriter.name("DiscordID").value(gson.toJson(baCore.discordID));
-        jsonWriter.name("TeamMembers").value(gson.toJson(baCore.issuingTeamMember));
-        jsonWriter.name("RepOffenses").value(gson.toJson(baCore.repOffenses));
-        jsonWriter.name("DatesIssued").value(gson.toJson(baCore.issuedDates));
-        jsonWriter.name("ExpiryDates").value(gson.toJson(baCore.expiryDates));
-        jsonWriter.name("Reasons").value(gson.toJson(baCore.reasons));
-        jsonWriter.name("ProofImages").value(gson.toJson(baCore.proofImages));
-        jsonWriter.name("CurrentBotAbusers").value(gson.toJson(baCore.currentBotAbusers));
+        jsonWriter.name("records").value(gson.toJson(baCore.records));
         jsonWriter.name("ReasonsDictionary").value(gson.toJson(baCore.reasonsDictionary));
         jsonWriter.endObject();
         jsonWriter.close();

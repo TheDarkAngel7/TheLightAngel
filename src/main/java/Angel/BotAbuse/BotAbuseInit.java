@@ -21,7 +21,7 @@ import java.util.concurrent.TimeoutException;
 public class BotAbuseInit implements Runnable {
     private final Logger log = LogManager.getLogger(BotAbuseInit.class);
     private final boolean commandsSuspended;
-    private final boolean isRestart;
+    private final int restartValue;
     private final MainConfiguration mainConfig;
     private final EmbedHandler embed;
     private final Guild guild;
@@ -30,9 +30,9 @@ public class BotAbuseInit implements Runnable {
 
     private BotAbuseMain baFeature;
 
-    public BotAbuseInit(boolean commandsSuspended, boolean isRestart, MainConfiguration mainConfig, EmbedHandler embed, Guild guild, DiscordBotMain discord) {
+    public BotAbuseInit(boolean commandsSuspended, int restartValue, MainConfiguration mainConfig, EmbedHandler embed, Guild guild, DiscordBotMain discord) {
         this.commandsSuspended = commandsSuspended;
-        this.isRestart = isRestart;
+        this.restartValue = restartValue;
         this.mainConfig = mainConfig;
         this.embed = embed;
         this.guild = guild;
@@ -43,7 +43,7 @@ public class BotAbuseInit implements Runnable {
                 CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE);
         try {
             jda = JDABuilder.create(mainConfig.token, enabledIntents).disableCache(disabledFlags).setRequestTimeoutRetry(true)
-                    .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.NONE).setMaxReconnectDelay(60).build();
+                    .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).setMaxReconnectDelay(60).build();
             log.info("Bot Abuse Feature JDA Instance Created");
         }
         catch (LoginException e) {
@@ -55,7 +55,7 @@ public class BotAbuseInit implements Runnable {
     @Override
     public void run() {
         try {
-            baFeature = new BotAbuseMain(commandsSuspended, isRestart, mainConfig, embed, guild, discord);
+            baFeature = new BotAbuseMain(commandsSuspended, restartValue, mainConfig, embed, guild, discord);
             jda.addEventListener(baFeature);
             log.info("Bot Abuse Feature Added as Event Listener to its JDA instance");
         }

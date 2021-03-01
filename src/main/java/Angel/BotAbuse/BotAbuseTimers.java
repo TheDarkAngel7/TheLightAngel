@@ -4,16 +4,13 @@ import Angel.DiscordBotMain;
 import Angel.EmbedHandler;
 import Angel.MainConfiguration;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
 
 class BotAbuseTimers implements Runnable {
     private final Logger log = LogManager.getLogger(BotAbuseTimers.class);
@@ -37,12 +34,6 @@ class BotAbuseTimers implements Runnable {
     public void run() {
         // Here we're running an integrity check on the data that was loaded, if the data loaded is no good...
         // then we suspend all commands and we don't start the timers.
-        if (!baFeature.baCore.arraySizesEqual() && !baFeature.commandsSuspended) {
-            baFeature.commandsSuspended = true;
-            baFeature.timersSuspended = true;
-            log.fatal("Data File Damaged on Initiation");
-            log.warn("Commands are now Suspended");
-        }
         // Here we're running a check on the configuration file, if the timings loaded are no good
         if (!baFeature.baCore.timingsAreValid() && !baFeature.commandsSuspended) {
             baFeature.commandsSuspended = true;
@@ -54,7 +45,7 @@ class BotAbuseTimers implements Runnable {
             log.info("Configuration File Timings are now valid again - Restarting Timers...");
         }
         // If the init method was initiated from a restart then this'll run.
-        if (baFeature.isRestart && baFeature.commandsSuspended) {
+        if (baFeature.restartValue == 1 && baFeature.commandsSuspended) {
             embed.setAsStop("Restart Error","**Restart Complete but the Data File is Still Not Usable**");
             embed.sendToChannel(null, mainConfig.discussionChannel);
         }
@@ -71,7 +62,7 @@ class BotAbuseTimers implements Runnable {
                     embed.setAsStop("Timer Error", "One Timer is Running and the Other Isn't..." +
                             "\n\n**Restarting To Fix the Issue... Please Wait...**");
                     embed.sendToLogChannel();
-                    discord.restartBot();
+                    discord.restartBot(false);
                 }
                 catch (IOException e) {
                     e.printStackTrace();
@@ -95,7 +86,7 @@ class BotAbuseTimers implements Runnable {
                     if (removedID != 0) {
                         try {
                             // For Printing in the Console and in Discord A Bot Abuse role has been removed.
-                            embed.setAsSuccess("Successfully Removed Expired Bot Abuse","**:white_check_mark: [System] Removed Expired Bot Abuse for "
+                            embed.setAsSuccess("Successfully Removed Expired Bot Abuse","**:white_check_mark: Removed Expired Bot Abuse for "
                                     + guild.getMemberById(removedID).getAsMention() + "**");
                             embed.sendToLogChannel();
                             guild.removeRoleFromMember(removedID,
@@ -130,29 +121,31 @@ class BotAbuseTimers implements Runnable {
                 @Override
                 public void run() {
                     baFeature.timer2Running = true;
-                    List<Member> serverMembers = guild.getMembers();
                     String defaultTitle = "Role Scanner Information";
-                    baFeature.baCore.currentBotAbusers.forEach(id -> {
-                        if (guild.isMember(guild.getJDA().retrieveUserById(id).complete())) {
-                            Member m = guild.retrieveMemberById(id).complete();
-                            if (serverMembers.contains(m) &&
-                                    !m.getRoles().contains(baFeature.botConfig.botAbuseRole)) {
-                                guild.addRoleToMember(m,
-                                        baFeature.botConfig.botAbuseRole).queue();
-                                embed.setAsInfo(defaultTitle, "[System - Role Scanner] Added Bot Abuse Role to "
-                                        + m.getAsMention() +
-                                        " because they didn't have the role... and they're supposed to have it.");
-                                embed.sendToLogChannel();
-                                log.info("Added Bot Abuse to " + m.getEffectiveName()
-                                        + " because they didn't have the role... and they're supposed to have it.");
-                            }
-                        }
-                    });
-                    serverMembers.forEach(m -> {
+                    guild.loadMembers(m -> {
+                        baFeature.baCore.records.forEach(r -> {
+                            guild.getJDA().retrieveUserById(r.getDiscordID()).queue(user -> {
+                                if (guild.isMember(user)) {
+                                    guild.retrieveMemberById(r.getDiscordID(), true).queue(member -> {
+                                        if (!member.getRoles().contains(baFeature.botConfig.botAbuseRole) &&
+                                        r.isCurrentlyBotAbused()) {
+                                            guild.addRoleToMember(member,
+                                                    baFeature.botConfig.botAbuseRole).queue();
+                                            embed.setAsInfo(defaultTitle, "[Role Scanner] Added Bot Abuse Role to "
+                                                    + member.getAsMention() +
+                                                    " because they didn't have the role... and they're supposed to have it.");
+                                            embed.sendToLogChannel();
+                                            log.info("Added Bot Abuse to " + member.getEffectiveName()
+                                                    + " because they didn't have the role... and they're supposed to have it.");
+                                        }
+                                    });
+                                }
+                            });
+                        });
                         if (m.getRoles().contains(baFeature.botConfig.botAbuseRole)
                                 && !baFeature.baCore.botAbuseIsCurrent(m.getIdLong())) {
                             guild.removeRoleFromMember(m, baFeature.botConfig.botAbuseRole).queue();
-                            embed.setAsInfo(defaultTitle, "[System - Role Scanner] Removed Bot Abuse Role from "
+                            embed.setAsInfo(defaultTitle, "[Role Scanner] Removed Bot Abuse Role from "
                                     + m.getAsMention() + " because they had the role... " +
                                     "and they weren't supposed to have it.");
                             embed.sendToLogChannel();
@@ -166,7 +159,7 @@ class BotAbuseTimers implements Runnable {
         }
         else if (baFeature.commandsSuspended) {
             try {
-                embed.setAsStop("Commands Suspended", ":x: **[System] Either the Data File has been Damaged or there's configuration problems**" +
+                embed.setAsStop("Commands Suspended", ":x: **Either the Data File has been Damaged or there's configuration problems**" +
                         "\n\n**Commands Are Suspended**");
                 embed.sendToChannel(null, mainConfig.discussionChannel);
             }
@@ -175,7 +168,7 @@ class BotAbuseTimers implements Runnable {
                         "threw a NullPointerException");
             }
         }
-        baFeature.isRestart = false;
+        baFeature.restartValue = 0;
         baFeature.isReload = false;
     }
 }

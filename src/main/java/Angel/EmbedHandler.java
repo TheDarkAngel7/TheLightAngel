@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.entities.*;
 import javax.annotation.Nullable;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
@@ -13,16 +14,15 @@ public class EmbedHandler {
     private MainConfiguration mainConfig;
     private DiscordBotMain discord;
     private EmbedBuilder embedBuilder;
-    private EmbedDesign design = EmbedDesign.NONE;
     // Dictionary<Command Message Object, Output Message Object>
     private Dictionary<Message, Message> commandMessageMap = new Hashtable();
     private ArrayList<Thread> threadList = new ArrayList<>();
     private Message messageEmbed;
     private boolean embedReady = false;
+    private boolean multipleChannels = false;
 
     EmbedHandler(MainConfiguration mainConfig) {
         this.mainConfig = mainConfig;
-        design.setConfig(mainConfig);
     }
 
     void setDiscordInstance(DiscordBotMain discordInstance) {
@@ -39,32 +39,32 @@ public class EmbedHandler {
 
     public void setAsSuccess(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder = design.getBuilder(design.SUCCESS).setTitle(title);
+        embedBuilder = getBuilder(EmbedDesign.SUCCESS).setTitle(title);
         addMessage(msg);
     }
     public void setAsWarning(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder = design.getBuilder(design.WARNING).setTitle(title);
+        embedBuilder = getBuilder(EmbedDesign.WARNING).setTitle(title);
         addMessage(msg);
     }
     public void setAsError(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder = design.getBuilder(design.ERROR).setTitle(title);
+        embedBuilder = getBuilder(EmbedDesign.ERROR).setTitle(title);
         addMessage(msg);
     }
     public void setAsStop(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder = design.getBuilder(design.STOP).setTitle(title);
+        embedBuilder = getBuilder(EmbedDesign.STOP).setTitle(title);
         addMessage(msg);
     }
     public void setAsInfo(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder = design.getBuilder(design.INFO).setTitle(title);
+        embedBuilder = getBuilder(EmbedDesign.INFO).setTitle(title);
         addMessage(msg);
     }
     public void setAsHelp(String title, String msg) {
         isEmbedReadyToModify();
-        embedBuilder = design.getBuilder(design.HELP).setTitle(title);
+        embedBuilder = getBuilder(EmbedDesign.HELP).setTitle(title);
         addMessage(msg);
     }
     private void addMessage(String msg) {
@@ -101,7 +101,7 @@ public class EmbedHandler {
 
     public void editEmbed(Message originalCmd, String newTitle, String newMsg, EmbedDesign requestedType) {
         isEmbedReadyToModify();
-        embedBuilder = design.getBuilder(requestedType);
+        embedBuilder = getBuilder(requestedType);
         embedEditor(originalCmd, newTitle, newMsg);
     }
     private void embedEditor(Message originalCmd, String newTitle, String newMsg) {
@@ -143,14 +143,14 @@ public class EmbedHandler {
         user.openPrivateChannel().flatMap(channel -> channel.sendMessage(messageEmbed)).queue(m -> {
                 if (msg != null) commandMessageMap.put(msg, m);
         });
-        messageSent();
+        if (!multipleChannels) messageSent();
     }
-    public void sendToHelpChannel(Message msg, @Nullable User author) {
+    public void sendToMemberOutput(Message msg, @Nullable User author) {
         if (msg.getChannelType().equals(ChannelType.PRIVATE)) sendDM(msg, author);
         else {
             try {
                 if (!msg.getChannel().equals(mainConfig.botSpamChannel) &&
-                        (!mainConfig.forceToDedicatedChannel || msg.getChannel().equals(mainConfig.helpChannel) ||
+                        (!mainConfig.forceToDedicatedChannel ||
                                 mainConfig.dedicatedOutputChannelID.equalsIgnoreCase("None"))) {
                     if (author != null && !msg.getChannel().equals(mainConfig.helpChannel)) {
                         mainConfig.helpChannel.sendMessage(author.getAsMention()).queue();
@@ -173,13 +173,15 @@ public class EmbedHandler {
             catch (NullPointerException ex) {
                 // Take No Action
             }
-            messageSent();
+            if (!multipleChannels) messageSent();
         }
     }
-    public void sendToTeamDiscussionChannel(Message msg, @Nullable User author) {
+    public void sendToTeamOutput(Message msg, @Nullable User author) {
         if (msg.getChannelType().equals(ChannelType.PRIVATE)) sendDM(msg, author);
         else {
-            if (!msg.getChannel().equals(mainConfig.managementChannel)) {
+            if (!msg.getChannel().equals(mainConfig.managementChannel) && (!mainConfig.forceToManagementChannel ||
+                    mainConfig.managementChannelID.equalsIgnoreCase("None")
+                    || msg.getChannel().equals(mainConfig.discussionChannel)))  {
                 if (author != null && (!msg.getChannel().equals(mainConfig.discussionChannel) && !msg.getChannel().equals(mainConfig.managementChannel))
                         && discord.isTeamMember(author.getIdLong())) {
                     mainConfig.discussionChannel.sendMessage(author.getAsMention()).queue();
@@ -187,15 +189,18 @@ public class EmbedHandler {
                 mainConfig.discussionChannel.sendMessage(messageEmbed).queue(m -> commandMessageMap.put(msg, m));
             }
             else {
+                if (author != null && !msg.getChannel().equals(mainConfig.managementChannel)) {
+                    mainConfig.managementChannel.sendMessage(author.getAsMention()).queue();
+                }
                 mainConfig.managementChannel.sendMessage(messageEmbed).queue(m -> commandMessageMap.put(msg, m));
             }
-            messageSent();
+            if (!multipleChannels) messageSent();
         }
     }
     // Tagging author is not necessary in the log channel
     public void sendToLogChannel() {
         mainConfig.logChannel.sendMessage(messageEmbed).queue();
-        messageSent();
+        if (!multipleChannels) messageSent();
     }
 
     public void sendToChannel(Message msg, MessageChannel channel) {
@@ -209,7 +214,32 @@ public class EmbedHandler {
                 if (msg != null) commandMessageMap.put(msg, m);
             });
         }
+        if (!multipleChannels) messageSent();
+    }
+    public void sendToChannels(Message msg, TargetChannelSet... sets) {
+        multipleChannels = true;
+        Arrays.stream(sets).forEach(set -> {
+            switch (set) {
+                case DM:
+                    sendDM(msg, msg.getAuthor());
+                    break;
+                case TEAM:
+                    sendToTeamOutput(msg, msg.getAuthor());
+                    break;
+                case MEMBER:
+                    sendToMemberOutput(msg, msg.getAuthor());
+                    break;
+                case LOG:
+                    sendToLogChannel();
+                    break;
+            }
+        });
+        multipleChannels = false;
         messageSent();
+    }
+    public void deleteResultsByCommand(Message originalCmd) {
+        originalCmd.delete().queue();
+        commandMessageMap.remove(originalCmd).delete().queue();
     }
     // Thread Handlers
     // Each of these methods contain handlers for when this class has multiple threads running through it.
@@ -232,5 +262,30 @@ public class EmbedHandler {
         embedReady = false;
         // Remove this Thread from the list.
         threadList.remove(Thread.currentThread());
+    }
+    // Image Background Hex: #2F3136
+    public EmbedBuilder getBuilder(EmbedDesign type) {
+        EmbedBuilder embed = new EmbedBuilder();
+        switch (type) {
+            case SUCCESS:
+                embed.setColor(Color.GREEN).setThumbnail(mainConfig.checkIconURL);
+                break;
+            case WARNING:
+                embed.setColor(Color.YELLOW).setThumbnail(mainConfig.warningIconURL);
+                break;
+            case ERROR:
+                embed.setColor(Color.RED).setThumbnail(mainConfig.errorIconURL);
+                break;
+            case STOP:
+                embed.setColor(Color.RED).setThumbnail(mainConfig.stopIconURL);
+                break;
+            case INFO:
+                embed.setColor(Color.BLUE).setThumbnail(mainConfig.infoIconURL);
+                break;
+            case HELP:
+                embed.setColor(Color.decode("#2F3136").brighter()).setThumbnail(mainConfig.helpIconURL);
+                break;
+        }
+        return embed;
     }
 }

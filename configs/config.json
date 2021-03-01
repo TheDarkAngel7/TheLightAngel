@@ -15,6 +15,7 @@
   "logChannel": "697643345471602740",
   "dedicatedOutputChannel": "749715458004877403",
   "forceAllNonTeamOutputToDedicatedChannel": true,
+  "forceAllTeamOutputToManagementChannel": true,
   "deleteOriginalNonStaffCommands": false,
   "deleteOriginalStaffCommands": false,
   "pingCoolDownMinutes": 15,
