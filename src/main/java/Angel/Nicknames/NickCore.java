@@ -204,6 +204,13 @@ class NickCore {
     ArrayList<String> getHistory(long targetDiscordID) {
         return oldNickDictionary.get(targetDiscordID);
     }
+    String clearNameHistory(long targetDiscordID) throws IOException {
+        String defaultReturn = "Successfully Cleared The Name History of <@" + targetDiscordID + ">";
+        oldNickDictionary.remove(targetDiscordID);
+        log.info("Successfully Cleared the Name History for " + guild.getMemberById(targetDiscordID).getEffectiveName());
+        fileHandler.saveDatabase();
+        return defaultReturn;
+    }
     boolean arraySizesEqual() {
         return requestID.size() == discordID.size() && oldNickname.size() == newNickname.size();
     }

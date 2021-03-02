@@ -85,6 +85,18 @@ class Help {
             embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions to see this help**");
         }
     }
+    void clearHistoryCommand(boolean isTeamMember) {
+        if (isTeamMember) {
+            embed.setAsHelp(mainConfig.commandPrefix + "nickname clearhistory",
+                    "**Only uable by Staff Members (Sr. Staff+)**" +
+                            "\n\n`" + mainConfig.commandPrefix + "nickname clearhistory <Mention or Discord ID>`" +
+                            "\n`" + mainConfig.commandPrefix + "nn clh <Mention or Discord ID>`"
+                    );
+        }
+        else {
+            embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions to see this help**");
+        }
+    }
     void forceChangeCommand() {
         embed.setAsHelp(mainConfig.commandPrefix + "nickname forcechange",
         "***Use this command to change someone else's nickname***" +

@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class NicknameMain extends ListenerAdapter {
     private final Logger log = LogManager.getLogger(NicknameMain.class);
@@ -42,7 +43,7 @@ public class NicknameMain extends ListenerAdapter {
     public final List<String> commands = new ArrayList<>(Arrays.asList("nickname", "nn"));
     private final List<String> nickArgs = new ArrayList<>(
             Arrays.asList("request", "req", "withdraw", "wd", "accept", "acc", "a", "deny", "d",
-            "history", "h", "forcechange", "fch", "list"));
+            "history", "h", "forcechange", "fch", "changehistory", "clh", "list"));
     public boolean commandsSuspended = false;
     private boolean ignoreNewNickname = false;
     public boolean isConnected = false;
@@ -360,8 +361,8 @@ public class NicknameMain extends ListenerAdapter {
                             if (!inNickRestrictedRole(cmdUserID)) {
                                 embed.setAsSuccess("Nickname Updated", "**You successfully updated your nickname to *"
                                         + args[2] + "***");
-                                if (args[2].equalsIgnoreCase("Reset")) {
-                                    member.modifyNickname(member.getUser().getName()).queue();
+                                if (args[2].equalsIgnoreCase("reset")) {
+                                    member.modifyNickname(null).queue();
                                 }
                                 else member.modifyNickname(args[2]).queue();
                                 embed.sendToMemberOutput(msg, msg.getAuthor());
@@ -596,13 +597,14 @@ public class NicknameMain extends ListenerAdapter {
                                 oldNickname = memberInQuestion.getNickname();
                                 if (oldNickname == null) oldNickname = "None";
                                 ignoreNewNickname = true;
-                                if (args[3].equalsIgnoreCase("Reset") || args[3].equalsIgnoreCase("reset") ||
+                                if (args[3].equalsIgnoreCase("reset") ||
                                         args[3].equals(memberInQuestion.getUser().getName())) {
-                                    memberInQuestion.modifyNickname(memberInQuestion.getUser().getName()).queue();
+                                    memberInQuestion.modifyNickname(null).queue();
                                     newNickname = memberInQuestion.getUser().getName() + " (Their Discord Username)";
                                     successfulExecution = true;
                                     log.info("Staff Member " + msg.getMember().getEffectiveName() + " successfully forcefully changed " + oldNickname +
                                             "'s effective name back to their discord username");
+                                    addNameHistory(memberInQuestion.getIdLong(), oldNickname, msg);
                                 }
                                 else {
                                     memberInQuestion.modifyNickname(args[3]).queue();
@@ -613,10 +615,12 @@ public class NicknameMain extends ListenerAdapter {
                                         log.info("Staff Member " + msg.getMember().getEffectiveName() + " successfully forcefully changed "
                                                 + memberInQuestion.getUser().getName() +
                                                 "'s nickname to " + newNickname);
+                                        addNameHistory(memberInQuestion.getIdLong(), memberInQuestion.getUser().getName(), msg);
                                     }
                                     else {
                                         log.info("Staff Member " + msg.getMember().getEffectiveName() + " successfully forcefully changed " + oldNickname +
                                                 "'s nickname to " + newNickname);
+                                        addNameHistory(memberInQuestion.getIdLong(), oldNickname, msg);
                                     }
                                 }
                                 embed.setAsSuccess("Nickname Updated", msg.getAuthor().getAsMention() + " successfully updated " +
@@ -629,13 +633,15 @@ public class NicknameMain extends ListenerAdapter {
                                     oldNickname = memberInQuestion.getNickname();
                                     if (oldNickname == null)
                                         oldNickname = memberInQuestion.getUser().getName() + " (Their Discord Username)";
+
                                     ignoreNewNickname = true;
                                     if (args[3].equalsIgnoreCase("reset")) {
-                                        memberInQuestion.modifyNickname(memberInQuestion.getUser().getName()).queue();
+                                        memberInQuestion.modifyNickname(null).queue();
                                         newNickname = memberInQuestion.getUser().getName() + " (Their Discord Username)";
                                         successfulExecution = true;
                                         log.info("Staff Member " + msg.getMember().getEffectiveName() + " successfully forcefully changed " + oldNickname +
                                                 "'s effective name back to their discord username");
+                                        addNameHistory(memberInQuestion.getIdLong(), oldNickname, msg);
                                     }
                                     else {
                                         memberInQuestion.modifyNickname(args[3]).queue();
@@ -645,10 +651,12 @@ public class NicknameMain extends ListenerAdapter {
                                             log.info("Staff Member " + msg.getMember().getEffectiveName() + " successfully forcefully changed "
                                                     + memberInQuestion.getUser().getAsTag() +
                                                     "'s nickname to " + newNickname);
+                                            addNameHistory(memberInQuestion.getIdLong(), memberInQuestion.getUser().getName(), msg);
                                         }
                                         else {
                                             log.info("Staff Member " + msg.getMember().getEffectiveName() + " successfully forcefully changed " + oldNickname +
                                                     "'s nickname to " + newNickname);
+                                            addNameHistory(memberInQuestion.getIdLong(), oldNickname, msg);
                                         }
                                     }
                                     embed.setAsSuccess("Nickname Updated", msg.getAuthor().getAsMention() + " successfully updated " +
@@ -667,7 +675,6 @@ public class NicknameMain extends ListenerAdapter {
                             if (successfulExecution) {
                                 defaultBody = defaultBody.replace("<Member>", memberInQuestion.getAsMention())
                                         .replace("<oldNick>", oldNickname).replace("<newNick>", newNickname);
-                                addNameHistory(cmdUserID, oldNickname, msg);
                                 embed.setAsSuccess(defaultTitle, defaultBody);
                                 embed.sendToLogChannel();
                             }
@@ -681,6 +688,29 @@ public class NicknameMain extends ListenerAdapter {
                         else {
                             embed.setAsError("No Permission", "**You Lack Permissions Do That**");
                             embed.sendToMemberOutput(msg, msg.getAuthor());
+                        }
+                    }
+                    else if (args[1].equalsIgnoreCase("clearhistory") || args[1].equalsIgnoreCase("clh")) {
+                        if (args.length == 3) {
+                            AtomicReference<User> targetUser = new AtomicReference<>();
+
+                            try {
+                                targetUser.set(guild.getJDA().getUserById(Long.parseLong(args[2])));
+                            }
+                            catch (NumberFormatException ex) {
+                                targetUser.set(msg.getMentionedMembers().get(0).getUser());
+                            }
+                            catch (NullPointerException ex) {
+                                guild.getJDA().retrieveUserById(Long.parseLong(args[2])).queue(user -> targetUser.set(user));
+                            }
+
+                            embed.setAsSuccess("Successfully Cleared Name History", nickCore.clearNameHistory(targetUser.get().getIdLong()));
+                            embed.sendToTeamOutput(msg, msg.getAuthor());
+                        }
+                        else {
+                            embed.setAsError("Incorrect Arguments", "**You did not use the correct number of arguments**" +
+                                    "\nSyntax Reminder: `" + mainConfig.commandPrefix + "nickname clearhistory <Mention or Discord ID>`");
+                            embed.sendToTeamOutput(msg, null);
                         }
                     }
                     else if (isCommand(args[0], args[1]) && !discord.isTeamMember(msg.getAuthor().getIdLong())) {
@@ -894,6 +924,8 @@ public class NicknameMain extends ListenerAdapter {
                 case "history": help.historyCommand(isTeamMember); break;
                 case "fch":
                 case "forcechange": help.forceChangeCommand(); break;
+                case "clh":
+                case "clearhistory": help.clearHistoryCommand(isTeamMember); break;
                 case "list": help.listCommand(); break;
             }
         }
@@ -906,6 +938,7 @@ public class NicknameMain extends ListenerAdapter {
                             "\n`" + mainConfig.commandPrefix + "help nickname deny`" +
                             "\n`" + mainConfig.commandPrefix + "help nickname history`" +
                             "\n`" + mainConfig.commandPrefix + "help nickname forcechange`" +
+                            "\n`" + mainConfig.commandPrefix + "help nickname clearhistory`" +
                             "\n`" + mainConfig.commandPrefix + "help nickname list`");
 
         }
