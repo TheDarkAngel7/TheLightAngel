@@ -43,7 +43,7 @@ public class NicknameMain extends ListenerAdapter {
     public final List<String> commands = new ArrayList<>(Arrays.asList("nickname", "nn"));
     private final List<String> nickArgs = new ArrayList<>(
             Arrays.asList("request", "req", "withdraw", "wd", "accept", "acc", "a", "deny", "d",
-            "history", "h", "forcechange", "fch", "changehistory", "clh", "list"));
+            "history", "h", "forcechange", "fch", "clearhistory", "clh", "list"));
     public boolean commandsSuspended = false;
     private boolean ignoreNewNickname = false;
     public boolean isConnected = false;
