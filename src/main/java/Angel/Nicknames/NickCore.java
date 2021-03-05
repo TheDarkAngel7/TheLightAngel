@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Hashtable;
+import java.util.concurrent.atomic.AtomicReference;
 
 class NickCore {
     private final Logger log = LogManager.getLogger(NickCore.class);
@@ -112,6 +113,7 @@ class NickCore {
         else {
             String result = "Successfully Accepted the Request";
             if (targetDiscordID == -1) {
+                targetDiscordID = Long.parseLong(nicknames[1]);
                 result = result.concat("\nDiscord: <@!" + nicknames[1] + ">"
                         + "\nOld Nickname: **" + nicknames[2]
                         + "**\nNew Nickname: **" + nicknames[3] + "**");
@@ -121,7 +123,7 @@ class NickCore {
                         + "**\nOld Nickname: **" + nicknames[2]
                         + "**\nNew Nickname: **" + nicknames[3] + "**");
             }
-            return result;
+            return replaceNulls(targetDiscordID, result);
         }
     }
 
@@ -176,16 +178,17 @@ class NickCore {
         }
         return result;
     }
-    String replaceNulls(long targetDiscordID, String oldString) {
-        User targetUser = guild.getJDA().retrieveUserById(targetDiscordID).complete();
+    private String replaceNulls(long targetDiscordID, String oldString) {
+        AtomicReference<User> targetUser = new AtomicReference<>();
+        if (targetDiscordID != -1) guild.getJDA().retrieveUserById(targetDiscordID).queue(user -> targetUser.set(user));
         String result = oldString;
         if (oldString.contains("New Nickname: **null**")) {
             result = oldString.replace("null",
-                    targetUser.getName() + " (Reset to Discord Username)");
+                    targetUser.get().getName() + " (Reset to Discord Username)");
         }
         else if (oldString.contains("Old Nickname: **null**")) {
             result = oldString.replace("null",
-                    targetUser.getName() + " (Current Discord Username)");
+                    targetUser.get().getName() + " (Current Discord Username)");
         }
         return result;
     }

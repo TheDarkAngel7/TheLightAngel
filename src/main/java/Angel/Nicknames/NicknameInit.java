@@ -66,7 +66,4 @@ public class NicknameInit implements Runnable {
     public long getPing() {
         return jda.getGatewayPing();
     }
-    public JDA.Status getStatus() {
-        return jda.getStatus();
-    }
 }

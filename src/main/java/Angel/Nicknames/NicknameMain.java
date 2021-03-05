@@ -464,9 +464,9 @@ public class NicknameMain extends ListenerAdapter {
                                 embed.sendDM(msg, member.getUser());
                                 return;
                             }
-                            int id = nickCore.requestID.get(nickCore.discordID.indexOf(msg.getAuthor().getIdLong()));
-                            String oldNickname = nickCore.oldNickname.get(nickCore.discordID.indexOf(msg.getAuthor().getIdLong()));
-                            String newNickname = nickCore.newNickname.get(nickCore.discordID.indexOf(msg.getAuthor().getIdLong()));
+                            int id = nickCore.requestID.get(nickCore.discordID.indexOf(cmdUserID));
+                            String oldNickname = nickCore.oldNickname.get(nickCore.discordID.indexOf(cmdUserID));
+                            String newNickname = nickCore.newNickname.get(nickCore.discordID.indexOf(cmdUserID));
                             if (oldNickname == null)
                                 oldNickname = msg.getAuthor().getName() + " (No Previous Nickname)";
                             result = nickCore.withdrawRequest(msg.getAuthor().getIdLong(), false, false);
@@ -483,12 +483,7 @@ public class NicknameMain extends ListenerAdapter {
                             }
                             else embed.sendToMemberOutput(msg, msg.getAuthor());
 
-                            embed.setAsInfo("Nickname Withdraw",
-                                    nickCore.replaceNulls(msg.getAuthor().getIdLong(),
-                                            "**" + msg.getAuthor().getAsMention() + " withdrew a nickname change request.**" +
-                                            "\n\nID: **" + id +
-                                            "**\nOld Nickname: **" + oldNickname +
-                                            "**\nNew Nickname: **" + newNickname + "**"));
+                            embed.setAsInfo("Nickname Withdraw", result.replace("Successfully ", ""));
                             embed.sendToLogChannel();
                         }
                         else {
@@ -739,16 +734,15 @@ public class NicknameMain extends ListenerAdapter {
         int targetRequestID = 0;
         String oldNickname = "";
         String newNickname = "";
-        Member memberInQuestion = null;
+        AtomicReference<Member> memberInQuestion = new AtomicReference<>();
         if (args.length == 3) {
-            int index = 0;
             boolean isMention = false;
             try {
                 targetRequestID = Integer.parseInt(args[2]);
                 targetDiscordID = nickCore.discordID.get(nickCore.requestID.indexOf(targetRequestID));
                 oldNickname = nickCore.oldNickname.get(nickCore.requestID.indexOf(targetRequestID));
                 newNickname = nickCore.newNickname.get(nickCore.requestID.indexOf(targetRequestID));
-                memberInQuestion = guild.getMemberById(targetDiscordID);
+                guild.retrieveMemberById(targetDiscordID).queue(m -> memberInQuestion.set(m));
                 if (requestAccepted) {
                     result = nickCore.acceptRequest(-1, targetRequestID);
                     addNameHistory(targetDiscordID, oldNickname, msg);
@@ -767,7 +761,7 @@ public class NicknameMain extends ListenerAdapter {
                 targetDiscordID = msg.getMentionedMembers().get(0).getIdLong();
                 oldNickname = nickCore.oldNickname.get(nickCore.discordID.indexOf(targetDiscordID));
                 newNickname = nickCore.newNickname.get(nickCore.discordID.indexOf(targetDiscordID));
-                memberInQuestion = guild.getMemberById(targetDiscordID);
+                guild.retrieveMemberById(targetDiscordID).queue(m -> memberInQuestion.set(m));
                 if (requestAccepted) {
                     result = nickCore.acceptRequest(targetDiscordID, -1);
                     addNameHistory(targetDiscordID, oldNickname, msg);
@@ -791,8 +785,7 @@ public class NicknameMain extends ListenerAdapter {
                         String defaultTitle = "Successful Nickname Request Acceptance";
                         ignoreNewNickname = true;
                         if (newNickname == null) {
-                            memberInQuestion.modifyNickname(memberInQuestion.getUser().getName()).queue();
-                            result = nickCore.replaceNulls(memberInQuestion.getIdLong(), result);
+                            memberInQuestion.get().modifyNickname(memberInQuestion.get().getUser().getName()).queue();
                             embed.setAsSuccess(defaultTitle,
                                     msg.getAuthor().getAsMention() + " " + result);
                             embed.sendToTeamOutput(msg, null);
@@ -805,7 +798,7 @@ public class NicknameMain extends ListenerAdapter {
                                     " their nickname was erased and now it matches their discord name.");
                         }
                         else {
-                            memberInQuestion.modifyNickname(getNewNickname).queue();
+                            memberInQuestion.get().modifyNickname(getNewNickname).queue();
                             embed.setAsSuccess("Nickname Request Accepted",
                                     msg.getAuthor().getAsMention() + " " + result);
                             embed.sendToTeamOutput(msg, null);
@@ -845,27 +838,25 @@ public class NicknameMain extends ListenerAdapter {
                     if (requestAccepted) {
                         ignoreNewNickname = true;
                         if (newNickname == null) {
-                            memberInQuestion.modifyNickname(memberInQuestion.getUser().getName()).queue();
-                            embed.setAsSuccess("Successful Nickname Request Acceptance",
-                                    nickCore.replaceNulls(msg.getAuthor().getIdLong(), result));
+                            memberInQuestion.get().modifyNickname(null).queue();
+                            embed.setAsSuccess("Successful Nickname Request Acceptance", result);
                             embed.sendToTeamOutput(msg, null);
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
-                                    "Your new name on the Discord Server now matches your discord username";
+                                    "Your nickname was removed on the Discord Server and now matches your discord username";
                             embed.setAsSuccess("Successful Nickname Request Acceptance", messageToPlayer);
-                            embed.sendDM(msg, memberInQuestion.getUser());
+                            embed.sendDM(msg, memberInQuestion.get().getUser());
                             log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully accepted the nickname request of player " +
                                     guild.getMemberById(targetDiscordID).getUser().getAsTag() + "," +
                                     " their nickname was erased and now it matches their discord name.");
                         }
                         else {
-                            memberInQuestion.modifyNickname(getNewNickname).queue();
-                            embed.setAsSuccess("Successful Nickname Request Acceptance",
-                                    nickCore.replaceNulls(msg.getAuthor().getIdLong(), result));
+                            memberInQuestion.get().modifyNickname(getNewNickname).queue();
+                            embed.setAsSuccess("Successful Nickname Request Acceptance", result);
                             embed.sendToTeamOutput(msg, null);
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
                                     "Your new name on the Discord Server is now " + getNewNickname;
                             embed.setAsSuccess("Successful Nickname Request Acceptance", messageToPlayer);
-                            embed.sendDM(msg, memberInQuestion.getUser());
+                            embed.sendDM(msg, memberInQuestion.get().getUser());
                             log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully accepted the nickname request of player " +
                                     guild.getMemberById(targetDiscordID).getUser().getAsTag() + ", " +
                                     "they had nickname " + oldNickname + " and their new nickname is " + newNickname);
@@ -873,7 +864,6 @@ public class NicknameMain extends ListenerAdapter {
                     }
                     else {
                         String defaultTitle = "Successful Nickname Request Denial";
-                        result = nickCore.replaceNulls(msg.getAuthor().getIdLong(), result);
                         embed.setAsSuccess(defaultTitle, result);
                         embed.sendToTeamOutput(msg, null);
                         embed.setAsSuccess(defaultTitle, result);
