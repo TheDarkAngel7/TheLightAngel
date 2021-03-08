@@ -34,8 +34,6 @@ public class BotAbuseMain extends ListenerAdapter {
     String fieldHeader;
     private DiscordBotMain discord;
     private Help help;
-    public boolean timer1Running = false;
-    public boolean timer2Running = false;
     public boolean commandsSuspended = false;
     public boolean timersSuspended = false;
     public boolean isConnected = false;
@@ -287,12 +285,8 @@ public class BotAbuseMain extends ListenerAdapter {
     }
     public void stopTimers() {
         timersSuspended = true;
-        baTimers.timer.cancel();
-        baTimers.timer.purge();
-        baTimers.timer2.cancel();
-        baTimers.timer2.purge();
-        timer1Running = false;
-        timer2Running = false;
+        baTimers.getExpiryTimer().stopTimer();
+        baTimers.getRoleScanningTimer().stopTimer();
     }
     ///////////////////////////////////////////////////////////////////
     // Divider Between Event Handlers and Command Handlers
@@ -1521,9 +1515,9 @@ public class BotAbuseMain extends ListenerAdapter {
         defaultOutput = defaultOutput.concat(
                 "\nCommand Status: **" + !commandsSuspended +
                         "**\nPing Time: **" + guild.getJDA().getGatewayPing() + "ms" +
-                        "**\n\nTimer 1 Status: **" + (timer1Running && !timersSuspended) +
+                        "**\n\nTimer 1 Status: **" + (baTimers.getExpiryTimer().isTimerRunning() && !timersSuspended) +
                         "**\n*Timer 1 is what ticks every second. Each second the bot checks all the expiry times against the current time.*" +
-                        "\n\nTimer 2 Status: **" + (timer2Running && !timersSuspended) +
+                        "\n\nTimer 2 Status: **" + (baTimers.getRoleScanningTimer().isTimerRunning() && !timersSuspended) +
                         "**\n*Timer 2 Runs Every " + getRoleScannerInterval() +
                         " Minutes and checks the integrity of the Bot Abuse roles each time it runs.*");
 
