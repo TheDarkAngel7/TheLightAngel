@@ -614,7 +614,7 @@ public class DiscordBotMain extends ListenerAdapter {
                             }
                             else {
                                 embed.setAsError("Cannot Update " + args[2],
-                                        "**The New " + args[2] + " value cannot exceed the  Number of Temporary " +
+                                        "**The New " + args[2] + " value cannot exceed the Number of Temporary " +
                                                 "Bot Abuses Someone Gets Before the Permanent one.**" +
                                                 "\n\n*Example: If there's 4 Temporary Bot Abuses before the Permanent, " +
                                                 "this value cannot exceed 4*");

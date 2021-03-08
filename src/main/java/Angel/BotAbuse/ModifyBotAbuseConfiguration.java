@@ -17,7 +17,6 @@ class ModifyBotAbuseConfiguration extends BotAbuseConfiguration {
         super(configObj, baMain, fileHandler, mainConfig);
     }
 
-
     public void setConfig(String key, int value) {
         switch (key.toLowerCase()) {
             case "rolescanint":
@@ -35,13 +34,11 @@ class ModifyBotAbuseConfiguration extends BotAbuseConfiguration {
         }
     }
     public boolean setNewBotAbuseRole(long newRoleID) {
-        try {
+        if (guild.getRoleById(newRoleID) != null) {
             botAbuseRole = guild.getRoleById(newRoleID);
             return true;
         }
-        catch (NullPointerException ex) {
-            return false;
-        }
+        else return false;
     }
 
     public void setNewBotAbuseRole(Role newRole) {

@@ -1,9 +1,6 @@
 package Angel.Nicknames;
 
-import Angel.DiscordBotMain;
-import Angel.EmbedDesign;
-import Angel.EmbedHandler;
-import Angel.MainConfiguration;
+import Angel.*;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.DisconnectEvent;
@@ -788,7 +785,7 @@ public class NicknameMain extends ListenerAdapter {
                             memberInQuestion.get().modifyNickname(memberInQuestion.get().getUser().getName()).queue();
                             embed.setAsSuccess(defaultTitle,
                                     msg.getAuthor().getAsMention() + " " + result);
-                            embed.sendToTeamOutput(msg, null);
+                            embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
                                     "Your new name on the Discord Server now matches your discord username";
                             embed.setAsSuccess(defaultTitle, messageToPlayer);
@@ -801,7 +798,7 @@ public class NicknameMain extends ListenerAdapter {
                             memberInQuestion.get().modifyNickname(getNewNickname).queue();
                             embed.setAsSuccess("Nickname Request Accepted",
                                     msg.getAuthor().getAsMention() + " " + result);
-                            embed.sendToTeamOutput(msg, null);
+                            embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
                                     "Your new name on the Discord Server is now **" + getNewNickname + "**";
                             embed.setAsSuccess(defaultTitle, messageToPlayer);
@@ -814,7 +811,7 @@ public class NicknameMain extends ListenerAdapter {
                     else {
                         String defaultTitle = "Successful Nickname Request Denial";
                         embed.setAsSuccess(defaultTitle, msg.getAuthor().getAsMention() + " " + result);
-                        embed.sendToTeamOutput(msg, null);
+                        embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                         String messageToPlayer = "**Your Nickname Request was Denied** \n" +
                                 "*This was most likely because you haven't changed your " +
                                 "Social Club name to match your requested nickname*"

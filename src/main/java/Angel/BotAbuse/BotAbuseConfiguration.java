@@ -6,7 +6,7 @@ import com.google.gson.reflect.TypeToken;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public abstract class BotAbuseConfiguration {
     private JsonObject configObj;
@@ -21,7 +21,7 @@ public abstract class BotAbuseConfiguration {
     int hotOffenseMonths;
     int hotOffenseWarning;
     boolean autoPermanent;
-    ArrayList<Integer> botAbuseTimes;
+    List<Integer> botAbuseTimes;
 
     BotAbuseConfiguration(JsonObject configObj, BotAbuseMain baMain, FileHandler fileHandler, MainConfiguration mainConfig) {
         this.configObj = configObj;
@@ -38,7 +38,7 @@ public abstract class BotAbuseConfiguration {
         botAbuseRoleID = configObj.get("botAbuseRoleID").getAsString();
         roleScannerInterval = configObj.get("roleScannerIntervalMinutes").getAsInt();
         hotOffenseMonths = configObj.get("oldOffensesConsideredHotInMonths").getAsInt();
-        botAbuseTimes = fileHandler.gson.fromJson(configObj.get("botAbuseTimingsInDays").getAsString(), new TypeToken<ArrayList<Integer>>(){}.getType());
+        botAbuseTimes = fileHandler.gson.fromJson(configObj.get("botAbuseTimingsInDays").getAsString(), new TypeToken<List<Integer>>(){}.getType());
         maxDaysAllowedForUndo = configObj.get("maxDaysUndoIsAllowed").getAsInt();
         hotOffenseWarning = configObj.get("warnOnHotOffenseNumber").getAsInt();
         autoPermanent = configObj.get("autoPermanent").getAsBoolean();
