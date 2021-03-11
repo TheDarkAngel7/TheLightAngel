@@ -32,7 +32,7 @@ class ExpiryTimer extends Timer {
                 // Timer for executing the checkExpiredBotAbuse method each second.
                 long removedID = 0;
                 try {
-                    removedID = baFeature.baCore.checkExpiredBotAbuse();
+                    removedID = baFeature.getCore().checkExpiredBotAbuse();
                 }
                 catch (IOException e) {
                     e.printStackTrace();

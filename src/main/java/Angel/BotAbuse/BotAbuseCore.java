@@ -17,7 +17,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
     private final Logger log = LogManager.getLogger(BotAbuseCore.class);
     BotAbuseConfiguration botConfig;
     MainConfiguration mainConfig;
-    List<BotAbuseRecord> records = new ArrayList<>();
+    private List<BotAbuseRecord> records = new ArrayList<>();
     Dictionary<String, String> reasonsDictionary = new Hashtable<>();
     private Calendar c;
 
@@ -709,5 +709,11 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         });
 
         return recordByTeamMember;
+    }
+    void setRecords(List<BotAbuseRecord> records) {
+        this.records = records;
+    }
+    List<BotAbuseRecord> getRecords() {
+        return records;
     }
 }

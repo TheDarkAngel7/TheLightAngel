@@ -43,7 +43,7 @@ class FileHandler implements FileDatabases {
         // This is to ensure the fileReader closes at the end of this method
         FileReader fileReader = new FileReader(jsonBADataFile);
         JsonObject database = JsonParser.parseReader(fileReader).getAsJsonObject();
-        baCore.records = gson.fromJson(database.get("records").getAsString(), recordsType);
+        baCore.setRecords(gson.fromJson(database.get("records").getAsString(), recordsType));
         baCore.reasonsDictionary = gson.fromJson(database.get("ReasonsDictionary").getAsString(), dictionary);
         log.info("Bot Abuse Database Successfully Setup");
         fileReader.close();
@@ -52,7 +52,7 @@ class FileHandler implements FileDatabases {
     public void saveDatabase() throws IOException {
         JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(new FileOutputStream(jsonTempBADataFile)));
         jsonWriter.beginObject();
-        jsonWriter.name("records").value(gson.toJson(baCore.records));
+        jsonWriter.name("records").value(gson.toJson(baCore.getRecords()));
         jsonWriter.name("ReasonsDictionary").value(gson.toJson(baCore.reasonsDictionary));
         jsonWriter.endObject();
         jsonWriter.close();

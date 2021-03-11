@@ -31,27 +31,8 @@ class RoleScanningTimer extends Timer {
             public void run() {
                 String defaultTitle = "Role Scanner Information";
                 guild.loadMembers(m -> {
-                    baFeature.baCore.records.forEach(r -> {
-                        guild.getJDA().retrieveUserById(r.getDiscordID()).queue(user -> {
-                            if (guild.isMember(user)) {
-                                guild.retrieveMemberById(r.getDiscordID(), true).queue(member -> {
-                                    if (!member.getRoles().contains(baFeature.botConfig.botAbuseRole) &&
-                                            r.isCurrentlyBotAbused()) {
-                                        guild.addRoleToMember(member,
-                                                baFeature.botConfig.botAbuseRole).queue();
-                                        embed.setAsInfo(defaultTitle, "[Role Scanner] Added Bot Abuse Role to "
-                                                + member.getAsMention() +
-                                                " because they didn't have the role... and they're supposed to have it.");
-                                        embed.sendToLogChannel();
-                                        log.info("Added Bot Abuse to " + member.getEffectiveName()
-                                                + " because they didn't have the role... and they're supposed to have it.");
-                                    }
-                                });
-                            }
-                        });
-                    });
                     if (m.getRoles().contains(baFeature.botConfig.botAbuseRole)
-                            && !baFeature.baCore.botAbuseIsCurrent(m.getIdLong())) {
+                            && !baFeature.getCore().botAbuseIsCurrent(m.getIdLong())) {
                         guild.removeRoleFromMember(m, baFeature.botConfig.botAbuseRole).queue();
                         embed.setAsInfo(defaultTitle, "[Role Scanner] Removed Bot Abuse Role from "
                                 + m.getAsMention() + " because they had the role... " +
@@ -60,6 +41,25 @@ class RoleScanningTimer extends Timer {
                         log.info("Removed Bot Abuse Role from " + m.getEffectiveName() +
                                 " because they had the role... and they were not supposed to have it");
                     }
+                });
+                baFeature.getCore().getRecords().forEach(r -> {
+                    guild.getJDA().retrieveUserById(r.getDiscordID()).queue(user -> {
+                        if (guild.isMember(user)) {
+                            guild.retrieveMemberById(r.getDiscordID(), true).queue(member -> {
+                                if (!member.getRoles().contains(baFeature.botConfig.botAbuseRole) &&
+                                        r.isCurrentlyBotAbused()) {
+                                    guild.addRoleToMember(member,
+                                            baFeature.botConfig.botAbuseRole).queue();
+                                    embed.setAsInfo(defaultTitle, "[Role Scanner] Added Bot Abuse Role to "
+                                            + member.getAsMention() +
+                                            " because they didn't have the role... and they're supposed to have it.");
+                                    embed.sendToLogChannel();
+                                    log.info("Added Bot Abuse to " + member.getEffectiveName()
+                                            + " because they didn't have the role... and they're supposed to have it.");
+                                }
+                            });
+                        }
+                    });
                 });
             }
             // Configurable Periodic Scan of Players that should be Bot Abused to ensure that they have the role

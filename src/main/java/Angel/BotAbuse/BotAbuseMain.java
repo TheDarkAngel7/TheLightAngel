@@ -28,7 +28,7 @@ public class BotAbuseMain extends ListenerAdapter {
     private FileHandler fileHandler;
     MainConfiguration mainConfig;
     public BotAbuseConfiguration botConfig;
-    public BotAbuseCore baCore;
+    private BotAbuseCore baCore;
     // embed calls the EmbedHandler class
     public EmbedHandler embed;
     String fieldHeader;
@@ -1579,5 +1579,8 @@ public class BotAbuseMain extends ListenerAdapter {
     }
     BotAbuseMain getThis() {
         return this;
+    }
+    public BotAbuseCore getCore() {
+        return baCore;
     }
 }

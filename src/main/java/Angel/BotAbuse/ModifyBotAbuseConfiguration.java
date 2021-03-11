@@ -48,7 +48,7 @@ class ModifyBotAbuseConfiguration extends BotAbuseConfiguration {
     public String addExpiryTime(int newTime) {
         botAbuseTimes.add(newTime);
         botAbuseTimes.sort(Comparator.naturalOrder());
-        if (baMain.baCore.timingsAreValid()) return "**Successfully Added " + newTime + " Days**\n\n" + getExpiryTimeArray();
+        if (baMain.getCore().timingsAreValid()) return "**Successfully Added " + newTime + " Days**\n\n" + getExpiryTimeArray();
         else {
             removeExpiryTime(newTime, true);
             return ":x: **Cannot Add " + newTime + " Days**" +

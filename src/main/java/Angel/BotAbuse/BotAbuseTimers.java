@@ -35,12 +35,12 @@ class BotAbuseTimers implements Runnable {
         // Here we're running an integrity check on the data that was loaded, if the data loaded is no good...
         // then we suspend all commands and we don't start the timers.
         // Here we're running a check on the configuration file, if the timings loaded are no good
-        if (!baFeature.baCore.timingsAreValid() && !baFeature.commandsSuspended) {
+        if (!baFeature.getCore().timingsAreValid() && !baFeature.commandsSuspended) {
             baFeature.commandsSuspended = true;
             log.error("Configuration File Timings Are Not Valid");
             log.warn("Commands are now Suspended");
         }
-        else if (baFeature.baCore.timingsAreValid() && baFeature.commandsSuspended && baFeature.isReload) {
+        else if (baFeature.getCore().timingsAreValid() && baFeature.commandsSuspended && baFeature.isReload) {
             baFeature.commandsSuspended = false;
             log.info("Configuration File Timings are now valid again - Restarting Timers...");
         }
