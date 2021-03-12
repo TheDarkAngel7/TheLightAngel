@@ -264,7 +264,7 @@ public class DiscordBotMain extends ListenerAdapter {
                         "\n**Pinging Discord's Gateway... Please Wait...**";
                 embed.setAsInfo("My Ping Info", originalOutput);
                 if (isTeamMember(event.getAuthor().getIdLong()) && !msg.getChannelType().equals(ChannelType.PRIVATE)) {
-                    embed.sendToTeamOutput(msg,null);
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
                 }
                 else {
                     try {
