@@ -81,6 +81,7 @@ public class EmbedHandler {
             }
         }
 
+        entry.setTitle(msgEmbed.getTitle());
         entry.setMessage(msgEmbed.getFields().get(0).getValue());
         if (newTitle == null && newMsg != null) {
             entry.setMessage(newMsg);
