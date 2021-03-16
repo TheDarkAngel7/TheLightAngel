@@ -147,6 +147,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
             // Checking to see if a moderator tried to bot abuse someone that is Permanently Bot Abused.
             // The Expiry Date will be null if that's the case.
             if (!botAbuseIsPermanent(targetDiscordID)) {
+                thisRecord = getLastRecord(targetDiscordID);
                 return ":x: **This Player is Already Bot Abused!**\nDiscord Account: <@!" + targetDiscordID + ">" +
                         "**\nBot Abuse ID: **" + thisRecord.getId() +
                         "\nOffense Number: **" + thisRecord.getRepOffenses() +

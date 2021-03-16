@@ -60,16 +60,6 @@ public class DiscordBotMain extends ListenerAdapter {
         }
         else {
             mainConfig.discordSetup();
-            if (restartValue != 2) {
-                String defaultTitle = "Startup Complete";
-
-                if (restartValue == 1) defaultTitle = defaultTitle.replace("Startup", "Restart");
-
-                embed.setAsSuccess(defaultTitle,
-                        "**Please wait for all my features to finish loading and connecting.**" +
-                                "\n**Check on their status with `" + mainConfig.commandPrefix + "status`**");
-                embed.sendToChannel(null, mainConfig.discussionChannel);
-            }
         }
         Thread.currentThread().setName("Main Thread");
         nickInit = new NicknameInit(commandsSuspended, mainConfig, embed, guild, this);
@@ -87,6 +77,16 @@ public class DiscordBotMain extends ListenerAdapter {
         baFeature = baInit.getBaFeature();
         log.info("All Features Successfully Initalized");
         isStarting = false;
+        if (restartValue != 2 && !commandsSuspended) {
+            String defaultTitle = "Startup Complete";
+
+            if (restartValue == 1) defaultTitle = defaultTitle.replace("Startup", "Restart");
+
+            embed.setAsSuccess(defaultTitle,
+                    "**All Systems Are Go! Remember I'm divided into 3 sections...**" +
+                            "\n**You can check on their status with `" + mainConfig.commandPrefix + "status`**");
+            embed.sendToChannel(null, mainConfig.discussionChannel);
+        }
     }
 
     @Override
@@ -264,7 +264,7 @@ public class DiscordBotMain extends ListenerAdapter {
                         "\n**Pinging Discord's Gateway... Please Wait...**";
                 embed.setAsInfo("My Ping Info", originalOutput);
                 if (isTeamMember(event.getAuthor().getIdLong()) && !msg.getChannelType().equals(ChannelType.PRIVATE)) {
-                    embed.sendToTeamOutput(msg, msg.getAuthor());
+                    embed.sendToTeamOutput(msg,null);
                 }
                 else {
                     try {

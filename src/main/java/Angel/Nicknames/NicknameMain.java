@@ -104,11 +104,14 @@ public class NicknameMain extends ListenerAdapter {
                                     " \n\nThis is due to the fact that you're in a role that prohibits name changes, your name in the SAFE Crew discord server" +
                                     " must match your social club profile name. Don't worry or panic, " +
                                     "this was just a message to say that a nickname was applied in our server so that your " +
-                                    "displayed name continues to match your social club name. No action is required.");
+                                    "displayed name continues to match your social club name. No action is required." +
+                                    "\n\n**If you believe this is in error, you may reply with `" + mainConfig.commandPrefix + "nickname request reset` " +
+                                    "(or `/nn req reset` for short) to request the nickname that was just applied to be removed**");
                     embed.sendDM(null, event.getUser());
                     String logMessage = event.getUser().getAsMention() + " was previously using their discord username " +
                             "as their social club name. They are in a role that prevents effective name changes so a nickname of **" + event.getOldName() + "** was set on them.";
-                    log.info(logMessage.replace(event.getUser().getAsMention(), event.getUser().getAsTag() + " (ID:" + event.getUser().getIdLong() + ")"));
+                    log.info(logMessage.replace(event.getUser().getAsMention(), event.getUser().getAsTag() + " (ID:" + event.getUser().getIdLong() + ")")
+                            .replace("**" + event.getOldName() + "**", event.getOldName()));
                     embed.setAsInfo("Automatic Nickname Applied",
                             logMessage.replace("null", event.getUser().getAsTag() + " (Their Discord Username)"));
                     embed.sendToLogChannel();
@@ -365,16 +368,32 @@ public class NicknameMain extends ListenerAdapter {
                                 embed.sendToMemberOutput(msg, msg.getAuthor());
                             }
                             else if (nickCore.discordID.contains(cmdUserID)) {
-                                if (!nickCore.newNickname.get(nickCore.discordID.indexOf(cmdUserID)).equals(args[2])) {
-                                    embed.setAsError("Nickname Request Pending", "**You Already have a pending nickname change request**" +
-                                            "\n\nThe New Nickname you have requested is: **" + nickCore.newNickname.get(nickCore.discordID.indexOf(cmdUserID)) +
-                                            "**\n\n*If this new nickname is not correct, please use `" + mainConfig.commandPrefix + "nickname withdraw`" +
-                                            " (or `" + mainConfig.commandPrefix + "nn wd` for short) to withdraw this pending request, then you can run this command again.*");
+                                try {
+                                    if (!nickCore.newNickname.get(nickCore.discordID.indexOf(cmdUserID)).equals(args[2])) {
+                                        embed.setAsError("Nickname Request Pending", "**You Already have a pending nickname change request**" +
+                                                "\n\nThe New Nickname you have requested is: **" + nickCore.newNickname.get(nickCore.discordID.indexOf(cmdUserID)) +
+                                                "**\n\n*If this new nickname is not correct, please use `" + mainConfig.commandPrefix + "nickname withdraw`" +
+                                                " (or `" + mainConfig.commandPrefix + "nn wd` for short) to withdraw this pending request, then you can run this command again.*");
+                                    }
+                                    else {
+                                        embed.setAsWarning("Nickname Request Pending", "**You already have a pending nickname change" +
+                                                " request for this new name, please be patient while the staff reviews your old nickname and your requested new nickname.**" +
+                                                "\n\n**If you haven't changed your name on Social Club please do, otherwise your request will be denied**");
+                                    }
                                 }
-                                else {
-                                    embed.setAsWarning("Nickname Request Pending", "**You already have a pending nickname change" +
-                                            " request for this new name, please be patient while the staff reviews your old nickname and your requested new nickname.**" +
-                                            "\n\n**If you haven't changed your name on Social Club please do, otherwise your request will be denied**");
+                                catch (NullPointerException ex) {
+                                    String newNickname = "";
+                                    if (nickCore.newNickname.get(nickCore.discordID.indexOf(cmdUserID)) == null) {
+                                        embed.setAsError("Nickname Request Pending", "**You Already have a pending nickname change request**" +
+                                                "\n\nThe New Nickname you have requested is: **" + msg.getAuthor().getName() + "(Reset To Your Discord Username)" +
+                                                "**\n\n*If this new nickname is not correct, please use `" + mainConfig.commandPrefix + "nickname withdraw`" +
+                                                " (or `" + mainConfig.commandPrefix + "nn wd` for short) to withdraw this pending request, then you can run this command again.*");
+                                    }
+                                    else {
+                                        embed.setAsWarning("Nickname Request Pending", "**You already have a pending nickname change" +
+                                                " request for this new name, please be patient while the staff reviews your old nickname and your requested new nickname.**" +
+                                                "\n\n**If you haven't changed your name on Social Club please do, otherwise your request will be denied**");
+                                    }
                                 }
                                 embed.sendToMemberOutput(msg, msg.getAuthor());
                             }
@@ -440,7 +459,8 @@ public class NicknameMain extends ListenerAdapter {
                                 else {
                                     startRequestCooldown(cmdUserID);
                                     embed.setAsSuccess("Nickname Request Submitted", result.concat(SocialClubInfo));
-                                    embed.sendToMemberOutput(msg, msg.getAuthor());
+                                    if (msg.getChannelType() == ChannelType.PRIVATE) embed.sendDM(msg, msg.getAuthor());
+                                    else embed.sendToMemberOutput(msg, msg.getAuthor());
                                     embed.setAsInfo("Nickname Request Received", result);
                                     embed.sendToLogChannel();
                                     if (nickConfig.pingOnlineStaff) {
