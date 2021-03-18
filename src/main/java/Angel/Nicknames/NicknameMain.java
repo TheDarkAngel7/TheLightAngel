@@ -106,7 +106,7 @@ public class NicknameMain extends ListenerAdapter {
                                     "this was just a message to say that a nickname was applied in our server so that your " +
                                     "displayed name continues to match your social club name. No action is required." +
                                     "\n\n**If you believe this is in error, you may reply with `" + mainConfig.commandPrefix + "nickname request reset` " +
-                                    "(or `/nn req reset` for short) to request the nickname that was just applied to be removed**");
+                                    "(or `" + mainConfig.commandPrefix + "nn req reset` for short) to request the nickname that was just applied to be removed**");
                     embed.sendDM(null, event.getUser());
                     String logMessage = event.getUser().getAsMention() + " was previously using their discord username " +
                             "as their social club name. They are in a role that prevents effective name changes so a nickname of **" + event.getOldName() + "** was set on them.";
@@ -803,8 +803,7 @@ public class NicknameMain extends ListenerAdapter {
                         ignoreNewNickname = true;
                         if (newNickname == null) {
                             memberInQuestion.get().modifyNickname(memberInQuestion.get().getUser().getName()).queue();
-                            embed.setAsSuccess(defaultTitle,
-                                    msg.getAuthor().getAsMention() + " " + result);
+                            embed.setAsSuccess(defaultTitle, result);
                             embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
                                     "Your new name on the Discord Server now matches your discord username";
@@ -816,8 +815,7 @@ public class NicknameMain extends ListenerAdapter {
                         }
                         else {
                             memberInQuestion.get().modifyNickname(getNewNickname).queue();
-                            embed.setAsSuccess("Nickname Request Accepted",
-                                    msg.getAuthor().getAsMention() + " " + result);
+                            embed.setAsSuccess("Nickname Request Accepted", result);
                             embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
                                     "Your new name on the Discord Server is now **" + getNewNickname + "**";
@@ -857,7 +855,7 @@ public class NicknameMain extends ListenerAdapter {
                         if (newNickname == null) {
                             memberInQuestion.get().modifyNickname(null).queue();
                             embed.setAsSuccess("Successful Nickname Request Acceptance", result);
-                            embed.sendToTeamOutput(msg, null);
+                            embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
                                     "Your nickname was removed on the Discord Server and now matches your discord username";
                             embed.setAsSuccess("Successful Nickname Request Acceptance", messageToPlayer);
@@ -869,7 +867,7 @@ public class NicknameMain extends ListenerAdapter {
                         else {
                             memberInQuestion.get().modifyNickname(getNewNickname).queue();
                             embed.setAsSuccess("Successful Nickname Request Acceptance", result);
-                            embed.sendToTeamOutput(msg, null);
+                            embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
                                     "Your new name on the Discord Server is now " + getNewNickname;
                             embed.setAsSuccess("Successful Nickname Request Acceptance", messageToPlayer);
