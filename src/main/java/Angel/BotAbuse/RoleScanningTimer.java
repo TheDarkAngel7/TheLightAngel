@@ -41,22 +41,16 @@ class RoleScanningTimer extends Timer {
                         log.info("Removed Bot Abuse Role from " + m.getEffectiveName() +
                                 " because they had the role... and they were not supposed to have it");
                     }
-                    try {
-                        if (baFeature.getCore().botAbuseIsCurrent(m.getIdLong()) &&
-                        !m.getRoles().contains(baFeature.botConfig.botAbuseRole)) {
-                            guild.addRoleToMember(m,
-                                    baFeature.botConfig.botAbuseRole).queue();
-                            embed.setAsInfo(defaultTitle, "[Role Scanner] Added Bot Abuse Role to "
-                                    + m.getAsMention() +
-                                    " because they didn't have the role... and they're supposed to have it.");
-                            embed.sendToLogChannel();
-                            log.info("Added Bot Abuse to " + m.getEffectiveName()
-                                    + " because they didn't have the role... and they're supposed to have it.");
-                        }
-                    }
-                    catch (NullPointerException ex) {
-                        // Take No Action - getLastRecord.isCurrentlyBotAbused() will throw a NullPointerException
-                        // if no records exist for that player
+                    if (baFeature.getCore().botAbuseIsCurrent(m.getIdLong()) &&
+                            !m.getRoles().contains(baFeature.botConfig.botAbuseRole)) {
+                        guild.addRoleToMember(m,
+                                baFeature.botConfig.botAbuseRole).queue();
+                        embed.setAsInfo(defaultTitle, "[Role Scanner] Added Bot Abuse Role to "
+                                + m.getAsMention() +
+                                " because they didn't have the role... and they're supposed to have it.");
+                        embed.sendToLogChannel();
+                        log.info("Added Bot Abuse to " + m.getEffectiveName()
+                                + " because they didn't have the role... and they're supposed to have it.");
                     }
                 });
             }

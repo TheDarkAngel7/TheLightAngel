@@ -116,7 +116,7 @@ public class DiscordBotMain extends ListenerAdapter {
                     " could not be processed as a sentence.");
             return;
         }
-        if (event.getMessage().getContentRaw().charAt(0) == mainConfig.commandPrefix && isValidCommand(args)) {
+        if (event.getMessage().getContentRaw().charAt(0) == mainConfig.commandPrefix && isValidCommand(msg)) {
             if (event.getMessage().getChannelType().equals(ChannelType.PRIVATE)) {
                 log.debug(event.getAuthor().getAsTag() + "@DM: " + event.getMessage().getContentRaw());
             }
@@ -127,7 +127,7 @@ public class DiscordBotMain extends ListenerAdapter {
         }
 
         if ((msg.getChannel().equals(mainConfig.managementChannel) || msg.getChannel().equals(mainConfig.dedicatedOutputChannel))
-                && !isValidCommand(args)) {
+                && !isValidCommand(msg)) {
             if (msg.getContentRaw().charAt(0) != mainConfig.commandPrefix && isTeamMember(msg.getAuthor().getIdLong())) {
                 embed.setAsWarning("No Messages Here",
                         "You Cannot send messages in this channel, *hence the name*... \n**You can only send commands!**" +
@@ -146,6 +146,7 @@ public class DiscordBotMain extends ListenerAdapter {
             }
             embed.sendToChannel(msg, msg.getChannel());
             msg.delete().queue();
+            log.warn("Message Deleted - Management or Dedicated Output Channel - Not Valid Command");
             return;
         }
         if (!msg.getAuthor().equals(baFeature.commandUser) && !msg.getAuthor().equals(nickFeature.commandUser) &&
@@ -196,6 +197,7 @@ public class DiscordBotMain extends ListenerAdapter {
                     && (isStaffMember(event.getAuthor().getIdLong()))) {
                 try {
                     msg.delete().queue();
+                    log.warn("Message Deleted - restart command");
                     if (args.length == 1) {
                         embed.setAsWarning("Restart Initiated", "**Restart Initiated by " + msg.getAuthor().getAsMention()
                                 + "\nPlease Allow up to 10 seconds for this to complete**");
@@ -345,6 +347,7 @@ public class DiscordBotMain extends ListenerAdapter {
                     }
                     else {
                         msg.delete().queue();
+                        log.warn("Message Deleted - set command");
                         embed.setAsError("Not Usable in This Channel",
                                 "**:x: This Command Is Not Usable in <#" + msg.getChannel().getIdLong() + ">!**" +
                                         "\n\nPlease use `" + mainConfig.commandPrefix + "set` in this channel or in " + mainConfig.managementChannel.getAsMention());
@@ -363,7 +366,7 @@ public class DiscordBotMain extends ListenerAdapter {
                 else if (args.length == 3 && nickFeature.isCommand(args[1], args[2])) {
                     nickFeature.helpCommand(msg, isTeamMember(msg.getAuthor().getIdLong()));
                 }
-                else if (isValidCommand(args)) helpCommand(msg);
+                else if (isValidCommand(msg)) helpCommand(msg);
                 else {
                     embed.setAsError("Invalid Command", ":x: **The Command you asked for help for does not exist anywhere within me...**");
                     embed.sendToChannel(msg, msg.getChannel());
@@ -375,12 +378,16 @@ public class DiscordBotMain extends ListenerAdapter {
                 && msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && msg.getAttachments().isEmpty()
                 && mainConfig.deleteOriginalNonStaffCommands) {
             msg.delete().queue();
+            log.warn("Message Deleted - Channel Type Not Private, Does Not Mention Me, Not Bot Spam Channel, " +
+                    "Not Management Channel, Prefix Found, Attachments Empty, Delete Original Staff Commands True");
         }
         else if (!msg.getChannelType().equals(ChannelType.PRIVATE) && !msg.getMentionedMembers().contains(guild.getSelfMember()) &&
-                isTeamMember(msg.getAuthor().getIdLong()) && isValidCommand(args) &&
+                isTeamMember(msg.getAuthor().getIdLong()) && isValidCommand(msg) &&
                 (!msg.getChannel().equals(mainConfig.discussionChannel) || mainConfig.deleteOriginalStaffCommands) &&
                 !msg.getChannel().equals(mainConfig.managementChannel) && msg.getAttachments().isEmpty()) {
             msg.delete().queue();
+            log.warn("Message Deleted - Channel Type Not Private, Does Not Mention Me, Not Bot Spam Channel, Is Team Member, Is Valid Command " +
+                    "Discussion Channel or Delete Original Staff Commands True, Not Management Channel, Attachments Empty");
         }
     }
     private void helpCommand(Message msg) {
@@ -969,7 +976,9 @@ public class DiscordBotMain extends ListenerAdapter {
         }
     }
     // Is the command array provided a valid command anywhere in the program?
-    private boolean isValidCommand(String[] cmd) {
+    private boolean isValidCommand(Message msg) {
+        if (msg.getContentRaw().charAt(0) != mainConfig.commandPrefix) return false;
+        String[] cmd = msg.getContentRaw().substring(1).split(" ");
         if (baFeature.isCommand(cmd[0])) return true;
         if (cmd.length > 1 ) {
             if (nickFeature.isCommand(cmd[0], cmd[1])) return true;
