@@ -52,8 +52,8 @@ class Help {
     void checkCommand(boolean isTeamMember) {
         String defaultTitle = mainConfig.commandPrefix + "check Command Help";
         TextChannel outputChannel = null;
-        if (baMain.mainConfig.forceToDedicatedChannel) outputChannel = baMain.mainConfig.dedicatedOutputChannel;
-        else outputChannel = baMain.mainConfig.helpChannel;
+        if (mainConfig.forceToDedicatedChannel) outputChannel = mainConfig.dedicatedOutputChannel;
+        else outputChannel = mainConfig.helpChannel;
         if (isTeamMember) {
             embed.setAsHelp(defaultTitle,"**Full Syntax:\n `" + mainConfig.commandPrefix + "check [TimeZone Offset] <Mention or Discord ID>`**\n" +
                     "\n" +

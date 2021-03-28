@@ -2,6 +2,8 @@ package Angel.BotAbuse;
 
 import Angel.DiscordBotMain;
 import Angel.MainConfiguration;
+import com.google.gson.JsonObject;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,26 +17,36 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
     // Display all the requested data.
     Angel.BotAbuse.FileHandler fileHandler;
     private final Logger log = LogManager.getLogger(BotAbuseCore.class);
-    BotAbuseConfiguration botConfig;
-    MainConfiguration mainConfig;
+    private final Guild guild;
+    private BotAbuseConfiguration botConfig;
+    private final MainConfiguration mainConfig;
     private List<BotAbuseRecord> records = new ArrayList<>();
     Dictionary<String, String> reasonsDictionary = new Hashtable<>();
     private Calendar c;
 
-    BotAbuseCore() {
+    BotAbuseCore(Guild guild, MainConfiguration mainConfig) {
         this.fileHandler = new FileHandler(this);
+        this.guild = guild;
+        this.mainConfig = mainConfig;
     }
-    void startup() throws IOException {
-        log.info("Bot Abuse Core Initiated...");
+    void startup(boolean firstStartup) throws IOException {
         try {
+            if (firstStartup) log.info("Bot Abuse Core Initiated...");
+            else log.info("Bot Abuse Database Gotten From Resume...");
             fileHandler.getDatabase();
         }
         catch (IllegalStateException ex) {
             log.warn("No Data Existed in the Bot Abuse Arrays - Data File is Empty");
         }
     }
-    void setBotConfig(BotAbuseConfiguration importBotConfig) {
-        botConfig = importBotConfig;
+    void setBotConfig(BotAbuseConfiguration botConfig) {
+        this.botConfig = botConfig;
+    }
+    JsonObject getConfig() throws IOException {
+        return fileHandler.getConfig();
+    }
+    void saveDatabase() throws IOException {
+        fileHandler.saveDatabase();
     }
 
     String setBotAbuse(long targetDiscordID, boolean isPermanent, String reason, @Nullable String imageURL, long teamMember)
@@ -166,11 +178,11 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         int prevOffenses = this.getHotOffenses(targetDiscordID);
         if (mainConfig.testModeEnabled) {
             try {
-                cExp.add(Calendar.MINUTE, botConfig.botAbuseTimes.get(prevOffenses));
+                cExp.add(Calendar.MINUTE, botConfig.getBotAbuseTimes().get(prevOffenses));
             }
             catch (IndexOutOfBoundsException ex) {
-                if (!botConfig.autoPermanent) cExp.add(Calendar.MINUTE,
-                        botConfig.botAbuseTimes.get(botConfig.botAbuseTimes.size() - 1));
+                if (!botConfig.isAutoPermanent()) cExp.add(Calendar.MINUTE,
+                        botConfig.getBotAbuseTimes().get(botConfig.getBotAbuseTimes().size() - 1));
                 else return null;
             }
         }
@@ -181,8 +193,8 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                 cExp.add(Calendar.DAY_OF_MONTH, botConfig.botAbuseTimes.get(prevOffenses));
             }
             catch (IndexOutOfBoundsException ex) {
-                if (!botConfig.autoPermanent) cExp.add(Calendar.DAY_OF_MONTH,
-                        botConfig.botAbuseTimes.get(botConfig.botAbuseTimes.size() - 1));
+                if (!botConfig.isAutoPermanent()) cExp.add(Calendar.DAY_OF_MONTH,
+                        botConfig.getBotAbuseTimes().get(botConfig.getBotAbuseTimes().size() - 1));
                 else return null;
             }
         }
@@ -218,28 +230,28 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         }
         cTooLate.setTime(thisRecord.getIssuedDate());
         if (this.mainConfig.testModeEnabled) {
-            cTooLate.add(Calendar.HOUR_OF_DAY, botConfig.maxDaysAllowedForUndo);
+            cTooLate.add(Calendar.HOUR_OF_DAY, botConfig.getMaxDaysAllowedForUndo());
         }
         else {
-            cTooLate.add(Calendar.DAY_OF_MONTH, botConfig.maxDaysAllowedForUndo);
+            cTooLate.add(Calendar.DAY_OF_MONTH, botConfig.getMaxDaysAllowedForUndo());
         }
         if (c.getTime().before(cTooLate.getTime()) && botAbuseIsCurrent(targetDiscordID)) {
             records.remove(thisRecord);
         }
         else if (!(c.getTime().before(cTooLate.getTime())) && botAbuseIsCurrent(targetDiscordID)) {
-            log.error("Undo Failed for " + botConfig.guild.getMemberById(targetDiscordID).getUser().getAsTag() +
+            log.error("Undo Failed for " + guild.getMemberById(targetDiscordID).getUser().getAsTag() +
                     " as this bot abuse is older than the configured "
-                    + botConfig.maxDaysAllowedForUndo + " days");
-            return ":x: **Undo Failed for <@" + targetDiscordID + "> because Bot Abuses Older than " + botConfig.maxDaysAllowedForUndo
+                    + botConfig.getMaxDaysAllowedForUndo() + " days");
+            return ":x: **Undo Failed for <@" + targetDiscordID + "> because Bot Abuses Older than " + botConfig.getMaxDaysAllowedForUndo()
                     + " Days Cannot Be Undone.**";
         }
         else {
-            log.error("Undo Failed for " + botConfig.guild.getMemberById(targetDiscordID).getUser().getAsTag() +
+            log.error("Undo Failed for " + guild.getMemberById(targetDiscordID).getUser().getAsTag() +
                     " as this player's bot abuse is no longer current");
             return ":x: **Undo Failed Because This Bot Abuse Is No Longer Current!**";
         }
         fileHandler.saveDatabase();
-        log.info("Undo Successful for " + botConfig.guild.getMemberById(targetDiscordID).getUser().getAsTag());
+        log.info("Undo Successful for " + guild.getMemberById(targetDiscordID).getUser().getAsTag());
         return ":white_check_mark: **Successfully Undid Bot Abuse ID <@" + thisRecord.getDiscordID() + ">**\n So... Whatever it was you were doing... Try Again...";
     }
     String getInfo(long targetDiscordID, double timeOffset, boolean isTeamMember) { // This method is for queries
@@ -325,7 +337,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                     "\n" +
                     "\nNumber of Lifetime Bot Abuses: **" + this.getLifetimeOffenses(targetDiscordID) + "**" +
                     "\nNumber of Hot Bot Abuses: **" + this.getHotOffenses(targetDiscordID) + "**" +
-                    "\n\n*Hot Bot Abuses are offenses that took place less than **" + botConfig.hotOffenseMonths + "** months ago*" +
+                    "\n\n*Hot Bot Abuses are offenses that took place less than **" + botConfig.getHotOffenseMonths() + "** months ago*" +
                     "\n*Psst... They're also called \"Hot\" because they haven't cooled down*";
         }
     }
@@ -343,11 +355,11 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         Calendar cOld = Calendar.getInstance();
 
         if (this.mainConfig.testModeEnabled) {
-            cOld.add(Calendar.HOUR_OF_DAY, botConfig.hotOffenseMonths * -1);
+            cOld.add(Calendar.HOUR_OF_DAY, botConfig.getHotOffenseMonths() * -1);
         }
         else {
             // Take off the configured number of months
-            cOld.add(Calendar.MONTH, botConfig.hotOffenseMonths * -1);
+            cOld.add(Calendar.MONTH, botConfig.getHotOffenseMonths() * -1);
         }
         int index = 0;
         int prevOffenses = 0;
@@ -639,24 +651,24 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         else return null;
     }
     boolean timingsAreValid() {
-        if (botConfig.botAbuseTimes.get(botConfig.botAbuseTimes.size() - 1) <= (botConfig.hotOffenseMonths * 30) / 2) {
+        if (botConfig.getBotAbuseTimes().get(botConfig.getBotAbuseTimes().size() - 1) <= (botConfig.hotOffenseMonths * 30) / 2) {
             int index = 0;
-            if (botConfig.hotOffenseWarning > botConfig.botAbuseTimes.size()) return false;
-            while (index < botConfig.botAbuseTimes.size()) {
-                if (botConfig.maxDaysAllowedForUndo > botConfig.botAbuseTimes.get(index++)) return false;
+            if (botConfig.getHotOffenseWarning() > botConfig.getBotAbuseTimes().size()) return false;
+            while (index < botConfig.getBotAbuseTimes().size()) {
+                if (botConfig.getMaxDaysAllowedForUndo() > botConfig.getBotAbuseTimes().get(index++)) return false;
             }
             index = 1;
             int dayTotal = 0;
-            while (index < botConfig.botAbuseTimes.size()) {
-                if (botConfig.botAbuseTimes.get(index) <= botConfig.botAbuseTimes.get(index - 1)) {
-                    botConfig.botAbuseTimes.sort(Comparator.naturalOrder());
+            while (index < botConfig.getBotAbuseTimes().size()) {
+                if (botConfig.getBotAbuseTimes().get(index) <= botConfig.getBotAbuseTimes().get(index - 1)) {
+                    botConfig.getBotAbuseTimes().sort(Comparator.naturalOrder());
                     index = 1;
                     dayTotal = 0;
                 }
-                else if (dayTotal > botConfig.hotOffenseMonths * 30) return false;
+                else if (dayTotal > botConfig.getHotOffenseMonths() * 30) return false;
                 else {
-                    if (index == 1) dayTotal = dayTotal + botConfig.botAbuseTimes.get(0);
-                    dayTotal = dayTotal + botConfig.botAbuseTimes.get(index++);
+                    if (index == 1) dayTotal = dayTotal + botConfig.getBotAbuseTimes().get(0);
+                    dayTotal = dayTotal + botConfig.getBotAbuseTimes().get(index++);
                 }
             }
             return true;

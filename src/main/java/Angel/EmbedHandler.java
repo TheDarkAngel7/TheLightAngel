@@ -198,13 +198,15 @@ public class EmbedHandler {
                                             mainConfig.helpChannel.sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
                                                 commandMessageMap.put(entry.getOriginalCmd(), m);
                                             });
-                                        } else if (mainConfig.forceToDedicatedChannel || !entry.getOriginalCmd().getChannel().equals(mainConfig.dedicatedOutputChannel)) {
+                                        }
+                                        else if (mainConfig.forceToDedicatedChannel || !entry.getOriginalCmd().getChannel().equals(mainConfig.dedicatedOutputChannel)) {
                                             if (!mainConfig.botSpamChannelID.equalsIgnoreCase("None")
                                                     && entry.getOriginalCmd().getChannel().equals(mainConfig.botSpamChannel)) {
                                                 mainConfig.botSpamChannel.sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
                                                     commandMessageMap.put(entry.getOriginalCmd(), m);
                                                 });
-                                            } else {
+                                            }
+                                            else {
                                                 if (entry.getTargetUser() != null && !entry.getOriginalCmd().getChannel().equals(mainConfig.dedicatedOutputChannel)) {
                                                     mainConfig.dedicatedOutputChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                                 }

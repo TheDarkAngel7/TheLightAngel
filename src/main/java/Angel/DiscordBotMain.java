@@ -452,7 +452,7 @@ public class DiscordBotMain extends ListenerAdapter {
                                 "*This Allows Us to get mentions more easily without the need to switch channels*" +
                                         "\nThis searches effective names followed by user names. " +
                                         "You may also enter in a full user tag in and I'll get the mention for this player." +
-                                        "\n\nSyntax: `/search <Name>` or `/s <Name>`");
+                                        "\n\nSyntax: `" + mainConfig.commandPrefix + "search <Name>` or `/s <Name>`");
                     }
                     else {
                         embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions To See This Information**");
@@ -479,7 +479,7 @@ public class DiscordBotMain extends ListenerAdapter {
         if (isStaffMember(msg.getAuthor().getIdLong())) {
             // /set role <Config Key> <Mentioned Role>
             if (args[1].equalsIgnoreCase("role") && args.length == 4) {
-                String roleSyntax = "`/set role <\"adminRole\", \"staffRole\", \"teamRole\", or \"botAbuseRole\"> " +
+                String roleSyntax = "`" + mainConfig.commandPrefix + "set role <\"adminRole\", \"staffRole\", \"teamRole\", or \"botAbuseRole\"> " +
                         "<Role Mention or ID>`";
                 try {
                     if (mainConfig.isValidConfig(args[2])) {
@@ -490,8 +490,8 @@ public class DiscordBotMain extends ListenerAdapter {
                         successfulRun = true;
 
                     }
-                    else if (baFeature.botConfig.isValidConfig(args[2])) {
-                        if (baFeature.botConfig.setNewBotAbuseRole(Long.parseLong(args[3]))) {
+                    else if (baFeature.getConfig().isValidConfig(args[2])) {
+                        if (baFeature.getConfig().setNewBotAbuseRole(Long.parseLong(args[3]))) {
                             embed.setAsSuccess(defaultTitle,
                                     defaultOutput.replace("key", args[2])
                                             .replace("value", guild.getRoleById(args[3]).getAsMention()));
@@ -517,8 +517,8 @@ public class DiscordBotMain extends ListenerAdapter {
                                                 .replace("value", msg.getMentionedRoles().get(0).getAsMention()));
                                 successfulRun = true;
                             }
-                            else if (baFeature.botConfig.isValidConfig(args[2])) {
-                                baFeature.botConfig.setNewBotAbuseRole(msg.getMentionedRoles().get(0));
+                            else if (baFeature.getConfig().isValidConfig(args[2])) {
+                                baFeature.getConfig().setNewBotAbuseRole(msg.getMentionedRoles().get(0));
                                 embed.setAsSuccess(defaultTitle, defaultOutput.replace("key", args[2])
                                         .replace("value", guild.getRoleById(args[3]).getAsMention()));
                                 successfulRun = true;
@@ -540,7 +540,7 @@ public class DiscordBotMain extends ListenerAdapter {
             }
             // /set channel <Config Key> <New Channel Mention or ID>
             else if ((args[1].equalsIgnoreCase("channel") || args[1].equalsIgnoreCase("cha")) && args.length == 4) {
-                String channelSyntax = "`/set channel <\"helpChannel\", \"botSpamChannel\", \"theLightAngelChannel\", " +
+                String channelSyntax = "`" + mainConfig.commandPrefix + "set channel <\"helpChannel\", \"botSpamChannel\", \"theLightAngelChannel\", " +
                         "\"teamDiscussionChannel\", \"botManagementChannel\", or \"logChannel\" > " +
                         "<Channel Mention or ID>`";
                 try {
@@ -578,7 +578,7 @@ public class DiscordBotMain extends ListenerAdapter {
             // /set config <Config Key> <New Value>
             else if (args[1].equalsIgnoreCase("config") && args.length == 4) {
                 try {
-                    String integerDefaultSyntax = "`/set config` " +
+                    String integerDefaultSyntax = "`" + mainConfig.commandPrefix + "set config` " +
                             "\n**2nd Argument Options:**" +
                             "\n\n*__Main Configuration__*" +
                             "\n`<\"pingCooldown\" (\"pingCD\" for short), or \"highPingTime\" (\"highPing\" for short)>` " +
@@ -638,8 +638,8 @@ public class DiscordBotMain extends ListenerAdapter {
                                 defaultOutput.replace("key", args[2]).replace("value", args[3]));
                         successfulRun = true;
                     }
-                    else if (baFeature.botConfig.isValidConfig(args[2])) {
-                        baFeature.botConfig.setConfig(args[2], Integer.parseInt(args[3]));
+                    else if (baFeature.getConfig().isValidConfig(args[2])) {
+                        baFeature.getConfig().setConfig(args[2], Integer.parseInt(args[3]));
                         embed.setAsSuccess(defaultTitle, defaultOutput.replace("key", args[2]).replace("value", args[3]));
                         successfulRun = true;
                     }
@@ -667,15 +667,15 @@ public class DiscordBotMain extends ListenerAdapter {
                                     defaultOutput.replace("key", args[2]).replace("value", args[3]));
                             successfulRun = true;
                         }
-                        else if (baFeature.botConfig.isValidConfig(args[2])) {
-                            baFeature.botConfig.setConfig(args[2], Boolean.valueOf(args[3]));
+                        else if (baFeature.getConfig().isValidConfig(args[2])) {
+                            baFeature.getConfig().setConfig(args[2], Boolean.valueOf(args[3]));
                             embed.setAsSuccess(defaultTitle,
                                     defaultOutput.replace("key", args[2]).replace("value", args[3]));
                             successfulRun = true;
                         }
                         else {
                             embed.setAsError(defaultErrorTitle, defaultErrorOutput.replace("key", args[2]).replace("syn",
-                                    "`/set config` " +
+                                    "`" + mainConfig.commandPrefix + "set config` " +
                                             "\n**2nd Argument Options:**" +
                                             "\n\n*__Main Configuration__*" +
                                             "\n`<\"deleteOriginalNonStaffCommands\" (\"delNonStaffCmd\" for short), " +
@@ -697,7 +697,7 @@ public class DiscordBotMain extends ListenerAdapter {
                         }
                         else {
                             embed.setAsError(defaultErrorTitle, defaultErrorOutput.replace("key", args[2]).replace("syn",
-                                    "`/set config <\"timeZone\", \"checkIconURL\", \"errorIconURL\", " +
+                                    "`" + mainConfig.commandPrefix + "set config <\"timeZone\", \"checkIconURL\", \"errorIconURL\", " +
                                             "\"infoIconURL\", \"stopIconURL\", \"helpIconURL\", \"blobNomPingID\", " +
                                             "\"commandPrefix\" (\"cmdPrefix\" for short), \"fieldHeader\", " +
                                             "or \"botabuselength\" (to add or remove times to the bot abuse punishments)>" +
@@ -710,11 +710,11 @@ public class DiscordBotMain extends ListenerAdapter {
             else if (args[1].equalsIgnoreCase("config") && args[2].equalsIgnoreCase("botabuselength")
                     && args.length == 5) {
                 String defaultBASuccessTitle = "Time ? Successfully";
-                String defaultSyntax = "/set config botabuselength <add/del/remove> <# of Days>";
+                String defaultSyntax = mainConfig.commandPrefix + "set config botabuselength <add/del/remove> <# of Days>";
                 String result = "";
                 try {
                     if (args[3].equalsIgnoreCase("add")) {
-                        result = baFeature.botConfig.addExpiryTime(Integer.parseInt(args[4]));
+                        result = baFeature.getConfig().addExpiryTime(Integer.parseInt(args[4]));
                         if (result.contains(":x:")) {
                             embed.setAsError("Error While Adding Time Period", result);
                         }
@@ -728,7 +728,7 @@ public class DiscordBotMain extends ListenerAdapter {
                     }
                     else if (args[3].equalsIgnoreCase("del") || args[3].equalsIgnoreCase("delete")
                             || args[3].equalsIgnoreCase("remove")) {
-                        result = baFeature.botConfig.removeExpiryTime(Integer.parseInt(args[4]), false);
+                        result = baFeature.getConfig().removeExpiryTime(Integer.parseInt(args[4]), false);
                         if (result.contains(":x:")) {
                             embed.setAsError("Error While Removing Time Period", result);
                         }
@@ -755,7 +755,7 @@ public class DiscordBotMain extends ListenerAdapter {
                     (args[2].equalsIgnoreCase("nameRestrictedRoles") || args[2].equalsIgnoreCase("nameRoles"))
                     && args.length == 5) {
                 String defaultSuccessTitle = "Name Restricted Role ?";
-                String defaultSyntax = "`/set config nameRoles/nameRestrictedRoles add/del/remove <Role Mention or ID>`";
+                String defaultSyntax = "`" + mainConfig.commandPrefix + "set config nameRoles/nameRestrictedRoles add/del/remove <Role Mention or ID>`";
                 String defaultSuccess = "Successfully ? ! The Roles Not Allowed to Change Names";
 
                 if (args[3].equalsIgnoreCase("add")) {

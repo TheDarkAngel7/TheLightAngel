@@ -24,14 +24,13 @@ public class BotAbuseMain extends ListenerAdapter {
     private final Logger log = LogManager.getLogger(BotAbuseMain.class);
     private Thread timerThread;
     private BotAbuseTimers baTimers;
-    Guild guild;
-    private FileHandler fileHandler;
-    MainConfiguration mainConfig;
-    public BotAbuseConfiguration botConfig;
+    private Guild guild;
+    private MainConfiguration mainConfig;
+    private BotAbuseConfiguration botConfig;
     private BotAbuseCore baCore;
     // embed calls the EmbedHandler class
     public EmbedHandler embed;
-    String fieldHeader;
+    private String fieldHeader;
     private DiscordBotMain discord;
     private Help help;
     public boolean commandsSuspended = false;
@@ -48,17 +47,14 @@ public class BotAbuseMain extends ListenerAdapter {
 
     BotAbuseMain(boolean getCommandsSuspended, int restartValue, MainConfiguration importMainConfig, EmbedHandler importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException, TimeoutException {
         commandsSuspended = getCommandsSuspended;
-        baCore = new BotAbuseCore();
-        discord = importDiscordBot;
-        this.fileHandler = baCore.fileHandler;
-        mainConfig = importMainConfig;
-        baCore.mainConfig = importMainConfig;
-        this.guild = importGuild;
-        botConfig = new ModifyBotAbuseConfiguration(fileHandler.getConfig(), this, fileHandler, mainConfig);
-        botConfig.guild = importGuild;
+        baCore = new BotAbuseCore(importGuild, importMainConfig);
+        botConfig = new ModifyBotAbuseConfiguration(baCore.getConfig(), this, importMainConfig, importGuild);
         botConfig.initialSetup();
         baCore.setBotConfig(botConfig);
-        baCore.startup();
+        discord = importDiscordBot;
+        mainConfig = importMainConfig;
+        this.guild = importGuild;
+        baCore.startup(true);
         this.fieldHeader = mainConfig.fieldHeader;
         this.restartValue = restartValue;
         this.embed = importEmbed;
@@ -74,7 +70,8 @@ public class BotAbuseMain extends ListenerAdapter {
             log.fatal("Not All of the Configuration Settings were found in the discord server! Please verify the IDs of" +
                     " all of the channels, roles, and the Owner's Discord ID in the configuration file. " +
                     "Commands have been suspended, when you fix the configuration file " +
-                    "you may use \"/reload\" to reload the file or \"/restart\" to restart the bot");
+                    "you may use \"" + mainConfig.commandPrefix + "reload\" to reload the file or \""
+                    + mainConfig.commandPrefix + "restart\" to restart the bot");
         }
         if (!commandsSuspended) {
             botConfig.discordSetup();
@@ -105,9 +102,9 @@ public class BotAbuseMain extends ListenerAdapter {
         try { Thread.sleep(10000); } catch (InterruptedException e) {}
         // If they're supposed to be Bot Abused and they don't have the role on join
         if (baCore.botAbuseIsCurrent(event.getMember().getIdLong()) &&
-                !event.getMember().getRoles().contains(botConfig.botAbuseRole)) {
+                !event.getMember().getRoles().contains(botConfig.getBotAbuseRole())) {
             guild.addRoleToMember(event.getMember().getIdLong(),
-                   botConfig.botAbuseRole).queue();
+                   botConfig.getBotAbuseRole()).queue();
             embed.setAsInfo("Join Event Information", "**[System - Join Event] Added the Bot Abuse Role to "
                     + event.getMember().getAsMention() +
                     " since according to the data file they should have the Bot Abuse role**");
@@ -116,9 +113,9 @@ public class BotAbuseMain extends ListenerAdapter {
         }
         // If they're not supposed to be Bot Abused and they do have the role
         else if (!baCore.botAbuseIsCurrent(event.getMember().getIdLong()) &&
-                event.getMember().getRoles().contains(botConfig.botAbuseRole)) {
+                event.getMember().getRoles().contains(botConfig.getBotAbuseRole())) {
             guild.removeRoleFromMember(event.getMember().getIdLong(),
-                    botConfig.botAbuseRole).queue();
+                    botConfig.getBotAbuseRole()).queue();
             embed.setAsInfo("Join Event Information", "**[System - Join Event] Removed the Bot Abuse Role from "
                     + event.getMember().getAsMention() +
                     " since according to the data file they shouldn't have it**");
@@ -130,7 +127,7 @@ public class BotAbuseMain extends ListenerAdapter {
     public void saveDatabase() {
         try {
             log.error("Disconneted from Discord Websocket - Saving Data for Bot Abuse...");
-            fileHandler.saveDatabase();
+            baCore.saveDatabase();
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -138,7 +135,7 @@ public class BotAbuseMain extends ListenerAdapter {
     }
     public void resumeBot() {
         try {
-            fileHandler.getDatabase();
+            baCore.startup(false);
             startTimers();
         }
         catch (IOException e) {
@@ -300,7 +297,7 @@ public class BotAbuseMain extends ListenerAdapter {
         }
         else if (msg.getMentionedMembers().isEmpty()) {
             try {
-                getUserByID(Long.parseLong(args[1]));
+                setCommandUserByID(Long.parseLong(args[1]));
                 if (msg.getAttachments().isEmpty()) {
                     String result = baCore.setBotAbuse(Long.parseLong(args[1]), false, args[2], args[3], msg.getAuthor().getIdLong());
                     if (result.contains("FATAL ERROR")) {
@@ -310,7 +307,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         embed.setAsSuccess(defaultTitle, result);
                         embed.sendToLogChannel();
                         guild.addRoleToMember(guild.getMemberById(Long.parseLong(args[1])),
-                                botConfig.botAbuseRole).queue();
+                                botConfig.getBotAbuseRole()).queue();
                         embed.setAsSuccess(defaultTitle,":white_check_mark: " + " Successfully Bot Abused "
                                 + guild.getMemberById(Long.parseLong(args[1])).getAsMention());
                         embed.sendToTeamOutput(msg, msg.getAuthor());
@@ -337,7 +334,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         embed.setAsSuccess(defaultTitle, result);
                         embed.sendToLogChannel();
                         guild.addRoleToMember(guild.getMemberById(Long.parseLong(args[1])),
-                                botConfig.botAbuseRole).queue();
+                                botConfig.getBotAbuseRole()).queue();
                         embed.setAsSuccess(defaultTitle,":white_check_mark: " + " Successfully Bot Abused "
                                 + guild.getMemberById(Long.parseLong(args[1])).getAsMention() +
                                 "\n\n :warning: Image Attachment Detected, **Do Not Delete the original command!**");
@@ -394,7 +391,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     String result = baCore.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
                             false, args[2], args[3], msg.getAuthor().getIdLong());
                     guild.addRoleToMember(msg.getMentionedMembers().get(0),
-                            botConfig.botAbuseRole).queue();
+                            botConfig.getBotAbuseRole()).queue();
                     if (result.contains("FATAL ERROR")) {
                         discord.failedIntegrityCheck(this.getClass().getName(), msg, "Bot Abuse: setBotAbuse - No Picture Attachment and Mention Member Value");
                     }
@@ -418,7 +415,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     String result = baCore.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
                             false, args[2], msg.getAttachments().get(0).getProxyUrl(), msg.getAuthor().getIdLong());
                     guild.addRoleToMember(msg.getMentionedMembers().get(0),
-                            botConfig.botAbuseRole).queue();
+                            botConfig.getBotAbuseRole()).queue();
                     if (result.contains("FATAL ERROR")) {
                         discord.failedIntegrityCheck(this.getClass().getName(), msg, "Bot Abuse: setBotAbuse - Picture Attachment Found and Mention Member Value");
                     }
@@ -456,12 +453,12 @@ public class BotAbuseMain extends ListenerAdapter {
             embed.setAsError("Target ID Error", ":x: Too many Target IDs");
             embed.sendToTeamOutput(msg, msg.getAuthor());
         }
-        if (!wasAlreadyBotAbused && targetUser != null && baCore.getHotOffenses(targetUser.getIdLong()) <= baCore.botConfig.botAbuseTimes.size()
-                && baCore.botConfig.hotOffenseWarning > 0) {
+        if (!wasAlreadyBotAbused && targetUser != null && baCore.getHotOffenses(targetUser.getIdLong()) <= getConfig().getBotAbuseTimes().size()
+                && getConfig().getHotOffenseWarning() > 0) {
             String helpStatement = "\n\nIf you have any questions reguarding this message or how to avoid a permanent bot abuse: " +
                     "Please contact the SAFE Team in the #" + mainConfig.helpChannel.getName() + " channel.";
             int hotOffenses = baCore.getHotOffenses(targetUser.getIdLong());
-            if (hotOffenses >= baCore.botConfig.hotOffenseWarning) {
+            if (hotOffenses >= getConfig().getHotOffenseWarning()) {
                 embed.setAsStop("Permanent Bot Abuse Ahead",
                         ":x: **You now have " + hotOffenses + " Hot Bot Abuses!**" +
                                 "\n\n*If you continue to use commands in session channels when you are not supposed to: " +
@@ -477,12 +474,12 @@ public class BotAbuseMain extends ListenerAdapter {
         // If length is 3, then an image url was provided.
         if (msg.getMentionedMembers().isEmpty() && args.length == 3) {
             try {
-                getUserByID(Long.parseLong(args[1]));
+                setCommandUserByID(Long.parseLong(args[1]));
                 embed.setAsSuccess(defaultTitle, baCore.setBotAbuse(Long.parseLong(args[1]),
                         true, "staff", args[2] , msg.getAuthor().getIdLong()));
                 embed.sendToLogChannel();
                 guild.addRoleToMember(guild.getMember(targetUser),
-                        botConfig.botAbuseRole).queue();
+                        botConfig.getBotAbuseRole()).queue();
                 embed.setAsSuccess(defaultTitle, msg.getAuthor().getAsMention() + " Permanently Bot Abused " +
                         guild.getMember(targetUser).getAsMention());
                 embed.sendToTeamOutput(msg, msg.getAuthor());
@@ -517,7 +514,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         true, "staff", args[2], msg.getAuthor().getIdLong()));
                 embed.sendToLogChannel();
                 guild.addRoleToMember(msg.getMentionedMembers().get(0),
-                        botConfig.botAbuseRole).queue();
+                        botConfig.getBotAbuseRole()).queue();
                 log.info("[Admin Override] " + msg.getMember().getEffectiveName()
                         + " Successfully Permanently Bot Abused " + msg.getMentionedMembers().get(0).getEffectiveName());
             }
@@ -527,12 +524,12 @@ public class BotAbuseMain extends ListenerAdapter {
         }
         else if (msg.getMentionedMembers().isEmpty() && args.length == 2) {
             try {
-                getUserByID(Long.parseLong(args[1]));
+                setCommandUserByID(Long.parseLong(args[1]));
                 embed.setAsSuccess(defaultTitle,
                         baCore.setBotAbuse(Long.parseLong(args[1]), true,"staff", null, msg.getAuthor().getIdLong()));
                 embed.sendToLogChannel();
                 guild.addRoleToMember(guild.getMemberById(Long.parseLong(args[1])),
-                        botConfig.botAbuseRole).queue();
+                        botConfig.getBotAbuseRole()).queue();
                 log.info("[Admin Override] " + msg.getMember().getEffectiveName()
                         + " Successfully Permanently Bot Abused " + guild.getMemberById(args[1]).getEffectiveName());
             }
@@ -562,7 +559,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         true, "staff", null, msg.getAuthor().getIdLong()));
                 embed.sendToLogChannel();
                 guild.addRoleToMember(msg.getMentionedMembers().get(0),
-                        botConfig.botAbuseRole).queue();
+                        botConfig.getBotAbuseRole()).queue();
                 log.info("[Admin Override] " + msg.getMember().getEffectiveName()
                         + " Successfully Permanently Bot Abused " + msg.getMentionedMembers().get(0).getEffectiveName());
             }
@@ -583,10 +580,10 @@ public class BotAbuseMain extends ListenerAdapter {
         long lastDiscordID = 0;
         try {
             lastDiscordID = baCore.getLastRecordByTeamMember(msg.getAuthor().getIdLong()).getDiscordID();
-            getUserByID(lastDiscordID);
+            setCommandUserByID(lastDiscordID);
             if (args.length == 1) {
                 guild.removeRoleFromMember(guild.getMemberById(lastDiscordID),
-                        botConfig.botAbuseRole).queue();
+                        botConfig.getBotAbuseRole()).queue();
                 result = baCore.undoBotAbuse(msg.getAuthor().getIdLong(), true,  0);
                 if (result.contains("FATAL ERROR")) {
                     discord.failedIntegrityCheck(this.getClass().getName(), msg, "Bot Abuse: undo Command - No Member of who to Undo");
@@ -605,9 +602,9 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
             }
             else if (args.length == 2 && msg.getMentionedMembers().isEmpty()) {
-                getUserByID(Long.parseLong(args[1]));
+                setCommandUserByID(Long.parseLong(args[1]));
                 guild.removeRoleFromMember(guild.getMember(targetUser),
-                        botConfig.botAbuseRole).queue();
+                        botConfig.getBotAbuseRole()).queue();
                 result = baCore.undoBotAbuse(msg.getAuthor().getIdLong(), false, targetUser.getIdLong());
                 if (result.contains("FATAL ERROR")) {
                     discord.failedIntegrityCheck(this.getClass().getName(), msg, "Bot Abuse: undo Command - Long Value of Member to Undo");
@@ -628,7 +625,7 @@ public class BotAbuseMain extends ListenerAdapter {
             }
             else if (args.length == 2 && msg.getMentionedMembers().size() == 1) {
                 guild.removeRoleFromMember(msg.getMentionedMembers().get(0),
-                        botConfig.botAbuseRole).queue();
+                        botConfig.getBotAbuseRole()).queue();
                 result = baCore.undoBotAbuse(msg.getAuthor().getIdLong(), false, msg.getMentionedMembers().get(0).getIdLong());
                 if (result.contains("FATAL ERROR")) {
                     discord.failedIntegrityCheck(this.getClass().getName(), msg, "undo Command - Mention Value of who to Undo");
@@ -890,9 +887,9 @@ public class BotAbuseMain extends ListenerAdapter {
         while (index < msg.getMentionedMembers().size()) {
 
             // We now check if they have the Bot Abuse role, if they do then it's removed.
-            if (msg.getMentionedMembers().get(index).getRoles().contains(botConfig.botAbuseRole)) {
+            if (msg.getMentionedMembers().get(index).getRoles().contains(botConfig.getBotAbuseRole())) {
                 guild.removeRoleFromMember(msg.getMentionedMembers().get(index).getIdLong(),
-                        botConfig.botAbuseRole).queue();
+                        botConfig.getBotAbuseRole()).queue();
                 embed.setAsInfo("Bot Abuse Role Removed", "**Successfully Removed Bot Abuse Role from "
                         + msg.getMentionedMembers().get(index).getAsMention() + " as their Records just got Cleared**");
                 embed.sendToLogChannel();
@@ -931,11 +928,11 @@ public class BotAbuseMain extends ListenerAdapter {
             try {
                 long targetDiscordID = Long.parseLong(args[index]);
                 try {Thread.sleep(5000);} catch (InterruptedException ex) {}
-                getUserByID(targetDiscordID);
+                setCommandUserByID(targetDiscordID);
                 if (guild.isMember(targetUser)) {
-                    if (guild.getMemberById(targetDiscordID).getRoles().contains(botConfig.botAbuseRole)) {
+                    if (guild.getMemberById(targetDiscordID).getRoles().contains(botConfig.getBotAbuseRole())) {
                         guild.removeRoleFromMember(targetDiscordID,
-                                botConfig.botAbuseRole).queue();
+                                botConfig.getBotAbuseRole()).queue();
                         embed.setAsInfo("Bot Abuse Role Removed",
                                 "Successfully Removed Bot Abuse Role from "
                                         + targetUser.getAsMention() +
@@ -1012,9 +1009,9 @@ public class BotAbuseMain extends ListenerAdapter {
             if (msg.getMentionedMembers().size() == 2) {
                 if (baCore.botAbuseIsCurrent(msg.getMentionedMembers().get(0).getIdLong())) {
                     guild.addRoleToMember(msg.getMentionedMembers().get(1).getIdLong(),
-                            botConfig.botAbuseRole).queue();
+                            botConfig.getBotAbuseRole()).queue();
                     guild.removeRoleFromMember(msg.getMentionedMembers().get(0).getIdLong(),
-                            botConfig.botAbuseRole).queue();
+                            botConfig.getBotAbuseRole()).queue();
                 }
                 log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
                         + msg.getMentionedMembers().get(0).getEffectiveName() + " to " + msg.getMentionedMembers().get(1).getEffectiveName());
@@ -1026,10 +1023,10 @@ public class BotAbuseMain extends ListenerAdapter {
                     // If they provide a Discord ID First and a Mention Last
                     if (baCore.botAbuseIsCurrent(Long.parseLong(args[1]))) {
                         guild.addRoleToMember(msg.getMentionedMembers().get(0).getIdLong(),
-                                botConfig.botAbuseRole).queue();
+                                botConfig.getBotAbuseRole()).queue();
                         try {
                             guild.removeRoleFromMember(Long.parseLong(args[1]),
-                                    botConfig.botAbuseRole).queue();
+                                    botConfig.getBotAbuseRole()).queue();
                         }
                         catch (ErrorResponseException ex) {
                             embed.setAsWarning("Exception Caught - Player Does Not Exist",
@@ -1056,7 +1053,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     if (baCore.botAbuseIsCurrent(msg.getMentionedMembers().get(0).getIdLong())) {
                         try {
                             guild.addRoleToMember(Long.parseLong(args[2]),
-                                    botConfig.botAbuseRole).queue();
+                                    botConfig.getBotAbuseRole()).queue();
                         }
                         catch (ErrorResponseException e) {
                             embed.setAsWarning("Exception Caught - Player Does Not Exist",
@@ -1065,7 +1062,7 @@ public class BotAbuseMain extends ListenerAdapter {
                             embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                         }
                         guild.removeRoleFromMember(msg.getMentionedMembers().get(0).getIdLong(),
-                                botConfig.botAbuseRole).queue();
+                                botConfig.getBotAbuseRole()).queue();
                     }
                     embed.setAsSuccess("Successful Transfer of Records",
                             baCore.transferRecords(msg.getMentionedMembers().get(0).getIdLong(), Long.parseLong(args[2])));
@@ -1086,7 +1083,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 if (baCore.botAbuseIsCurrent(Long.parseLong(args[1]))) {
                     try {
                         guild.addRoleToMember(Long.parseLong(args[2]),
-                                botConfig.botAbuseRole).queue();
+                                botConfig.getBotAbuseRole()).queue();
                     }
                     catch (ErrorResponseException ex) {
                         embed.setAsWarning("Exception Caught - Player Does Not Exist",
@@ -1098,7 +1095,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     }
                     try {
                         guild.removeRoleFromMember(Long.parseLong(args[1]),
-                                botConfig.botAbuseRole).queue();
+                                botConfig.getBotAbuseRole()).queue();
                     }
                     catch (ErrorResponseException ex) {
                         embed.setAsWarning("Exception Caught - Player Does Not Exist",
@@ -1440,7 +1437,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     + " tried to run the reason manager and did not have permission to");
         }
     }
-    private void getUserByID(long targetDiscordID) {
+    private void setCommandUserByID(long targetDiscordID) {
         targetUser = null;
         do {
             guild.getJDA().retrieveUserById(targetDiscordID).queue(user -> {
@@ -1449,19 +1446,19 @@ public class BotAbuseMain extends ListenerAdapter {
         } while (targetUser == null);
     }
     public boolean setNewMaxDaysAllowedForUndo(int newValue) {
-        int originalValue = botConfig.maxDaysAllowedForUndo;
+        int originalValue = botConfig.getMaxDaysAllowedForUndo();
 
-        botConfig.maxDaysAllowedForUndo = newValue;
+        botConfig.setConfig("maxDaysUndo", newValue);
 
         if (!baCore.timingsAreValid()) {
-            botConfig.maxDaysAllowedForUndo = originalValue;
+            botConfig.setConfig("maxDaysUndo", originalValue);
             return false;
         }
         else return true;
     }
     public boolean setNewHotOffenseWarning(int newValue) {
         if (newValue <= botConfig.botAbuseTimes.size()) {
-            botConfig.hotOffenseWarning = newValue;
+            botConfig.setConfig("hotwarning", newValue);
             return true;
         }
         else return false;
@@ -1582,5 +1579,8 @@ public class BotAbuseMain extends ListenerAdapter {
     }
     public BotAbuseCore getCore() {
         return baCore;
+    }
+    public BotAbuseConfiguration getConfig() {
+        return botConfig;
     }
 }

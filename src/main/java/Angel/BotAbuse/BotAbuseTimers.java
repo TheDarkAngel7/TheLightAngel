@@ -26,7 +26,7 @@ class BotAbuseTimers implements Runnable {
         this.mainConfig = mainConfig;
         this.discord = discord;
 
-        roleScanningTimer = new RoleScanningTimer(guild, baFeature, baFeature.botConfig, embed);
+        roleScanningTimer = new RoleScanningTimer(guild, baFeature, embed);
         expiryTimer = new ExpiryTimer(guild, baFeature, embed);
     }
 

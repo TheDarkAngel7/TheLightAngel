@@ -44,7 +44,7 @@ class ExpiryTimer extends Timer {
                                 + guild.getMemberById(removedID).getAsMention() + "**");
                         embed.sendToLogChannel();
                         guild.removeRoleFromMember(removedID,
-                                baFeature.botConfig.botAbuseRole).queue();
+                                baFeature.getConfig().getBotAbuseRole()).queue();
                         log.info("Successfully Removed the Bot Abuse role from "  +
                                 guild.getMemberById(removedID).getEffectiveName());
                     }
