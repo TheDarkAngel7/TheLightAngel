@@ -12,8 +12,8 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.concurrent.atomic.AtomicReference;
 
-class NickCore {
-    private final Logger log = LogManager.getLogger(NickCore.class);
+class NicknameCore {
+    private final Logger log = LogManager.getLogger(NicknameCore.class);
     Angel.Nicknames.FileHandler fileHandler;
     private Guild guild;
     private NickConfiguration nickConfig;
@@ -22,7 +22,8 @@ class NickCore {
     ArrayList<String> oldNickname = new ArrayList<>();
     ArrayList<String> newNickname = new ArrayList<>();
     Dictionary<Long, ArrayList<String>> oldNickDictionary = new Hashtable<>();
-    NickCore(Guild importGuild) {
+
+    NicknameCore(Guild importGuild) {
         fileHandler = new FileHandler(this);
         guild = importGuild;
     }

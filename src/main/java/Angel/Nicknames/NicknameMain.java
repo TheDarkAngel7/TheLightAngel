@@ -1,7 +1,6 @@
 package Angel.Nicknames;
 
 import Angel.*;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
@@ -32,7 +31,7 @@ public class NicknameMain extends ListenerAdapter {
     public NickConfiguration nickConfig;
     private EmbedHandler embed;
     private MainConfiguration mainConfig;
-    private NickCore nickCore;
+    private NicknameCore nickCore;
     private Help help;
     private ArrayList<Long> tempDiscordID = new ArrayList<>();
     private ArrayList<String> tempOldNick = new ArrayList<>();
@@ -58,7 +57,7 @@ public class NicknameMain extends ListenerAdapter {
         this.discord = importDiscordBot;
         commandsSuspended = getCommandsSuspended;
         try {
-            this.nickCore = new NickCore(guild);
+            this.nickCore = new NicknameCore(guild);
             this.fileHandler = new FileHandler(nickCore);
             nickConfig = new ModifyNickConfiguration(fileHandler.getConfig(), fileHandler.gson, importGuild);
             help = new Help(embed, this, mainConfig);
@@ -571,7 +570,10 @@ public class NicknameMain extends ListenerAdapter {
                         try {
                             result = nickCore.getList();
                             splitString = result.split("\n\n");
-                            embed.setAsInfo(defaultTitle, result);
+                            embed.setAsInfo(defaultTitle, result.concat("\n\n**For Each of these requests please choose to accept or deny:**" +
+                                    "\n*Use the request ID or mention provided (the request ID is the 3 digit number)*" +
+                                    "\nTo Accept: `" + mainConfig.commandPrefix + "nn a <Mention or Request ID>" +
+                                    "\nTo Deny: `" + mainConfig.commandPrefix + "nn d <Mention or Request ID>"));
                             if (msg.getChannelType() == ChannelType.PRIVATE) {
                                 embed.sendDM(msg, msg.getAuthor());
                             }
@@ -580,10 +582,19 @@ public class NicknameMain extends ListenerAdapter {
                         catch (IllegalArgumentException ex) {
                             int index = 0;
                             while (index < splitString.length) {
-                                embed.setAsInfo(defaultTitle, splitString[index++]);
+                                if (index == splitString.length - 1) {
+                                    embed.setAsInfo(defaultTitle, splitString[index++].concat("\n\n**For Each of these requests please choose to accept or deny:**" +
+                                            "\n*Use the request ID or mention provided (the request ID is the 3 digit number)*" +
+                                            "\nTo Accept: `" + mainConfig.commandPrefix + "nn a <Mention or Request ID>" +
+                                            "\nTo Deny: `" + mainConfig.commandPrefix + "nn d <Mention or Request ID>"));
+                                }
+                                else {
+                                    embed.setAsInfo(defaultTitle, splitString[index++]);
+                                }
                                 if (msg.getChannelType().equals(ChannelType.PRIVATE)) {
                                     embed.sendDM(msg, msg.getAuthor());
-                                } else embed.sendToTeamOutput(msg, msg.getAuthor());
+                                }
+                                else embed.sendToTeamOutput(msg, msg.getAuthor());
                             }
                         }
                         catch (NullPointerException ex) {

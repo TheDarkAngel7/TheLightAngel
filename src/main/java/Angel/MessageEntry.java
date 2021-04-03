@@ -9,40 +9,56 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-class MessageEntry {
+public class MessageEntry {
     private String title;
     private String msg;
     private EmbedDesign design;
     private Message originalCmd;
+    private Message resultEmbed;
+    private boolean fieldOriginallyIncluded = true;
     private List<TargetChannelSet> channels = new ArrayList<>();
     private User targetUser;
     private final MainConfiguration mainConfig;
 
-    MessageEntry(String title, String msg, EmbedDesign design, MainConfiguration mainConfig) {
+    public MessageEntry(String title, String msg, EmbedDesign design, MainConfiguration mainConfig) {
         this.title = title;
         this.msg = msg;
         this.design = design;
         this.mainConfig = mainConfig;
     }
 
-    void setTitle(String title) {
+    public MessageEntry setTitle(String title) {
         this.title = title;
+        return this;
     }
 
-    void setMessage(String msg) {
+    public MessageEntry setMessage(String msg) {
         this.msg = msg;
+        return this;
     }
 
-    void setChannels(List<TargetChannelSet> channels) {
+    public MessageEntry setChannels(List<TargetChannelSet> channels) {
         this.channels = channels;
+        return this;
     }
 
-    void setOriginalCmd(Message originalCmd) {
-        this.originalCmd = originalCmd;
-    }
-
-    void setTargetUser(User targetUser) {
+    public MessageEntry setTargetUser(User targetUser) {
         this.targetUser = targetUser;
+        return this;
+    }
+
+    public MessageEntry setDesign(EmbedDesign design) {
+        this.design = design;
+        return this;
+    }
+
+    public MessageEntry setOriginalCmd(Message originalCmd) {
+        this.originalCmd = originalCmd;
+        return this;
+    }
+
+    public void setResultEmbed(Message resultEmbed) {
+        this.resultEmbed = resultEmbed;
     }
 
     List<TargetChannelSet> getChannels() {
@@ -53,11 +69,23 @@ class MessageEntry {
         return originalCmd;
     }
 
+    Message getResultEmbed() {
+        return resultEmbed;
+    }
+
     User getTargetUser() {
         return targetUser;
     }
 
-    MessageEmbed getEmbed() {
+    boolean isFieldOriginallyIncluded() {
+        return fieldOriginallyIncluded;
+    }
+
+    public MessageEmbed getEmbed() {
+        return getEmbed(true);
+    }
+
+    public MessageEmbed getEmbed(boolean includeFieldHeader) {
         // Image Background Hex: #2F3136
         EmbedBuilder embed = new EmbedBuilder();
         switch (design) {
@@ -80,6 +108,10 @@ class MessageEntry {
                 embed.setColor(Color.decode("#2F3136").brighter()).setThumbnail(mainConfig.helpIconURL);
                 break;
         }
-        return embed.setTitle(title).addField(mainConfig.fieldHeader, msg, true).build();
+        if (includeFieldHeader) return embed.setTitle(title).addField(mainConfig.fieldHeader, msg, true).build();
+        else {
+            fieldOriginallyIncluded = false;
+            return embed.setTitle(title).addField("", msg, true).build();
+        }
     }
 }

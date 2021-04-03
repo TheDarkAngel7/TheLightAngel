@@ -6,7 +6,7 @@
 
     <groupId>com.angeliccoding</groupId>
     <artifactId>TheLightAngel</artifactId>
-    <version>1.0.10</version>
+    <version>1.0.11</version>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -29,7 +29,7 @@
         <dependency>
             <groupId>net.dv8tion</groupId>
             <artifactId>JDA</artifactId>
-            <version>4.2.0_252</version>
+            <version>4.2.1_253</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>

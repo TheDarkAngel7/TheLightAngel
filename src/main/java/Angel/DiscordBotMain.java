@@ -9,11 +9,9 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.ReconnectedEvent;
-import net.dv8tion.jda.api.events.ShutdownEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.requests.CloseCode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -298,7 +296,7 @@ public class DiscordBotMain extends ListenerAdapter {
                                 "\n\n*__Request to Ack Pings__*" +
                                 "\nMain Thread: **" + msg.getJDA().getGatewayPing() + "ms**" +
                                 "\nBot Abuse Thread: **" + baInit.getPing() + "ms**" +
-                                "\nNickname Thread: **" + nickInit.getPing() + "ms**"));
+                                "\nNickname Thread: **" + nickInit.getPing() + "ms**"), null);
             }
             else if (args[0].equalsIgnoreCase("status")) {
                 if (isTeamMember(msg.getAuthor().getIdLong())) {

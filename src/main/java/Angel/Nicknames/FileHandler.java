@@ -21,7 +21,7 @@ import java.util.Hashtable;
 
 class FileHandler implements FileDatabases {
     private final Logger log = LogManager.getLogger(FileHandler.class);
-    private final NickCore nickCore;
+    private final NicknameCore nickCore;
     Gson gson = new Gson();
     private final File jsonNickDataFile = new File("data/nickdata.json");
     private final File jsonTempNickDataFile = new File("data/nicktempdata.json");
@@ -31,7 +31,7 @@ class FileHandler implements FileDatabases {
     private final Type oldNickDictionaryType = new TypeToken<Hashtable<Long, ArrayList<String>>>(){}.getType();
     FileReader fileReader;
 
-    FileHandler(NickCore nickCore) {
+    FileHandler(NicknameCore nickCore) {
         this.nickCore = nickCore;
     }
 
