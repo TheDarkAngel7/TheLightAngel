@@ -252,7 +252,9 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         }
         fileHandler.saveDatabase();
         log.info("Undo Successful for " + guild.getMemberById(targetDiscordID).getUser().getAsTag());
-        return ":white_check_mark: **Successfully Undid Bot Abuse ID <@" + thisRecord.getDiscordID() + ">**\n So... Whatever it was you were doing... Try Again...";
+        return ":white_check_mark: **Successfully Undid Bot Abuse for <@" + thisRecord.getDiscordID() + ">**" +
+                "\nID: " + thisRecord.getId() +
+                "\n So... Whatever it was you were doing... Try Again...";
     }
     String getInfo(long targetDiscordID, double timeOffset, boolean isTeamMember) { // This method is for queries
         int prevOffenses = this.getLifetimeOffenses(targetDiscordID);

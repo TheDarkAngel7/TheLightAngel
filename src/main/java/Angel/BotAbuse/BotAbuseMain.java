@@ -596,8 +596,8 @@ public class BotAbuseMain extends ListenerAdapter {
                     embed.setAsSuccess(defaultTitle, result);
                     log.info(msg.getMember().getEffectiveName() + " just undid their last Bot Abuse");
                     embed.sendToTeamOutput(msg, msg.getAuthor());
-                    embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid their last bot abuse " +
-                            "\n **ID " + result.split("\n")[0].split("ID ")[1]);
+                    embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid their last bot abuse: " +
+                            "\n **ID: " + result.split("\n")[1].split("ID: ")[1] + "**");
                     embed.sendToLogChannel();
                 }
             }
@@ -618,10 +618,10 @@ public class BotAbuseMain extends ListenerAdapter {
                     log.info(msg.getMember().getEffectiveName() + " just undid the Bot Abuse for "
                     + guild.getMemberById(args[1]).getEffectiveName());
                     embed.sendToTeamOutput(msg, msg.getAuthor());
+                    embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid one of their previous bot abuses: " +
+                            "\n **ID " + result.split("\n")[1].split("ID: ")[1] + "**");
+                    embed.sendToLogChannel();
                 }
-                embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid their last bot abuse " +
-                        "\n **ID " + result.split("\n")[0].split("ID ")[1]);
-                embed.sendToLogChannel();
             }
             else if (args.length == 2 && msg.getMentionedMembers().size() == 1) {
                 guild.removeRoleFromMember(msg.getMentionedMembers().get(0),
@@ -639,10 +639,10 @@ public class BotAbuseMain extends ListenerAdapter {
                     log.info(msg.getMember().getEffectiveName() + " just undid the Bot Abuse for "
                             + msg.getMentionedMembers().get(0).getEffectiveName());
                     embed.sendToTeamOutput(msg, msg.getAuthor());
+                    embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid one of their previous bot abuses: " +
+                            "\n **ID " + result.split("\n")[1].split("ID: ")[1]);
+                    embed.sendToLogChannel();
                 }
-                embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid their last bot abuse " +
-                        "\n **ID " + result.split("\n")[0].split("ID ")[1]);
-                embed.sendToLogChannel();
             }
         }
         catch (NullPointerException ex) {
@@ -683,7 +683,6 @@ public class BotAbuseMain extends ListenerAdapter {
         catch (Exception ex) {
             ex.printStackTrace();
         }
-        embed.clearFields();
     }
     private void checkCommand(Message msg, boolean isTeamMember) {
         // Thoughout this Method, a 100 is a placeholder in the timeOffset arguement of core.getInfo
@@ -838,7 +837,8 @@ public class BotAbuseMain extends ListenerAdapter {
                                     "\n\n" + "Lifetime Offenses: **" + baCore.getLifetimeOffenses(Long.parseLong(args[2])) + "**" +
                                     "\nHot Offenses: **" + baCore.getHotOffenses(Long.parseLong(args[2])) + "**");
                             log.error(msg.getMember().getEffectiveName() + " just checked on " +
-                                    msg.getMentionedMembers().get(0).getEffectiveName() + "'s Bot Abuse Status but they were not Bot Abused");
+                                    guild.getMemberById(Long.parseLong(args[2])).getEffectiveName() +
+                                    "'s Bot Abuse Status but they were not Bot Abused");
                         }
                         else embed.setAsInfo(defaultTitle, result);
                         embed.sendToTeamOutput(msg, null);
@@ -958,7 +958,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     embed.setAsSuccess(defaultTitle,
                             ":white_check_mark: **Successfully Cleared " +
                             clearedRecords + " Records from " +
-                            guild.getMemberById(targetDiscordID).getAsMention());
+                            guild.getMemberById(targetDiscordID).getAsMention() + "**");
                     embed.sendToChannels(msg, TargetChannelSet.LOG, TargetChannelSet.TEAM);
                     log.info("Successfully Cleared " + clearedRecords + " Records from " +
                             guild.getMemberById(targetDiscordID).getEffectiveName());
