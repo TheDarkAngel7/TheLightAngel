@@ -297,7 +297,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                 else {
                     return result.concat(
                             "\nBot Abuse ID: **" + thisRecord.getId() +
-                            "**\nIssuing Team Member: <@!" + thisRecord.getDiscordID() + ">" +
+                            "**\nIssuing Team Member: <@!" + thisRecord.getIssuingTeamMember() + ">" +
                             "\nOffense Number: **" + thisRecord.getRepOffenses() +
                             "**\nDate Issued: **" + sdf.format(dateIssued.getTime()) +
                             "**\nExpiry Date: **Never" +
@@ -322,7 +322,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                 else {
                     return result.concat(
                             "\nBot Abuse ID: **" + thisRecord.getId() +
-                            "**\nIssuing Team Member: <@!" + thisRecord.getDiscordID() + ">" +
+                            "**\nIssuing Team Member: <@!" + thisRecord.getIssuingTeamMember() + ">" +
                             "\nOffense Number: **" + thisRecord.getRepOffenses() +
                             "**\nDate Issued: **" + sdf.format(dateIssued.getTime()) +
                             "**\nExpiry Date: **" + sdf.format(dateToExpire.getTime()) +

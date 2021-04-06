@@ -1,10 +1,12 @@
 package Angel;
 
-import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.ChannelType;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.User;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class EmbedHandler {
     private MainConfiguration mainConfig;
@@ -205,8 +207,5 @@ public class EmbedHandler {
                 // Take No Action - We want the loop to go back around
             }
         }
-    }
-    private int getNextID() {
-        return messageQueue.size();
     }
 }
