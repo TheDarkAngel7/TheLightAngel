@@ -654,8 +654,7 @@ public class NicknameMain extends ListenerAdapter {
                                 if (msg.getMentionedMembers().size() == 1) {
                                     memberInQuestion = msg.getMentionedMembers().get(0);
                                     oldNickname = memberInQuestion.getNickname();
-                                    if (oldNickname == null)
-                                        oldNickname = memberInQuestion.getUser().getName() + " (Their Discord Username)";
+                                    if (oldNickname == null) oldNickname = memberInQuestion.getUser().getName();
 
                                     ignoreNewNickname = true;
                                     if (args[3].equalsIgnoreCase("reset")) {
@@ -670,7 +669,7 @@ public class NicknameMain extends ListenerAdapter {
                                         memberInQuestion.modifyNickname(args[3]).queue();
                                         newNickname = args[3];
                                         successfulExecution = true;
-                                        if (oldNickname.equals("None")) {
+                                        if (oldNickname.equals(memberInQuestion.getUser().getName())) {
                                             log.info("Staff Member " + msg.getMember().getEffectiveName() + " successfully forcefully changed "
                                                     + memberInQuestion.getUser().getAsTag() +
                                                     "'s nickname to " + newNickname);
@@ -696,8 +695,15 @@ public class NicknameMain extends ListenerAdapter {
                                 embed.sendToTeamOutput(msg, null);
                             }
                             if (successfulExecution) {
-                                defaultBody = defaultBody.replace("<Member>", memberInQuestion.getAsMention())
-                                        .replace("<oldNick>", oldNickname).replace("<newNick>", newNickname);
+                                if (oldNickname.equals(memberInQuestion.getUser().getName())) {
+                                    defaultBody = defaultBody.replace("<Member>", memberInQuestion.getAsMention())
+                                            .replace("<oldNick>", oldNickname.concat(" (Their Discord Username)"))
+                                            .replace("<newNick>", newNickname);
+                                }
+                                else {
+                                    defaultBody = defaultBody.replace("<Member>", memberInQuestion.getAsMention())
+                                            .replace("<oldNick>", oldNickname).replace("<newNick>", newNickname);
+                                }
                                 embed.setAsSuccess(defaultTitle, defaultBody);
                                 embed.sendToLogChannel();
                             }

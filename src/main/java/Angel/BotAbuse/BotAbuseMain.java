@@ -692,9 +692,9 @@ public class BotAbuseMain extends ListenerAdapter {
         String defaultTitle = "Bot Abuse Information";
         String timeZoneHint = "**Hint**: You can ask me to convert these times to your own time zone. " +
                 "You just tell me how many hours ahead or behind UTC your time zone is." +
-                "\n**Example:** `/check 6` would convert the times to 6 hours ahead of UTC." +
-                "\n`/check -8` would convert the times to 8 hours behind UTC" +
-                "\n`/check -3.5` would convert the timess to 3 1/2 hours behind UTC (I don't support 3/4 hours)" +
+                "\n**Example: **`" + mainConfig.commandPrefix +"check 6` would convert the times to 6 hours ahead of UTC." +
+                "\n" + mainConfig.commandPrefix + "`check -8` would convert the times to 8 hours behind UTC" +
+                "\n`" + mainConfig.commandPrefix +"check -3.5` would convert the timess to 3 1/2 hours behind UTC (I don't support 3/4 hours)" +
                 "\n\n";
 
         // This handles a /check for someone to check their own Bot Abuse status
@@ -791,7 +791,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 else {
                     embed.setAsError("Check Info Error", ":x: **Invalid Timezone Offset**");
                     embed.sendToMemberOutput(msg, null);
-                    log.error(msg.getAuthor().getAsTag() + " just entered an invalid TimeZone offset into /check");
+                    log.error(msg.getAuthor().getAsTag() + " just entered an invalid TimeZone offset into check command");
                 }
             }
             else {

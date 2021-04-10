@@ -483,7 +483,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
     }
     String seeHistory(long targetDiscordID, double timeOffset, boolean isTeamMember) {
         int index = 0;
-        String output = "**/checkhistory Results";
+        String output = "**" + mainConfig.commandPrefix + "checkhistory Results";
         SimpleDateFormat sdf = this.getDefaultSDF();
         Calendar dateIssued = Calendar.getInstance();
         Calendar dateToExpire = Calendar.getInstance();

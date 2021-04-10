@@ -23,6 +23,7 @@ class LightAngel {
     static File BADataFile = new File("data/BAdata.json");
     static File nickDataFile = new File("data/nickdata.json");
     static {
+        Thread.currentThread().setName("Main Thread");
         log.info("New Log Starting at time: " + Calendar.getInstance().getTime());
         log.info("TheLightAngel is Starting! Please Wait...");
         try {
@@ -74,10 +75,14 @@ class LightAngel {
             else restartValue = 0;
         }
         else if (args.length > 1) {
-            log.warn("Invalid Number of Arguments on Startup - Reverting to an restartValue of \"0\"");
+            log.warn("Invalid Number of Arguments on Startup - Reverting to an restartValue of \"false\"");
             restartValue = 0;
         }
-        else restartValue = 0;
+        else {
+            new ProcessBuilder("cmd", "/c", "start", "java", "-jar", "-Dlog4j.configurationFile=./log4j2.properties", "TheLightAngel.jar", "false").start();
+            System.exit(1);
+            return;
+        }
         MainConfiguration mainConfig = new ModifyMainConfiguration(fileHandler.getMainConfig());
         mainConfig.initialSetup();
         EmbedHandler embed = new EmbedHandler(mainConfig);

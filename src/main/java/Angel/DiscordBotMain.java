@@ -17,6 +17,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
+import javax.swing.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
@@ -57,9 +58,9 @@ public class DiscordBotMain extends ListenerAdapter {
             commandsSuspended = true;
         }
         else {
+            log.info("Setting Up Main Config's Discord Settings");
             mainConfig.discordSetup();
         }
-        Thread.currentThread().setName("Main Thread");
         nickInit = new NicknameInit(commandsSuspended, mainConfig, embed, guild, this);
         baInit = new BotAbuseInit(commandsSuspended, restartValue, mainConfig, embed, guild, this);
         Thread tNickFeature = new Thread(nickInit);
@@ -942,11 +943,11 @@ public class DiscordBotMain extends ListenerAdapter {
 
     public void restartBot(boolean restartSilently) throws IOException {
         log.warn("Program Restarting...");
-        String fileName = "restart";
+        String suffix = "true";
         if (restartSilently) {
-            fileName = fileName.concat("Silent");
+            suffix = "-s";
         }
-        new ProcessBuilder().command("cmd.exe", "/c", "start", "/D", mainConfig.systemPath, "/MIN", "TheLightAngel Restarted", fileName + ".bat").start();
+        new ProcessBuilder("cmd", "/c", "start", "/MIN", "java", "-jar", "-Dlog4j.configurationFile=./log4j2.properties", "TheLightAngel.jar", suffix).start();
         System.exit(1);
     }
     // Permission Checkers that this class and the other features use:
