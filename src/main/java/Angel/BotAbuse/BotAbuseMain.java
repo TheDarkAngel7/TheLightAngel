@@ -1,10 +1,17 @@
 package Angel.BotAbuse;
 
-import Angel.*;
+import Angel.DiscordBotMain;
+import Angel.EmbedHandler;
+import Angel.MainConfiguration;
+import Angel.TargetChannelSet;
 import com.google.gson.JsonObject;
-import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.*;
-import net.dv8tion.jda.api.events.*;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.events.DisconnectEvent;
+import net.dv8tion.jda.api.events.ReadyEvent;
+import net.dv8tion.jda.api.events.ReconnectedEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
@@ -12,12 +19,12 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 public class BotAbuseMain extends ListenerAdapter {
@@ -693,7 +700,7 @@ public class BotAbuseMain extends ListenerAdapter {
         String timeZoneHint = "**Hint**: You can ask me to convert these times to your own time zone. " +
                 "You just tell me how many hours ahead or behind UTC your time zone is." +
                 "\n**Example: **`" + mainConfig.commandPrefix +"check 6` would convert the times to 6 hours ahead of UTC." +
-                "\n" + mainConfig.commandPrefix + "`check -8` would convert the times to 8 hours behind UTC" +
+                "\n`" + mainConfig.commandPrefix + "check -8` would convert the times to 8 hours behind UTC" +
                 "\n`" + mainConfig.commandPrefix +"check -3.5` would convert the timess to 3 1/2 hours behind UTC (I don't support 3/4 hours)" +
                 "\n\n";
 

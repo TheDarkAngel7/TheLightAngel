@@ -2,10 +2,13 @@ package Angel;
 
 import Angel.BotAbuse.BotAbuseInit;
 import Angel.BotAbuse.BotAbuseMain;
-import Angel.Nicknames.NicknameMain;
 import Angel.Nicknames.NicknameInit;
+import Angel.Nicknames.NicknameMain;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.ChannelType;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.ReconnectedEvent;
@@ -17,10 +20,8 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
-import javax.swing.*;
 import java.io.IOException;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class DiscordBotMain extends ListenerAdapter {

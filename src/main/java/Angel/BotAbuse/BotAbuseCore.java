@@ -1,10 +1,8 @@
 package Angel.BotAbuse;
 
-import Angel.DiscordBotMain;
 import Angel.MainConfiguration;
 import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.User;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

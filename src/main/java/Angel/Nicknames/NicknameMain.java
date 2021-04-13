@@ -1,6 +1,9 @@
 package Angel.Nicknames;
 
-import Angel.*;
+import Angel.DiscordBotMain;
+import Angel.EmbedHandler;
+import Angel.MainConfiguration;
+import Angel.TargetChannelSet;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
