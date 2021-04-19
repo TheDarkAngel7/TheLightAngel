@@ -6,6 +6,5 @@ public enum EmbedDesign {
     ERROR,
     STOP,
     INFO,
-    HELP,
-    NONE;
+    HELP
 }

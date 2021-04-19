@@ -137,7 +137,7 @@ public class BotAbuseMain extends ListenerAdapter {
             baCore.saveDatabase();
         }
         catch (IOException e) {
-            e.printStackTrace();
+            log.error("Save Database", e);
         }
     }
     public void resumeBot() {
@@ -146,7 +146,7 @@ public class BotAbuseMain extends ListenerAdapter {
             startTimers();
         }
         catch (IOException e) {
-            e.printStackTrace();
+            log.error("Resume Timers and Re-Read", e);
         }
     }
 
@@ -220,7 +220,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         transferRecords(msg);
                     }
                     catch (Exception e) {
-                        e.printStackTrace();
+                        log.error("Transfer Command", e);
                     }
                 }
                 else {
@@ -254,7 +254,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     }
                 }
                 catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("Reasons Manager", e);
                 }
             }
         }
@@ -388,7 +388,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         + args[1]);
             }
             catch (Exception e) {
-                e.printStackTrace();
+                log.error("Set Bot Abuse Exception - Mentioned Members Empty", e);
             }
         }
         else if (msg.getMentionedMembers().size() == 1) {
@@ -453,7 +453,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
             }
             catch (Exception e) {
-                e.printStackTrace();
+                log.error("Set Bot Abuse - Mentioned Members Size 1", e);
             }
         }
         else if (msg.getMentionedMembers().size() > 1 ) {
@@ -510,8 +510,8 @@ public class BotAbuseMain extends ListenerAdapter {
                         "\n **Successfully Added A Perm Bot Abuse for them to the Database**");
                 embed.sendToTeamOutput(msg, null);
             }
-            catch (Exception e) {
-                e.printStackTrace();
+            catch (IOException e) {
+                log.error("Perm Bot Abuse, Mentioned Members Empty and Args Length 3", e);
             }
         }
         else if (msg.getMentionedMembers().size() == 1 && args.length == 3) {
@@ -526,7 +526,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         + " Successfully Permanently Bot Abused " + msg.getMentionedMembers().get(0).getEffectiveName());
             }
             catch (IOException e) {
-                e.printStackTrace();
+                log.error("Perm Bot Abuse, Mentioned Members Size 1 and Args Length 3", e);
             }
         }
         else if (msg.getMentionedMembers().isEmpty() && args.length == 2) {
@@ -556,8 +556,8 @@ public class BotAbuseMain extends ListenerAdapter {
                                 " who does not exist on the Discord Server");
                 embed.sendToTeamOutput(msg, null);
             }
-            catch (Exception ex) {
-                ex.printStackTrace();
+            catch (IOException ex) {
+                log.error("Perm Bot Abuse, Mentioned Members Empty and Args Length 2", ex);
             }
         }
         else if (msg.getMentionedMembers().size() == 1 && args.length == 2) {
@@ -570,8 +570,8 @@ public class BotAbuseMain extends ListenerAdapter {
                 log.info("[Admin Override] " + msg.getMember().getEffectiveName()
                         + " Successfully Permanently Bot Abused " + msg.getMentionedMembers().get(0).getEffectiveName());
             }
-            catch (Exception e) {
-                e.printStackTrace();
+            catch (IOException e) {
+                log.error("Perm Bot Abuse, Mentioned Members Size 1 and Args Length 2", e);
             }
         }
         else {
@@ -647,7 +647,7 @@ public class BotAbuseMain extends ListenerAdapter {
                             + msg.getMentionedMembers().get(0).getEffectiveName());
                     embed.sendToTeamOutput(msg, msg.getAuthor());
                     embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid one of their previous bot abuses: " +
-                            "\n **ID " + result.split("\n")[1].split("ID: ")[1]);
+                            "\n **ID " + result.split("\n")[1].split("ID: ")[1] + "**");
                     embed.sendToLogChannel();
                 }
             }
@@ -688,7 +688,7 @@ public class BotAbuseMain extends ListenerAdapter {
             log.error("No User Found By Discord ID " + lastDiscordID);
         }
         catch (Exception ex) {
-            ex.printStackTrace();
+            log.error("Undo Command General Exception", ex);
         }
     }
     private void checkCommand(Message msg, boolean isTeamMember) {
@@ -925,7 +925,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 index++;
             }
             catch (IOException ex) {
-                ex.printStackTrace();
+                log.error("Clear Command Exception", ex);
             }
         }
         index = 0;
@@ -999,11 +999,11 @@ public class BotAbuseMain extends ListenerAdapter {
                     }
                 }
                 catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("Discord ID While Loop After NullPointerException", e);
                 }
             }
             catch (IOException ex) {
-                ex.printStackTrace();
+                log.error("Discord ID While Loop", ex);
             }
             index++;
         }
@@ -1575,7 +1575,7 @@ public class BotAbuseMain extends ListenerAdapter {
             embed.sendToTeamOutput(msg, msg.getAuthor());
         }
         catch (IOException ex) {
-            ex.printStackTrace();
+            log.error("Reload Method", ex);
         }
     }
     public int getRoleScannerInterval() {

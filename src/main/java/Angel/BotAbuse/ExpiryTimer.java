@@ -35,7 +35,7 @@ class ExpiryTimer extends Timer {
                     removedID = baFeature.getCore().checkExpiredBotAbuse();
                 }
                 catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("Bot Abuse Core - Check Expired Bot Abuse", e);
                 }
                 if (removedID != 0) {
                     try {

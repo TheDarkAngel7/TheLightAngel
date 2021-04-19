@@ -12,10 +12,8 @@ public class EmbedHandler {
     private MainConfiguration mainConfig;
     private DiscordBotMain discord;
     private List<MessageEntry> messageQueue = new ArrayList<>();
-    // Dictionary<Command Message Object, Output Message Object>
+    // Dictionary<Command Message Object, Resulting MessageEntry Object>
     private Dictionary<Message, MessageEntry> commandMessageMap = new Hashtable();
-    private boolean embedReady = false;
-    private boolean multipleChannels = false;
 
     EmbedHandler(MainConfiguration mainConfig) {
         this.mainConfig = mainConfig;
@@ -193,6 +191,11 @@ public class EmbedHandler {
                                         // Take No Action
                                     }
                                 }
+                                break;
+                            case SAME:
+                                entry.getOriginalCmd().getChannel().sendMessage(entry.getEmbed()).queue(m -> {
+                                    entry.setResultEmbed(m);
+                                });
                                 break;
                         }
                     });

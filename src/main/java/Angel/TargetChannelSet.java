@@ -4,5 +4,6 @@ public enum TargetChannelSet {
     DM,
     TEAM,
     MEMBER,
-    LOG
+    LOG,
+    SAME
 }

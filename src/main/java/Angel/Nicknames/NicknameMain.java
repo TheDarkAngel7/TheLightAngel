@@ -67,10 +67,12 @@ public class NicknameMain extends ListenerAdapter {
             nickConfig.setup();
             nickCore.startup();
             nickCore.setNickConfig(nickConfig);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        }
+        catch (FileNotFoundException e) {
+            log.error("Nickname Constructor", e);
+        }
+        catch (IOException e) {
+            log.error("Nickname Constructor", e);
         }
         if (!commandsSuspended) {
             setupRestrictedRoles(false);
@@ -234,7 +236,7 @@ public class NicknameMain extends ListenerAdapter {
             }
         }
         catch (IOException e) {
-            e.printStackTrace();
+            log.error("Member Left Event", e);
         }
         // Writing what their name was when they left the server
         if (event.getMember() != null) {
@@ -259,7 +261,7 @@ public class NicknameMain extends ListenerAdapter {
                 }
             }
             catch (IOException ex) {
-                ex.printStackTrace();
+                log.error("Member Role Removed Event", ex);
             }
             isBusy = false;
         }
@@ -278,7 +280,7 @@ public class NicknameMain extends ListenerAdapter {
             }
         }
         catch (IOException ex) {
-            ex.printStackTrace();
+            log.error("Save Database", ex);
         }
     }
 
@@ -287,7 +289,7 @@ public class NicknameMain extends ListenerAdapter {
             fileHandler.getDatabase();
         }
         catch (IOException e) {
-            e.printStackTrace();
+            log.error("Resume Bot File Re-Read");
         }
     }
     //////////
@@ -312,7 +314,7 @@ public class NicknameMain extends ListenerAdapter {
                     nicknameCommand(msg);
                 }
                 catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("Nickname Command", e);
                 }
             }
             else if (commandsSuspended) {
@@ -753,7 +755,7 @@ public class NicknameMain extends ListenerAdapter {
                 }
                 // Handling any IOException any other method may throw
                 catch (IOException ex) {
-                    ex.printStackTrace();
+                    log.error("Nickname Command IOException Handling", ex);
                 }
             });
         }
@@ -1029,7 +1031,7 @@ public class NicknameMain extends ListenerAdapter {
             log.fatal("Nickname Config File Not Found on Reload");
         }
         catch (IOException ex) {
-            ex.printStackTrace();
+            log.error("Reload Method", ex);
         }
     }
     private void setupRestrictedRoles(boolean isReload) {
@@ -1085,7 +1087,7 @@ public class NicknameMain extends ListenerAdapter {
                 nickCore.fileHandler.saveDatabase();
             }
             catch (IOException e) {
-                e.printStackTrace();
+                log.error("Nickname Name History Addition", e);
             }
         }
         else discord.failedIntegrityCheck(this.getClass().getName(), msg, "Name History");

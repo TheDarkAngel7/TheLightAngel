@@ -42,6 +42,16 @@ public class MessageEntry {
         return this;
     }
 
+    public MessageEntry addChannel(TargetChannelSet channel) {
+        channels.add(channel);
+        return this;
+    }
+
+    public MessageEntry addChannel(List<TargetChannelSet> channels) {
+        this.channels.addAll(channels);
+        return this;
+    }
+
     public MessageEntry setTargetUser(User targetUser) {
         this.targetUser = targetUser;
         return this;

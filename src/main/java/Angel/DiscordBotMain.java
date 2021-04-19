@@ -231,7 +231,7 @@ public class DiscordBotMain extends ListenerAdapter {
                     // Take No Action - This is an indicator that the command was used via DM
                 }
                 catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("Restart Command", e);
                 }
                 catch (InterruptedException e) {
                     // Take No Action
@@ -257,7 +257,7 @@ public class DiscordBotMain extends ListenerAdapter {
                     }
                 }
                 catch (IOException ex) {
-                    // Take No Action
+                    log.error("Reload Command", ex);
                 }
             }
             else if (args[0].equalsIgnoreCase("ping")) {
