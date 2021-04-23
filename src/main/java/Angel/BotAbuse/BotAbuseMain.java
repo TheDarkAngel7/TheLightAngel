@@ -701,7 +701,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 "You just tell me how many hours ahead or behind UTC your time zone is." +
                 "\n**Example: **`" + mainConfig.commandPrefix +"check 6` would convert the times to 6 hours ahead of UTC." +
                 "\n`" + mainConfig.commandPrefix + "check -8` would convert the times to 8 hours behind UTC" +
-                "\n`" + mainConfig.commandPrefix +"check -3.5` would convert the timess to 3 1/2 hours behind UTC (I don't support 3/4 hours)" +
+                "\n`" + mainConfig.commandPrefix +"check -3.5` would convert the times to 3 1/2 hours behind UTC (I don't support 3/4 hours)" +
                 "\n\n";
 
         // This handles a /check for someone to check their own Bot Abuse status
@@ -709,7 +709,12 @@ public class BotAbuseMain extends ListenerAdapter {
             if (!isTeamMember) {
                 String result = baCore.getInfo(msg.getAuthor().getIdLong(), 100, false);
                 if (result.contains(":white_check_mark:")) {
-                    embed.setAsSuccess("You Are Not Bot Abused", result);
+                    if (baCore.getLifetimeOffenses(msg.getAuthor().getIdLong()) > 0) {
+                        embed.setAsSuccess("You Are No Longer Bot Abused", result);
+                    }
+                    else {
+                        embed.setAsSuccess("You Are Not Bot Abused", result);
+                    }
                 }
                 else {
                     result = timeZoneHint.concat(result);
