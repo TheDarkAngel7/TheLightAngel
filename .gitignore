@@ -1,4 +1,9 @@
 # Project exclude paths
 /out/
 /data/
-/Command to Run in Console.txt
+/stored-files/
+/logs/
+/db-backups/
+/.idea/
+/target/
+/live-version/
