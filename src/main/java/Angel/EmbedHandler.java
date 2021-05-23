@@ -53,7 +53,7 @@ public class EmbedHandler {
         messageQueue.remove(messageQueue.size() - 1);
     }
 
-    public void editEmbed(Message originalCmd, String newTitle, String newMsg, @Nullable EmbedDesign requestedType) {
+    public void editEmbed(Message originalCmd, @Nullable String newTitle, @Nullable String newMsg, @Nullable EmbedDesign requestedType) {
         MessageEntry entry = commandMessageMap.get(originalCmd);
         Message botResponse = commandMessageMap.get(originalCmd).getResultEmbed();
 
@@ -64,10 +64,10 @@ public class EmbedHandler {
         if (newTitle == null && newMsg != null) {
             entry.setMessage(newMsg);
         }
-        else if (newMsg == null) {
+        else if (newMsg == null && newTitle != null) {
             entry.setTitle(newTitle);
         }
-        else {
+        else if (newMsg != null && newTitle != null) {
             entry.setTitle(newTitle).setMessage(newMsg);
         }
         botResponse.getChannel().editMessageById(botResponse.getIdLong(), entry.getEmbed(entry.isFieldOriginallyIncluded())).queue();
@@ -114,6 +114,15 @@ public class EmbedHandler {
         commandMessageMap.remove(originalCmd).getResultEmbed().delete().queue();
     }
 
+    public void sendAsMessageEntryObj(MessageEntry entry) {
+        messageQueue.add(entry);
+        sendAllMessages();
+    }
+
+    public MessageEntry getMessageEntryObj(Message originalCmd) {
+        return commandMessageMap.get(originalCmd);
+    }
+
     private void sendAllMessages() {
         while (true) {
             try {
@@ -123,7 +132,7 @@ public class EmbedHandler {
                             case DM:
                                 entry.getTargetUser().openPrivateChannel().flatMap(c -> c.sendMessage(entry.getEmbed())).queue(m -> {
                                     if (entry.getOriginalCmd() != null) {
-                                        entry.setResultEmbed(m);
+                                        placeInCmdMap(entry.setResultEmbed(m));
                                     }
                                 });
                                 break;
@@ -131,7 +140,7 @@ public class EmbedHandler {
                                 mainConfig.logChannel.sendMessage(entry.getEmbed()).queue();
                                 break;
                             case TEAM:
-                                if (entry.getOriginalCmd().getChannelType().equals(ChannelType.PRIVATE))
+                                if (entry.getOriginalCmd().getChannelType().equals(ChannelType.PRIVATE) && !entry.isListEmbed())
                                     entry.setChannels(Arrays.asList(TargetChannelSet.DM));
                                 else {
                                     if (!entry.getOriginalCmd().getChannel().equals(mainConfig.managementChannel) && (!mainConfig.forceToManagementChannel ||
@@ -142,7 +151,7 @@ public class EmbedHandler {
                                             mainConfig.discussionChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                         }
                                         mainConfig.discussionChannel.sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
-                                            entry.setResultEmbed(m);
+                                            placeInCmdMap(entry.setResultEmbed(m));
                                         });
                                     }
                                     else {
@@ -150,13 +159,13 @@ public class EmbedHandler {
                                             mainConfig.managementChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                         }
                                         mainConfig.managementChannel.sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
-                                            entry.setResultEmbed(m);
+                                            placeInCmdMap(entry.setResultEmbed(m));
                                         });
                                     }
                                 }
                                 break;
                             case MEMBER:
-                                if (entry.getOriginalCmd().getChannelType().equals(ChannelType.PRIVATE))
+                                if (entry.getOriginalCmd().getChannelType().equals(ChannelType.PRIVATE) && !entry.isListEmbed())
                                     entry.setChannels(Arrays.asList(TargetChannelSet.DM));
                                 else {
                                     try {
@@ -167,14 +176,14 @@ public class EmbedHandler {
                                                 mainConfig.helpChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                             }
                                             mainConfig.helpChannel.sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
-                                                entry.setResultEmbed(m);
+                                                placeInCmdMap(entry.setResultEmbed(m));
                                             });
                                         }
                                         else if (mainConfig.forceToDedicatedChannel || !entry.getOriginalCmd().getChannel().equals(mainConfig.dedicatedOutputChannel)) {
                                             if (!mainConfig.botSpamChannelID.equalsIgnoreCase("None")
                                                     && entry.getOriginalCmd().getChannel().equals(mainConfig.botSpamChannel)) {
                                                 mainConfig.botSpamChannel.sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
-                                                    entry.setResultEmbed(m);
+                                                    placeInCmdMap(entry.setResultEmbed(m));
                                                 });
                                             }
                                             else {
@@ -182,7 +191,7 @@ public class EmbedHandler {
                                                     mainConfig.dedicatedOutputChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                                 }
                                                 mainConfig.dedicatedOutputChannel.sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
-                                                    entry.setResultEmbed(m);
+                                                    placeInCmdMap(entry.setResultEmbed(m));
                                                 });
                                             }
                                         }
@@ -194,15 +203,12 @@ public class EmbedHandler {
                                 break;
                             case SAME:
                                 entry.getOriginalCmd().getChannel().sendMessage(entry.getEmbed()).queue(m -> {
-                                    entry.setResultEmbed(m);
+                                    placeInCmdMap(entry.setResultEmbed(m));
                                 });
                                 break;
                         }
                     });
                     messageQueue.remove(entry);
-                    if (entry.getOriginalCmd() != null) {
-                        commandMessageMap.put(entry.getOriginalCmd(), entry);
-                    }
                 });
                 if (messageQueue.isEmpty()) break;
             }
@@ -210,5 +216,11 @@ public class EmbedHandler {
                 // Take No Action - We want the loop to go back around
             }
         }
+    }
+    private void placeInCmdMap(MessageEntry entry) {
+        if (commandMessageMap.get(entry.getOriginalCmd()) != null) {
+            commandMessageMap.remove(entry.getOriginalCmd());
+        }
+        commandMessageMap.put(entry.getOriginalCmd(), entry);
     }
 }

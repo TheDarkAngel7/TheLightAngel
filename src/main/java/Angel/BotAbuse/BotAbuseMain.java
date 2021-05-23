@@ -1,9 +1,6 @@
 package Angel.BotAbuse;
 
-import Angel.DiscordBotMain;
-import Angel.EmbedHandler;
-import Angel.MainConfiguration;
-import Angel.TargetChannelSet;
+import Angel.*;
 import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -36,7 +33,7 @@ public class BotAbuseMain extends ListenerAdapter {
     private BotAbuseConfiguration botConfig;
     private BotAbuseCore baCore;
     // embed calls the EmbedHandler class
-    public EmbedHandler embed;
+    private EmbedHandler embed;
     private String fieldHeader;
     private DiscordBotMain discord;
     private Help help;
@@ -149,7 +146,6 @@ public class BotAbuseMain extends ListenerAdapter {
             log.error("Resume Timers and Re-Read", e);
         }
     }
-
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         isConnected = true;
@@ -1161,9 +1157,11 @@ public class BotAbuseMain extends ListenerAdapter {
                 String result = baCore.seeHistory(Long.parseLong(args[1]), 100, true);
                 if (result.contains(":x:")) {
                     embed.setAsError(defaultTitle, result);
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
                 }
-                else embed.setAsInfo(defaultTitle, result);
-                embed.sendToTeamOutput(msg, null);
+                else {
+                    this.checkHistoryDivision(result, msg);
+                }
                 embed.setAsInfo(defaultTitle,":information_source: **" + msg.getAuthor().getAsMention() + " just checked the history of " +
                         guild.getMemberById(Long.parseLong(args[1])).getAsMention() + "**");
                 embed.sendToLogChannel();
@@ -1176,27 +1174,20 @@ public class BotAbuseMain extends ListenerAdapter {
                     String result = baCore.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), 100, true);
                     if (result.contains(":x:")) {
                         embed.setAsError(defaultTitle, result);
+                        embed.sendToTeamOutput(msg, msg.getAuthor());
                     }
-                    else embed.setAsInfo(defaultTitle, result);
-                    embed.sendToTeamOutput(msg, null);
+                    else {
+                        this.checkHistoryDivision(result, msg);
+                    }
                     embed.setAsInfo(defaultTitle, ":information_source: **" + msg.getAuthor().getAsMention() + " just checked the history of " +
                             msg.getMentionedMembers().get(0).getAsMention() + "**");
                     embed.sendToLogChannel();
                 }
                 // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
-                catch (IllegalArgumentException e) {
-                    try {
-                        this.lengthyHistory(
-                                baCore.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), 100, true),
-                                msg, null);
-                        log.info(msg.getMember().getEffectiveName() + " just checked the history of " +
-                                msg.getMentionedMembers().get(0).getEffectiveName());
-                    }
-                    catch (IndexOutOfBoundsException f) {
-                        embed.setAsError("Invalid Mention", ":x: **The Mention You Entered is Invalid**" +
-                                "\nTry right clicking on their name and click mention, copy and paste that mention into that argument");
-                       embed.sendToTeamOutput(msg, msg.getAuthor());
-                    }
+                catch (IndexOutOfBoundsException f) {
+                    embed.setAsError("Invalid Mention", ":x: **The Mention You Entered is Invalid**" +
+                            "\nTry right clicking on their name and click mention, copy and paste that mention into that argument");
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
                 }
             }
             // The Try code would throw a NullPointerException if the Discord ID Provided does not exist on the server.
@@ -1208,11 +1199,6 @@ public class BotAbuseMain extends ListenerAdapter {
                 log.info(msg.getMember().getEffectiveName() + " just checked the history of "  +
                         args[1] + " who currently does not exist within the Discord Server");
             }
-            // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
-            catch (IllegalArgumentException h) {
-                this.lengthyHistory(baCore.seeHistory(Long.parseLong(args[1]), 100,true),
-                        msg, null);
-            }
             catch (IndexOutOfBoundsException j) {
                 mainConfig.discussionChannel.sendMessage(msg.getMember().getAsMention() +
                         "**You shouldn't need to check your own Bot Abuse History... you're a Team Member!**").queue();
@@ -1222,21 +1208,15 @@ public class BotAbuseMain extends ListenerAdapter {
         // Get the history of the player who used the command.
         else if (args.length == 1) {
             if (!isTeamMember) {
-                try {
-                    String result = baCore.seeHistory(msg.getMember().getIdLong(), 100, false);
-                    if (result.contains(":white_check_mark:")) {
-                        embed.setAsSuccess("Your Bot Abuse History", result);
-                    }
-                    embed.setAsInfo(defaultTitle, result);
+                String result = baCore.seeHistory(msg.getMember().getIdLong(), 100, false);
+                if (result.contains(":white_check_mark:")) {
+                    embed.setAsSuccess("Your Bot Abuse History", result);
                     embed.sendDM(msg, msg.getAuthor());
-                    log.info(msg.getMember().getEffectiveName() + " just checked their own Bot Abuse History");
                 }
-                // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
-                catch (IllegalArgumentException ex) {
-                    this.lengthyHistory(baCore.seeHistory(msg.getMember().getIdLong(), 100, false),
-                            msg, null);
-                    log.info(msg.getMember().getEffectiveName() + " just checked their own Bot Abuse History");
+                else {
+                    this.checkHistoryDivision(result, msg);
                 }
+                log.info(msg.getMember().getEffectiveName() + " just checked their own Bot Abuse History");
             }
             else {
                 embed.setAsError("No Permissions",
@@ -1247,27 +1227,22 @@ public class BotAbuseMain extends ListenerAdapter {
         // /checkhistory <timeOffset>
         else if (args.length == 2) {
             if (!isTeamMember) {
-                try {
-                    if (baCore.checkOffset(args[1])) {
-                        String result = baCore.seeHistory(msg.getAuthor().getIdLong(), Double.parseDouble(args[1]), false);
-                        embed.setAsInfo("Your Bot Abuse History", result);
-                        if (result.contains(":white_check_mark:")) {
-                            embed.setAsSuccess("Your Bot Abuse History", result);
-                        }
+                if (baCore.checkOffset(args[1])) {
+                    String result = baCore.seeHistory(msg.getAuthor().getIdLong(), Double.parseDouble(args[1]), false);
+                    embed.setAsInfo("Your Bot Abuse History", result);
+                    if (result.contains(":white_check_mark:")) {
+                        embed.setAsSuccess("Your Bot Abuse History", result);
                         embed.sendDM(msg, msg.getAuthor());
-                        log.info(msg.getAuthor().getAsTag() + " just checked their own Bot Abuse History" +
-                                " using TimeZone offset " + args[1]);
                     }
                     else {
-                        embed.setAsError("Error while Parsing Command", ":x: **Invalid Timezone Offset**");
-                        embed.sendToMemberOutput(msg, msg.getAuthor());
+                        this.checkHistoryDivision(result, msg);
                     }
-                }
-                catch (IllegalArgumentException ex) {
-                    this.lengthyHistory(baCore.seeHistory(msg.getAuthor().getIdLong(), Double.parseDouble(args[1]), false),
-                            msg, args[1]);
                     log.info(msg.getAuthor().getAsTag() + " just checked their own Bot Abuse History" +
                             " using TimeZone offset " + args[1]);
+                }
+                else {
+                    embed.setAsError("Error while Parsing Command", ":x: **Invalid Timezone Offset**");
+                    embed.sendToMemberOutput(msg, msg.getAuthor());
                 }
             }
             else {
@@ -1286,9 +1261,11 @@ public class BotAbuseMain extends ListenerAdapter {
                         String result = baCore.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), Double.parseDouble(args[1]), true);
                         if (result.contains(":x:")) {
                             embed.setAsError(defaultTitle, result);
+                            embed.sendToTeamOutput(msg, null);
                         }
-                        else embed.setAsInfo(defaultTitle, result);
-                        embed.sendToTeamOutput(msg, null);
+                        else {
+                            this.checkHistoryDivision(result, msg);
+                        }
                         log.info(msg.getMember().getEffectiveName() + " just checked the history of " +
                                 msg.getMentionedMembers().get(0).getEffectiveName() + " using TimeZone offset " + args[1]);
                     }
@@ -1296,32 +1273,26 @@ public class BotAbuseMain extends ListenerAdapter {
                         String result = baCore.seeHistory(Long.parseLong(args[2]), Double.parseDouble(args[1]), true);
                         if (result.contains(":x:")) {
                             embed.setAsError(defaultTitle, result);
+                            embed.sendToTeamOutput(msg, null);
                         }
-                        else embed.setAsInfo(defaultTitle, result);
-                        embed.sendToTeamOutput(msg, null);
-                        log.info(msg.getMember().getEffectiveName() + " just checked the history of " +
+                        else {
+                            this.checkHistoryDivision(result, msg);
+                        }
+                        log.info(guild.getMemberById(Long.parseLong(args[2])).getEffectiveName() + " just checked the history of " +
                                 guild.getMemberById(Long.parseLong(args[2])).getEffectiveName() + " using TimeZone offset " + args[1]);
                     }
                 }
-                catch (IllegalArgumentException ex) {
+                catch (NumberFormatException e) {
                     try {
-                        this.lengthyHistory(baCore.seeHistory(Long.parseLong(args[2]), Double.parseDouble(args[1]), true),
-                                msg, args[1]);
+                        this.checkHistoryDivision(baCore.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), Double.parseDouble(args[1]), true),
+                                msg);
                         log.info(msg.getMember().getEffectiveName() + " just checked the history of " +
-                                guild.getMemberById(Long.parseLong(args[2])).getEffectiveName() + " using TimeZone offset " + args[1]);
+                                msg.getMentionedMembers().get(0).getEffectiveName() + " using TimeZone offset " + args[1]);
                     }
-                    catch (NumberFormatException e) {
-                        try {
-                            this.lengthyHistory(baCore.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), Double.parseDouble(args[1]), true),
-                                    msg, args[1]);
-                            log.info(msg.getMember().getEffectiveName() + " just checked the history of " +
-                                    msg.getMentionedMembers().get(0).getEffectiveName() + " using TimeZone offset " + args[1]);
-                        }
-                        catch (IndexOutOfBoundsException f) {
-                            embed.setAsError("Invalid Mention", ":x: **The Mention You Entered is Invalid**" +
-                                    "\nTry right clicking on their name and click mention, copy and paste that mention into that argument");
-                           embed.sendToTeamOutput(msg, msg.getAuthor());
-                        }
+                    catch (IndexOutOfBoundsException f) {
+                        embed.setAsError("Invalid Mention", ":x: **The Mention You Entered is Invalid**" +
+                                "\nTry right clicking on their name and click mention, copy and paste that mention into that argument");
+                        embed.sendToTeamOutput(msg, msg.getAuthor());
                     }
                 }
             }
@@ -1339,6 +1310,35 @@ public class BotAbuseMain extends ListenerAdapter {
             embed.setAsStop("FATAL ERROR", ":x: **Something went Seriously wrong when that happened**");
             embed.sendToChannel(msg, msg.getChannel());
         }
+    }
+    private void checkHistoryDivision(String stringToSplit, Message msg) {
+        String[] splitString = stringToSplit.split("\n\n");
+        TargetChannelSet requestedSet = TargetChannelSet.TEAM;
+
+        if (!discord.isTeamMember(msg.getAuthor().getIdLong())) {
+            requestedSet = TargetChannelSet.MEMBER;
+        }
+
+        // First and Last Index of the split string is divider prompts
+
+        int index = 1;
+
+        ArrayList<String> pages = new ArrayList<>();
+
+        pages.addAll(Arrays.asList(splitString));
+        String prefix = pages.remove(0);
+        String suffix = pages.remove(pages.size() - 1);
+
+        discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Bot Abuse History", EmbedDesign.INFO, mainConfig, msg, requestedSet),
+                prefix, pages, suffix).invertButtonLabels());
+    }
+    public boolean isCommand(String cmd) {
+        int index = 0;
+        while (index < commands.size()) {
+            if (cmd.equalsIgnoreCase(commands.get(index))) return true;
+            index++;
+        }
+        return false;
     }
     public void helpCommand(Message msg, boolean isTeamMember) {
 
@@ -1535,30 +1535,6 @@ public class BotAbuseMain extends ListenerAdapter {
     ///////////////////////////////////////////////////////////
     // Miscellaneous Methods
     ///////////////////////////////////////////////////////////
-    private void lengthyHistory(String stringToSplit, Message msg, @Nullable String timeZoneOffset) {
-        String[] splitString = stringToSplit.split("\n\n");
-        int index = 0;
-        while (index < splitString.length) {
-            embed.setAsInfo("Bot Abuse History", splitString[index]);
-            // Sometimes the addfield doesn't add the splitString correctly and there isn't a field,
-            // so we restart the loop from the beginning if that happens.
-            if (!discord.isTeamMember(msg.getAuthor().getIdLong())) {
-                embed.sendDM(msg, msg.getAuthor());
-            }
-            else {
-                embed.sendToTeamOutput(msg, msg.getAuthor());
-            }
-            index++;
-        }
-    }
-    public boolean isCommand(String cmd) {
-        int index = 0;
-        while (index < commands.size()) {
-            if (cmd.equalsIgnoreCase(commands.get(index))) return true;
-            index++;
-        }
-        return false;
-    }
 
     public void reload(Message msg) {
         try {

@@ -41,8 +41,7 @@ class RoleScanningTimer extends Timer {
                     }
                     if (baFeature.getCore().botAbuseIsCurrent(m.getIdLong()) &&
                             !m.getRoles().contains(baFeature.getConfig().getBotAbuseRole())) {
-                        guild.addRoleToMember(m,
-                                baFeature.getConfig().getBotAbuseRole()).queue();
+                        guild.addRoleToMember(m, baFeature.getConfig().getBotAbuseRole()).queue();
                         embed.setAsInfo(defaultTitle, "[Role Scanner] Added Bot Abuse Role to "
                                 + m.getAsMention() +
                                 " because they didn't have the role... and they're supposed to have it.");

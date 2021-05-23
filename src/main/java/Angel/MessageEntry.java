@@ -7,15 +7,18 @@ import net.dv8tion.jda.api.entities.User;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class MessageEntry {
     private String title;
     private String msg;
     private EmbedDesign design;
-    private Message originalCmd;
-    private Message resultEmbed;
+    private AtomicReference<Message> originalCmd = new AtomicReference<>();
+    private AtomicReference<Message> resultEmbed = new AtomicReference<>();
     private boolean fieldOriginallyIncluded = true;
+    private boolean isListEmbed = false;
     private List<TargetChannelSet> channels = new ArrayList<>();
     private User targetUser;
     private final MainConfiguration mainConfig;
@@ -25,6 +28,18 @@ public class MessageEntry {
         this.msg = msg;
         this.design = design;
         this.mainConfig = mainConfig;
+    }
+
+    // Constructor Specifically for Creating new ListEmbed objects
+    // We won't require a message string here as that'll be set by the ListEmbed constructor method
+
+    public MessageEntry(String title, EmbedDesign design, MainConfiguration mainConfig, Message originalCmd, TargetChannelSet... sets) {
+        this.title = title;
+        this.design = design;
+        this.mainConfig = mainConfig;
+        this.originalCmd.set(originalCmd);
+        this.channels = Arrays.asList(sets);
+        isListEmbed = true;
     }
 
     public MessageEntry setTitle(String title) {
@@ -39,6 +54,11 @@ public class MessageEntry {
 
     public MessageEntry setChannels(List<TargetChannelSet> channels) {
         this.channels = channels;
+        return this;
+    }
+
+    public MessageEntry setChannels(TargetChannelSet... channels) {
+        this.channels = Arrays.asList(channels);
         return this;
     }
 
@@ -63,12 +83,13 @@ public class MessageEntry {
     }
 
     public MessageEntry setOriginalCmd(Message originalCmd) {
-        this.originalCmd = originalCmd;
+        this.originalCmd.set(originalCmd);
         return this;
     }
 
-    public void setResultEmbed(Message resultEmbed) {
-        this.resultEmbed = resultEmbed;
+    MessageEntry setResultEmbed(Message resultEmbed) {
+        this.resultEmbed.set(resultEmbed);
+        return this;
     }
 
     List<TargetChannelSet> getChannels() {
@@ -76,19 +97,31 @@ public class MessageEntry {
     }
 
     Message getOriginalCmd() {
-        return originalCmd;
+        return originalCmd.get();
     }
 
     Message getResultEmbed() {
-        return resultEmbed;
+        return resultEmbed.get();
     }
 
     User getTargetUser() {
         return targetUser;
     }
 
+    String getMessage() {
+        return msg;
+    }
+
+    String getTitle() {
+        return title;
+    }
+
     boolean isFieldOriginallyIncluded() {
         return fieldOriginallyIncluded;
+    }
+
+    boolean isListEmbed() {
+        return isListEmbed;
     }
 
     public MessageEmbed getEmbed() {

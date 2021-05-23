@@ -47,8 +47,7 @@ public class BotAbuseInit implements Runnable {
             log.info("Bot Abuse Feature JDA Instance Created");
         }
         catch (LoginException e) {
-            log.error("Bot Abuse JDA Threw Login Exception During Build");
-            e.printStackTrace();
+            log.error("Bot Abuse JDA Threw Login Exception During Build", e);
         }
     }
 

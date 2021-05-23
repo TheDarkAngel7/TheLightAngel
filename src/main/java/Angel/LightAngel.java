@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
@@ -79,8 +80,27 @@ class LightAngel {
             restartValue = 0;
         }
         else {
-            new ProcessBuilder("cmd", "/c", "start", "java", "-jar", "-Dlog4j.configurationFile=./log4j2.properties", "TheLightAngel.jar", "false").start();
-            System.exit(1);
+            try {
+                if (!new FileCreator().startup()) {
+                    FileWarningMessage warningMessage = new FileWarningMessage();
+                    warningMessage.startup();
+
+                    while (true) {
+                        try { Thread.sleep(500); } catch (InterruptedException ex) {}
+                        if (!warningMessage.isContinueBoot() && !warningMessage.isTimerRunning()) {
+                            System.exit(1);
+                        }
+                        else if (warningMessage.isContinueBoot()) {
+                            break;
+                        }
+                    }
+                }
+                new ProcessBuilder("cmd", "/c", "start", "java", "-jar", "-Dlog4j.configurationFile=./log4j2.properties", "TheLightAngel.jar", "false").start();
+                System.exit(1);
+            }
+            catch (URISyntaxException e) {
+                System.exit(1);
+            }
             return;
         }
         MainConfiguration mainConfig = new ModifyMainConfiguration(fileHandler.getMainConfig());
@@ -89,7 +109,7 @@ class LightAngel {
         discord = new DiscordBotMain(restartValue, mainConfig, embed, fileHandler);
         embed.setDiscordInstance(discord);
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
-                GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_EMOJIS);
+                GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MESSAGE_REACTIONS);
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE,
                 CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE);
         JDABuilder.create(mainConfig.token, enabledIntents)

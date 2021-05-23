@@ -35,7 +35,7 @@ public class NicknameInit implements Runnable {
         this.guild = guild;
         this.discord = discord;
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
-                GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_EMOJIS);
+                GatewayIntent.GUILD_MESSAGES);
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE,
                 CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE);
         try {
@@ -44,8 +44,7 @@ public class NicknameInit implements Runnable {
             log.info("Nickname Feature JDA Instance Created");
         }
         catch (LoginException e) {
-            log.error("Nickname JDA Threw Login Exception During Build");
-            e.printStackTrace();
+            log.error("Nickname JDA Threw Login Exception During Build", e);
         }
     }
 

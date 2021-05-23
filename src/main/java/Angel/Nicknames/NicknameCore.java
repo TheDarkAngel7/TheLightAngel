@@ -92,7 +92,6 @@ class NicknameCore {
             return result;
         }
         else return ":x: FATAL ERROR: While submitting request, something didn't run correctly";
-
     }
 
     String acceptRequest(long targetDiscordID, int targetRequestID) throws IOException {
@@ -172,10 +171,11 @@ class NicknameCore {
         if (discordID.isEmpty()) return null;
         while (index < discordID.size()) {
             result = result.concat(replaceNulls(discordID.get(index),
-                    "\n\nRequest ID: **" + requestID.get(index) +
+                    "Request ID: **" + requestID.get(index) +
                     "**\nDiscord Account: <@!" + discordID.get(index) + ">" +
                     "\nOld Nickname: **" + oldNickname.get(index) +
                     "**\nNew Nickname: **" + newNickname.get(index++) + "**"));
+            if (index <= discordID.size() - 1) result = result.concat("\n\n");
         }
         return result;
     }

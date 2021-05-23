@@ -1,9 +1,6 @@
 package Angel.Nicknames;
 
-import Angel.DiscordBotMain;
-import Angel.EmbedHandler;
-import Angel.MainConfiguration;
-import Angel.TargetChannelSet;
+import Angel.*;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
@@ -348,7 +345,8 @@ public class NicknameMain extends ListenerAdapter {
         String DMResponse = "**You've successfully submitted a request to have your nickname changed**";
         String SocialClubInfo = "\n\n**If you haven't changed your name in Social Club already, " +
                 "please do so now so that when the staff go to check your profile, your profile name matches your new requested nickname.**" +
-                "\n*If you cannot change your social club name due to the cooldown please use `/nickname withdraw` (or `/nn wd` for short) now.*";
+                "\n*If you cannot change your social club name due to the cooldown please use " +
+                "`" + mainConfig.commandPrefix + "nickname withdraw` (or `" + mainConfig.commandPrefix + "nn wd` for short) now.*";
         long cmdUserID = msg.getAuthor().getIdLong();
         try {
             guild.retrieveMemberById(cmdUserID, true).queue(member -> {
@@ -389,7 +387,7 @@ public class NicknameMain extends ListenerAdapter {
                                     String newNickname = "";
                                     if (nickCore.newNickname.get(nickCore.discordID.indexOf(cmdUserID)) == null) {
                                         embed.setAsError("Nickname Request Pending", "**You Already have a pending nickname change request**" +
-                                                "\n\nThe New Nickname you have requested is: **" + msg.getAuthor().getName() + "(Reset To Your Discord Username)" +
+                                                "\n\nThe New Nickname you have requested is: **" + msg.getAuthor().getName() + " (Reset To Your Discord Username)" +
                                                 "**\n\n*If this new nickname is not correct, please use `" + mainConfig.commandPrefix + "nickname withdraw`" +
                                                 " (or `" + mainConfig.commandPrefix + "nn wd` for short) to withdraw this pending request, then you can run this command again.*");
                                     }
@@ -518,13 +516,13 @@ public class NicknameMain extends ListenerAdapter {
                             || args[1].equalsIgnoreCase("acc") || args[1].equalsIgnoreCase("a"))
                             && discord.isTeamMember(msg.getAuthor().getIdLong())) {
                         if (args.length == 3) {
-                            requestHandler(msg, true);
+                            requestHandler(msg, true, -1);
                         }
                     }
                     else if ((args[1].equalsIgnoreCase("deny") || args[1].equalsIgnoreCase("d")
                             && discord.isTeamMember(msg.getAuthor().getIdLong()))) {
                         if (args.length == 3) {
-                            requestHandler(msg, false);
+                            requestHandler(msg, false, -1);
                         }
                     }
                     else if ((args[1].equalsIgnoreCase("history") || args[1].equalsIgnoreCase("h"))
@@ -552,21 +550,30 @@ public class NicknameMain extends ListenerAdapter {
                                 embed.setAsError("No Name History", ":x: **This Player Has No Name History**");
                             }
                             else {
-                                result = "<@!" + targetDiscordID + ">'s Name History is as Follows:";
                                 int index = 0;
+                                List<String> pages = new ArrayList<>();
+                                String tempString = "";
                                 do {
-                                    result = result.concat("\n**- " + oldNickArray.get(index++) + "**");
+                                    tempString = tempString.concat("**" + (index + 1) + ". "+ oldNickArray.get((oldNickArray.size() - 1) - index++) + "**\n");
+                                    if (index % 10 == 0) {
+                                        pages.add(tempString);
+                                        tempString = "";
+                                    }
+
                                 } while (index < oldNickArray.size());
 
-                                embed.setAsInfo("Name History", result);
+                                if (!tempString.isEmpty()) pages.add(tempString);
+
+                                discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Name History", EmbedDesign.INFO, mainConfig, msg, TargetChannelSet.TEAM), "<@!" + targetDiscordID + ">'s Name History is as Follows:",
+                                        pages, "Total Old Names: **" + oldNickArray.size() + "**").invertButtonLabels(true));
                             }
                         }
                         else {
                             embed.setAsError("Invalid Number of Arguements",
                                     "**You Entered an Invalid Number of Arguements**" +
-                                            "\nFull Syntax: `/nickname history <Mention or Discord ID>`");
+                                            "\nFull Syntax: `" + mainConfig.commandPrefix + "nickname history <Mention or Discord ID>`");
+                            embed.sendToTeamOutput(msg, null);
                         }
-                        embed.sendToTeamOutput(msg, null);
                     }
                     else if (args[1].equalsIgnoreCase("list") && discord.isTeamMember(msg.getAuthor().getIdLong())) {
                         String[] splitString = new String[0];
@@ -575,32 +582,8 @@ public class NicknameMain extends ListenerAdapter {
                         try {
                             result = nickCore.getList();
                             splitString = result.split("\n\n");
-                            embed.setAsInfo(defaultTitle, result.concat("\n\n**For Each of these requests please choose to accept or deny:**" +
-                                    "\n*Use the request ID or mention provided (the request ID is the 3 digit number)*" +
-                                    "\nTo Accept: `" + mainConfig.commandPrefix + "nn a <Mention or Request ID>" +
-                                    "\nTo Deny: `" + mainConfig.commandPrefix + "nn d <Mention or Request ID>"));
-                            if (msg.getChannelType() == ChannelType.PRIVATE) {
-                                embed.sendDM(msg, msg.getAuthor());
-                            }
-                            else embed.sendToTeamOutput(msg, msg.getAuthor());
-                        }
-                        catch (IllegalArgumentException ex) {
-                            int index = 0;
-                            while (index < splitString.length) {
-                                if (index == splitString.length - 1) {
-                                    embed.setAsInfo(defaultTitle, splitString[index++].concat("\n\n**For Each of these requests please choose to accept or deny:**" +
-                                            "\n*Use the request ID or mention provided (the request ID is the 3 digit number)*" +
-                                            "\nTo Accept: `" + mainConfig.commandPrefix + "nn a <Mention or Request ID>" +
-                                            "\nTo Deny: `" + mainConfig.commandPrefix + "nn d <Mention or Request ID>"));
-                                }
-                                else {
-                                    embed.setAsInfo(defaultTitle, splitString[index++]);
-                                }
-                                if (msg.getChannelType().equals(ChannelType.PRIVATE)) {
-                                    embed.sendDM(msg, msg.getAuthor());
-                                }
-                                else embed.sendToTeamOutput(msg, msg.getAuthor());
-                            }
+                            discord.addAsReactionListEmbed(new NickRequestListEmbed(new MessageEntry(defaultTitle, EmbedDesign.INFO, mainConfig, msg, TargetChannelSet.TEAM),
+                                    "**For Each of these requests please choose to accept or deny:**", Arrays.asList(splitString), null, this));
                         }
                         catch (NullPointerException ex) {
                             embed.setAsError("No Pending Requests", ":x: **There's no pending nickname requests**");
@@ -766,10 +749,20 @@ public class NicknameMain extends ListenerAdapter {
             embed.sendDM(msg, msg.getAuthor());
         }
     }
-    private void requestHandler(Message msg, boolean requestAccepted) throws IOException {
+    // targetDiscordID argument is for accepting or denying the request via a reaction, it's -1 when it's via command
+    void requestHandler(Message msg, boolean requestAccepted, long targetDiscordID) throws IOException {
         String[] args = msg.getContentRaw().substring(1).split(" ");
         String result = "";
-        long targetDiscordID = 0;
+        if (targetDiscordID != -1) {
+            args = new String[3];
+            args[0] = "nn";
+            if (requestAccepted) args[1] = "a";
+            else args[1] = "d";
+            args[2] = String.valueOf(targetDiscordID);
+        }
+        else {
+            targetDiscordID = 0;
+        }
         int targetRequestID = 0;
         String oldNickname = "";
         String newNickname = "";
@@ -777,10 +770,17 @@ public class NicknameMain extends ListenerAdapter {
         if (args.length == 3) {
             boolean isMention = false;
             try {
-                targetRequestID = Integer.parseInt(args[2]);
-                targetDiscordID = nickCore.discordID.get(nickCore.requestID.indexOf(targetRequestID));
-                oldNickname = nickCore.oldNickname.get(nickCore.requestID.indexOf(targetRequestID));
-                newNickname = nickCore.newNickname.get(nickCore.requestID.indexOf(targetRequestID));
+                if (targetDiscordID != 0) {
+                    targetRequestID = nickCore.requestID.get(nickCore.discordID.indexOf(targetDiscordID));
+                    oldNickname = nickCore.oldNickname.get(nickCore.discordID.indexOf(targetDiscordID));
+                    newNickname = nickCore.newNickname.get(nickCore.discordID.indexOf(targetDiscordID));
+                }
+                else {
+                    targetRequestID = Integer.parseInt(args[2]);
+                    targetDiscordID = nickCore.discordID.get(nickCore.requestID.indexOf(targetRequestID));
+                    oldNickname = nickCore.oldNickname.get(nickCore.requestID.indexOf(targetRequestID));
+                    newNickname = nickCore.newNickname.get(nickCore.requestID.indexOf(targetRequestID));
+                }
                 guild.retrieveMemberById(targetDiscordID).queue(m -> memberInQuestion.set(m));
                 if (requestAccepted) {
                     result = nickCore.acceptRequest(-1, targetRequestID);

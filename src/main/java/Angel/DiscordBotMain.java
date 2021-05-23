@@ -13,6 +13,8 @@ import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.ReconnectedEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionRemoveAllEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
@@ -20,8 +22,11 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class DiscordBotMain extends ListenerAdapter {
@@ -40,7 +45,8 @@ public class DiscordBotMain extends ListenerAdapter {
     private ArrayList<Date> pingCooldownOverTimes = new ArrayList<>();
     private ArrayList<Long> pingCooldownDiscordIDs = new ArrayList<>();
     public final List<String> mainCommands = new ArrayList<>(Arrays.asList("search", "s", "reload", "restart", "ping", "status", "help", "set"));
-    private Ping ping = new Ping();
+
+    private List<ListEmbed> listEmbeds = new ArrayList<>();
 
     DiscordBotMain(int restartValue, MainConfiguration mainConfig, EmbedHandler embed, FileHandler fileHandler) {
         this.mainConfig = mainConfig;
@@ -101,6 +107,86 @@ public class DiscordBotMain extends ListenerAdapter {
             baFeature.saveDatabase();
             nickFeature.saveDatabase();
         }
+    }
+
+    @Override
+    public void onMessageReactionRemoveAll(@NotNull MessageReactionRemoveAllEvent event) {
+        int index = 0;
+        do {
+            if (listEmbeds.get(index).getMessageEntry().getResultEmbed().getIdLong() == event.getMessageIdLong()
+                    && listEmbeds.get(index).getTotalPages() == 0) {
+                listEmbeds.remove(index);
+                break;
+            }
+        } while (++index < listEmbeds.size());
+    }
+
+    @Override
+    public void onMessageReactionAdd(@NotNull MessageReactionAddEvent event) {
+        event.retrieveMessage().queue(msg -> {
+            if (msg.getAuthor() == msg.getJDA().getSelfUser() && event.getUser() != msg.getJDA().getSelfUser()) {
+                MessageEntry entry = null;
+                ListEmbed listEmbed = null;
+
+                // Action to Remove the User's reaction add before any processing
+                // this has to happen in any case so this is among the first things that happen
+                event.getReaction().removeReaction(event.getUser()).queue();
+
+                int index = 0;
+
+                listEmbed = getListEmbedFromMsg(msg);
+                if (listEmbed != null) {
+                    entry = listEmbed.getMessageEntry();
+                }
+
+                if (entry == null || !entry.isListEmbed()) return;
+
+                if (event.getUser().getIdLong() != entry.getOriginalCmd().getAuthor().getIdLong() &&
+                        !isTeamMember(event.getUser().getIdLong())) return;
+
+                int previousIndex = listEmbed.getCurrentPage();
+
+                switch (event.getReaction().getReactionEmote().getAsReactionCode()) {
+                        // First Page
+                    case "\u23EE\uFE0F":
+                        entry.setMessage(listEmbed.getFirstPage()); break;
+                        // Previous Page
+                    case "\u2B05\uFE0F":
+                        entry.setMessage(listEmbed.getPreviousPage()); break;
+                        // Stop Button
+                    case "\u23F9\uFE0F":
+                        msg.clearReactions().queue();
+                        return;
+                        // Next Page
+                    case "\u27A1\uFE0F":
+                        entry.setMessage(listEmbed.getNextPage()); break;
+                        // Last Page
+                    case "\u23ED\uFE0F":
+                        entry.setMessage(listEmbed.getLastPage()); break;
+                    default:
+                        if (listEmbed.isCustomEmbed()) {
+                            listEmbed.getCustomListEmbed().takeAction(entry.getOriginalCmd(), event);
+                            entry.setMessage(listEmbed.getFirstPage());
+
+                            if (listEmbed.getTotalPages() == 0) {
+                                entry.getResultEmbed().editMessage(listEmbed.getMessageEntry().getEmbed()).queue();
+                                entry.getResultEmbed().clearReactions().queue();
+                            }
+                            else if (listEmbed.getTotalPages() == 1) {
+                                msg.clearReactions().queue();
+                                addCustomEmotes(msg);
+                                entry.getResultEmbed().editMessage(entry.setTitle(entry.getTitle().split(" - Page")[0]).getEmbed()).queue();
+                            }
+                        }
+                }
+                if (listEmbed.getTotalPages() >= 2) {
+                    entry.getResultEmbed().editMessage(entry.setTitle(entry.getTitle().replace(
+                            previousIndex + "/" + listEmbed.getTotalPages(),
+                            listEmbed.getCurrentPage() + "/" + listEmbed.getTotalPages()))
+                            .getEmbed()).queue();
+                }
+            }
+        });
     }
 
     @Override
@@ -294,7 +380,7 @@ public class DiscordBotMain extends ListenerAdapter {
                     }
                 }
                 embed.editEmbed(msg, null, originalOutput.replace("**Pinging Discord's Gateway... Please Wait...**",
-                        "My Ping to Discord's Gateway: **" + ping.getGatewayNetPing() + "ms**" +
+                        "My Ping to Discord's Gateway: **" + getGatewayNetPing() + "ms**" +
                                 "\n\n*__Request to Ack Pings__*" +
                                 "\nMain Thread: **" + msg.getJDA().getGatewayPing() + "ms**" +
                                 "\nBot Abuse Thread: **" + baInit.getPing() + "ms**" +
@@ -942,6 +1028,75 @@ public class DiscordBotMain extends ListenerAdapter {
         embed.sendToTeamOutput(msg, msg.getAuthor());
     }
 
+    // Specifically for Embeds That Edit Themselves Based on Reactions
+    public void addAsReactionListEmbed(ListEmbed listEmbed) {
+        MessageEntry initialEntry = listEmbed.getMessageEntry();
+        if (listEmbed.getTotalPages() > 1) {
+            initialEntry.setTitle(listEmbed.getMessageEntry().getTitle().concat(" - Page 1/" + listEmbed.getTotalPages()));
+        }
+        embed.sendAsMessageEntryObj(initialEntry.setTargetUser(initialEntry.getOriginalCmd().getAuthor()));
+        MessageEntry changingEmbed = null;
+        while (changingEmbed == null || changingEmbed.getResultEmbed() == null || !changingEmbed.isListEmbed()) {
+            try {
+                changingEmbed = embed.getMessageEntryObj(listEmbed.getMessageEntry().getOriginalCmd());
+            }
+            catch (NullPointerException ex) {}
+        }
+
+        listEmbeds.add(listEmbed);
+
+        addCustomEmotes(changingEmbed.getResultEmbed());
+
+        switch (listEmbed.getTotalPages()) {
+            case 0:
+            case 1: break;
+            case 2:
+                // Previous Page
+                changingEmbed.getResultEmbed().addReaction("\u2B05\uFE0F").queue();
+                // Stop Button
+                changingEmbed.getResultEmbed().addReaction("\u23F9\uFE0F").queue();
+                // Next Page
+                changingEmbed.getResultEmbed().addReaction("\u27A1\uFE0F").queue();
+                break;
+            default:
+                // First Page
+                changingEmbed.getResultEmbed().addReaction("\u23EE\uFE0F").queue();
+                // Previous Page
+                changingEmbed.getResultEmbed().addReaction("\u2B05\uFE0F").queue();
+                // Stop Button
+                changingEmbed.getResultEmbed().addReaction("\u23F9\uFE0F").queue();
+                // Next Page
+                changingEmbed.getResultEmbed().addReaction("\u27A1\uFE0F").queue();
+                // Last Page
+                changingEmbed.getResultEmbed().addReaction("\u23ED\uFE0F").queue();
+        }
+        changingEmbed.getResultEmbed().clearReactions().queueAfter(30, TimeUnit.MINUTES);
+    }
+
+    public void addAsReactionListEmbed(CustomListEmbed customListEmbed) {
+        addAsReactionListEmbed(customListEmbed.getListEmbed());
+    }
+    private void addCustomEmotes(Message listEmbedMsg) {
+        ListEmbed listEmbed = getListEmbedFromMsg(listEmbedMsg);
+        if (listEmbed.isCustomEmbed()) {
+            int index = 0;
+            do {
+                listEmbed.getMessageEntry().getResultEmbed().addReaction(
+                        listEmbed.getCustomListEmbed().getEmoteUnicodeToReactOn().get(index)).queue();
+            } while (++index < listEmbed.getCustomListEmbed().getEmoteUnicodeToReactOn().size());
+        }
+    }
+
+    private ListEmbed getListEmbedFromMsg(Message listEmbedMsg) {
+        int index = 0;
+        do {
+            if (listEmbeds.get(index).getMessageEntry().getResultEmbed().getIdLong() == listEmbedMsg.getIdLong()) {
+                return listEmbeds.get(index);
+            }
+        } while (++index < (listEmbeds).size());
+        return null;
+    }
+    ///////////////
     public void restartBot(boolean restartSilently) throws IOException {
         log.warn("Program Restarting...");
         String suffix = "true";
@@ -996,6 +1151,37 @@ public class DiscordBotMain extends ListenerAdapter {
         c.add(Calendar.MINUTE, mainConfig.pingCoolDown);
         pingCooldownDiscordIDs.add(targetDiscordID);
         pingCooldownOverTimes.add(c.getTime());
+    }
+
+    private long getGatewayNetPing() {
+        String reader = "";
+        long returnValue = 0;
+        try {
+            Process p = Runtime.getRuntime().exec("ping gateway.discord.gg");
+            BufferedReader inputStream = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+            int index = 0;
+            while ((reader = inputStream.readLine()) != null) {
+                if (reader.contains("Average =")) {
+                    returnValue = Long.parseLong(reader.substring(reader.lastIndexOf("=") + 2).split("m")[0]);
+                    log.info("Network Ping Time to Discord's Gateway: " + returnValue + "ms");
+                }
+                else {
+                    try {
+                        log.info("Packet " + ++index + ": " + reader.split("time=")[1].substring(0, 4));
+                    }
+                    catch (ArrayIndexOutOfBoundsException ex) {
+                        index--;
+                    }
+                }
+            }
+            inputStream.close();
+            return returnValue;
+        }
+        catch (IOException ex) {
+            log.error("Caught IOException - Returning 0ms", ex);
+            return 0;
+        }
     }
 
     // This method handles anytime an integrity check fails within one of the features
