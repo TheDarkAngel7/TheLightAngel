@@ -19,6 +19,14 @@
     </content>
     <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Maven: net.dv8tion:JDA:4.2.1_265" level="project" />
+    <orderEntry type="library" name="Maven: com.neovisionaries:nv-websocket-client:2.14" level="project" />
+    <orderEntry type="library" name="Maven: club.minnced:opus-java-api:1.1.0" level="project" />
+    <orderEntry type="library" name="Maven: club.minnced:opus-java-natives:1.1.0" level="project" />
+    <orderEntry type="library" name="Maven: net.dv8tion:JDA:4.2.1_265" level="project" />
+    <orderEntry type="library" name="Maven: com.neovisionaries:nv-websocket-client:2.14" level="project" />
+    <orderEntry type="library" name="Maven: club.minnced:opus-java-api:1.1.0" level="project" />
+    <orderEntry type="library" name="Maven: club.minnced:opus-java-natives:1.1.0" level="project" />
     <orderEntry type="library" name="Maven: org.apache.maven.plugins:maven-compiler-plugin:3.8.1" level="project" />
     <orderEntry type="library" name="Maven: org.apache.maven:maven-plugin-api:3.0" level="project" />
     <orderEntry type="library" name="Maven: org.apache.maven:maven-model:3.0" level="project" />

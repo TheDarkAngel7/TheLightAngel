@@ -2,7 +2,7 @@
   "systemPath": "<System Path Here>",
   "testModeEnabled": true,
   "token": "<Token Here>",
-  "commandPrefix": "/",
+  "commandPrefix": "!",
   "fieldHeader": "System Message",
   "ownerDiscordID": "<Owner Discord ID Here>",
   "adminRole": "702223865606176841",
