@@ -1,5 +1,7 @@
 package Angel.BotAbuse;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Date;
 
 class BotAbuseRecord {
@@ -7,13 +9,13 @@ class BotAbuseRecord {
     private long discordID;
     private long issuingTeamMember;
     private int repOffenses;
-    private Date issuedDate;
-    private Date expiryDate;
+    private ZonedDateTime issuedDate;
+    private ZonedDateTime expiryDate;
     private String reason;
     private String proofImage;
     private boolean currentlyBotAbused;
 
-    BotAbuseRecord(int id, long discordID, long issuingTeamMember, int repOffenses, Date issuedDate, Date expiryDate, String reason, String proofImage) {
+    BotAbuseRecord(int id, long discordID, long issuingTeamMember, int repOffenses, ZonedDateTime issuedDate, ZonedDateTime expiryDate, String reason, String proofImage) {
         this.id = id;
         this.discordID = discordID;
         this.issuingTeamMember = issuingTeamMember;
@@ -61,11 +63,11 @@ class BotAbuseRecord {
         return repOffenses;
     }
 
-    Date getIssuedDate() {
+    ZonedDateTime getIssuedDate() {
         return issuedDate;
     }
 
-    Date getExpiryDate() {
+    ZonedDateTime getExpiryDate() {
         return expiryDate;
     }
 

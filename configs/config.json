@@ -20,7 +20,6 @@
   "deleteOriginalStaffCommands": false,
   "pingCoolDownMinutes": 15,
   "highPingTime": 300,
-  "defaultTimeZone": "GMT",
   "checkIconURL": "https://i.imgur.com/bakLhaw.png",
   "warningIconURL": "https://i.imgur.com/5SD8jxX.png",
   "errorIconURL": "https://i.imgur.com/KmZRhnK.png",

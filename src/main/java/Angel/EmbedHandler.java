@@ -49,9 +49,6 @@ public class EmbedHandler {
     public void setAsHelp(String title, String msg) {
         messageQueue.add(new MessageEntry(title, msg, EmbedDesign.HELP, mainConfig));
     }
-    public void clearFields() {
-        messageQueue.remove(messageQueue.size() - 1);
-    }
 
     public void editEmbed(Message originalCmd, @Nullable String newTitle, @Nullable String newMsg, @Nullable EmbedDesign requestedType) {
         MessageEntry entry = commandMessageMap.get(originalCmd);

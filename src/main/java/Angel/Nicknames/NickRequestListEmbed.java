@@ -53,7 +53,7 @@ class NickRequestListEmbed extends CustomListEmbed {
             }
 
             log.info(event.getUser().getAsTag() + " just reacted with the " + reactionType);
-            nickMain.requestHandler(originalCmd, requestStatus, targetDiscordID);
+            nickMain.requestHandler(originalCmd, event.getMember(), requestStatus, targetDiscordID);
         }
         catch (IOException ex) {
             log.error("Caught Exception by the Nickname Request Handler", ex);

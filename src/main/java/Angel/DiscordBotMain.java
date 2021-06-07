@@ -26,6 +26,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -34,9 +35,9 @@ public class DiscordBotMain extends ListenerAdapter {
     private EmbedHandler embed;
     private FileHandler fileHandler;
     private Guild guild;
-    private NicknameMain nickFeature;
+    private NicknameMain nickFeature = null;
     private NicknameInit nickInit;
-    private BotAbuseMain baFeature;
+    private BotAbuseMain baFeature = null;
     private BotAbuseInit baInit;
     private int restartValue;
     private final Logger log = LogManager.getLogger(DiscordBotMain.class);
@@ -47,6 +48,7 @@ public class DiscordBotMain extends ListenerAdapter {
     public final List<String> mainCommands = new ArrayList<>(Arrays.asList("search", "s", "reload", "restart", "ping", "status", "help", "set"));
 
     private List<ListEmbed> listEmbeds = new ArrayList<>();
+    private Dictionary<Message, ScheduledFuture<?>> reactionClearTimers = new Hashtable<>();
 
     DiscordBotMain(int restartValue, MainConfiguration mainConfig, EmbedHandler embed, FileHandler fileHandler) {
         this.mainConfig = mainConfig;
@@ -72,15 +74,21 @@ public class DiscordBotMain extends ListenerAdapter {
         baInit = new BotAbuseInit(commandsSuspended, restartValue, mainConfig, embed, guild, this);
         Thread tNickFeature = new Thread(nickInit);
         Thread tBotAbuseFeature = new Thread(baInit);
+
         tNickFeature.start();
         tNickFeature.setName("Nickname Thread");
-        try { Thread.sleep(1000); } catch (InterruptedException e) {}
-        nickFeature = nickInit.getNickFeature();
-        try { Thread.sleep(1000); } catch (InterruptedException e) {}
+
         tBotAbuseFeature.start();
         tBotAbuseFeature.setName("Bot Abuse Thread");
-        try { Thread.sleep(1000); } catch (InterruptedException e) {}
-        baFeature = baInit.getBaFeature();
+
+        while (baFeature == null || nickFeature == null) {
+            try { Thread.sleep(1000); } catch (InterruptedException e) {}
+            try {
+                baFeature = baInit.getBaFeature();
+                nickFeature = nickInit.getNickFeature();
+            }
+            catch (NullPointerException ex) {}
+        }
         log.info("All Features Successfully Initalized");
         isStarting = false;
         if (restartValue != 2 && !commandsSuspended) {
@@ -115,7 +123,7 @@ public class DiscordBotMain extends ListenerAdapter {
         do {
             if (listEmbeds.get(index).getMessageEntry().getResultEmbed().getIdLong() == event.getMessageIdLong()
                     && listEmbeds.get(index).getTotalPages() == 0) {
-                listEmbeds.remove(index);
+                reactionClearTimers.remove(listEmbeds.remove(index).getMessageEntry().getResultEmbed()).cancel(true);
                 break;
             }
         } while (++index < listEmbeds.size());
@@ -184,6 +192,8 @@ public class DiscordBotMain extends ListenerAdapter {
                             previousIndex + "/" + listEmbed.getTotalPages(),
                             listEmbed.getCurrentPage() + "/" + listEmbed.getTotalPages()))
                             .getEmbed()).queue();
+                    reactionClearTimers.remove(msg).cancel(true);
+                    reactionClearTimers.put(msg, msg.clearReactions().queueAfter(30, TimeUnit.MINUTES));
                 }
             }
         });
@@ -325,8 +335,9 @@ public class DiscordBotMain extends ListenerAdapter {
             }
             else if (args[0].equalsIgnoreCase("reload")
                     && isStaffMember(event.getAuthor().getIdLong())) {
-                embed.setAsWarning("Reloading Configuration", "**Reloading Configuration... Please Wait a Few Moments...**");
+                embed.setAsWarning("Reloading Configuration", "**Reloading Configuration... Please Wait a Few Seconds...**");
                 embed.sendToTeamOutput(msg, null);
+                try { Thread.sleep(5000); } catch (InterruptedException e) {}
                 try {
                     if (mainConfig.reload(fileHandler.getMainConfig())) {
                         baFeature.reload(msg);
@@ -1070,7 +1081,8 @@ public class DiscordBotMain extends ListenerAdapter {
                 // Last Page
                 changingEmbed.getResultEmbed().addReaction("\u23ED\uFE0F").queue();
         }
-        changingEmbed.getResultEmbed().clearReactions().queueAfter(30, TimeUnit.MINUTES);
+         reactionClearTimers.put(changingEmbed.getResultEmbed(),
+                 changingEmbed.getResultEmbed().clearReactions().queueAfter(30, TimeUnit.MINUTES));
     }
 
     public void addAsReactionListEmbed(CustomListEmbed customListEmbed) {

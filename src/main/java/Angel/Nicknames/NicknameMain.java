@@ -20,6 +20,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -46,8 +48,8 @@ public class NicknameMain extends ListenerAdapter {
     public boolean isBusy = false;
     public User commandUser;
     private ArrayList<Long> requestCooldownDiscordIDs = new ArrayList<>();
-    private ArrayList<Date> requestCooldownDates = new ArrayList<>();
-    private Calendar c;
+    private ArrayList<ZonedDateTime> requestCooldownDates = new ArrayList<>();
+    private ZonedDateTime c;
     private Timer timer = new Timer();
 
     NicknameMain(boolean getCommandsSuspended, MainConfiguration importMainConfig, EmbedHandler importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException {
@@ -99,7 +101,8 @@ public class NicknameMain extends ListenerAdapter {
             guild.retrieveMember(event.getUser(), true).queue(m -> {
                 if (m.getNickname() == null && inNickRestrictedRole(event.getUser().getIdLong())) {
                     ignoreNewNickname = true;
-                    m.modifyNickname(event.getOldName()).queue();
+                    m.modifyNickname(event.getOldName()).reason(
+                            "Automatically Added because this player was previously using their discord username as their social club name").queue();
                     embed.setAsInfo("Automatic Nickname Addition",
                             "**Your name on this discord server was automatically set back to your old discord username**" +
                                     " \n\nThis is due to the fact that you're in a role that prohibits name changes, your name in the SAFE Crew discord server" +
@@ -150,7 +153,8 @@ public class NicknameMain extends ListenerAdapter {
                     embed.setAsWarning("Instructions Warning",
                     "Please Re-Read the Instructions I just gave you above this message");
                     embed.sendDM(null, event.getUser());
-                    event.getMember().modifyNickname(event.getOldNickname()).queue();
+                    event.getMember().modifyNickname(event.getOldNickname())
+                            .reason("Already has pending nickname request and again tried to change it on their own...").queue();
 
                 }
                 else if (nickCore.discordID.contains(event.getUser().getIdLong())) {
@@ -158,7 +162,8 @@ public class NicknameMain extends ListenerAdapter {
                     embed.setAsError("Pending Request Info",
                     "You already have a pending nickname request");
                     embed.sendDM(null, event.getUser());
-                    event.getMember().modifyNickname(event.getOldNickname()).queue();
+                    event.getMember().modifyNickname(event.getOldNickname())
+                            .reason("Already has pending nickname request and again tried to change it on their own...").queue();
                 }
                 else return;
             }
@@ -193,7 +198,7 @@ public class NicknameMain extends ListenerAdapter {
                 embed.setAsError("You Cannot Modify Your Nickname", results);
                 embed.sendDM(null, event.getUser());
                 ignoreNewNickname = true;
-                event.getMember().modifyNickname(event.getOldNickname()).queue();
+                event.getMember().modifyNickname(event.getOldNickname()).reason("Automatically Reverted Nickname as this player is in a role that prevents nickname changes").queue();
                 String logMessage = event.getMember().getAsMention() + " was not allowed to change their nickname to **"
                         + event.getNewNickname() + "** as they are in a role that prohibits their effective name " +
                         "from changing. So it got reverted back to **" + event.getOldNickname() + "**";
@@ -334,8 +339,7 @@ public class NicknameMain extends ListenerAdapter {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                c = Calendar.getInstance();
-                c.setTimeZone(TimeZone.getTimeZone(mainConfig.timeZone));
+                c = ZonedDateTime.now(ZoneId.of("UTC"));
             }
         }, 0, 1000);
     }
@@ -361,12 +365,13 @@ public class NicknameMain extends ListenerAdapter {
                         }
                         else {
                             if (!inNickRestrictedRole(cmdUserID)) {
+                                String reasonString = "Received Nickname Request from a player who is not a role that prevents changes";
                                 embed.setAsSuccess("Nickname Updated", "**You successfully updated your nickname to *"
                                         + args[2] + "***");
                                 if (args[2].equalsIgnoreCase("reset")) {
-                                    member.modifyNickname(null).queue();
+                                    member.modifyNickname(null).reason(reasonString).queue();
                                 }
-                                else member.modifyNickname(args[2]).queue();
+                                else member.modifyNickname(args[2]).reason(reasonString).queue();
                                 embed.sendToMemberOutput(msg, msg.getAuthor());
                             }
                             else if (nickCore.discordID.contains(cmdUserID)) {
@@ -516,13 +521,13 @@ public class NicknameMain extends ListenerAdapter {
                             || args[1].equalsIgnoreCase("acc") || args[1].equalsIgnoreCase("a"))
                             && discord.isTeamMember(msg.getAuthor().getIdLong())) {
                         if (args.length == 3) {
-                            requestHandler(msg, true, -1);
+                            requestHandler(msg, null,true, -1);
                         }
                     }
                     else if ((args[1].equalsIgnoreCase("deny") || args[1].equalsIgnoreCase("d")
                             && discord.isTeamMember(msg.getAuthor().getIdLong()))) {
                         if (args.length == 3) {
-                            requestHandler(msg, false, -1);
+                            requestHandler(msg, null,false, -1);
                         }
                     }
                     else if ((args[1].equalsIgnoreCase("history") || args[1].equalsIgnoreCase("h"))
@@ -610,7 +615,7 @@ public class NicknameMain extends ListenerAdapter {
                                 ignoreNewNickname = true;
                                 if (args[3].equalsIgnoreCase("reset") ||
                                         args[3].equals(memberInQuestion.getUser().getName())) {
-                                    memberInQuestion.modifyNickname(null).queue();
+                                    memberInQuestion.modifyNickname(null).reason("Forcefully Changed by " + msg.getAuthor().getAsTag()).queue();
                                     newNickname = memberInQuestion.getUser().getName() + " (Their Discord Username)";
                                     successfulExecution = true;
                                     log.info("Staff Member " + msg.getMember().getEffectiveName() + " successfully forcefully changed " + oldNickname +
@@ -618,7 +623,7 @@ public class NicknameMain extends ListenerAdapter {
                                     addNameHistory(memberInQuestion.getIdLong(), oldNickname, msg);
                                 }
                                 else {
-                                    memberInQuestion.modifyNickname(args[3]).queue();
+                                    memberInQuestion.modifyNickname(args[3]).reason("Forcefully Changed by " + msg.getAuthor().getAsTag()).queue();
                                     newNickname = args[3];
                                     successfulExecution = true;
 
@@ -646,7 +651,7 @@ public class NicknameMain extends ListenerAdapter {
 
                                     ignoreNewNickname = true;
                                     if (args[3].equalsIgnoreCase("reset")) {
-                                        memberInQuestion.modifyNickname(null).queue();
+                                        memberInQuestion.modifyNickname(null).reason("Forcefully Changed by " + msg.getAuthor().getAsTag()).queue();
                                         newNickname = memberInQuestion.getUser().getName() + " (Their Discord Username)";
                                         successfulExecution = true;
                                         log.info("Staff Member " + msg.getMember().getEffectiveName() + " successfully forcefully changed " + oldNickname +
@@ -654,7 +659,7 @@ public class NicknameMain extends ListenerAdapter {
                                         addNameHistory(memberInQuestion.getIdLong(), oldNickname, msg);
                                     }
                                     else {
-                                        memberInQuestion.modifyNickname(args[3]).queue();
+                                        memberInQuestion.modifyNickname(args[3]).reason("Forcefully Changed by " + msg.getAuthor().getAsTag()).queue();
                                         newNickname = args[3];
                                         successfulExecution = true;
                                         if (oldNickname.equals(memberInQuestion.getUser().getName())) {
@@ -750,9 +755,12 @@ public class NicknameMain extends ListenerAdapter {
         }
     }
     // targetDiscordID argument is for accepting or denying the request via a reaction, it's -1 when it's via command
-    void requestHandler(Message msg, boolean requestAccepted, long targetDiscordID) throws IOException {
+    void requestHandler(Message msg, @Nullable Member handler, boolean requestAccepted, long targetDiscordID) throws IOException {
         String[] args = msg.getContentRaw().substring(1).split(" ");
         String result = "";
+        if (handler == null) {
+            handler = msg.getMember();
+        }
         if (targetDiscordID != -1) {
             args = new String[3];
             args[0] = "nn";
@@ -824,26 +832,28 @@ public class NicknameMain extends ListenerAdapter {
                         String defaultTitle = "Successful Nickname Request Acceptance";
                         ignoreNewNickname = true;
                         if (newNickname == null) {
-                            memberInQuestion.get().modifyNickname(memberInQuestion.get().getUser().getName()).queue();
+                            memberInQuestion.get().modifyNickname(null)
+                                    .reason("Staff Member "  + handler.getUser().getAsTag() + " accepted their nickname request").queue();
                             embed.setAsSuccess(defaultTitle, result);
                             embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
                                     "Your new name on the Discord Server now matches your discord username";
                             embed.setAsSuccess(defaultTitle, messageToPlayer);
                             embed.sendDM(msg, guild.getMemberById(targetDiscordID).getUser());
-                            log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully accepted the nickname request of player " +
+                            log.info("Team Member " + handler.getEffectiveName() + " successfully accepted the nickname request of player " +
                                     guild.getMemberById(targetDiscordID).getUser().getAsTag() + "," +
                                     " their nickname was erased and now it matches their discord name.");
                         }
                         else {
-                            memberInQuestion.get().modifyNickname(getNewNickname).queue();
+                            memberInQuestion.get().modifyNickname(getNewNickname)
+                                    .reason("Staff Member " + handler.getUser().getAsTag() + " accepted their nickname request").queue();
                             embed.setAsSuccess("Nickname Request Accepted", result);
                             embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
                                     "Your new name on the Discord Server is now **" + getNewNickname + "**";
                             embed.setAsSuccess(defaultTitle, messageToPlayer);
                             embed.sendDM(msg, guild.getMemberById(targetDiscordID).getUser());
-                            log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully accepted the nickname request of player " +
+                            log.info("Team Member " + handler.getEffectiveName() + " successfully accepted the nickname request of player " +
                                     guild.getMemberById(targetDiscordID).getUser().getAsTag() + "," +
                                     " they had nickname " + oldNickname + " and their new nickname is " + newNickname);
                         }
@@ -859,7 +869,7 @@ public class NicknameMain extends ListenerAdapter {
                                 " your request was denied.";
                         embed.setAsError("Nickname Request Denied", messageToPlayer);
                         embed.sendDM(msg, guild.getMemberById(targetDiscordID).getUser());
-                        log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully rejected the nickname request of player " +
+                        log.info("Team Member " + handler.getEffectiveName() + " successfully rejected the nickname request of player " +
                                 guild.getMemberById(targetDiscordID).getUser().getAsTag() + "," +
                                 " their nickname remains " + oldNickname);
                     }
@@ -882,7 +892,7 @@ public class NicknameMain extends ListenerAdapter {
                                     "Your nickname was removed on the Discord Server and now matches your discord username";
                             embed.setAsSuccess("Successful Nickname Request Acceptance", messageToPlayer);
                             embed.sendDM(msg, memberInQuestion.get().getUser());
-                            log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully accepted the nickname request of player " +
+                            log.info("Team Member " + handler.getEffectiveName() + " successfully accepted the nickname request of player " +
                                     guild.getMemberById(targetDiscordID).getUser().getAsTag() + "," +
                                     " their nickname was erased and now it matches their discord name.");
                         }
@@ -894,7 +904,7 @@ public class NicknameMain extends ListenerAdapter {
                                     "Your new name on the Discord Server is now " + getNewNickname;
                             embed.setAsSuccess("Successful Nickname Request Acceptance", messageToPlayer);
                             embed.sendDM(msg, memberInQuestion.get().getUser());
-                            log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully accepted the nickname request of player " +
+                            log.info("Team Member " + handler.getEffectiveName() + " successfully accepted the nickname request of player " +
                                     guild.getMemberById(targetDiscordID).getUser().getAsTag() + ", " +
                                     "they had nickname " + oldNickname + " and their new nickname is " + newNickname);
                         }
@@ -905,7 +915,7 @@ public class NicknameMain extends ListenerAdapter {
                         embed.sendToTeamOutput(msg, null);
                         embed.setAsSuccess(defaultTitle, result);
                         embed.sendToLogChannel();
-                        log.info("Team Member " + msg.getMember().getEffectiveName() + " successfully rejected the nickname request of player " +
+                        log.info("Team Member " + handler.getEffectiveName() + " successfully rejected the nickname request of player " +
                                 guild.getMemberById(targetDiscordID).getUser().getAsTag() + "," +
                                 " their nickname remains " + oldNickname);
                         String messageToPlayer = "**Your Nickname Request was Denied** \n" +
@@ -1000,7 +1010,7 @@ public class NicknameMain extends ListenerAdapter {
     private boolean requestIsCoolingDown(long targetDiscordID) {
         int index = requestCooldownDiscordIDs.indexOf(targetDiscordID);
         try {
-            if (c.getTime().before(requestCooldownDates.get(index))) return true;
+            if (c.isBefore(requestCooldownDates.get(index))) return true;
             else {
                 requestCooldownDiscordIDs.remove(index);
                 requestCooldownDates.remove(index);
@@ -1012,10 +1022,10 @@ public class NicknameMain extends ListenerAdapter {
         }
     }
     private void startRequestCooldown(long targetDiscordID) {
-        Calendar cExp = Calendar.getInstance();
-        cExp.add(Calendar.MINUTE, nickConfig.requestCoolDown);
+        ZonedDateTime cExp = ZonedDateTime.now(ZoneId.of("UTC"));
+        cExp.plusMinutes(nickConfig.requestCoolDown);
         requestCooldownDiscordIDs.add(targetDiscordID);
-        requestCooldownDates.add(cExp.getTime());
+        requestCooldownDates.add(cExp);
     }
     public void reload(Message msg) {
         try {

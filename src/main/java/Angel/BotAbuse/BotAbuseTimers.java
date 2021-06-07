@@ -8,8 +8,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-class BotAbuseTimers implements Runnable {
+class BotAbuseTimers {
     private final Logger log = LogManager.getLogger(BotAbuseTimers.class);
     private Guild guild;
     private ExpiryTimer expiryTimer;
@@ -18,6 +21,7 @@ class BotAbuseTimers implements Runnable {
     private EmbedHandler embed;
     private MainConfiguration mainConfig;
     private DiscordBotMain discord;
+    private ScheduledExecutorService service = Executors.newScheduledThreadPool(2);
 
     BotAbuseTimers(Guild guild, BotAbuseMain baFeature, EmbedHandler embed, MainConfiguration mainConfig, DiscordBotMain discord) {
         this.guild = guild;
@@ -30,8 +34,7 @@ class BotAbuseTimers implements Runnable {
         expiryTimer = new ExpiryTimer(guild, baFeature, embed);
     }
 
-    @Override
-    public void run() {
+    void startTimers() {
         // Here we're running an integrity check on the data that was loaded, if the data loaded is no good...
         // then we suspend all commands and we don't start the timers.
         // Here we're running a check on the configuration file, if the timings loaded are no good
@@ -51,8 +54,8 @@ class BotAbuseTimers implements Runnable {
         }
         // If init was initiated from a config reload then this'll run.
         if (baFeature.isReload) {
-            embed.setAsSuccess("Reload Complete", "**Reloading Config was Successfully Completed!**");
-            embed.sendToChannel(null, mainConfig.discussionChannel);
+            service = Executors.newScheduledThreadPool(2);
+            log.warn("Timer Thread Pool Whipped and waiting for new scheduled services");
         }
         // If the timers aren't running and commands aren't suspended then this'll run. Or... if a reload came in.
         if ((!expiryTimer.isTimerRunning() || !roleScanningTimer.isTimerRunning()) && (!baFeature.commandsSuspended || !baFeature.timersSuspended)) {
@@ -71,8 +74,8 @@ class BotAbuseTimers implements Runnable {
             }
             baFeature.timersSuspended = false;
 
-            expiryTimer.startTimer();
-            roleScanningTimer.startTimer();
+            service.scheduleAtFixedRate(expiryTimer, 0, 1, TimeUnit.SECONDS);
+            service.scheduleAtFixedRate(roleScanningTimer, 0, baFeature.getRoleScannerInterval(), TimeUnit.MINUTES);
             log.info("Timers are Running");
         }
         else if (baFeature.commandsSuspended) {
@@ -88,6 +91,12 @@ class BotAbuseTimers implements Runnable {
         }
         baFeature.restartValue = 0;
         baFeature.isReload = false;
+    }
+
+    void stopAllTimers() {
+        service.shutdown();
+        expiryTimer.stopTimer();
+        roleScanningTimer.stopTimer();
     }
 
     ExpiryTimer getExpiryTimer() {

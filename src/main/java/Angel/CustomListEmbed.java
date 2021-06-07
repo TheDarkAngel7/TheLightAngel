@@ -23,6 +23,11 @@ public abstract class CustomListEmbed {
     public String deleteCurrentPage() {
         return listEmbed.deletePage(listEmbed.getCurrentPage());
     }
+
+    public int getCurrentPage() {
+        return listEmbed.getCurrentPage();
+    }
+
     public ListEmbed getListEmbed() {
         return listEmbed;
     }

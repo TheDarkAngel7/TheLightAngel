@@ -11,7 +11,6 @@ public abstract class MainConfiguration {
     Guild guild;
     public String systemPath;
     public String token;
-    public String timeZone;
     public boolean testModeEnabled;
     boolean deleteOriginalNonStaffCommands;
     boolean deleteOriginalStaffCommands;
@@ -62,8 +61,6 @@ public abstract class MainConfiguration {
 
     void initialSetup() {
         commandPrefix = configObj.get("commandPrefix").getAsString().charAt(0);
-
-        timeZone = configObj.get("defaultTimeZone").getAsString();
 
         ownerDiscordID = configObj.get("ownerDiscordID").getAsString();
         adminRoleID = configObj.get("adminRole").getAsString();

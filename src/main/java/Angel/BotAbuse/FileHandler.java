@@ -1,10 +1,7 @@
 package Angel.BotAbuse;
 
 import Angel.FileDatabases;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonWriter;
 import org.apache.logging.log4j.LogManager;
@@ -15,12 +12,13 @@ import java.lang.reflect.Type;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.List;
 
 class FileHandler implements FileDatabases {
-    Gson gson = new Gson();
+    Gson gson;
     private BotAbuseCore baCore;
     private final Logger log = LogManager.getLogger(FileHandler.class);
     private File jsonBADataFile = new File("data/BAdata.json");
@@ -30,6 +28,10 @@ class FileHandler implements FileDatabases {
 
     FileHandler(BotAbuseCore baCore) {
         this.baCore = baCore;
+
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.registerTypeAdapter(ZoneId.class, new ZoneIDInstanceCreator());
+        gson = gsonBuilder.create();
     }
 
     public JsonObject getConfig() throws IOException {
