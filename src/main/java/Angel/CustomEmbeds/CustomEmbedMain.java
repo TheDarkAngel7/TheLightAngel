@@ -32,7 +32,10 @@ public class CustomEmbedMain extends ListenerAdapter {
         try {
             args = msg.getContentRaw().substring(1).split(" ");
         }
-        catch (StringIndexOutOfBoundsException ex) {}
+        catch (StringIndexOutOfBoundsException ex) {
+            // Take No Action - Another Class Handles this
+            return;
+        }
 
         if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix) {
 
