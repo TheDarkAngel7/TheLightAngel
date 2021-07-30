@@ -21,11 +21,11 @@ public abstract class CustomListEmbed {
     public abstract void takeAction(Message originalCmd, MessageReactionAddEvent event);
 
     public String deleteCurrentPage() {
-        return listEmbed.deletePage(listEmbed.getCurrentPage());
+        return listEmbed.deletePage(listEmbed.getCurrentPageIndex());
     }
 
     public int getCurrentPage() {
-        return listEmbed.getCurrentPage();
+        return listEmbed.getCurrentPageIndex();
     }
 
     public ListEmbed getListEmbed() {

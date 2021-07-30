@@ -92,6 +92,11 @@ public class MessageEntry {
         return this;
     }
 
+    public MessageEntry dontUseFieldEmbed() {
+        fieldOriginallyIncluded = false;
+        return this;
+    }
+
     List<TargetChannelSet> getChannels() {
         return channels;
     }
@@ -125,7 +130,7 @@ public class MessageEntry {
     }
 
     public MessageEmbed getEmbed() {
-        return getEmbed(true);
+        return getEmbed(fieldOriginallyIncluded);
     }
 
     public MessageEmbed getEmbed(boolean includeFieldHeader) {

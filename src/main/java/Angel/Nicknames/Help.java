@@ -17,8 +17,8 @@ class Help {
         String result = "**Only Usable by players in:**\n";
         int index = 0;
 
-        while (index < nickMain.nickConfig.restrictedRoles.size()) {
-            result = result.concat("\n**-" + nickMain.nickConfig.restrictedRoles.get(index++).getAsMention());
+        while (index < nickMain.getConfig().restrictedRoles.size()) {
+            result = result.concat("\n**-" + nickMain.getConfig().restrictedRoles.get(index++).getAsMention());
         }
         return result;
     }

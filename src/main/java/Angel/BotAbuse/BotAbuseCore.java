@@ -18,13 +18,15 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
     Angel.BotAbuse.FileHandler fileHandler;
     private final Logger log = LogManager.getLogger(BotAbuseCore.class);
     private final Guild guild;
+    private final BotAbuseMain baMain;
     private BotAbuseConfiguration botConfig;
     private final MainConfiguration mainConfig;
     private List<BotAbuseRecord> records = new ArrayList<>();
     Dictionary<String, String> reasonsDictionary = new Hashtable<>();
     private ZonedDateTime c;
 
-    BotAbuseCore(Guild guild, MainConfiguration mainConfig) {
+    BotAbuseCore(Guild guild, BotAbuseMain baMain, MainConfiguration mainConfig) {
+        this.baMain = baMain;
         this.fileHandler = new FileHandler(this);
         this.guild = guild;
         this.mainConfig = mainConfig;
@@ -357,7 +359,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         }
         else {
             // Take off the configured number of months
-            cOld = cOld.minusHours(botConfig.getHotOffenseMonths());
+            cOld = cOld.minusMonths(botConfig.getHotOffenseMonths());
         }
         int index = 0;
         int prevOffenses = 0;
@@ -673,7 +675,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         else return false;
     }
     private DateTimeFormatter getDefaultSDF() {
-        return DateTimeFormatter.ofPattern("MM-dd-yy HH:mm:ss zzz");
+        return baMain.getDefaultSDF();
     }
     BotAbuseRecord getLastRecord(long targetDiscordID) {
         int index = records.size() - 1;

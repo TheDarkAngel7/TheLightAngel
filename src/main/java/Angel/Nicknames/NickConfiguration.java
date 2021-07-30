@@ -8,13 +8,15 @@ import net.dv8tion.jda.api.entities.Role;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.List;
 
 public abstract class NickConfiguration {
     private final Gson gson;
     Guild guild;
     private JsonObject configObj;
-    ArrayList<Role> restrictedRoles = new ArrayList<>();
-    ArrayList<Long> restrictedRolesLong;
+    private final boolean enabled;
+    List<Role> restrictedRoles = new ArrayList<>();
+    List<Long> restrictedRolesLong;
     int requestCoolDown;
     boolean pingOnlineStaff;
     private final Type longType = new TypeToken<ArrayList<Long>>(){}.getType();
@@ -23,6 +25,7 @@ public abstract class NickConfiguration {
         configObj = importConfigObj;
         gson = importGsonInstance;
         guild = importGuild;
+        enabled = configObj.get("enabled").getAsBoolean();
     }
     void setup() {
         restrictedRolesLong = gson.fromJson(configObj.get("rolesNotAllowedToChangeName").getAsString(), longType);
@@ -40,4 +43,8 @@ public abstract class NickConfiguration {
     public abstract boolean removeNewNameRestrictedRole(long roleToDelete);
     public abstract boolean removeNewNameRestrictedRole(Role roleToDelete);
     public abstract boolean isValidConfig(String key);
+
+    public boolean isEnabled() {
+        return enabled;
+    }
 }

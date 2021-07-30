@@ -2,6 +2,8 @@ package Angel;
 
 import Angel.BotAbuse.BotAbuseInit;
 import Angel.BotAbuse.BotAbuseMain;
+import Angel.CustomEmbeds.CustomEmbedInit;
+import Angel.CustomEmbeds.CustomEmbedMain;
 import Angel.Nicknames.NicknameInit;
 import Angel.Nicknames.NicknameMain;
 import net.dv8tion.jda.api.JDA;
@@ -25,6 +27,7 @@ import javax.annotation.Nonnull;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +38,8 @@ public class DiscordBotMain extends ListenerAdapter {
     private EmbedHandler embed;
     private FileHandler fileHandler;
     private Guild guild;
+    private CustomEmbedInit customEmbedInit;
+    private CustomEmbedMain customEmbedFeature;
     private NicknameMain nickFeature = null;
     private NicknameInit nickInit;
     private BotAbuseMain baFeature = null;
@@ -45,7 +50,7 @@ public class DiscordBotMain extends ListenerAdapter {
     public boolean isStarting = true;
     private ArrayList<Date> pingCooldownOverTimes = new ArrayList<>();
     private ArrayList<Long> pingCooldownDiscordIDs = new ArrayList<>();
-    public final List<String> mainCommands = new ArrayList<>(Arrays.asList("search", "s", "reload", "restart", "ping", "status", "help", "set"));
+    public final List<String> mainCommands = new ArrayList<>(Arrays.asList("search", "s", "reload", "restart", "ping", "status", "help", "set", "embed"));
 
     private List<ListEmbed> listEmbeds = new ArrayList<>();
     private Dictionary<Message, ScheduledFuture<?>> reactionClearTimers = new Hashtable<>();
@@ -72,8 +77,10 @@ public class DiscordBotMain extends ListenerAdapter {
         }
         nickInit = new NicknameInit(commandsSuspended, mainConfig, embed, guild, this);
         baInit = new BotAbuseInit(commandsSuspended, restartValue, mainConfig, embed, guild, this);
+        customEmbedInit = new CustomEmbedInit(mainConfig, embed, guild, this);
         Thread tNickFeature = new Thread(nickInit);
         Thread tBotAbuseFeature = new Thread(baInit);
+        Thread tCustomEmbedFeature = new Thread(customEmbedInit);
 
         tNickFeature.start();
         tNickFeature.setName("Nickname Thread");
@@ -81,11 +88,15 @@ public class DiscordBotMain extends ListenerAdapter {
         tBotAbuseFeature.start();
         tBotAbuseFeature.setName("Bot Abuse Thread");
 
-        while (baFeature == null || nickFeature == null) {
+        tCustomEmbedFeature.start();
+        tCustomEmbedFeature.setName("Custom Embed Thread");
+
+        while (baFeature == null || nickFeature == null || customEmbedFeature == null) {
             try { Thread.sleep(1000); } catch (InterruptedException e) {}
             try {
                 baFeature = baInit.getBaFeature();
                 nickFeature = nickInit.getNickFeature();
+                customEmbedFeature = customEmbedInit.getFeature();
             }
             catch (NullPointerException ex) {}
         }
@@ -152,7 +163,7 @@ public class DiscordBotMain extends ListenerAdapter {
                 if (event.getUser().getIdLong() != entry.getOriginalCmd().getAuthor().getIdLong() &&
                         !isTeamMember(event.getUser().getIdLong())) return;
 
-                int previousIndex = listEmbed.getCurrentPage();
+                int previousIndex = listEmbed.getCurrentPageIndex();
 
                 switch (event.getReaction().getReactionEmote().getAsReactionCode()) {
                         // First Page
@@ -174,7 +185,7 @@ public class DiscordBotMain extends ListenerAdapter {
                     default:
                         if (listEmbed.isCustomEmbed()) {
                             listEmbed.getCustomListEmbed().takeAction(entry.getOriginalCmd(), event);
-                            entry.setMessage(listEmbed.getFirstPage());
+                            entry.setMessage(listEmbed.getCurrentPage());
 
                             if (listEmbed.getTotalPages() == 0) {
                                 entry.getResultEmbed().editMessage(listEmbed.getMessageEntry().getEmbed()).queue();
@@ -190,7 +201,7 @@ public class DiscordBotMain extends ListenerAdapter {
                 if (listEmbed.getTotalPages() >= 2) {
                     entry.getResultEmbed().editMessage(entry.setTitle(entry.getTitle().replace(
                             previousIndex + "/" + listEmbed.getTotalPages(),
-                            listEmbed.getCurrentPage() + "/" + listEmbed.getTotalPages()))
+                            listEmbed.getCurrentPageIndex() + "/" + listEmbed.getTotalPages()))
                             .getEmbed()).queue();
                     reactionClearTimers.remove(msg).cancel(true);
                     reactionClearTimers.put(msg, msg.clearReactions().queueAfter(30, TimeUnit.MINUTES));
@@ -390,12 +401,29 @@ public class DiscordBotMain extends ListenerAdapter {
                         embed.sendToMemberOutput(msg, msg.getAuthor());
                     }
                 }
-                embed.editEmbed(msg, null, originalOutput.replace("**Pinging Discord's Gateway... Please Wait...**",
-                        "My Ping to Discord's Gateway: **" + getGatewayNetPing() + "ms**" +
-                                "\n\n*__Request to Ack Pings__*" +
-                                "\nMain Thread: **" + msg.getJDA().getGatewayPing() + "ms**" +
-                                "\nBot Abuse Thread: **" + baInit.getPing() + "ms**" +
-                                "\nNickname Thread: **" + nickInit.getPing() + "ms**"), null);
+
+                String editedPing = "My Ping to Discord's Gateway: **" + getGatewayNetPing() + "ms**" +
+                        "\n\n*__Request to Ack Pings__*" +
+                        "\nMain Thread: **" + msg.getJDA().getGatewayPing() + "ms**" +
+                        "\nBot Abuse Thread: **#**" +
+                        "\nNickname Thread: **$**";
+
+                if (baFeature.getConfig().isEnabled()) {
+                    editedPing = editedPing.replace("#", String.valueOf(baInit.getPing()) + "ms");
+                }
+                else {
+                    editedPing = editedPing.replace("#", "Disabled");
+                }
+
+                if (nickFeature.getConfig().isEnabled()) {
+                    editedPing = editedPing.replace("$", String.valueOf(nickInit.getPing()) + "ms");
+                }
+                else {
+                    editedPing = editedPing.replace("$", "Disabled");
+                }
+
+                embed.editEmbed(msg, null, originalOutput.replace(
+                        "**Pinging Discord's Gateway... Please Wait...**", editedPing), null);
             }
             else if (args[0].equalsIgnoreCase("status")) {
                 if (isTeamMember(msg.getAuthor().getIdLong())) {
@@ -419,7 +447,8 @@ public class DiscordBotMain extends ListenerAdapter {
                         defaultOutput = defaultOutput.replaceAll("false", "Offline");
                         requestedType = EmbedDesign.ERROR;
                     }
-                    else if (defaultOutput.contains("false") || defaultOutput.contains(":warning:") || defaultOutput.contains("Unknown")) {
+                    else if (defaultOutput.contains("false") || defaultOutput.contains(":warning:") ||
+                            defaultOutput.contains(":x:") || defaultOutput.contains("Unknown")) {
                         defaultOutput = defaultOutput.replaceAll("false", ":warning: Suspended :warning:");
                         defaultOutput = defaultOutput.replaceAll("true", "Operational");
                         requestedType = EmbedDesign.WARNING;
@@ -740,8 +769,8 @@ public class DiscordBotMain extends ListenerAdapter {
                         embed.setAsSuccess(defaultTitle, defaultOutput.replace("key", args[2]).replace("value", args[3]));
                         successfulRun = true;
                     }
-                    else if (nickFeature.nickConfig.isValidConfig(args[2])) {
-                        nickFeature.nickConfig.setConfig(args[2], Integer.parseInt(args[3]));
+                    else if (nickFeature.getConfig().isValidConfig(args[2])) {
+                        nickFeature.getConfig().setConfig(args[2], Integer.parseInt(args[3]));
                         embed.setAsSuccess(defaultTitle, defaultOutput.replace("key", args[2]).replace("value", args[3]));
                         successfulRun = true;
                     }
@@ -758,8 +787,8 @@ public class DiscordBotMain extends ListenerAdapter {
                                     defaultOutput.replace("key", args[2]).replace("value", args[3]));
                             successfulRun = true;
                         }
-                        else if (nickFeature.nickConfig.isValidConfig(args[2])) {
-                            nickFeature.nickConfig.setConfig(args[2], Boolean.valueOf(args[3]));
+                        else if (nickFeature.getConfig().isValidConfig(args[2])) {
+                            nickFeature.getConfig().setConfig(args[2], Boolean.valueOf(args[3]));
                             embed.setAsSuccess(defaultTitle,
                                     defaultOutput.replace("key", args[2]).replace("value", args[3]));
                             successfulRun = true;
@@ -857,7 +886,7 @@ public class DiscordBotMain extends ListenerAdapter {
 
                 if (args[3].equalsIgnoreCase("add")) {
                     try {
-                        nickFeature.nickConfig.addNewNameRestrictedRole(Long.parseLong(args[4]));
+                        nickFeature.getConfig().addNewNameRestrictedRole(Long.parseLong(args[4]));
                         embed.setAsSuccess(defaultSuccessTitle.replace("?", "Added"),
                                 defaultSuccess.replace("?", "Added")
                             .replace("!", guild.getRoleById(Long.parseLong(args[4])).getAsMention() + " To"));
@@ -869,7 +898,7 @@ public class DiscordBotMain extends ListenerAdapter {
                     }
                     catch (NumberFormatException ex) {
                         try {
-                            nickFeature.nickConfig.addNewNameRestrictedRole(msg.getMentionedRoles().get(0));
+                            nickFeature.getConfig().addNewNameRestrictedRole(msg.getMentionedRoles().get(0));
                             embed.setAsSuccess(defaultSuccessTitle.replace("?", "Added"),
                                     defaultSuccess.replace("?", "Added")
                                     .replace("!", msg.getMentionedRoles().get(0).getAsMention() + " To"));
@@ -894,7 +923,7 @@ public class DiscordBotMain extends ListenerAdapter {
                 else if (args[3].equalsIgnoreCase("del") || args[3].equalsIgnoreCase("delete") ||
                 args[3].equalsIgnoreCase("remove")) {
                     try {
-                        if (nickFeature.nickConfig.removeNewNameRestrictedRole(Long.parseLong(args[4]))) {
+                        if (nickFeature.getConfig().removeNewNameRestrictedRole(Long.parseLong(args[4]))) {
                             embed.setAsSuccess(defaultSuccessTitle.replace("?", "Removed"),
                                     defaultSuccess.replace("?", "Removed")
                                     .replace("!", guild.getRoleById(Long.parseLong(args[4])).getAsMention() + " From"));
@@ -910,7 +939,7 @@ public class DiscordBotMain extends ListenerAdapter {
                     }
                     catch (NumberFormatException ex) {
                         try {
-                            if (nickFeature.nickConfig.removeNewNameRestrictedRole(msg.getMentionedRoles().get(0))) {
+                            if (nickFeature.getConfig().removeNewNameRestrictedRole(msg.getMentionedRoles().get(0))) {
                                 embed.setAsSuccess(defaultSuccessTitle.replace("?", "Removed"),
                                         defaultSuccess.replace("?", "Removed")
                                         .replace("!", msg.getMentionedRoles().get(0).getAsMention() + " From"));
@@ -1216,5 +1245,8 @@ public class DiscordBotMain extends ListenerAdapter {
         }
         else commandsSuspended = true;
         return;
+    }
+    public DateTimeFormatter getDefaultSDF() {
+        return DateTimeFormatter.ofPattern("MM-dd-yy HH:mm:ss zzz");
     }
 }

@@ -11,6 +11,7 @@ import java.util.List;
 
 public abstract class BotAbuseConfiguration {
     private JsonObject configObj;
+    private final boolean enabled;
     private final BotAbuseMain baMain;
     private String botAbuseRoleID;
     private final Guild guild;
@@ -27,6 +28,7 @@ public abstract class BotAbuseConfiguration {
         this.configObj = configObj;
         this.baMain = baMain;
         this.guild = guild;
+        this.enabled = configObj.get("enabled").getAsBoolean();
     }
 
     // Initial setup contains all of the configuration fields that need to be read.
@@ -71,6 +73,10 @@ public abstract class BotAbuseConfiguration {
     public abstract String removeExpiryTime(int removeThisTime, boolean fromInvalidTime);
     public abstract boolean isValidConfig(String key);
     // Separate Methods for Getting Configurations
+
+    public boolean isEnabled() {
+        return enabled;
+    }
 
     Role getBotAbuseRole() {
         return botAbuseRole;

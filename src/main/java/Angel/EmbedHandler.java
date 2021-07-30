@@ -1,5 +1,6 @@
 package Angel;
 
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
@@ -169,6 +170,13 @@ public class EmbedHandler {
                                         if (!entry.getOriginalCmd().getChannel().equals(mainConfig.botSpamChannel) &&
                                                 (!mainConfig.forceToDedicatedChannel ||
                                                         mainConfig.dedicatedOutputChannelID.equalsIgnoreCase("None"))) {
+                                            if (!entry.getOriginalCmd().getMember().hasPermission(mainConfig.helpChannel, Permission.MESSAGE_READ)) {
+                                                entry.getOriginalCmd().getChannel().sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
+                                                    placeInCmdMap(entry.setResultEmbed(m).setChannels(TargetChannelSet.SAME));
+                                                });
+                                                break;
+                                            }
+
                                             if (entry.getTargetUser() != null && !entry.getOriginalCmd().getChannel().equals(mainConfig.helpChannel)) {
                                                 mainConfig.helpChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                             }
@@ -184,6 +192,12 @@ public class EmbedHandler {
                                                 });
                                             }
                                             else {
+                                                if (!entry.getOriginalCmd().getMember().hasPermission(mainConfig.dedicatedOutputChannel, Permission.MESSAGE_READ)) {
+                                                    entry.getOriginalCmd().getChannel().sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
+                                                        placeInCmdMap(entry.setResultEmbed(m).setChannels(TargetChannelSet.SAME));
+                                                    });
+                                                    break;
+                                                }
                                                 if (entry.getTargetUser() != null && !entry.getOriginalCmd().getChannel().equals(mainConfig.dedicatedOutputChannel)) {
                                                     mainConfig.dedicatedOutputChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                                 }

@@ -40,11 +40,11 @@ public class ListEmbed {
         this.entry = entry.setMessage(getFirstPage());
     }
 
-    MessageEntry getMessageEntry() {
+    public MessageEntry getMessageEntry() {
         return entry;
     }
 
-    CustomListEmbed getCustomListEmbed() {
+    public CustomListEmbed getCustomListEmbed() {
         return customListEmbed;
     }
 
@@ -69,6 +69,20 @@ public class ListEmbed {
             lastPageIcon = lastPageIcon.replace("d*", "ds*");
         }
         return this;
+    }
+    ListEmbed setNewAlternatingStrings(List<String> newPages) {
+        alternateStrings.clear();
+        alternateStrings.addAll(newPages);
+        return this;
+    }
+
+    String getCurrentPage() {
+        try {
+            return getConstructedString(alternateStrings.get(currentIndex));
+        }
+        catch (IndexOutOfBoundsException ex) {
+            return getFirstPage();
+        }
     }
 
     String getFirstPage() {
@@ -102,7 +116,7 @@ public class ListEmbed {
         return alternateStrings.remove(pageNum - 1);
     }
 
-    int getCurrentPage() {
+    int getCurrentPageIndex() {
         return currentIndex + 1;
     }
 

@@ -20,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nonnull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,7 +34,6 @@ public class BotAbuseMain extends ListenerAdapter {
     private BotAbuseCore baCore;
     // embed calls the EmbedHandler class
     private EmbedHandler embed;
-    private String fieldHeader;
     private DiscordBotMain discord;
     private Help help;
     public boolean commandsSuspended = false;
@@ -44,42 +44,44 @@ public class BotAbuseMain extends ListenerAdapter {
     int restartValue;
     boolean isReload = false;
     private User targetUser;
-    private boolean wasBotAbused = false;
     public final List<String> commands = new ArrayList<>(Arrays.asList("botAbuse", "ba", "permBotAbuse", "pba", "undo", "check",
             "checkHistory", "clear", "transfer", "reasonsmanager", "rmgr", "reasons", "r"));
 
     BotAbuseMain(boolean getCommandsSuspended, int restartValue, MainConfiguration importMainConfig, EmbedHandler importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException, TimeoutException {
         commandsSuspended = getCommandsSuspended;
-        baCore = new BotAbuseCore(importGuild, importMainConfig);
+        baCore = new BotAbuseCore(importGuild, this, importMainConfig);
         botConfig = new ModifyBotAbuseConfiguration(baCore.getConfig(), this, importMainConfig, importGuild);
         botConfig.initialSetup();
         baCore.setBotConfig(botConfig);
         discord = importDiscordBot;
         mainConfig = importMainConfig;
         this.guild = importGuild;
-        baCore.startup(true);
-        this.fieldHeader = mainConfig.fieldHeader;
-        this.restartValue = restartValue;
-        this.embed = importEmbed;
-        this.help = new Help(this, embed, mainConfig);
-        baTimers = new BotAbuseTimers(guild, this, embed, mainConfig, discord);
-        log.info("All Classes Constructed");
 
-        if (!botConfig.configsExist() && !commandsSuspended) {
-            commandsSuspended = true;
-            timersSuspended = true;
-            log.fatal("Not All of the Configuration Settings were found in the discord server! Please verify the IDs of" +
-                    " all of the channels, roles, and the Owner's Discord ID in the configuration file. " +
-                    "Commands have been suspended, when you fix the configuration file " +
-                    "you may use \"" + mainConfig.commandPrefix + "reload\" to reload the file or \""
-                    + mainConfig.commandPrefix + "restart\" to restart the bot");
+        if (botConfig.isEnabled()) {
+            baCore.startup(true);
+            this.restartValue = restartValue;
+            this.embed = importEmbed;
+            this.help = new Help(this, embed, mainConfig);
+            baTimers = new BotAbuseTimers(guild, this, embed, mainConfig, discord);
+            log.info("Bot Abuse Class Constructed");
+            if (!botConfig.configsExist() && !commandsSuspended) {
+                commandsSuspended = true;
+                timersSuspended = true;
+                log.fatal("Not All of the Configuration Settings were found in the discord server! Please verify the IDs of" +
+                        " all of the channels, roles, and the Owner's Discord ID in the configuration file. " +
+                        "Commands have been suspended, when you fix the configuration file " +
+                        "you may use \"" + mainConfig.commandPrefix + "reload\" to reload the file or \""
+                        + mainConfig.commandPrefix + "restart\" to restart the bot");
+            }
+            if (!commandsSuspended) {
+                botConfig.discordSetup();
+                startTimers();
+            }
+            else log.fatal("Commands are Suspended from Parent Class");
         }
-        if (!commandsSuspended) {
-            botConfig.discordSetup();
-            startTimers();
+        else {
+            log.warn("Bot Abuse side of the bot is Disabled");
         }
-        else log.fatal("Commands are Suspended from Parent Class");
-
     }
 
     @Override
@@ -165,90 +167,92 @@ public class BotAbuseMain extends ListenerAdapter {
         boolean isStaffMember = discord.isStaffMember(event.getAuthor().getIdLong());
 
 
-        if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && !commandsSuspended)  {
-            // Command Syntax /botabuse <Mention or Discord ID> <Reason (kick, offline, or staff)> <proof url>
-            if (args[0].equalsIgnoreCase("botabuse") || args[0].equalsIgnoreCase("ba")) {
-                if (isTeamMember &&
-                        (args.length == 3 || args.length == 4)) {
-                    setBotAbuse(msg);
-                }
-                else if ((args.length < 3 || args.length > 4) && isTeamMember) {
-                    embed.setAsError("Error - Invalid Number of Arguements", "**You Entered an Invalid Number of Arguments**");
-                    embed.sendToTeamOutput(msg, msg.getAuthor());
-                }
-                else { // If they Don't have the Team role then it returns an error message
-                    embed.setAsError("Error - No Permissions", ":x: **You Lack Permissions to do that!**");
-                    embed.sendToMemberOutput(msg, msg.getAuthor());
-                }
-            }
-            else if (args[0].equalsIgnoreCase("permbotabuse") || args[0].equalsIgnoreCase("pba")) { // /permbotabuse <Mention or Discord ID> [Image]
-                if (isStaffMember && (args.length == 2 || args.length == 3)) {
-                    permBotAbuse(msg);
-                }
-                else if (isStaffMember && (args.length < 2 || args.length > 3)) {
-                    embed.setAsError("Error - Invalid Number of Arguements", ":x: **You Entered an Invalid Number of Arguments**");
-                    embed.sendToTeamOutput(msg, msg.getAuthor());
-                }
-                else {
-                    embed.setAsError("Error - No Permissions", ":x: **You Lack Permissions to do that!**");
-                    embed.sendToMemberOutput(msg, msg.getAuthor());
-                }
-            }
-            else if (args[0].equalsIgnoreCase("undo")) {
-                if (isTeamMember) {
-                    undoCommand(msg);
-                }
-                else {
-                    embed.setAsError("Error - No Permissions", ":x: **You Lack Permissions to do that!**");
-                    embed.sendToMemberOutput(msg, msg.getAuthor());
-                }
-            }
-            else if (args[0].equalsIgnoreCase("check")) {
-                // This handles a /check for someone to check their own Bot Abuse status or someone else's.
-                checkCommand(msg, isTeamMember);
-            }
-            else if (args[0].equalsIgnoreCase("transfer")) { // /transfer <Old Mention or Discord ID> <New Mention or Discord ID>
-                if (isStaffMember) {
-                    try {
-                        transferRecords(msg);
+        if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && !commandsSuspended && botConfig.isEnabled())  {
+            switch (args[0].toLowerCase()) {
+                // Command Syntax /botabuse <Mention or Discord ID> <Reason (kick, offline, or staff)> <proof url>
+                case "botabuse":
+                case "ba":
+                    if (isTeamMember &&
+                            (args.length == 3 || args.length == 4)) {
+                        setBotAbuse(msg);
+                    } else if ((args.length < 3 || args.length > 4) && isTeamMember) {
+                        embed.setAsError("Error - Invalid Number of Arguements", "**You Entered an Invalid Number of Arguments**");
+                        embed.sendToTeamOutput(msg, msg.getAuthor());
+                    } else { // If they Don't have the Team role then it returns an error message
+                        embed.setAsError("Error - No Permissions", ":x: **You Lack Permissions to do that!**");
+                        embed.sendToMemberOutput(msg, msg.getAuthor());
                     }
-                    catch (Exception e) {
-                        log.error("Transfer Command", e);
+                    break;
+                case "permbotabuse":
+                case "pba":
+                    // /permbotabuse <Mention or Discord ID> [Image]
+                    if (isStaffMember && (args.length == 2 || args.length == 3)) {
+                        permBotAbuse(msg);
+                    } else if (isStaffMember && (args.length < 2 || args.length > 3)) {
+                        embed.setAsError("Error - Invalid Number of Arguements", ":x: **You Entered an Invalid Number of Arguments**");
+                        embed.sendToTeamOutput(msg, msg.getAuthor());
+                    } else {
+                        embed.setAsError("Error - No Permissions", ":x: **You Lack Permissions to do that!**");
+                        embed.sendToMemberOutput(msg, msg.getAuthor());
                     }
-                }
-                else {
-                    embed.setAsError("Error - No Permissions", ":x: **You Lack Permissions to do that!**");
-                    embed.sendToMemberOutput(msg, msg.getAuthor());
-                }
-            }
-            else if (args[0].equalsIgnoreCase("clear")) {
-                if (isStaffMember) {
-                    clearCommand(msg);
-                }
-                else {
-                    embed.setAsError("Error - No Permissions", "**:x: You Lack Permissions to do that!**");
-                    embed.sendToMemberOutput(msg, msg.getAuthor());
-                }
-            }
-            else if (args[0].equalsIgnoreCase("checkhistory")) {
-                checkHistory(msg, isTeamMember);
-            }
-            else if (args[0].equalsIgnoreCase("reasonsmanager") || args[0].equalsIgnoreCase("rmgr")
-            || args[0].equalsIgnoreCase("reasons") || args[0].equalsIgnoreCase("r")) {
-                try {
-                    if (args[0].equalsIgnoreCase("reasons") && args.length == 1) {
-                        String[] strings = new String[2];
-                        strings[0] = "rmgr";
-                        strings[1] = "list";
-                        reasonsCommand(msg, strings, isTeamMember, isStaffMember);
+                    break;
+                case "undo":
+                    if (isTeamMember) {
+                        undoCommand(msg);
+                    } else {
+                        embed.setAsError("Error - No Permissions", ":x: **You Lack Permissions to do that!**");
+                        embed.sendToMemberOutput(msg, msg.getAuthor());
+                    }
+                    break;
+                case "check":
+                    // This handles a /check for someone to check their own Bot Abuse status or someone else's.
+                    checkCommand(msg, isTeamMember);
+                    break;
+                case "transfer":
+                    // /transfer <Old Mention or Discord ID> <New Mention or Discord ID>
+                    if (isStaffMember) {
+                        try {
+                            transferRecords(msg);
+                        }
+                        catch (Exception e) {
+                            log.error("Transfer Command", e);
+                        }
                     }
                     else {
-                        reasonsCommand(msg, msg.getContentRaw().substring(1).split(" "), isTeamMember, isStaffMember);
+                        embed.setAsError("Error - No Permissions", ":x: **You Lack Permissions to do that!**");
+                        embed.sendToMemberOutput(msg, msg.getAuthor());
                     }
-                }
-                catch (IOException e) {
-                    log.error("Reasons Manager", e);
-                }
+                    break;
+                case "clear":
+                    if (isStaffMember) {
+                        clearCommand(msg);
+                    }
+                    else {
+                        embed.setAsError("Error - No Permissions", "**:x: You Lack Permissions to do that!**");
+                        embed.sendToMemberOutput(msg, msg.getAuthor());
+                    }
+                case "checkhistory":
+                    checkHistory(msg, isTeamMember);
+                    break;
+                case "reasonsmanager":
+                case "rmgr":
+                case "reasons":
+                case "r":
+                    try {
+                        if (args[0].equalsIgnoreCase("reasons") && args.length == 1) {
+                            String[] strings = new String[2];
+                            strings[0] = "rmgr";
+                            strings[1] = "list";
+                            reasonsCommand(msg, strings, isTeamMember, isStaffMember);
+                        }
+                        else {
+                            reasonsCommand(msg, msg.getContentRaw().substring(1).split(" "), isTeamMember, isStaffMember);
+                        }
+                    }
+                    catch (IOException e) {
+                        log.error("Reasons Manager", e);
+                    }
+                    break;
             }
         }
         // Commands Above this line will not run while commands are suspended
@@ -268,6 +272,15 @@ public class BotAbuseMain extends ListenerAdapter {
             }
             catch (NullPointerException ex) {
                 // Take No Action - This is handled elsewhere
+            }
+        }
+        else if (!botConfig.isEnabled() && isCommand(args[0])) {
+            embed.setAsError("Disabled", "**:x: Unable to Perform This Action - The Bot Abuse Feature is currently disabled**");
+            if (discord.isTeamMember(msg.getAuthor().getIdLong())) {
+                embed.sendToTeamOutput(msg, msg.getAuthor());
+            }
+            else {
+                embed.sendToMemberOutput(msg, msg.getAuthor());
             }
         }
         isNotBusy();
@@ -1499,50 +1512,55 @@ public class BotAbuseMain extends ListenerAdapter {
         String defaultOutput = "*__Bot Abuse Feature__*";
         defaultOutput = defaultOutput.concat("\nStatus: **?**");
 
-        switch (guild.getJDA().getStatus()) {
-            case AWAITING_LOGIN_CONFIRMATION:
-            case ATTEMPTING_TO_RECONNECT:
-            case LOGGING_IN:
-            case WAITING_TO_RECONNECT:
-            case CONNECTING_TO_WEBSOCKET:
-            case IDENTIFYING_SESSION:
-                defaultOutput = defaultOutput.replace("?", ":warning: Connecting");
-                break;
-            case INITIALIZED:
-            case INITIALIZING:
-            case LOADING_SUBSYSTEMS:
-                defaultOutput = defaultOutput.replace("?", ":warning: Starting");
-                break;
-            case DISCONNECTED:
-            case FAILED_TO_LOGIN:
-                defaultOutput = defaultOutput.replace("?", ":warning: Disconnected");
-                break;
-            case RECONNECT_QUEUED:
-                defaultOutput = defaultOutput.replace("?", ":warning: Connection Queued");
-                break;
-            case CONNECTED:
-                if (commandsSuspended && !isBusy && isConnected) defaultOutput =
-                        defaultOutput.replace("?", "Limited");
-                else if (guild.getJDA().getGatewayPing() >= mainConfig.highPingTime && isConnected)
-                    defaultOutput = defaultOutput.replace("?", ":warning: High Ping");
-                else if (isConnected && !isBusy && !commandsSuspended)
-                    defaultOutput = defaultOutput.replace("?", "Waiting for Command...");
-                else if (isBusy) defaultOutput = defaultOutput.replace("?", ":warning: Busy");
-                else defaultOutput = defaultOutput.replace("?", ":warning: Connected - Not Ready");
-            default:
-                defaultOutput = defaultOutput.replace("?", "Unknown");
+        if (botConfig.isEnabled()) {
+            switch (guild.getJDA().getStatus()) {
+                case AWAITING_LOGIN_CONFIRMATION:
+                case ATTEMPTING_TO_RECONNECT:
+                case LOGGING_IN:
+                case WAITING_TO_RECONNECT:
+                case CONNECTING_TO_WEBSOCKET:
+                case IDENTIFYING_SESSION:
+                    defaultOutput = defaultOutput.replace("?", ":warning: Connecting");
+                    break;
+                case INITIALIZED:
+                case INITIALIZING:
+                case LOADING_SUBSYSTEMS:
+                    defaultOutput = defaultOutput.replace("?", ":warning: Starting");
+                    break;
+                case DISCONNECTED:
+                case FAILED_TO_LOGIN:
+                    defaultOutput = defaultOutput.replace("?", ":warning: Disconnected");
+                    break;
+                case RECONNECT_QUEUED:
+                    defaultOutput = defaultOutput.replace("?", ":warning: Connection Queued");
+                    break;
+                case CONNECTED:
+                    if (commandsSuspended && !isBusy && isConnected) defaultOutput =
+                            defaultOutput.replace("?", "Limited");
+                    else if (guild.getJDA().getGatewayPing() >= mainConfig.highPingTime && isConnected)
+                        defaultOutput = defaultOutput.replace("?", ":warning: High Ping");
+                    else if (isConnected && !isBusy && !commandsSuspended)
+                        defaultOutput = defaultOutput.replace("?", "Waiting for Command...");
+                    else if (isBusy) defaultOutput = defaultOutput.replace("?", ":warning: Busy");
+                    else defaultOutput = defaultOutput.replace("?", ":warning: Connected - Not Ready");
+                default:
+                    defaultOutput = defaultOutput.replace("?", "Unknown");
+            }
+
+            defaultOutput = defaultOutput.concat(
+                    "\nCommand Status: **" + !commandsSuspended +
+                            "**\nPing Time: **" + guild.getJDA().getGatewayPing() + "ms" +
+                            "**\n\nTimer 1 Status: **" + (baTimers.getExpiryTimer().isTimerRunning() && !timersSuspended) +
+                            "**\n*Timer 1 is what ticks every second. Each second the bot checks all the expiry times against the current time.*" +
+                            "\n\nTimer 2 Status: **" + (baTimers.getRoleScanningTimer().isTimerRunning() && !timersSuspended) +
+                            "**\n*Timer 2 Runs Every " + botConfig.getRoleScannerInterval() +
+                            " Minutes and checks the integrity of the Bot Abuse roles each time it runs.*");
+
+            return defaultOutput;
         }
-
-        defaultOutput = defaultOutput.concat(
-                "\nCommand Status: **" + !commandsSuspended +
-                        "**\nPing Time: **" + guild.getJDA().getGatewayPing() + "ms" +
-                        "**\n\nTimer 1 Status: **" + (baTimers.getExpiryTimer().isTimerRunning() && !timersSuspended) +
-                        "**\n*Timer 1 is what ticks every second. Each second the bot checks all the expiry times against the current time.*" +
-                        "\n\nTimer 2 Status: **" + (baTimers.getRoleScanningTimer().isTimerRunning() && !timersSuspended) +
-                        "**\n*Timer 2 Runs Every " + getRoleScannerInterval() +
-                        " Minutes and checks the integrity of the Bot Abuse roles each time it runs.*");
-
-        return defaultOutput;
+        else {
+            return defaultOutput.replace("?", ":x: Disabled");
+        }
     }
     ///////////////////////////////////////////////////////////
     // Miscellaneous Methods
@@ -1571,9 +1589,6 @@ public class BotAbuseMain extends ListenerAdapter {
             log.error("Reload Method", ex);
         }
     }
-    public int getRoleScannerInterval() {
-        return botConfig.roleScannerInterval;
-    }
     BotAbuseMain getThis() {
         return this;
     }
@@ -1582,5 +1597,8 @@ public class BotAbuseMain extends ListenerAdapter {
     }
     public BotAbuseConfiguration getConfig() {
         return botConfig;
+    }
+    DateTimeFormatter getDefaultSDF() {
+        return discord.getDefaultSDF();
     }
 }

@@ -1,5 +1,4 @@
 {
-  "systemPath": "<System Path Here>",
   "testModeEnabled": true,
   "token": "<Token Here>",
   "commandPrefix": "!",
@@ -7,7 +6,7 @@
   "ownerDiscordID": "<Owner Discord ID Here>",
   "adminRole": "702223865606176841",
   "staffRole": "666047627166744597",
-  "teamRole": "664556958686380083",
+  "teamRole": "849692170855776307",
   "teamDiscussionChannel": "664525869913473054",
   "helpChannel": "666801237781643296",
   "botSpamChannel": "720791570600820838",

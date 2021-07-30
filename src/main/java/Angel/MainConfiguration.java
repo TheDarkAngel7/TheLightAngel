@@ -9,7 +9,6 @@ import net.dv8tion.jda.api.entities.TextChannel;
 public abstract class MainConfiguration {
     private JsonObject configObj;
     Guild guild;
-    public String systemPath;
     public String token;
     public boolean testModeEnabled;
     boolean deleteOriginalNonStaffCommands;
@@ -54,7 +53,6 @@ public abstract class MainConfiguration {
 
     MainConfiguration(JsonObject importConfigObj) {
         configObj = importConfigObj;
-        systemPath = configObj.get("systemPath").getAsString();
         token = configObj.get("token").getAsString();
         testModeEnabled = configObj.get("testModeEnabled").getAsBoolean();
     }

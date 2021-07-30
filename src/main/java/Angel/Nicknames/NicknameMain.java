@@ -1,6 +1,8 @@
 package Angel.Nicknames;
 
 import Angel.*;
+import net.dv8tion.jda.api.audit.AuditLogEntry;
+import net.dv8tion.jda.api.audit.TargetType;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
@@ -30,7 +32,7 @@ public class NicknameMain extends ListenerAdapter {
     Guild guild;
     private DiscordBotMain discord;
     private FileHandler fileHandler;
-    public NickConfiguration nickConfig;
+    private NickConfiguration nickConfig;
     private EmbedHandler embed;
     private MainConfiguration mainConfig;
     private NicknameCore nickCore;
@@ -47,8 +49,8 @@ public class NicknameMain extends ListenerAdapter {
     public boolean isConnected = false;
     public boolean isBusy = false;
     public User commandUser;
-    private ArrayList<Long> requestCooldownDiscordIDs = new ArrayList<>();
-    private ArrayList<ZonedDateTime> requestCooldownDates = new ArrayList<>();
+    private List<Long> requestCooldownDiscordIDs = new ArrayList<>();
+    private List<ZonedDateTime> requestCooldownDates = new ArrayList<>();
     private ZonedDateTime c;
     private Timer timer = new Timer();
 
@@ -63,9 +65,14 @@ public class NicknameMain extends ListenerAdapter {
             this.fileHandler = new FileHandler(nickCore);
             nickConfig = new ModifyNickConfiguration(fileHandler.getConfig(), fileHandler.gson, importGuild);
             help = new Help(embed, this, mainConfig);
-            nickConfig.setup();
-            nickCore.startup();
-            nickCore.setNickConfig(nickConfig);
+            if (nickConfig.isEnabled()) {
+                nickConfig.setup();
+                nickCore.startup();
+                nickCore.setNickConfig(nickConfig);
+            }
+            else {
+                log.warn("Nickname side of the bot is Disabled");
+            }
         }
         catch (FileNotFoundException e) {
             log.error("Nickname Constructor", e);
@@ -73,10 +80,10 @@ public class NicknameMain extends ListenerAdapter {
         catch (IOException e) {
             log.error("Nickname Constructor", e);
         }
-        if (!commandsSuspended) {
+        if (!commandsSuspended && nickConfig.isEnabled()) {
             setupRestrictedRoles(false);
+            init();
         }
-        init();
     }
 
     @Override
@@ -145,16 +152,52 @@ public class NicknameMain extends ListenerAdapter {
     public void onGuildMemberUpdateNickname(@Nonnull GuildMemberUpdateNicknameEvent event) {
         isBusy = true;
         if (!ignoreNewNickname
-                && inNickRestrictedRole(event.getMember().getIdLong())
-                && !discord.isTeamMember(event.getMember().getIdLong())) {
-            if (tempDiscordID.contains(event.getUser().getIdLong()) || nickCore.discordID.contains(event.getUser().getIdLong())) {
+                && inNickRestrictedRole(event.getMember().getIdLong())) {
+            AtomicReference<AuditLogEntry> entry = new AtomicReference<>(null);
+            guild.retrieveAuditLogs().queue(l -> {
+                int index = 0;
+                do {
+                    if (l.get(index).getTargetType() == TargetType.MEMBER) {
+                        if (l.get(index).getTargetIdLong() == event.getUser().getIdLong()) {
+                            entry.set(l.get(index));
+                            break;
+                        }
+                    }
+                } while (++index < l.size());
+            });
+
+            while (true) {
+                if (entry.get() != null) break;
+                try { Thread.sleep(100); } catch (InterruptedException e) {}
+            }
+
+            if (discord.isTeamMember(entry.get().getUser().getIdLong())) {
+                String newNickname = event.getNewNickname();
+                AtomicReference<Member> member = new AtomicReference<>();
+                AtomicReference<Member> memberResponsible = new AtomicReference<>();
+                guild.retrieveMember(entry.get().getUser()).queue(m -> memberResponsible.set(m));
+                guild.retrieveMember(event.getUser()).queue(m -> member.set(m));
+                if (newNickname == null) {
+                    newNickname = member.get().getEffectiveName() + " (Their Discord Username)";
+                }
+                addNameHistory(event.getUser().getIdLong(), event.getOldNickname(), null);
+                embed.setAsInfo("Nickname Updated", "**" + entry.get().getUser().getAsMention() + " successfully changed a nickname via the discord GUI:**" +
+                        "\nMember: " + event.getUser().getAsMention() +
+                        "\nOld Nickname: **" + event.getOldNickname() +
+                        "**\nNew Nickname: **" + newNickname + "**");
+                embed.sendToLogChannel();
+                log.info(memberResponsible.get().getEffectiveName() + " changed " + member.get().getEffectiveName() +
+                        "'s nickname from " + event.getOldNickname() + " to " + event.getNewNickname());
+            }
+
+            else if (tempDiscordID.contains(event.getUser().getIdLong()) || nickCore.discordID.contains(event.getUser().getIdLong())) {
                 if (tempDiscordID.contains(event.getUser().getIdLong())) {
                     ignoreNewNickname = true;
                     embed.setAsWarning("Instructions Warning",
                     "Please Re-Read the Instructions I just gave you above this message");
                     embed.sendDM(null, event.getUser());
                     event.getMember().modifyNickname(event.getOldNickname())
-                            .reason("Already has pending nickname request and again tried to change it on their own...").queue();
+                            .reason("Already has tried to change their nickane on their own").queue();
 
                 }
                 else if (nickCore.discordID.contains(event.getUser().getIdLong())) {
@@ -553,6 +596,7 @@ public class NicknameMain extends ListenerAdapter {
                             }
                             if (oldNickArray == null) {
                                 embed.setAsError("No Name History", ":x: **This Player Has No Name History**");
+                                embed.sendToTeamOutput(msg, msg.getAuthor());
                             }
                             else {
                                 int index = 0;
@@ -802,6 +846,7 @@ public class NicknameMain extends ListenerAdapter {
                 embed.setAsError("Nickname Request Not Found",
                         "**Your nickname request cannot be found**");
                 embed.sendToTeamOutput(msg, null);
+                return;
             }
             catch (NumberFormatException ex) {
                 isMention = true;
@@ -810,18 +855,14 @@ public class NicknameMain extends ListenerAdapter {
                 newNickname = nickCore.newNickname.get(nickCore.discordID.indexOf(targetDiscordID));
                 guild.retrieveMemberById(targetDiscordID).queue(m -> memberInQuestion.set(m));
                 if (requestAccepted) {
-                    result = nickCore.acceptRequest(targetDiscordID, -1);
+                    result = handler.getAsMention() + " " + nickCore.acceptRequest(targetDiscordID, -1);
                     addNameHistory(targetDiscordID, oldNickname, msg);
                 }
                 else {
-                    result = nickCore.denyRequest(targetDiscordID, -1);
+                    result = handler.getAsMention() + " " + nickCore.denyRequest(targetDiscordID, -1);
                 }
             }
-            if (result == null) {
-                embed.setAsError("Request Not Found", "**Nickname Request Was Not Found**");
-                embed.sendToTeamOutput(msg, null);
-            }
-            else if (isMention) {
+            if (isMention) {
                 if (result.contains("FATAL ERROR")) {
                     discord.failedIntegrityCheck(this.getClass().getName(), msg, "Nickname: Request Handler - Mention");
                 }
@@ -885,7 +926,9 @@ public class NicknameMain extends ListenerAdapter {
                     if (requestAccepted) {
                         ignoreNewNickname = true;
                         if (newNickname == null) {
-                            memberInQuestion.get().modifyNickname(null).queue();
+                            memberInQuestion.get().modifyNickname(null).reason("Staff Member " + handler.getEffectiveName() +
+                                    " accepted the nickname request of " + memberInQuestion.get().getUser().getAsTag() +
+                                    ", their display name now matches their discord username").queue();
                             embed.setAsSuccess("Successful Nickname Request Acceptance", result);
                             embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
@@ -897,7 +940,8 @@ public class NicknameMain extends ListenerAdapter {
                                     " their nickname was erased and now it matches their discord name.");
                         }
                         else {
-                            memberInQuestion.get().modifyNickname(getNewNickname).queue();
+                            memberInQuestion.get().modifyNickname(getNewNickname).reason("Staff Member " + handler.getEffectiveName() +
+                                    " accepted the nickname request of " + memberInQuestion.get().getUser().getAsTag()).queue();
                             embed.setAsSuccess("Successful Nickname Request Acceptance", result);
                             embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
@@ -1022,10 +1066,8 @@ public class NicknameMain extends ListenerAdapter {
         }
     }
     private void startRequestCooldown(long targetDiscordID) {
-        ZonedDateTime cExp = ZonedDateTime.now(ZoneId.of("UTC"));
-        cExp.plusMinutes(nickConfig.requestCoolDown);
         requestCooldownDiscordIDs.add(targetDiscordID);
-        requestCooldownDates.add(cExp);
+        requestCooldownDates.add(ZonedDateTime.now(ZoneId.of("UTC")).plusMinutes(nickConfig.requestCoolDown));
     }
     public void reload(Message msg) {
         try {
@@ -1117,47 +1159,56 @@ public class NicknameMain extends ListenerAdapter {
     }
     public String getStatusString() {
         String defaultOutput =
-                "\n\n\n*__Nickname Feature__*" +
-                        "\nStatus: **?**" +
-                        "\nCommand Status: **" + !commandsSuspended +
-                        "**\nPing Time: **" + guild.getJDA().getGatewayPing() + "ms**";
+                "\n\n*__Nickname Feature__*" +
+                        "\nStatus: **?**";
 
-        switch (guild.getJDA().getStatus()) {
-            case AWAITING_LOGIN_CONFIRMATION:
-            case ATTEMPTING_TO_RECONNECT:
-            case LOGGING_IN:
-            case WAITING_TO_RECONNECT:
-            case CONNECTING_TO_WEBSOCKET:
-            case IDENTIFYING_SESSION:
-                defaultOutput = defaultOutput.replace("?", ":warning: Connecting");
-                break;
-            case INITIALIZED:
-            case INITIALIZING:
-            case LOADING_SUBSYSTEMS:
-                defaultOutput = defaultOutput.replace("?", ":warning: Starting");
-                break;
-            case DISCONNECTED:
-            case FAILED_TO_LOGIN:
-                defaultOutput = defaultOutput.replace("?", ":warning: Disconnected");
-                break;
-            case RECONNECT_QUEUED:
-                defaultOutput = defaultOutput.replace("?", ":warning: Connection Queued");
-                break;
-            case CONNECTED:
-                if (commandsSuspended && !isBusy && isConnected) defaultOutput =
-                        defaultOutput.replace("?", "Limited");
-                else if (guild.getJDA().getGatewayPing() >= mainConfig.highPingTime && isConnected)
-                    defaultOutput = defaultOutput.replace("?", ":warning: High Ping");
-                else if (isConnected && !isBusy && !commandsSuspended)
-                    defaultOutput = defaultOutput.replace("?", "Waiting for Command...");
-                else if (isBusy) defaultOutput = defaultOutput.replace("?", ":warning: Busy");
-                else defaultOutput = defaultOutput.replace("?", ":warning: Connected - Not Ready");
-            default:
-                defaultOutput = defaultOutput.replace("?", "Unknown");
+        if (nickConfig.isEnabled()) {
+            defaultOutput = defaultOutput.concat("\nCommand Status: **" + !commandsSuspended +
+                    "**\nPing Time: **" + guild.getJDA().getGatewayPing() + "ms**");
+
+            switch (guild.getJDA().getStatus()) {
+                case AWAITING_LOGIN_CONFIRMATION:
+                case ATTEMPTING_TO_RECONNECT:
+                case LOGGING_IN:
+                case WAITING_TO_RECONNECT:
+                case CONNECTING_TO_WEBSOCKET:
+                case IDENTIFYING_SESSION:
+                    defaultOutput = defaultOutput.replace("?", ":warning: Connecting");
+                    break;
+                case INITIALIZED:
+                case INITIALIZING:
+                case LOADING_SUBSYSTEMS:
+                    defaultOutput = defaultOutput.replace("?", ":warning: Starting");
+                    break;
+                case DISCONNECTED:
+                case FAILED_TO_LOGIN:
+                    defaultOutput = defaultOutput.replace("?", ":warning: Disconnected");
+                    break;
+                case RECONNECT_QUEUED:
+                    defaultOutput = defaultOutput.replace("?", ":warning: Connection Queued");
+                    break;
+                case CONNECTED:
+                    if (commandsSuspended && !isBusy && isConnected) defaultOutput =
+                            defaultOutput.replace("?", "Limited");
+                    else if (guild.getJDA().getGatewayPing() >= mainConfig.highPingTime && isConnected)
+                        defaultOutput = defaultOutput.replace("?", ":warning: High Ping");
+                    else if (isConnected && !isBusy && !commandsSuspended)
+                        defaultOutput = defaultOutput.replace("?", "Waiting for Command...");
+                    else if (isBusy) defaultOutput = defaultOutput.replace("?", ":warning: Busy");
+                    else defaultOutput = defaultOutput.replace("?", ":warning: Connected - Not Ready");
+                default:
+                    defaultOutput = defaultOutput.replace("?", "Unknown");
+            }
+        }
+        else {
+            defaultOutput = defaultOutput.replace("?", ":x: Disabled");
         }
         return defaultOutput;
     }
     NicknameMain getThis() {
         return this;
+    }
+    public NickConfiguration getConfig() {
+        return nickConfig;
     }
 }
