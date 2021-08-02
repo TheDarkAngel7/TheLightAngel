@@ -147,10 +147,6 @@ public class DiscordBotMain extends ListenerAdapter {
                 MessageEntry entry = null;
                 ListEmbed listEmbed = null;
 
-                // Action to Remove the User's reaction add before any processing
-                // this has to happen in any case so this is among the first things that happen
-                event.getReaction().removeReaction(event.getUser()).queue();
-
                 int index = 0;
 
                 listEmbed = getListEmbedFromMsg(msg);
@@ -162,6 +158,10 @@ public class DiscordBotMain extends ListenerAdapter {
 
                 if (event.getUser().getIdLong() != entry.getOriginalCmd().getAuthor().getIdLong() &&
                         !isTeamMember(event.getUser().getIdLong())) return;
+
+                // Action to Remove the User's reaction add before any processing
+                // this has to happen in any case so this is among the first things that happen
+                event.getReaction().removeReaction(event.getUser()).queue();
 
                 int previousIndex = listEmbed.getCurrentPageIndex();
 
@@ -1130,11 +1130,12 @@ public class DiscordBotMain extends ListenerAdapter {
 
     private ListEmbed getListEmbedFromMsg(Message listEmbedMsg) {
         int index = 0;
-        do {
+        while (index < listEmbeds.size()) {
             if (listEmbeds.get(index).getMessageEntry().getResultEmbed().getIdLong() == listEmbedMsg.getIdLong()) {
                 return listEmbeds.get(index);
             }
-        } while (++index < (listEmbeds).size());
+            index++;
+        }
         return null;
     }
     ///////////////
