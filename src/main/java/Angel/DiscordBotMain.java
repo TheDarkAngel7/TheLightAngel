@@ -1117,14 +1117,31 @@ public class DiscordBotMain extends ListenerAdapter {
     public void addAsReactionListEmbed(CustomListEmbed customListEmbed) {
         addAsReactionListEmbed(customListEmbed.getListEmbed());
     }
+    public void updateReactionListEmbed(ListEmbed listEmbed, List<String> newAlternatingStrings) {
+        ListEmbed oldListEmbed = listEmbeds.remove(listEmbeds.indexOf(listEmbed));
+
+        ListEmbed newListEmbed = oldListEmbed.setNewAlternatingStrings(newAlternatingStrings);
+
+        listEmbeds.add(newListEmbed);
+        newListEmbed.getMessageEntry().getResultEmbed().editMessage(newListEmbed.getCurrentPage()).queue();
+    }
+    public void updateReactionListEmbed(CustomListEmbed customListEmbed, List<String> newAlternatingStrings) {
+        updateReactionListEmbed(customListEmbed.getListEmbed(), newAlternatingStrings);
+    }
+    // This is used when we want to update prefix or suffixes of the list embed objects
+    public void replaceListEmbedObjects(ListEmbed oldListEmbed, ListEmbed newListEmbed) {
+        listEmbeds.set(listEmbeds.indexOf(oldListEmbed), newListEmbed);
+
+        oldListEmbed.getMessageEntry().getResultEmbed().editMessage(newListEmbed.getCurrentPage()).queue();
+    }
     private void addCustomEmotes(Message listEmbedMsg) {
         ListEmbed listEmbed = getListEmbedFromMsg(listEmbedMsg);
         if (listEmbed.isCustomEmbed()) {
             int index = 0;
-            do {
+            while (index < listEmbed.getCustomListEmbed().getEmoteUnicodeToReactOn().size()) {
                 listEmbed.getMessageEntry().getResultEmbed().addReaction(
-                        listEmbed.getCustomListEmbed().getEmoteUnicodeToReactOn().get(index)).queue();
-            } while (++index < listEmbed.getCustomListEmbed().getEmoteUnicodeToReactOn().size());
+                        listEmbed.getCustomListEmbed().getEmoteUnicodeToReactOn().get(index++)).queue();
+            }
         }
     }
 
