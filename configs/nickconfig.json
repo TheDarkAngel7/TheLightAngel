@@ -2,5 +2,6 @@
   "enabled": true,
   "rolesNotAllowedToChangeName": "[722479448342921216,773234905399820318]",
   "requestCoolDownInMinutes": 60,
+  "useTeamChannelOnRequest": false,
   "pingStaffOnlineOnRequest": false
 }

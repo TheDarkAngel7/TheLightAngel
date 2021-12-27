@@ -177,7 +177,7 @@ public class NicknameMain extends ListenerAdapter {
                 newNickname = member.get().getEffectiveName() + " (Their Discord Username)";
             }
             addNameHistory(event.getUser().getIdLong(), event.getOldNickname(), null);
-            embed.setAsInfo("Nickname Updated", "**" + entry.get().getUser().getAsMention() + " successfully changed a nickname via the discord GUI:**" +
+            embed.setAsInfo("Staff Updated Nickname", "**" + entry.get().getUser().getAsMention() + " successfully changed a nickname via the discord GUI:**" +
                     "\nMember: " + event.getUser().getAsMention() +
                     "\nOld Nickname: **" + event.getOldNickname() +
                     "**\nNew Nickname: **" + newNickname + "**");
@@ -462,8 +462,10 @@ public class NicknameMain extends ListenerAdapter {
                                         embed.sendDM(msg, msg.getAuthor());
                                         embed.setAsInfo("Nickname Request Received", result);
                                         embed.sendToLogChannel();
-                                        if (nickConfig.pingOnlineStaff) {
-                                            mainConfig.discussionChannel.sendMessage("@here Whenever one of you get a chance, please review the following nickname request:").queue();
+                                        if (nickConfig.useTeamChannel) {
+                                            if (nickConfig.pingOnlineStaff) {
+                                                mainConfig.discussionChannel.sendMessage("@here Whenever one of you get a chance, please review the following nickname request:").queue();
+                                            }
                                             embed.setAsInfo("Nickname Request Received", result);
                                             embed.sendToTeamOutput(msg, msg.getAuthor());
                                         }

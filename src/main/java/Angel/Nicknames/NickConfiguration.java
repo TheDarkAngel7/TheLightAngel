@@ -18,6 +18,7 @@ public abstract class NickConfiguration {
     List<Role> restrictedRoles = new ArrayList<>();
     List<Long> restrictedRolesLong;
     int requestCoolDown;
+    boolean useTeamChannel;
     boolean pingOnlineStaff;
     private final Type longType = new TypeToken<ArrayList<Long>>(){}.getType();
 
@@ -31,6 +32,7 @@ public abstract class NickConfiguration {
         restrictedRolesLong = gson.fromJson(configObj.get("rolesNotAllowedToChangeName").getAsString(), longType);
         requestCoolDown = configObj.get("requestCoolDownInMinutes").getAsInt();
         pingOnlineStaff = configObj.get("pingStaffOnlineOnRequest").getAsBoolean();
+        useTeamChannel = configObj.get("useTeamChannelOnRequest").getAsBoolean();
     }
     void reload(JsonObject reloadedObject) {
         configObj = reloadedObject;

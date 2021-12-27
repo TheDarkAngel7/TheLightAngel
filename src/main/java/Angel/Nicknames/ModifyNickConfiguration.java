@@ -9,8 +9,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 class ModifyNickConfiguration extends NickConfiguration {
-    private final ArrayList<String> configs = new ArrayList<>(Arrays.asList("rolesNotAllowedToChangeName",
-            "requestCoolDown", "requestCD", "reqCD", "pingStaffOnline", "pingStaffOnlineOnRequest"));
+    private final ArrayList<String> configs = new ArrayList<>(Arrays.asList("useteamchannelonrequest", "rolesnotallowedtochangename",
+            "requestcooldown", "requestcd", "reqcd", "pingstaffonline", "pingstaffonlineonrequest"));
 
     ModifyNickConfiguration(JsonObject importConfigObj, Gson importGsonInstance, Guild importGuild) {
         super(importConfigObj, importGsonInstance, importGuild);
@@ -26,6 +26,8 @@ class ModifyNickConfiguration extends NickConfiguration {
 
     public void setConfig(String key, boolean newValue) {
         switch (key.toLowerCase()) {
+            case "useTeamChannelOnRequest": useTeamChannel = newValue;
+            break;
             case "pingStaffOnline":
             case "pingStaffOnlineOnRequest": pingOnlineStaff = newValue;
         }
