@@ -107,6 +107,10 @@ public class EmbedHandler {
         messageQueue.get(messageQueue.size() - 1).setChannels(Arrays.asList(sets)).setOriginalCmd(msg);
         sendAllMessages();
     }
+    public void sendToChannels(Message msg, List<TargetChannelSet> sets) {
+        messageQueue.get(messageQueue.size() - 1).setChannels(sets).setOriginalCmd(msg);
+        sendAllMessages();
+    }
     public void deleteResultsByCommand(Message originalCmd) {
         originalCmd.delete().queue();
         commandMessageMap.remove(originalCmd).getResultEmbed().delete().queue();
@@ -138,28 +142,27 @@ public class EmbedHandler {
                                 mainConfig.logChannel.sendMessage(entry.getEmbed()).queue();
                                 break;
                             case TEAM:
-                                if (entry.getOriginalCmd().getChannelType().equals(ChannelType.PRIVATE) && !entry.isListEmbed())
-                                    entry.setChannels(Arrays.asList(TargetChannelSet.DM));
+                                if (!entry.getOriginalCmd().getChannel().equals(mainConfig.managementChannel) && (!mainConfig.forceToManagementChannel ||
+                                        mainConfig.managementChannelID.equalsIgnoreCase("None")
+                                        || entry.getOriginalCmd().getChannel().equals(mainConfig.discussionChannel) ||
+                                        // V Bypass mainConfig.forceToManagementChannel being true, in cases where channels has more than 1 target and
+                                        // TEAM is one of them, go to discussion channel.
+                                        entry.getChannels().size() > 1 && entry.getChannels().contains(TargetChannelSet.TEAM))) {
+                                    if (entry.getTargetUser() != null && (!entry.getOriginalCmd().getChannel().equals(mainConfig.discussionChannel) && !entry.getOriginalCmd().getChannel().equals(mainConfig.managementChannel))
+                                            && discord.isTeamMember(entry.getTargetUser().getIdLong())) {
+                                        mainConfig.discussionChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
+                                    }
+                                    mainConfig.discussionChannel.sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
+                                        placeInCmdMap(entry.setResultEmbed(m));
+                                    });
+                                }
                                 else {
-                                    if (!entry.getOriginalCmd().getChannel().equals(mainConfig.managementChannel) && (!mainConfig.forceToManagementChannel ||
-                                            mainConfig.managementChannelID.equalsIgnoreCase("None")
-                                            || entry.getOriginalCmd().getChannel().equals(mainConfig.discussionChannel))) {
-                                        if (entry.getTargetUser() != null && (!entry.getOriginalCmd().getChannel().equals(mainConfig.discussionChannel) && !entry.getOriginalCmd().getChannel().equals(mainConfig.managementChannel))
-                                                && discord.isTeamMember(entry.getTargetUser().getIdLong())) {
-                                            mainConfig.discussionChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
-                                        }
-                                        mainConfig.discussionChannel.sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
-                                            placeInCmdMap(entry.setResultEmbed(m));
-                                        });
+                                    if (entry.getTargetUser() != null && !entry.getOriginalCmd().getChannel().equals(mainConfig.managementChannel)) {
+                                        mainConfig.managementChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                     }
-                                    else {
-                                        if (entry.getTargetUser() != null && !entry.getOriginalCmd().getChannel().equals(mainConfig.managementChannel)) {
-                                            mainConfig.managementChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
-                                        }
-                                        mainConfig.managementChannel.sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
-                                            placeInCmdMap(entry.setResultEmbed(m));
-                                        });
-                                    }
+                                    mainConfig.managementChannel.sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
+                                        placeInCmdMap(entry.setResultEmbed(m));
+                                    });
                                 }
                                 break;
                             case MEMBER:

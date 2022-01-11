@@ -103,6 +103,7 @@ public class NicknameMain extends ListenerAdapter {
     @Override
     public void onUserUpdateName(@Nonnull UserUpdateNameEvent event) {
         isBusy = true;
+        guild.unloadMember(event.getUser().getIdLong());
         try {
             guild.retrieveMember(event.getUser(), true).queue(m -> {
                 if (m.getNickname() == null && inNickRestrictedRole(event.getUser().getIdLong())) {
@@ -177,7 +178,7 @@ public class NicknameMain extends ListenerAdapter {
                 newNickname = member.get().getEffectiveName() + " (Their Discord Username)";
             }
             addNameHistory(event.getUser().getIdLong(), event.getOldNickname(), null);
-            embed.setAsInfo("Nickname Updated", "**" + entry.get().getUser().getAsMention() + " successfully changed a nickname via the discord GUI:**" +
+            embed.setAsInfo("Staff Updated Nickname", "**" + entry.get().getUser().getAsMention() + " successfully changed a nickname via the discord GUI:**" +
                     "\nMember: " + event.getUser().getAsMention() +
                     "\nOld Nickname: **" + event.getOldNickname() +
                     "**\nNew Nickname: **" + newNickname + "**");
@@ -461,13 +462,16 @@ public class NicknameMain extends ListenerAdapter {
                                         embed.setAsSuccess("Nickname Request Submitted", DMResponse.concat(SocialClubInfo));
                                         embed.sendDM(msg, msg.getAuthor());
                                         embed.setAsInfo("Nickname Request Received", result);
-                                        embed.sendToLogChannel();
-                                        if (nickConfig.pingOnlineStaff) {
-                                            mainConfig.discussionChannel.sendMessage("@here Whenever one of you get a chance, please review the following nickname request:").queue();
-                                            embed.setAsInfo("Nickname Request Received", result);
-                                            embed.sendToTeamOutput(msg, msg.getAuthor());
+                                        List<TargetChannelSet> channels = new ArrayList<>();
+                                        channels.add(TargetChannelSet.LOG);
+                                        if (nickConfig.useTeamChannel) {
+                                            if (nickConfig.pingOnlineStaff) {
+                                                mainConfig.discussionChannel.sendMessage("@here Whenever one of you get a chance, please review the following nickname request:").queue();
+                                            }
+                                            channels.add(TargetChannelSet.TEAM);
                                         }
                                         log.info("New Nickname Request Received from " + msg.getAuthor().getAsTag());
+                                        embed.sendToChannels(msg, channels);
                                     }
                                 }
                                 else {
@@ -502,13 +506,16 @@ public class NicknameMain extends ListenerAdapter {
                                     if (msg.getChannelType() == ChannelType.PRIVATE) embed.sendDM(msg, msg.getAuthor());
                                     else embed.sendToMemberOutput(msg, msg.getAuthor());
                                     embed.setAsInfo("Nickname Request Received", result);
-                                    embed.sendToLogChannel();
-                                    if (nickConfig.pingOnlineStaff) {
-                                        mainConfig.discussionChannel.sendMessage("@here Whenever one of you get a chance, please review the following nickname request:").queue();
-                                        embed.setAsInfo("Nickname Request Received", result);
-                                        embed.sendToTeamOutput(msg, null);
+                                    List<TargetChannelSet> channels = new ArrayList<>();
+                                    channels.add(TargetChannelSet.LOG);
+                                    if (nickConfig.useTeamChannel) {
+                                        if (nickConfig.pingOnlineStaff) {
+                                            mainConfig.discussionChannel.sendMessage("@here Whenever one of you get a chance, please review the following nickname request:").queue();
+                                        }
+                                        channels.add(TargetChannelSet.TEAM);
                                     }
                                     log.info("New Nickname Request Received from " + msg.getAuthor().getAsTag());
+                                    embed.sendToChannels(msg, channels);
                                 }
                             }
                         }
