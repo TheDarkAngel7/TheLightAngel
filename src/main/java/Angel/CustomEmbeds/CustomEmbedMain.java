@@ -83,6 +83,7 @@ public class CustomEmbedMain extends ListenerAdapter {
                         "\n\nIf you would like to use this design use the same command again followed by what you want displayed" +
                         "\n`" + msg.getContentRaw() + " <Message>` or `" + msg.getContentRaw() + " <Title | Message>`"
                         , requestedDesign, mainConfig).setOriginalCmd(msg).setChannels(TargetChannelSet.SAME).dontUseFieldEmbed());
+                log.info(msg.getMember().getEffectiveName() + " requested a sample output of Embed Design " + requestedDesign.name());
             }
             else {
                 String title = "";
@@ -90,6 +91,7 @@ public class CustomEmbedMain extends ListenerAdapter {
                 // index 2 to skip the cmd and first argument
                 int index = 2;
                 int breakIndex = 0;
+                int charSum = 0;
 
                 if (!msg.getContentRaw().contains("|")) {
                     title = "Message From " + msg.getMember().getEffectiveName();
@@ -107,6 +109,7 @@ public class CustomEmbedMain extends ListenerAdapter {
                             }
                             else {
                                 customMsg = customMsg.concat(args[index].split("|")[1]);
+                                charSum = customMsg.toCharArray().length;
                             }
                             breakIndex = index++;
                             break;
@@ -128,6 +131,8 @@ public class CustomEmbedMain extends ListenerAdapter {
 
                 embed.sendAsMessageEntryObj(new MessageEntry(title, customMsg, requestedDesign, mainConfig)
                         .setChannels(TargetChannelSet.SAME).setOriginalCmd(msg).dontUseFieldEmbed());
+                log.info(msg.getMember().getEffectiveName() + " successfully created an embed with character length of " + charSum +
+                        " and was sent into the channel #" + msg.getChannel().getName());
             }
         }
         else {
