@@ -1,7 +1,7 @@
 package Angel.BotAbuse;
 
 import Angel.DiscordBotMain;
-import Angel.EmbedHandler;
+import Angel.EmbedEngine;
 import Angel.MainConfiguration;
 import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
@@ -18,12 +18,12 @@ class BotAbuseTimers {
     private ExpiryTimer expiryTimer;
     private RoleScanningTimer roleScanningTimer;
     private BotAbuseMain baFeature;
-    private EmbedHandler embed;
+    private EmbedEngine embed;
     private MainConfiguration mainConfig;
     private DiscordBotMain discord;
     private ScheduledExecutorService service = Executors.newScheduledThreadPool(2);
 
-    BotAbuseTimers(Guild guild, BotAbuseMain baFeature, EmbedHandler embed, MainConfiguration mainConfig, DiscordBotMain discord) {
+    BotAbuseTimers(Guild guild, BotAbuseMain baFeature, EmbedEngine embed, MainConfiguration mainConfig, DiscordBotMain discord) {
         this.guild = guild;
         this.baFeature = baFeature;
         this.embed = embed;

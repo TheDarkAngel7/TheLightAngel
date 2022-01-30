@@ -105,7 +105,7 @@ class LightAngel {
         }
         MainConfiguration mainConfig = new ModifyMainConfiguration(fileHandler.getMainConfig());
         mainConfig.initialSetup();
-        EmbedHandler embed = new EmbedHandler(mainConfig);
+        EmbedEngine embed = new EmbedEngine(mainConfig);
         discord = new DiscordBotMain(restartValue, mainConfig, embed, fileHandler);
         embed.setDiscordInstance(discord);
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,

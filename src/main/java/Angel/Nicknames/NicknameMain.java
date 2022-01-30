@@ -29,11 +29,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class NicknameMain extends ListenerAdapter {
     private final Logger log = LogManager.getLogger(NicknameMain.class);
-    Guild guild;
+    private Guild guild;
     private DiscordBotMain discord;
     private FileHandler fileHandler;
     private NickConfiguration nickConfig;
-    private EmbedHandler embed;
+    private EmbedEngine embed;
     private MainConfiguration mainConfig;
     private NicknameCore nickCore;
     private Help help;
@@ -53,7 +53,7 @@ public class NicknameMain extends ListenerAdapter {
     private ZonedDateTime c;
     private Timer timer = new Timer();
 
-    NicknameMain(boolean getCommandsSuspended, MainConfiguration importMainConfig, EmbedHandler importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException {
+    NicknameMain(boolean getCommandsSuspended, MainConfiguration importMainConfig, EmbedEngine importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException {
         this.mainConfig = importMainConfig;
         this.embed = importEmbed;
         this.guild = importGuild;

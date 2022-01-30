@@ -9,14 +9,14 @@ import net.dv8tion.jda.api.entities.User;
 import javax.annotation.Nullable;
 import java.util.*;
 
-public class EmbedHandler {
+public class EmbedEngine {
     private MainConfiguration mainConfig;
     private DiscordBotMain discord;
     private List<MessageEntry> messageQueue = new ArrayList<>();
     // Dictionary<Command Message Object, Resulting MessageEntry Object>
     private Dictionary<Message, MessageEntry> commandMessageMap = new Hashtable();
 
-    EmbedHandler(MainConfiguration mainConfig) {
+    EmbedEngine(MainConfiguration mainConfig) {
         this.mainConfig = mainConfig;
     }
 

@@ -12,11 +12,11 @@ import org.jetbrains.annotations.NotNull;
 public class CustomEmbedMain extends ListenerAdapter {
     private final Logger log = LogManager.getLogger(CustomEmbedMain.class);
     private final MainConfiguration mainConfig;
-    private final EmbedHandler embed;
+    private final EmbedEngine embed;
     private final DiscordBotMain discord;
     private final Guild guild;
 
-    CustomEmbedMain(MainConfiguration mainConfig, EmbedHandler embed, Guild guild, DiscordBotMain discord) {
+    CustomEmbedMain(MainConfiguration mainConfig, EmbedEngine embed, Guild guild, DiscordBotMain discord) {
         this.mainConfig = mainConfig;
         this.embed = embed;
         this.discord = discord;

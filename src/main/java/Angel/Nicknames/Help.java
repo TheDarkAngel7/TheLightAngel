@@ -1,14 +1,14 @@
 package Angel.Nicknames;
 
-import Angel.EmbedHandler;
+import Angel.EmbedEngine;
 import Angel.MainConfiguration;
 
 class Help {
-    private EmbedHandler embed;
+    private EmbedEngine embed;
     private NicknameMain nickMain;
     private MainConfiguration mainConfig;
 
-    Help(EmbedHandler embed, NicknameMain nickMain, MainConfiguration mainConfig) {
+    Help(EmbedEngine embed, NicknameMain nickMain, MainConfiguration mainConfig) {
         this.embed = embed;
         this.nickMain = nickMain;
         this.mainConfig = mainConfig;

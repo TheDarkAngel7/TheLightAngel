@@ -1,15 +1,15 @@
 package Angel.BotAbuse;
 
-import Angel.EmbedHandler;
+import Angel.EmbedEngine;
 import Angel.MainConfiguration;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 class Help {
     private BotAbuseMain baMain;
-    private EmbedHandler embed;
+    private EmbedEngine embed;
     private MainConfiguration mainConfig;
 
-    public Help(BotAbuseMain baMain, EmbedHandler embed, MainConfiguration mainConfig) {
+    public Help(BotAbuseMain baMain, EmbedEngine embed, MainConfiguration mainConfig) {
         this.baMain = baMain;
         this.embed = embed;
         this.mainConfig = mainConfig;

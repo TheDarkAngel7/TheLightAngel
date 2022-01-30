@@ -1,6 +1,6 @@
 package Angel.BotAbuse;
 
-import Angel.EmbedHandler;
+import Angel.EmbedEngine;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import org.apache.logging.log4j.LogManager;
@@ -11,11 +11,11 @@ import java.io.IOException;
 class ExpiryTimer implements Runnable {
     private final Logger log = LogManager.getLogger(ExpiryTimer.class);
     private BotAbuseMain baFeature;
-    private EmbedHandler embed;
+    private EmbedEngine embed;
     private Guild guild;
     private boolean timerRunning = false;
 
-    ExpiryTimer(Guild guild, BotAbuseMain baFeature, EmbedHandler embed) {
+    ExpiryTimer(Guild guild, BotAbuseMain baFeature, EmbedEngine embed) {
         this.guild = guild;
         this.baFeature = baFeature;
         this.embed = embed;

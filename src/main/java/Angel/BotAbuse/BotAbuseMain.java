@@ -32,8 +32,8 @@ public class BotAbuseMain extends ListenerAdapter {
     private MainConfiguration mainConfig;
     private BotAbuseConfiguration botConfig;
     private BotAbuseCore baCore;
-    // embed calls the EmbedHandler class
-    private EmbedHandler embed;
+    // embed calls the EmbedEngine class
+    private EmbedEngine embed;
     private DiscordBotMain discord;
     private Help help;
     public boolean commandsSuspended = false;
@@ -47,7 +47,7 @@ public class BotAbuseMain extends ListenerAdapter {
     public final List<String> commands = new ArrayList<>(Arrays.asList("botAbuse", "ba", "permBotAbuse", "pba", "undo", "check",
             "checkHistory", "clear", "transfer", "reasonsmanager", "rmgr", "reasons", "r"));
 
-    BotAbuseMain(boolean getCommandsSuspended, int restartValue, MainConfiguration importMainConfig, EmbedHandler importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException, TimeoutException {
+    BotAbuseMain(boolean getCommandsSuspended, int restartValue, MainConfiguration importMainConfig, EmbedEngine importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException, TimeoutException {
         commandsSuspended = getCommandsSuspended;
         baCore = new BotAbuseCore(importGuild, this, importMainConfig);
         botConfig = new ModifyBotAbuseConfiguration(baCore.getConfig(), this, importMainConfig, importGuild);

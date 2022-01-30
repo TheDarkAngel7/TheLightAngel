@@ -1,7 +1,7 @@
 package Angel.BotAbuse;
 
 import Angel.DiscordBotMain;
-import Angel.EmbedHandler;
+import Angel.EmbedEngine;
 import Angel.MainConfiguration;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -23,14 +23,14 @@ public class BotAbuseInit implements Runnable {
     private final boolean commandsSuspended;
     private final int restartValue;
     private final MainConfiguration mainConfig;
-    private final EmbedHandler embed;
+    private final EmbedEngine embed;
     private final Guild guild;
     private final DiscordBotMain discord;
     private JDA jda;
 
     private BotAbuseMain baFeature;
 
-    public BotAbuseInit(boolean commandsSuspended, int restartValue, MainConfiguration mainConfig, EmbedHandler embed, Guild guild, DiscordBotMain discord) {
+    public BotAbuseInit(boolean commandsSuspended, int restartValue, MainConfiguration mainConfig, EmbedEngine embed, Guild guild, DiscordBotMain discord) {
         this.commandsSuspended = commandsSuspended;
         this.restartValue = restartValue;
         this.mainConfig = mainConfig;

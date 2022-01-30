@@ -1,7 +1,7 @@
 package Angel.CustomEmbeds;
 
 import Angel.DiscordBotMain;
-import Angel.EmbedHandler;
+import Angel.EmbedEngine;
 import Angel.MainConfiguration;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -19,14 +19,14 @@ import java.util.Collection;
 public class CustomEmbedInit implements Runnable {
     private final Logger log = LogManager.getLogger(CustomEmbedInit.class);
     private final MainConfiguration mainConfig;
-    private final EmbedHandler embed;
+    private final EmbedEngine embed;
     private final Guild guild;
     private final DiscordBotMain discord;
     private JDA jda;
 
     private CustomEmbedMain embedMain;
 
-    public CustomEmbedInit(MainConfiguration mainConfig, EmbedHandler embed, Guild guild, DiscordBotMain discord) {
+    public CustomEmbedInit(MainConfiguration mainConfig, EmbedEngine embed, Guild guild, DiscordBotMain discord) {
         this.mainConfig = mainConfig;
         this.embed = embed;
         this.guild = guild;

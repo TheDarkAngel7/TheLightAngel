@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class DiscordBotMain extends ListenerAdapter {
     private MainConfiguration mainConfig;
-    private EmbedHandler embed;
+    private EmbedEngine embed;
     private FileHandler fileHandler;
     private Guild guild;
     private CustomEmbedInit customEmbedInit;
@@ -55,7 +55,7 @@ public class DiscordBotMain extends ListenerAdapter {
     private List<ListEmbed> listEmbeds = new ArrayList<>();
     private Dictionary<Message, ScheduledFuture<?>> reactionClearTimers = new Hashtable<>();
 
-    DiscordBotMain(int restartValue, MainConfiguration mainConfig, EmbedHandler embed, FileHandler fileHandler) {
+    DiscordBotMain(int restartValue, MainConfiguration mainConfig, EmbedEngine embed, FileHandler fileHandler) {
         this.mainConfig = mainConfig;
         this.fileHandler = fileHandler;
         this.embed = embed;
@@ -1216,7 +1216,7 @@ public class DiscordBotMain extends ListenerAdapter {
         String reader = "";
         long returnValue = 0;
         try {
-            Process p = Runtime.getRuntime().exec("ping gateway.discord.gg");
+            Process p = Runtime.getRuntime().exec("ping gateway.discord.gg -n 10");
             BufferedReader inputStream = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
             int index = 0;

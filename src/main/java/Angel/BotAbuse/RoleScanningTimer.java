@@ -1,6 +1,6 @@
 package Angel.BotAbuse;
 
-import Angel.EmbedHandler;
+import Angel.EmbedEngine;
 import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -8,11 +8,11 @@ import org.apache.logging.log4j.Logger;
 class RoleScanningTimer implements Runnable {
     private final Logger log = LogManager.getLogger(RoleScanningTimer.class);
     private BotAbuseMain baFeature;
-    private EmbedHandler embed;
+    private EmbedEngine embed;
     private Guild guild;
     private boolean timerRunning = false;
 
-    RoleScanningTimer(Guild guild, BotAbuseMain baFeature, EmbedHandler embed) {
+    RoleScanningTimer(Guild guild, BotAbuseMain baFeature, EmbedEngine embed) {
         this.baFeature = baFeature;
         this.embed = embed;
         this.guild = guild;

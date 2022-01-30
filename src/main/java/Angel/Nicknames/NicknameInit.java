@@ -1,7 +1,7 @@
 package Angel.Nicknames;
 
 import Angel.DiscordBotMain;
-import Angel.EmbedHandler;
+import Angel.EmbedEngine;
 import Angel.MainConfiguration;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -21,14 +21,14 @@ public class NicknameInit implements Runnable {
     private final Logger log = LogManager.getLogger(NicknameInit.class);
     private final boolean commandsSuspended;
     private final MainConfiguration mainConfig;
-    private final EmbedHandler embed;
+    private final EmbedEngine embed;
     private final Guild guild;
     private final DiscordBotMain discord;
     private JDA jda;
 
     private NicknameMain nickFeature;
 
-    public NicknameInit(boolean commandsSuspended, MainConfiguration mainConfig, EmbedHandler embed, Guild guild, DiscordBotMain discord) {
+    public NicknameInit(boolean commandsSuspended, MainConfiguration mainConfig, EmbedEngine embed, Guild guild, DiscordBotMain discord) {
         this.commandsSuspended = commandsSuspended;
         this.mainConfig = mainConfig;
         this.embed = embed;
