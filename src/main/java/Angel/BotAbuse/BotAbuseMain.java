@@ -1398,9 +1398,26 @@ public class BotAbuseMain extends ListenerAdapter {
         }
     }
     private void reasonsCommand(Message msg, String[] args, boolean isTeamMember, boolean isStaffMember) throws IOException {
-        // /rmgr addreason <key> <Reason (multiple Args)>
         String result = "";
-        if (args[1].equalsIgnoreCase("addreason") && isStaffMember) {
+        if ((args.length == 1 || args[1].equalsIgnoreCase("list")) && isTeamMember) {
+            Enumeration<String> keys = baCore.reasonsDictionary.keys();
+            Enumeration<String> elements = baCore.reasonsDictionary.elements();
+            String defaultTitle = "Reasons Dictionary";
+            try {
+                do {
+                    result = result.concat("**Key: *" + keys.nextElement()
+                            + "* :arrow_right: Reason: *" + elements.nextElement() + "* **\n");
+                } while (keys.hasMoreElements());
+                embed.setAsInfo(defaultTitle, result);
+            }
+            catch (NoSuchElementException ex) {
+                embed.setAsError(defaultTitle, ":x: **The Reasons Dictionary is Empty**");
+            }
+            embed.sendToTeamOutput(msg, msg.getAuthor());
+            log.info(msg.getMember().getEffectiveName() + " just requested the reasons dictionary list");
+        }
+        // /rmgr addreason <key> <Reason (multiple Args)>
+        else if (args[1].equalsIgnoreCase("addreason") && isStaffMember) {
             int index = 3;
             String reason = "";
             String defaultTitle = "Successful Reason Addition";
@@ -1444,23 +1461,6 @@ public class BotAbuseMain extends ListenerAdapter {
                 embed.setAsError("Error - Reason Removal", result);
                 embed.sendToTeamOutput(msg, msg.getAuthor());
             }
-        }
-        else if (args[1].equalsIgnoreCase("list") && isTeamMember) {
-            Enumeration<String> keys = baCore.reasonsDictionary.keys();
-            Enumeration<String> elements = baCore.reasonsDictionary.elements();
-            String defaultTitle = "Reasons Dictionary";
-            try {
-                do {
-                    result = result.concat("**Key: *" + keys.nextElement()
-                            + "* :arrow_right: Reason: *" + elements.nextElement() + "* **\n");
-                } while (keys.hasMoreElements());
-                embed.setAsInfo(defaultTitle, result);
-            }
-            catch (NoSuchElementException ex) {
-                embed.setAsError(defaultTitle, ":x: **The Reasons Dictionary is Empty**");
-            }
-            embed.sendToTeamOutput(msg, msg.getAuthor());
-            log.info(msg.getMember().getEffectiveName() + " just requested the reasons dictionary list");
         }
         else {
             embed.setAsError("Error - No Permissions", "**:x: You Lack Permissions to do that!**");

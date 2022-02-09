@@ -2,7 +2,6 @@ package Angel;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class ListEmbed {
@@ -76,7 +75,7 @@ public class ListEmbed {
         return this;
     }
 
-    String getCurrentPage() {
+    public String getCurrentPage() {
         try {
             return getConstructedString(alternateStrings.get(currentIndex));
         }

@@ -39,7 +39,7 @@ public class DiscordBotMain extends ListenerAdapter {
     private FileHandler fileHandler;
     private Guild guild;
     private CustomEmbedInit customEmbedInit;
-    private CustomEmbedMain customEmbedFeature;
+    private CustomEmbedMain customEmbedFeature = null;
     private NicknameMain nickFeature = null;
     private NicknameInit nickInit;
     private BotAbuseMain baFeature = null;
