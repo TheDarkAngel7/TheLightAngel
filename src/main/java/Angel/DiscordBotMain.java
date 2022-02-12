@@ -297,206 +297,221 @@ public class DiscordBotMain extends ListenerAdapter {
             log.info("Nommed the Ping from " + msg.getAuthor().getAsTag());
         }
         else if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix) {
-            if (args[0].equalsIgnoreCase("search") || args[0].equalsIgnoreCase("s")) {
-                searchCommand(msg);
-            }
-            else if (args[0].equalsIgnoreCase("restart")
-                    && (isStaffMember(event.getAuthor().getIdLong()))) {
-                try {
-                    msg.delete().queue();
-                    log.warn("Message Deleted - restart command");
-                    if (args.length == 1) {
-                        embed.setAsWarning("Restart Initiated", "**Restart Initiated by " + msg.getAuthor().getAsMention()
-                                + "\nPlease Allow up to 10 seconds for this to complete**");
-                        log.warn(msg.getAuthor().getAsTag() + " Invoked a Restart");
-                        embed.sendToTeamOutput(msg, null);
-                        Thread.sleep(5000);
-                        restartBot(false);
-                    }
-                    else if (args.length == 2) {
-                        if (args[1].equalsIgnoreCase("-s") || args[1].equalsIgnoreCase("silent")) {
-                            log.warn(msg.getAuthor().getAsTag() + " Invoked a Silent Restart");
-                            Thread.sleep(5000);
-                            restartBot(true);
+            switch (args[0].toLowerCase()) {
+                case "search":
+                case "s":
+                    searchCommand(msg);
+                    break;
+                case "restart":
+                    if (isStaffMember(event.getAuthor().getIdLong())) {
+                        try {
+                            msg.delete().queue();
+                            log.warn("Message Deleted - restart command");
+                            if (args.length == 1) {
+                                embed.setAsWarning("Restart Initiated", "**Restart Initiated by " + msg.getAuthor().getAsMention()
+                                        + "\nPlease Allow up to 10 seconds for this to complete**");
+                                log.warn(msg.getAuthor().getAsTag() + " Invoked a Restart");
+                                embed.sendToTeamOutput(msg, null);
+                                Thread.sleep(5000);
+                                restartBot(false);
+                            }
+                            else if (args.length == 2) {
+                                if (args[1].equalsIgnoreCase("-s") || args[1].equalsIgnoreCase("silent")) {
+                                    log.warn(msg.getAuthor().getAsTag() + " Invoked a Silent Restart");
+                                    Thread.sleep(5000);
+                                    restartBot(true);
+                                }
+                                else {
+                                    embed.setAsError("Invalid Argument",
+                                            ":x: **That argument you gave with this command... I did not recognize it**");
+                                    embed.sendToTeamOutput(msg, msg.getAuthor());
+                                }
+                            }
+                            else {
+                                embed.setAsError("Too Many Arguments!", ":x: **You just gave me too many arguments...**");
+                                embed.sendToTeamOutput(msg, msg.getAuthor());
+                            }
+
                         }
-                        else {
-                            embed.setAsError("Invalid Argument",
-                                    ":x: **That argument you gave with this command... I did not recognize it**");
-                            embed.sendToTeamOutput(msg, msg.getAuthor());
+                        catch (NoClassDefFoundError ex) {
+                            // Take No Action - This is an indicator that the jar file for the program was overwritten while the bot is running
+                        }
+                        catch (IllegalStateException ex) {
+                            // Take No Action - This is an indicator that the command was used via DM
+                        }
+                        catch (IOException e) {
+                            log.error("Restart Command", e);
+                        }
+                        catch (InterruptedException e) {
+                            // Take No Action
                         }
                     }
                     else {
-                        embed.setAsError("Too Many Arguments!", ":x: **You just gave me too many arguments...**");
+                        embed.setAsError("No Permissions", ":x: **You Need to be full staff member to restart me... " +
+                                "you're not quite there... yet...**");
                         embed.sendToTeamOutput(msg, msg.getAuthor());
                     }
-
-                }
-                catch (NoClassDefFoundError ex) {
-                    // Take No Action - This is an indicator that the jar file for the program was overwritten while the bot is running
-                }
-                catch (IllegalStateException ex) {
-                    // Take No Action - This is an indicator that the command was used via DM
-                }
-                catch (IOException e) {
-                    log.error("Restart Command", e);
-                }
-                catch (InterruptedException e) {
-                    // Take No Action
-                }
-            }
-            else if (args[0].equalsIgnoreCase("reload")
-                    && isStaffMember(event.getAuthor().getIdLong())) {
-                embed.setAsWarning("Reloading Configuration", "**Reloading Configuration... Please Wait a Few Seconds...**");
-                embed.sendToTeamOutput(msg, null);
-                try { Thread.sleep(5000); } catch (InterruptedException e) {}
-                try {
-                    if (mainConfig.reload(fileHandler.getMainConfig())) {
-                        baFeature.reload(msg);
-                        nickFeature.reload(msg);
-                        log.info("Successfully Reloaded All Configurations");
-                        embed.editEmbed(msg, "Configuration Reloaded",
-                                "**All Configurations Successfully Reloaded from config files**",
-                                EmbedDesign.SUCCESS);
+                    break;
+                case "reload":
+                    if (isStaffMember(event.getAuthor().getIdLong())) {
+                        embed.setAsWarning("Reloading Configuration", "**Reloading Configuration... Please Wait a Few Seconds...**");
+                        embed.sendToTeamOutput(msg, null);
+                        try { Thread.sleep(5000); } catch (InterruptedException e) {}
+                        try {
+                            if (mainConfig.reload(fileHandler.getMainConfig())) {
+                                baFeature.reload(msg);
+                                nickFeature.reload(msg);
+                                log.info("Successfully Reloaded All Configurations");
+                                embed.editEmbed(msg, "Configuration Reloaded",
+                                        "**All Configurations Successfully Reloaded from config files**",
+                                        EmbedDesign.SUCCESS);
+                            }
+                            else {
+                                baFeature.commandsSuspended = true;
+                                nickFeature.commandsSuspended = true;
+                                log.fatal("Discord Configurations Not Found - All Commands Suspended");
+                            }
+                        }
+                        catch (IOException ex) {
+                            log.error("Reload Command", ex);
+                        }
                     }
                     else {
-                        baFeature.commandsSuspended = true;
-                        nickFeature.commandsSuspended = true;
-                        log.fatal("Discord Configurations Not Found - All Commands Suspended");
+                        embed.setAsError("No Permissions", ":x: **You Need to be full staff member to restart me... " +
+                                "you're not quite there... yet...**");
+                        embed.sendToTeamOutput(msg, msg.getAuthor());
                     }
-                }
-                catch (IOException ex) {
-                    log.error("Reload Command", ex);
-                }
-            }
-            else if (args[0].equalsIgnoreCase("ping")) {
-                log.info(msg.getAuthor().getAsTag() + " requested my pings");
-                String originalOutput = ":ping_pong: **Pong!**" +
-                        "\n**Pinging Discord's Gateway... Please Wait...**";
-                embed.setAsInfo("My Ping Info", originalOutput);
-                if (isTeamMember(event.getAuthor().getIdLong()) && !msg.getChannelType().equals(ChannelType.PRIVATE)) {
-                    embed.sendToTeamOutput(msg,null);
-                }
-                else {
-                    try {
-                        if (msg.getChannelType().equals(ChannelType.PRIVATE)) {
-                            embed.sendDM(msg, msg.getAuthor());
+                    break;
+                case "ping":
+                    log.info(msg.getAuthor().getAsTag() + " requested my pings");
+                    String originalOutput = ":ping_pong: **Pong!**" +
+                            "\n**Pinging Discord's Gateway... Please Wait...**";
+                    embed.setAsInfo("My Ping Info", originalOutput);
+                    if (isTeamMember(event.getAuthor().getIdLong()) && !msg.getChannelType().equals(ChannelType.PRIVATE)) {
+                        embed.sendToTeamOutput(msg,null);
+                    }
+                    else {
+                        try {
+                            if (msg.getChannelType().equals(ChannelType.PRIVATE)) {
+                                embed.sendDM(msg, msg.getAuthor());
+                            }
+                            // If they use /ping before their cooldown time is over then we send them the ping information in a DM
+                            else if (Calendar.getInstance().getTime().before
+                                    (pingCooldownOverTimes.get(pingCooldownDiscordIDs.lastIndexOf(msg.getMember().getIdLong())))
+                                    && !msg.getChannel().equals(mainConfig.botSpamChannel)
+                                    && !msg.getChannel().equals(mainConfig.dedicatedOutputChannel)) {
+                                embed.sendDM(msg, msg.getAuthor());
+                            }
+                            // Otherwise we can send them this in the help channel.
+                            else {
+                                pingHandler(msg.getMember().getIdLong());
+                                embed.sendToMemberOutput(msg, msg.getAuthor());
+                            }
                         }
-                        // If they use /ping before their cooldown time is over then we send them the ping information in a DM
-                        else if (Calendar.getInstance().getTime().before
-                                (pingCooldownOverTimes.get(pingCooldownDiscordIDs.lastIndexOf(msg.getMember().getIdLong())))
-                                && !msg.getChannel().equals(mainConfig.botSpamChannel)
-                                && !msg.getChannel().equals(mainConfig.dedicatedOutputChannel)) {
-                            embed.sendDM(msg, msg.getAuthor());
-                        }
-                        // Otherwise we can send them this in the help channel.
-                        else {
+                        // This would run if their discord ID wasn't found in pingCooldownDiscordIDs,
+                        // a -1 would throw this exception
+                        catch (IndexOutOfBoundsException ex) {
                             pingHandler(msg.getMember().getIdLong());
                             embed.sendToMemberOutput(msg, msg.getAuthor());
                         }
                     }
-                    // This would run if their discord ID wasn't found in pingCooldownDiscordIDs,
-                    // a -1 would throw this exception
-                    catch (IndexOutOfBoundsException ex) {
-                        pingHandler(msg.getMember().getIdLong());
+
+                    String editedPing = "My Ping to Discord's Gateway: **" + getGatewayNetPing() + "ms**" +
+                            "\n\n*__Request to Ack Pings__*" +
+                            "\nMain Thread: **" + msg.getJDA().getGatewayPing() + "ms**" +
+                            "\nBot Abuse Thread: **#**" +
+                            "\nNickname Thread: **$**";
+
+                    if (baFeature.getConfig().isEnabled()) {
+                        editedPing = editedPing.replace("#", String.valueOf(baInit.getPing()) + "ms");
+                    }
+                    else {
+                        editedPing = editedPing.replace("#", "Disabled");
+                    }
+
+                    if (nickFeature.getConfig().isEnabled()) {
+                        editedPing = editedPing.replace("$", String.valueOf(nickInit.getPing()) + "ms");
+                    }
+                    else {
+                        editedPing = editedPing.replace("$", "Disabled");
+                    }
+
+                    embed.editEmbed(msg, null, originalOutput.replace(
+                            "**Pinging Discord's Gateway... Please Wait...**", editedPing), null);
+                    break;
+                case "status":
+                    if (isTeamMember(msg.getAuthor().getIdLong())) {
+                        try {
+                            log.info(guild.getMember(msg.getAuthor()).getEffectiveName() + " just requested my status");
+                        }
+                        catch (NullPointerException ex) {
+                            log.info(msg.getAuthor().getAsTag() + " just requested my status");
+                        }
+                        String defaultTitle = "My Status";
+                        String thisOriginalOutput = "**Retrieving Status... Please Wait...**";
+                        embed.setAsInfo(defaultTitle, thisOriginalOutput);
+                        if (!msg.getChannelType().equals(ChannelType.PRIVATE)) embed.sendToTeamOutput(msg, msg.getAuthor());
+                        else embed.sendDM(msg, msg.getAuthor());
+                        try { Thread.sleep(2000); } catch (InterruptedException e) {}
+
+                        String defaultOutput = baFeature.getStatusString().concat(nickFeature.getStatusString());
+                        EmbedDesign requestedType;
+
+                        if (!defaultOutput.contains("true")) {
+                            defaultOutput = defaultOutput.replaceAll("false", "Offline");
+                            requestedType = EmbedDesign.ERROR;
+                        }
+                        else if (defaultOutput.contains("false") || defaultOutput.contains(":warning:") ||
+                                defaultOutput.contains(":x:") || defaultOutput.contains("Unknown")) {
+                            defaultOutput = defaultOutput.replaceAll("false", ":warning: Suspended :warning:");
+                            defaultOutput = defaultOutput.replaceAll("true", "Operational");
+                            requestedType = EmbedDesign.WARNING;
+                        }
+                        else {
+                            defaultOutput = defaultOutput.replaceAll("true", "Operational");
+                            requestedType = EmbedDesign.SUCCESS;
+                        }
+                        embed.editEmbed(msg, null, defaultOutput, requestedType);
+                    }
+                    else {
+                        log.error(msg.getAuthor().getAsTag() + " just requested my status but did not have permission to");
+                        embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions to View My Status**");
                         embed.sendToMemberOutput(msg, msg.getAuthor());
                     }
-                }
-
-                String editedPing = "My Ping to Discord's Gateway: **" + getGatewayNetPing() + "ms**" +
-                        "\n\n*__Request to Ack Pings__*" +
-                        "\nMain Thread: **" + msg.getJDA().getGatewayPing() + "ms**" +
-                        "\nBot Abuse Thread: **#**" +
-                        "\nNickname Thread: **$**";
-
-                if (baFeature.getConfig().isEnabled()) {
-                    editedPing = editedPing.replace("#", String.valueOf(baInit.getPing()) + "ms");
-                }
-                else {
-                    editedPing = editedPing.replace("#", "Disabled");
-                }
-
-                if (nickFeature.getConfig().isEnabled()) {
-                    editedPing = editedPing.replace("$", String.valueOf(nickInit.getPing()) + "ms");
-                }
-                else {
-                    editedPing = editedPing.replace("$", "Disabled");
-                }
-
-                embed.editEmbed(msg, null, originalOutput.replace(
-                        "**Pinging Discord's Gateway... Please Wait...**", editedPing), null);
-            }
-            else if (args[0].equalsIgnoreCase("status")) {
-                if (isTeamMember(msg.getAuthor().getIdLong())) {
-                    try {
-                        log.info(guild.getMember(msg.getAuthor()).getEffectiveName() + " just requested my status");
-                    }
-                    catch (NullPointerException ex) {
-                        log.info(msg.getAuthor().getAsTag() + " just requested my status");
-                    }
-                    String defaultTitle = "My Status";
-                    String originalOutput = "**Retrieving Status... Please Wait...**";
-                    embed.setAsInfo(defaultTitle, originalOutput);
-                    if (!msg.getChannelType().equals(ChannelType.PRIVATE)) embed.sendToTeamOutput(msg, msg.getAuthor());
-                    else embed.sendDM(msg, msg.getAuthor());
-                    try { Thread.sleep(2000); } catch (InterruptedException e) {}
-
-                    String defaultOutput = baFeature.getStatusString().concat(nickFeature.getStatusString());
-                    EmbedDesign requestedType;
-
-                    if (!defaultOutput.contains("true")) {
-                        defaultOutput = defaultOutput.replaceAll("false", "Offline");
-                        requestedType = EmbedDesign.ERROR;
-                    }
-                    else if (defaultOutput.contains("false") || defaultOutput.contains(":warning:") ||
-                            defaultOutput.contains(":x:") || defaultOutput.contains("Unknown")) {
-                        defaultOutput = defaultOutput.replaceAll("false", ":warning: Suspended :warning:");
-                        defaultOutput = defaultOutput.replaceAll("true", "Operational");
-                        requestedType = EmbedDesign.WARNING;
+                    break;
+                case "set":
+                    if (isStaffMember(msg.getAuthor().getIdLong())) {
+                        if (msg.getChannel().equals(mainConfig.discussionChannel)
+                                || msg.getChannel().equals(mainConfig.managementChannel)) {
+                            configCommand(msg);
+                        }
+                        else {
+                            msg.delete().queue();
+                            log.warn("Message Deleted - set command");
+                            embed.setAsError("Not Usable in This Channel",
+                                    "**:x: This Command Is Not Usable in <#" + msg.getChannel().getIdLong() + ">!**" +
+                                            "\n\nPlease use `" + mainConfig.commandPrefix + "set` in this channel or in " + mainConfig.managementChannel.getAsMention());
+                            embed.sendToTeamOutput(msg, msg.getAuthor());
+                        }
                     }
                     else {
-                        defaultOutput = defaultOutput.replaceAll("true", "Operational");
-                        requestedType = EmbedDesign.SUCCESS;
-                    }
-                    embed.editEmbed(msg, null, defaultOutput, requestedType);
-                }
-                else {
-                    log.error(msg.getAuthor().getAsTag() + " just requested my status but did not have permission to");
-                    embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions to View My Status**");
-                    embed.sendToMemberOutput(msg, msg.getAuthor());
-                }
-            }
-            else if (args[0].equalsIgnoreCase("set")) {
-                if (isStaffMember(msg.getAuthor().getIdLong())) {
-                    if (msg.getChannel().equals(mainConfig.discussionChannel)
-                            || msg.getChannel().equals(mainConfig.managementChannel)) {
-                        configCommand(msg);
-                    }
-                    else {
-                        msg.delete().queue();
-                        log.warn("Message Deleted - set command");
-                        embed.setAsError("Not Usable in This Channel",
-                                "**:x: This Command Is Not Usable in <#" + msg.getChannel().getIdLong() + ">!**" +
-                                        "\n\nPlease use `" + mainConfig.commandPrefix + "set` in this channel or in " + mainConfig.managementChannel.getAsMention());
+                        embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions To Do That!**");
                         embed.sendToTeamOutput(msg, msg.getAuthor());
                     }
-                }
-                else {
-                    embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions To Do That!**");
-                    embed.sendToTeamOutput(msg, msg.getAuthor());
-                }
-            }
-            else if (args[0].equalsIgnoreCase("help")) {
-                if (args.length == 2 && baFeature.isCommand(args[1])) {
-                    baFeature.helpCommand(msg, isTeamMember(msg.getAuthor().getIdLong()));
-                }
-                else if (args.length == 3 && nickFeature.isCommand(args[1], args[2])) {
-                    nickFeature.helpCommand(msg, isTeamMember(msg.getAuthor().getIdLong()));
-                }
-                else if (isValidCommand(msg)) helpCommand(msg);
-                else {
-                    embed.setAsError("Invalid Command", ":x: **The Command you asked for help for does not exist anywhere within me...**");
-                    embed.sendToChannel(msg, msg.getChannel());
-                }
+                    break;
+                case "help":
+                    if (args.length == 2 && baFeature.isCommand(args[1])) {
+                        baFeature.helpCommand(msg, isTeamMember(msg.getAuthor().getIdLong()));
+                    }
+                    else if (args.length == 3 && nickFeature.isCommand(args[1], args[2])) {
+                        nickFeature.helpCommand(msg, isTeamMember(msg.getAuthor().getIdLong()));
+                    }
+                    else if (isValidCommand(msg)) helpCommand(msg);
+                    else {
+                        embed.setAsError("Invalid Command", ":x: **The Command you asked for help for does not exist anywhere within me...**");
+                        embed.sendToChannel(msg, msg.getChannel());
+                    }
+                    break;
             }
         }
         if (!msg.getChannelType().equals(ChannelType.PRIVATE) && !msg.getMentionedMembers().contains(guild.getSelfMember())
