@@ -29,12 +29,14 @@ class FileCreator {
                 exportResource(configFolder.getFileName().toString(), "/config.json");
                 exportResource(configFolder.getFileName().toString(),"/botabuseconfig.json");
                 exportResource(configFolder.getFileName().toString(),"/nickconfig.json");
+                exportResource(configFolder.getFileName().toString(), "/checkinconfig.json");
                 everythingExisted = false;
             }
             if (!Files.exists(dbBackupsFolder)) {
                 Files.createDirectory(dbBackupsFolder);
                 Files.createDirectory(Paths.get(jarDirectory + "/db-backups/Nicknames"));
                 Files.createDirectory(Paths.get(jarDirectory + "/db-backups/BotAbuse"));
+                Files.createDirectory(Paths.get(jarDirectory + "/db-backups/CheckIn"));
                 everythingExisted = false;
             }
             if (!Files.exists(logFolder)) {

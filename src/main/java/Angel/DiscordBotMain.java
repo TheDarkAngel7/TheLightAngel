@@ -2,6 +2,8 @@ package Angel;
 
 import Angel.BotAbuse.BotAbuseInit;
 import Angel.BotAbuse.BotAbuseMain;
+import Angel.CheckIn.CheckInInit;
+import Angel.CheckIn.CheckInMain;
 import Angel.CustomEmbeds.CustomEmbedInit;
 import Angel.CustomEmbeds.CustomEmbedMain;
 import Angel.Nicknames.NicknameInit;
@@ -44,6 +46,8 @@ public class DiscordBotMain extends ListenerAdapter {
     private NicknameInit nickInit;
     private BotAbuseMain baFeature = null;
     private BotAbuseInit baInit;
+    private CheckInInit ciInit;
+    private CheckInMain ciFeature = null;
     private int restartValue;
     private final Logger log = LogManager.getLogger(DiscordBotMain.class);
     private boolean commandsSuspended = false;
@@ -77,10 +81,12 @@ public class DiscordBotMain extends ListenerAdapter {
         }
         nickInit = new NicknameInit(commandsSuspended, mainConfig, embed, guild, this);
         baInit = new BotAbuseInit(commandsSuspended, restartValue, mainConfig, embed, guild, this);
+        ciInit = new CheckInInit(mainConfig, embed, this, guild);
         customEmbedInit = new CustomEmbedInit(mainConfig, embed, guild, this);
         Thread tNickFeature = new Thread(nickInit);
         Thread tBotAbuseFeature = new Thread(baInit);
         Thread tCustomEmbedFeature = new Thread(customEmbedInit);
+        Thread tCheckInFeature = new Thread(ciInit);
 
         tNickFeature.start();
         tNickFeature.setName("Nickname Thread");
@@ -88,14 +94,18 @@ public class DiscordBotMain extends ListenerAdapter {
         tBotAbuseFeature.start();
         tBotAbuseFeature.setName("Bot Abuse Thread");
 
+        tCheckInFeature.start();
+        tCheckInFeature.setName("Check-In Thread");
+
         tCustomEmbedFeature.start();
         tCustomEmbedFeature.setName("Custom Embed Thread");
 
-        while (baFeature == null || nickFeature == null || customEmbedFeature == null) {
+        while (baFeature == null || nickFeature == null || customEmbedFeature == null || ciFeature == null) {
             try { Thread.sleep(1000); } catch (InterruptedException e) {}
             try {
                 baFeature = baInit.getBaFeature();
                 nickFeature = nickInit.getNickFeature();
+                ciFeature = ciInit.getThis();
                 customEmbedFeature = customEmbedInit.getFeature();
             }
             catch (NullPointerException ex) {}
@@ -1080,7 +1090,11 @@ public class DiscordBotMain extends ListenerAdapter {
             embedType = EmbedDesign.ERROR;
             embed.setAsError(title, results);
         }
-        embed.sendToTeamOutput(msg, msg.getAuthor());
+        if (ciFeature.isCheckInRunning() && msg.getChannel() == ciFeature.getCheckInManagementEmbedChannel()) {
+            embed.sendToChannel(msg, ciFeature.getCheckInManagementEmbedChannel());
+            ciFeature.addSearchCommands(msg);
+        }
+        else embed.sendToTeamOutput(msg, msg.getAuthor());
     }
 
     // Specifically for Embeds That Edit Themselves Based on Reactions

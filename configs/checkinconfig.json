@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "checkInChannelID": "943565928568872990",
+  "checkInRoleID": 298589262037647360,
+  "rolesThatCanBeCheckedInIDs": "[323625277269868544]",
+  "checkInDuration": 15,
+  "checkInProgressionUpdateInSeconds": 5
+}

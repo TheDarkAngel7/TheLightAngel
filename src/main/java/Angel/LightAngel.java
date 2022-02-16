@@ -23,6 +23,7 @@ class LightAngel {
     static DiscordBotMain discord;
     static File BADataFile = new File("data/BAdata.json");
     static File nickDataFile = new File("data/nickdata.json");
+    static File checkInDataFile = new File("data/checkIndata.json");
     static {
         Thread.currentThread().setName("Main Thread");
         log.info("New Log Starting at time: " + Calendar.getInstance().getTime());
@@ -51,6 +52,18 @@ class LightAngel {
             }
             else {
                 log.info("Successfully Found Existing Nickname Data File");
+            }
+            if (!checkInDataFile.exists()) {
+                if (checkInDataFile.createNewFile()) {
+                    FileOutputStream fos = new FileOutputStream(nickDataFile);
+                    ObjectOutputStream objectOutputStream = new ObjectOutputStream(fos);
+                    log.info("Successfully Created new Check-In Data File");
+                    objectOutputStream.close();
+                    fos.close();
+                }
+            }
+            else {
+                log.info("Successfully Found Existing Check-In Data File");
             }
             fileHandler = new FileHandler();
         }
