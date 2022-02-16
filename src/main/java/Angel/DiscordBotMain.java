@@ -116,8 +116,8 @@ public class DiscordBotMain extends ListenerAdapter {
 
     @Override
     public void onReconnected(@NotNull ReconnectedEvent event) {
-        baFeature.resumeBot();
-        nickFeature.resumeBot();
+        if (baFeature.getConfig().isEnabled()) baFeature.resumeBot();
+        if (nickFeature.getConfig().isEnabled()) nickFeature.resumeBot();
     }
 
     @Override
