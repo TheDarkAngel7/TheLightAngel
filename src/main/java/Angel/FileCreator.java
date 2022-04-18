@@ -34,9 +34,19 @@ class FileCreator {
             }
             if (!Files.exists(dbBackupsFolder)) {
                 Files.createDirectory(dbBackupsFolder);
-                Files.createDirectory(Paths.get(jarDirectory + "/db-backups/Nicknames"));
-                Files.createDirectory(Paths.get(jarDirectory + "/db-backups/BotAbuse"));
-                Files.createDirectory(Paths.get(jarDirectory + "/db-backups/CheckIn"));
+
+                everythingExisted = false;
+            }
+            if (!Files.exists(Paths.get(dbBackupsFolder + "/Nicknames"))) {
+                Files.createDirectory(Paths.get(dbBackupsFolder + "/Nicknames"));
+                everythingExisted = false;
+            }
+            if (!Files.exists(Paths.get(dbBackupsFolder + "/BotAbuse"))) {
+                Files.createDirectory(Paths.get(dbBackupsFolder + "/BotAbuse"));
+                everythingExisted = false;
+            }
+            if (!Files.exists(Paths.get(jarDirectory + "/CheckIn"))) {
+                Files.createDirectory(Paths.get(dbBackupsFolder + "/CheckIn"));
                 everythingExisted = false;
             }
             if (!Files.exists(logFolder)) {

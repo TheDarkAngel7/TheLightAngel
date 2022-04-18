@@ -1,18 +1,17 @@
 package Angel.CheckIn;
 
-import net.dv8tion.jda.api.entities.Member;
-
 class CheckInPlayer {
-    // The ID here is not the same as the check-in ID or player discord ID, this IDs the player in the list of players to check-in
+    // The ID here is not the same as the check-in ID or player discord ID,
+    // this IDs the player in the list of players to check-in
     private final int id;
-    private final Member player;
+    private final long playerDiscordId;
     private boolean queuedToCheckIn = true;
     private boolean checkedIn = false;
     private String checkInRemainingTime = "--:--";
 
-    CheckInPlayer(int id, Member player) {
+    CheckInPlayer(int id, long playerDiscordId) {
         this.id = id;
-        this.player = player;
+        this.playerDiscordId = playerDiscordId;
     }
 
     void removeFromCheckInQueue() {
@@ -36,8 +35,8 @@ class CheckInPlayer {
         return id;
     }
 
-    Member getPlayer() {
-        return player;
+    long getPlayerDiscordId() {
+        return playerDiscordId;
     }
 
     boolean isQueuedToCheckIn() {

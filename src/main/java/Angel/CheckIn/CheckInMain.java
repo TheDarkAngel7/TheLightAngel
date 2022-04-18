@@ -1,6 +1,6 @@
 package Angel.CheckIn;
 
-import Angel.CheckIn.AFKChecks.AFKCheckManagement;
+import Angel.CheckIn.AFKTool.AFKCheckManagement;
 import Angel.*;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -17,13 +17,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
 public class CheckInMain extends ListenerAdapter {
     private final Logger log = LogManager.getLogger(CheckInMain.class);
@@ -50,14 +49,14 @@ public class CheckInMain extends ListenerAdapter {
     private List<MessageEntry> checkInStartupEntryObjects = new ArrayList<>();
     // Session Channel in Question
     private TextChannel sessionChannel;
-    private ZonedDateTime checkInStartDate;
     private boolean commandsSuspended = false;
     private boolean isConnected = false;
     private boolean checkInRunning = false;
     private boolean checkInConfirmed = false;
     private boolean isBusy = false;
-    public final List<String> commands = Arrays.asList("checkin", "ci", "reprint");
-    private List<String> emojiList = new ArrayList<>();
+    private final List<String> commands = Arrays.asList("checkin", "ci", "reprint", "afk", "afkcheck");
+    private final List<String> firstArg = Arrays.asList("start", "confirm", "cancel", "refresh", "remove", "delete", "del", "resultlist", "rlist", "list", "help");
+    private final List<String> emojiList;
     private CheckInQueueEmbed checkInQueueEmbed;
     private AFKCheckManagement afkCheck;
 
@@ -69,12 +68,13 @@ public class CheckInMain extends ListenerAdapter {
         String makeKeyCap = "\uFE0F\u20E3";
         emojiList = Arrays.asList("\u0031" + makeKeyCap, "\u0032" + makeKeyCap, "\u0033" + makeKeyCap,
                 "\u0034" + makeKeyCap, "\u0035" + makeKeyCap, "\u0036" + makeKeyCap, "\u0037" + makeKeyCap, "\u0038" + makeKeyCap,
-                "\u0039" + makeKeyCap, "\u0039" + makeKeyCap, "\uD83D\uDD1F");
+                "\u0039" + makeKeyCap, "\uD83D\uDD1F");
     }
 
     @Override
     public void onReady(@NotNull ReadyEvent event) {
         try {
+            isConnected = true;
             fileHandler = new FileHandler();
             ciConfig = new ModifyCheckInConfiguration(guild, fileHandler.getConfig());
             ciCore = new CheckInCore(ciConfig, guild);
@@ -91,20 +91,14 @@ public class CheckInMain extends ListenerAdapter {
             ciConfig.setup();
 
             switch (ciConfig.setupRoles()) {
-                case 0: embed.setAsSuccess("Check-In Roles Setup Successfully","Roles that can be checked-in were successfully setup");
-                        log.info("Roles Configured Successfully");
+                case 0: log.info("Check-In Roles Configured Successfully");
                         break;
-                case 1: embed.setAsWarning("Check-In Roles Setup Warning",
-                        ":warning: One or More of the role IDs that can be checked-in in the config file were not found");
-                        log.warn("One or More of the role IDs that can be checked-in in the config file were not found");
+                case 1: log.warn("One or More of the role IDs that can be checked-in in the config file were not found");
                         break;
-                case 2: embed.setAsStop("Check-In Roles Setup Fatal",
-                        "The configured roles that can be checked-in are not usable\n\n**Commands Suspended**");
-                        commandsSuspended = true;
+                case 2: commandsSuspended = true;
                         log.fatal("The configured roles that can be checked-in are not usable");
                         break;
             }
-            embed.sendToLogChannel();
         }
         catch (IOException ex) {
             log.error("IOException Caught while initalizing Check-In Config and Core: \n" + ex.getMessage());
@@ -135,7 +129,7 @@ public class CheckInMain extends ListenerAdapter {
             return;
         }
 
-        if (event.getMessage().getChannel() == ciConfig.getCheckInChannel() && checkInConfirmed) {
+        if (event.getMessage().getTextChannel() == ciConfig.getCheckInChannel() && checkInConfirmed) {
             checkInPlayer(msg);
         }
 
@@ -152,13 +146,13 @@ public class CheckInMain extends ListenerAdapter {
                         afkCheck.displayStatus(msg);
                     }
                     else {
-                        afkCheck.startNewCheckIn(msg, 15, 5);
+                        afkCheck.startNewAfkCheck(msg, 15, 5);
                     }
                     break;
                 case "reprint":
-                    if (checkInConfirmed && msg.getChannel() == sessionChannel) {
+                    if (checkInConfirmed && msg.getTextChannel() == sessionChannel) {
                         checkInSessionChannelEmbed.delete().queue();
-                        sessionChannel.sendMessage(checkInSessionChannelEntry.getEmbed()).queue();
+                        sessionChannel.sendMessageEmbeds(checkInSessionChannelEntry.getEmbed()).queue();
                     }
                     break;
             }
@@ -192,29 +186,60 @@ public class CheckInMain extends ListenerAdapter {
                 case "confirm":
                     confirmCheckIn(msg);
                     break;
-                case "pardon":
-                    pardonCheckIn(msg);
+                case "cancel":
+                    cancelCheckIn(msg);
                     break;
                 case "resultlist":
                 case "rlist":
-                case "playerlist":
-                case "plist":
+                case "list":
                     listCheckIns(msg);
+                    break;
+                case "refresh":
+                    refreshCheckIn(msg);
+                    break;
+                case "help":
+                    helpCommand(msg);
                     break;
             }
         }
     }
+    private void helpCommand(Message msg) {
+        List<String> controlHelps = Arrays.asList(
+                "Use `" + mainConfig.commandPrefix + "checkin start [Session Channel Mention]` to initiate the session reads and " +
+                        "the initialization entire process. The [Session Channel Mention] argument is not required when the command " +
+                        "is used in a session channel.",
+                "Use `" + mainConfig.commandPrefix + "checkin confirm` " +
+                        "to confirm the check-in as configured",
+                "Use `" + mainConfig.commandPrefix + "checkin add <Player Mention(s)>` " +
+                "to add additional players that should be checked in. " +
+                "You'll want to add the players that you believe their names were misread and got sent to *Members Not Found*. " +
+                "You may add multiple players here.",
+                "Use `" + mainConfig.commandPrefix + "checkin remove/del <id>` " +
+                        "to remove players that were accidently added to *Members To Be Checked-In* due to a zoobot misread. " +
+                        "You may remove multiple players here.",
+                "To get player mentions for adding to the checkin queue you can use `" + mainConfig.commandPrefix +
+                        "search <query>` (`" + mainConfig.commandPrefix + "s <query>` for short) whereas `<query>` " +
+                        "you'd place part of or all of a player's name. " +
+                        "The bot will then search every member of this server, in their nickname if they have one and their usernames."
+                );
+        discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Check-In Pre-Start Controls", EmbedDesign.HELP, mainConfig, msg, TargetChannelSet.TEAM),
+                "Here is one of the controls. Remember that `" + mainConfig.commandPrefix + "ci` is a alias to `"
+                        + mainConfig.commandPrefix + "checkin`.",
+                controlHelps, "As you use commands I'll be reacting to them with :white_check_mark: or :x: " +
+                "to indicate if it was successful or a failure. The messages above will also edit themselves to reflect the change." +
+                "\n\nWhen you're finished, use `"+ mainConfig.commandPrefix + "checkin confirm` \n" +
+                "when you believe everyone that's in the session is underneath the *Members To Be Checked-In* section."));
+
+    }
     private void checkInPlayer(Message msg) {
         AtomicReference<Member> member = new AtomicReference<>();
-        guild.retrieveMember(msg.getAuthor()).queue(m -> member.set(m));
+        guild.retrieveMember(msg.getAuthor()).queue(member::set);
 
         if (discord.isTeamMember(msg.getAuthor().getIdLong())) {
             embed.setAsError("Exempt From Check-In", ":x: **You Are Exempt From Needing to Check-In**");
-            embed.sendDM(msg, msg.getAuthor());
             // Reserved For Team Member Needing Help with Check-In
         }
         else if (ciCore.checkInMember(msg.getAuthor(), ciTimer.getRemainingTime())) {
-            msg.delete().queue();
             embed.setAsSuccess("Successfully Checked-In", "You successfully checked in with " +
                     ciTimer.getRemainingTime() + " remaining on the clock." +
                     "\nCheck-In ID: " + ciCore.getCurrentCheckInID() +
@@ -234,6 +259,11 @@ public class CheckInMain extends ListenerAdapter {
                     "**There's either no check-in active or you're not being asked to check-in at this time**");
         }
         embed.sendDM(msg, msg.getAuthor());
+
+        if (ciCore.everyoneIsCheckedIn()) {
+            log.info("Everyone has successfully checked-in! Ending...");
+            endCheckIn();
+        }
     }
     private void startCheckInCmd(Message msg) {
         String[] args = msg.getContentRaw().substring(1).split(" ");
@@ -251,11 +281,12 @@ public class CheckInMain extends ListenerAdapter {
                     // Using "/checkin start" in a session channel
                     case 2:
                         sessionName = msg.getChannel().getName().split("_")[0];
-                        msg.delete().queue();
+                        sessionChannel = msg.getTextChannel();
                         break;
                     // /checkin start <Session Channel Mention Inserted>
                     case 3:
                         sessionName = msg.getMentionedChannels().get(0).getName().split("_")[0];
+                        sessionChannel = msg.getMentionedChannels().get(0);
                         break;
                 }
                 if (msg.getMentionedChannels().size() >= 2) {
@@ -264,8 +295,7 @@ public class CheckInMain extends ListenerAdapter {
                 }
                 else if (ciCore.isValidSessionName(sessionName)) {
                     checkInRunning = true;
-                    sessionChannel = msg.getTextChannel();
-                    ciCore.setupCheckIn(sessionName);
+                    ciCore.loadSessionLists(sessionName, false);
 
                     if (ciCore.getCheckInList().isEmpty()) {
                         embed.setAsError("Session Empty",
@@ -275,6 +305,7 @@ public class CheckInMain extends ListenerAdapter {
                         embed.setAsSuccess("Successful Check-In Start",
                                 "**Successfully started a check-in for " + sessionChannel.getAsMention() + "**");
                         sendCheckInStartupPrompts(msg, false);
+                        return;
                     }
                 }
                 else {
@@ -295,6 +326,43 @@ public class CheckInMain extends ListenerAdapter {
             embed.sendToMemberOutput(msg, msg.getAuthor());
         }
     }
+    private void cancelCheckIn(Message msg) {
+        if (discord.isTeamMember(msg.getAuthor().getIdLong())) {
+            ciCore.endCheckIn(true);
+            if (checkInRunning) {
+                if (checkInConfirmed) {
+                    ciTimer.stopTimer();
+                    checkInRunning = false;
+                    checkInConfirmed = false;
+                    embed.setAsSuccess("Cancelled Check-In", "The Check-In that was running was successfully " +
+                            "cancelled." +
+                            "\nRemaining Time: **" + ciTimer.getRemainingTime() + "**");
+                    log.info("The running Check-In was successfully cancelled with " + ciTimer.getRemainingTime() + " left on the clock");
+
+                    checkInSessionChannelEmbed.editMessageEmbeds(
+                            checkInSessionChannelEntry.setMessage("**The Check-In that was running for this session has been cancelled**" +
+                                            "\n\nYou may resume normal chatter and bot commands.\n")
+                                    .setDesign(EmbedDesign.SUCCESS).getEmbed(false)).queue();
+                    checkInProgressionEmbed.editMessageEmbeds(
+                            checkInProgressionEntry.setTitle("Check-In Successfully Cancellled").setMessage(":white_check_mark: **The Check-In was successfully cancelled**").getEmbed()).queue();
+                }
+                else {
+                    purgeAllCommands();
+                    checkInRunning = false;
+                    checkInStartupMessages.clear();
+                    checkInStartupEntryObjects.clear();
+                    embed.setAsSuccess("Cancelled Check-In", "The Check-In Feature was successfully taken out " +
+                            "of initialization and all pre-start data dumped.");
+                    log.info("The initialized check-in was successfully cancelled");
+                }
+            }
+            else {
+                embed.setAsError("Unable to Cancel Check-In", ":x: **No Check-In Running, so there is nothing to cancel**");
+                log.error("Unable to cancel check in as there was not one running");
+            }
+            embed.sendToTeamOutput(msg, msg.getAuthor());
+        }
+    }
 
     private void confirmCheckIn(Message msg) {
         if (discord.isTeamMember(msg.getAuthor().getIdLong())) {
@@ -306,226 +374,145 @@ public class CheckInMain extends ListenerAdapter {
             else {
                 checkInConfirmed = true;
                 purgeAllCommands();
-                checkInStartDate = ZonedDateTime.now(ZoneId.of("UTC"));
                 embed.setAsWarning("Check-In Starting", "**Check-In Confirmed! " +
                         "Please wait while all the players to be checked-in are assigned the "
                         + ciConfig.getCheckInRole().getAsMention() + " role...**" +
                         "\n\n*This may take up to a minute to complete... Please be Patient...*");
                 embed.sendToTeamOutput(msg, msg.getAuthor());
 
+                checkInStartupEntryObjects.clear();
+                checkInStartupMessages.clear();
+
                 ciCore.getCheckInList().forEach(m -> {
-                    if (!mainConfig.testModeEnabled) {
-                        guild.addRoleToMember(m.getPlayer(), ciConfig.getCheckInRole()).queue();
-                        log.info("Successfully Added Role " + ciConfig.getCheckInRole().getName() + " to " +
-                                m.getPlayer().getEffectiveName() + " (Discord ID: " + m.getPlayer().getIdLong() + ")");
+                    AtomicReference<Member> member = new AtomicReference<>();
+                    guild.retrieveMemberById(m.getPlayerDiscordId()).queue(member::set);
+                    if (!mainConfig.testModeEnabled && m.isQueuedToCheckIn()) {
+
+                        guild.addRoleToMember(m.getPlayerDiscordId(), ciConfig.getCheckInRole()).submit().whenComplete(new BiConsumer<Void, Throwable>() {
+                            @Override
+                            public void accept(Void unused, Throwable throwable) {
+                                if (throwable != null) {
+                                    log.error("Could Not Complete Check-In Role Addition For " + member.get().getEffectiveName() +
+                                            " (Discord ID: " + m.getPlayerDiscordId() + ")");
+                                    ciCore.removeMemberFromCheckIn(member.get());
+                                }
+                                else {
+                                    log.info("Successfully Added Role " + ciConfig.getCheckInRole().getName() + " to " +
+                                            member.get().getEffectiveName() + " (Discord ID: " + m.getPlayerDiscordId() + ")");
+                                }
+                            }
+                        });
                     }
-                    else {
+                    else if (mainConfig.testModeEnabled && m.isQueuedToCheckIn()) {
                         log.warn("Would Have Successfully Added Role " + ciConfig.getCheckInRole().getName() + " to " +
-                        m.getPlayer().getEffectiveName() + " (Discord ID: " + m.getPlayer().getIdLong() + ") but could not because I'm in test mode...");
+                                member.get().getEffectiveName() + " (Discord ID: " + m.getPlayerDiscordId() + ") but could not because I'm in test mode...");
                     }
                 });
                 sendSessionChannelMessage(false);
 
                 ciTimer.startTimer();
                 embed.editEmbed(msg, "Check-In Started", "**Check-In has Successfully Started for " +
-                        sessionChannel.getAsMention() + "**", EmbedDesign.SUCCESS);
+                        sessionChannel.getAsMention() + "**" +
+                        "\n\n**The "+ ciConfig.getCheckInRole().getAsMention() +
+                        " role may need a little additional time to get applied**", EmbedDesign.SUCCESS);
                 sendCheckInProgressEmbed(msg, false);
             }
         }
     }
-    // ci pardon <Player Mention or Discord ID> [Result ID]
-    // [Result ID] can be empty if you want to pardon the last result.
-    // Otherwise if this argument is included then we want to pardon that specific result
-    private void pardonCheckIn(Message msg) {
-        String[] args = msg.getContentRaw().substring(1).split(" ");
 
-        String result = "";
-        CheckInResult ciResult = null;
-        int checkInIDForPardon = 0;
-        AtomicReference<Member> staffMember = new AtomicReference<>();
-        AtomicReference<Member> pardonedMember = new AtomicReference();
-        boolean successfulPardon = false;
-
+    private void refreshCheckIn(Message msg) {
         if (discord.isTeamMember(msg.getAuthor().getIdLong())) {
-            if (args.length <= 2 || args.length >= 5) {
-                embed.setAsError("Syntax Error", ":x: **Invalid Syntax there..." +
-                        "\nThe syntax for the pardon command is `" + mainConfig.commandPrefix +
-                        "checkin pardon <Player Mention or Discord ID> [Result ID]`");
-                embed.sendToTeamOutput(msg, msg.getAuthor());
-                return;
+            if (checkInRunning && !checkInConfirmed) {
+                purgeAllCommands();
+                checkInStartupMessages.clear();
+                checkInStartupEntryObjects.clear();
+                ciCore.loadSessionLists(null, true);
+                sendCheckInStartupPrompts(msg, false);
             }
             else {
-                guild.retrieveMemberById(msg.getAuthor().getIdLong()).queue(m -> staffMember.set(m));
-                try {
-                    guild.retrieveMemberById(Long.parseLong(args[2])).queue(m -> pardonedMember.set(m));
-                }
-                catch (NumberFormatException ex) {
-                    pardonedMember.set(msg.getMentionedMembers().get(0));
-                }
-
-                if (args.length == 3) {
-                    successfulPardon = ciCore.pardonMemberOnLatestResult(pardonedMember.get());
-                    checkInIDForPardon = ciCore.getLatestResult().getId();
-                }
-                else {
-                    try {
-                        successfulPardon = ciCore.pardonMemberByResultID(pardonedMember.get(), Integer.parseInt(args[3]));
-                        checkInIDForPardon = Integer.parseInt(args[3]);
-                    }
-                    catch (NumberFormatException ex) {}
-                }
-            }
-
-            if (successfulPardon) {
-                embed.setAsSuccess("Successful Pardon", "**" + msg.getAuthor().getAsMention() + " successfully pardoned result ID " +
-                        checkInIDForPardon + " from " + pardonedMember.get().getAsMention() + "'s Check-In Record**");
+                embed.setAsError("Unable To Refresh", "Uhhh... I cannot process that command because I need to " +
+                        "be put into the first stages of setting up a check-in... use `"  + mainConfig.commandPrefix + "checkin start` " +
+                        "in a session channel or you can use `" + mainConfig.commandPrefix + "checkin help` for more help on check-in commands");
                 embed.sendToTeamOutput(msg, msg.getAuthor());
-
-                log.info("Staff Member " + staffMember.get().getEffectiveName() + " successfully pardoned result ID "
-                        + checkInIDForPardon + " from "  + pardonedMember.get().getEffectiveName() + "'s Check-In Record");
             }
-            else {
-
-            }
-        }
-        else {
-            embed.setAsError("No Permissions", ":x: **You don't have permissions to do that!**");
-            embed.sendToMemberOutput(msg, msg.getAuthor());
-            return;
         }
     }
+
     private void listCheckIns(Message msg) {
         String[] args = msg.getContentRaw().substring(1).split(" ");
         String result = "";
         int index = 0;
 
         String prefix = "";
-        String suffix = "";
+        String suffix = null;
 
         List<String> pages = new ArrayList<>();
 
-        switch (args[1].toLowerCase()) {
-            case "playerlist":
-            case "plist":
-                // ci playerlist <Player Mention or Discord ID>
-                // This is for showing all of the check-ins the player got and which have been pardoned or not.
-                CheckInRecord record;
-                CheckInPardonList pardonList;
-                prefix = "**Check-Ins For #\n**" +
-                        ":warning: *Indicates The Result Is Not Pardoned* \n" +
-                        ":white_check_mark: *Indicates The Result Is Pardoned*\n\n";
-                AtomicReference<Member> targetMember = new AtomicReference<>();
-                try {
+        // This is for listing all the players involved in a particular check-in
+        // ci list [ID]
+        try {
+            CheckInResult resultList = null;
+            if (args.length == 2) {
+                resultList = ciCore.getLatestResult();
+            }
+            else if (args.length == 3) {
+                resultList = ciCore.getResultByID(Integer.parseInt(args[2]));
+            }
 
-                    guild.retrieveMemberById(Long.parseLong(args[2])).queue(m -> targetMember.set(m));
-                    result = result.replace("#", targetMember.get().getAsMention());
-                    record = ciCore.getRecordByDiscordID(Long.parseLong(args[2]));
+            prefix = "Check-In ID: **" + resultList.getId() + "**\n" +
+                    "Date Ended: **" + discord.getDefaultSDF().format(resultList.getEndDate()) + "**\n\n" +
+                    ":white_check_mark: *Indicates The Player Did Check-In along with how much time was remaining when they did.*\n" +
+                    ":warning: *Indicates The Player Failed to Check-In*\n" +
+                    ":x: *Indicates The Player Was Removed From the Check-In Queue* \n";
+
+            List<CheckInPlayer> players = resultList.getPlayers();
+            AtomicReference<Member> member = new AtomicReference<>();
+
+            if (resultList.isCancelled()) suffix = "\n\n :x: **This Check-In was Cancelled before it was completed!** :x:";
+
+            do {
+                CheckInPlayer p = players.get(index);
+                guild.retrieveMemberById(p.getPlayerDiscordId()).queue(member::set);
+                if (p.successfullyCheckedIn()) {
+                    result = result.concat(":white_check_mark: **" + member.get().getEffectiveName()  +
+                            " @ " + p.getCheckInRemainingTime() + "**\n");
                 }
-                catch (NumberFormatException ex) {
-                    record = ciCore.getRecordByMember(msg.getMentionedMembers().get(0));
-                    targetMember.set(msg.getMentionedMembers().get(0));
-                    result = result.replace("#", msg.getMentionedMembers().get(0).getAsMention());
-                }
-
-                if (record == null) {
-                    embed.setAsError("No Records Found", "**" + targetMember.get().getAsMention() + " has never been included in any check-ins**");
-                }
-
-                pardonList = record.getPardonedList();
-
-                do {
-                    String emoteIndicator = "";
-                    if (pardonList.getIsPardoned().get(index)) {
-                        emoteIndicator = ":white_check_mark:";
+                else {
+                    if (!p.isQueuedToCheckIn()) {
+                        result = result.concat(":x: ~~" + member.get().getEffectiveName() + "~~\n");
                     }
                     else {
-                        emoteIndicator = ":warning:";
+                        result = result.concat(":warning: **" + member.get().getEffectiveName() + "**\n");
                     }
-
-                    result = result.concat("\n" + emoteIndicator + " ID: **" + pardonList.getResultsList().get(index).getId() +
-                            "** Date: **" + discord.getDefaultSDF().format(pardonList.getResultsList().get(index).getStartDate()) + "**");
-
-                    if ((index + 1) % 10 == 0) {
-                        pages.add(result);
-                        result = "";
-                    }
-                } while (++index < pardonList.getResultsList().size());
-
-                if (!result.equals("")) pages.add(result);
-
-                suffix = "Total Number of Missed Check-Ins: **" + record.getMissedCheckIns() + "**" +
-                        "\n\n*If you want to see the full list of players involved in one of the check-ins listed*" +
-                        "\n**Use: `" + mainConfig.commandPrefix + "checkin resultlist <id>`**";
-
-                discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Check-In Result", EmbedDesign.INFO, mainConfig, msg, TargetChannelSet.TEAM),
-                        prefix, pages, null).invertButtonLabels(true));
-                break;
-            case "resultlist":
-            case "rlist":
-            case "list":
-                // This is for listing all the players involved in a particular check-in
-                // ci resultlist [ID]
-                try {
-                    CheckInResult resultList = null;
-                    if (args.length == 2) {
-                        resultList = ciCore.getLatestResult();
-                    }
-                    else if (args.length == 3) {
-                        resultList = ciCore.getResultByID(Integer.parseInt(args[2]));
-                    }
-
-                    prefix = "**Check-In Results:**\n" +
-                            "Date Initiated: **" + discord.getDefaultSDF().format(resultList.getStartDate()) + "**\n\n" +
-                            ":white_check_mark: *Indicates The Player Did Check-In along with how much time was remaining when they did.*\n" +
-                            "*:warning: Indicates The Player Failed to Check-In\n" +
-                            "*:x: Indicates The Player Was Removed From the Check-In Queue* \n\n";
-
-                    List<CheckInPlayer> players = resultList.getPlayers();
-                    do {
-                        CheckInPlayer p = players.get(index);
-                        if (p.successfullyCheckedIn()) {
-                            result = result.concat(":white_check_mark: ID: **" + p.getId() + " " + p.getPlayer().getEffectiveName()  +
-                                    "** \nTime Remaining: **" + p.getCheckInRemainingTime() + "**");
-                        }
-                        else {
-                            if (!p.isQueuedToCheckIn()) {
-                                result = result.concat(":x: ID: ~~" + p.getId() + " " + p.getPlayer().getEffectiveName() + "~~");
-                            }
-                            else {
-                                result = result.concat(":warning: ID: **" + p.getId() + " " + p.getPlayer().getEffectiveName() + "**");
-                            }
-                        }
-                        // Going Twice on the Enter Key at the end of each record, except the last record
-                        if (index > players.size() - 1) result = result.concat("\n\n");
-
-                        // Placing the result string into the page and then clearing the result string
-                        if ((index + 1) % 10 == 0) {
-                            pages.add(result);
-                            result = "";
-                        }
-                    } while (++index < players.size());
-
-                    if (!result.equals("")) pages.add(result);
-                    discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Check-In Result", EmbedDesign.INFO, mainConfig, msg, TargetChannelSet.TEAM),
-                            prefix, pages, null).invertButtonLabels(true));
                 }
-                catch (NumberFormatException ex) {
-                    embed.setAsError("Invalid Result ID", ":x: **Invalid Result ID** \n\nYou can find the result IDs with ");
-                    embed.sendToTeamOutput(msg, msg.getAuthor());
+                // Going Twice on the Enter Key at the end of each record, except the last record
+                if (index > players.size() - 1) result = result.concat("\n\n");
+
+                // Placing the result string into the page and then clearing the result string
+                if ((index + 1) % 10 == 0) {
+                    pages.add(result);
+                    result = "";
                 }
-                break;
+            } while (++index < players.size());
+
+            if (!result.equals("")) pages.add(result);
+            discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Check-In Result", EmbedDesign.INFO, mainConfig, msg, TargetChannelSet.TEAM),
+                    prefix, pages, suffix).invertButtonLabels(true));
         }
-
+        catch (NumberFormatException ex) {
+            embed.setAsError("Invalid Result ID", ":x: **Invalid Result ID** \n\nYou can find the result IDs with ");
+            embed.sendToTeamOutput(msg, msg.getAuthor());
+        }
     }
 
     void sendSessionChannelMessage(boolean update) {
-        String checkInWarningString = ":warning: **A Check-In Has Started for this session!**" +
+        String checkInWarningString = ":warning: **A Check-In has started for this session!**" +
                 "\n\n*Please reply in ? with `" + mainConfig.commandPrefix + "checkin` or with a message to confirm you are paying attention to discord.*" +
                 "\nYou'll receive confirmation you have checked-in via direct message" +
                 "\n\nTime Remaining: **" + ciTimer.getRemainingTime() + "**" +
                 "\n\n:warning: ***Do Not Bump This Message** except with kickvotes or other emergencies*";
 
-        if (!ciConfig.checkInChannelID.equalsIgnoreCase("None") || ciConfig.getCheckInChannel() == null) {
+        if (ciConfig.checkInChannelID.equalsIgnoreCase("None") || ciConfig.getCheckInChannel() == null) {
             checkInWarningString = checkInWarningString.replace("?", "this channel");
         }
         else {
@@ -533,7 +520,7 @@ public class CheckInMain extends ListenerAdapter {
         }
 
         if (update) {
-            checkInSessionChannelEmbed.editMessage(checkInSessionChannelEntry.setMessage(checkInWarningString)
+            checkInSessionChannelEmbed.editMessageEmbeds(checkInSessionChannelEntry.setMessage(checkInWarningString)
                     .getEmbed(false)).queue(m -> {
                         checkInSessionChannelEmbed = m;
             });
@@ -541,7 +528,7 @@ public class CheckInMain extends ListenerAdapter {
         else {
             checkInSessionChannelEntry = new MessageEntry(
                     "Check-In In Progress", checkInWarningString, EmbedDesign.WARNING, mainConfig);
-            sessionChannel.sendMessage(checkInSessionChannelEntry.getEmbed(false)).queue(m -> {
+            sessionChannel.sendMessageEmbeds(checkInSessionChannelEntry.getEmbed(false)).queue(m -> {
                 checkInSessionChannelEmbed = m;
             });
         }
@@ -589,7 +576,12 @@ public class CheckInMain extends ListenerAdapter {
                 }
             }
             else if (msg.getMentionedMembers().size() >= 2) {
-                // No Longer Possible
+                if (ciCore.removeMemberFromCheckIn(msg.getMentionedMembers())) {
+                    addCheckMarkReactionToMessage(msg);
+                }
+                else {
+                    addXReactionToMessage(msg);
+                }
             }
             else {
                 try {
@@ -618,99 +610,125 @@ public class CheckInMain extends ListenerAdapter {
     void endCheckIn() {
         checkInRunning = false;
         checkInConfirmed = false;
-        CheckInResult ciResult = ciCore.endCheckIn(checkInStartDate);
+        CheckInResult ciResult = ciCore.endCheckIn(false);
+        AtomicReference<Member> member = new AtomicReference<>();
 
         ciResult.getPlayers().forEach(p -> {
+            guild.retrieveMemberById(p.getPlayerDiscordId()).queue(member::set);
             if (p.isQueuedToCheckIn()) {
                 if (mainConfig.testModeEnabled) {
-                    log.warn("Would Have Removed the Role " + ciConfig.getCheckInRole().getName() + " from " + p.getPlayer().getEffectiveName() +
-                            " (Discord ID: " + p.getPlayer().getIdLong() + ") because the check-in ended, but couldn't because I'm in test mode...");
+                    log.warn("Would Have Removed the Role " + ciConfig.getCheckInRole().getName() + " from " + member.get().getEffectiveName() +
+                            " (Discord ID: " + p.getPlayerDiscordId() + ") because the check-in ended, but couldn't because I'm in test mode...");
                 }
                 else {
-                    guild.removeRoleFromMember(p.getPlayer(), ciConfig.getCheckInRole()).queue();
-                    log.info("Successfully Removed the Role " + ciConfig.getCheckInRole().getName() + " from " + p.getPlayer().getEffectiveName() +
-                            " (Discord ID: " + p.getPlayer().getIdLong() + ") because the check-in ended.");
+                    guild.removeRoleFromMember(member.get(), ciConfig.getCheckInRole()).submit().whenComplete(new BiConsumer<Void, Throwable>() {
+                        @Override
+                        public void accept(Void unused, Throwable throwable) {
+                            if (throwable != null) {
+                                log.info("Successfully Removed the Role " + ciConfig.getCheckInRole().getName() + " from " + member.get().getEffectiveName() +
+                                        " (Discord ID: " + p.getPlayerDiscordId() + ") because the check-in ended.");
+                            }
+                            else {
+                                log.warn("Could Not Remove the Role " + ciConfig.getCheckInRole().getName() + " from " + member.get().getEffectiveName() +
+                                        " (Discord ID: " + p.getPlayerDiscordId() + ")");
+                            }
+                        }
+                    });
                 }
             }
         });
 
         checkInProgressionEntry.setTitle("Check-In Ended").setDesign(EmbedDesign.SUCCESS).setMessage("**The Check-In Has Ended**" +
-                "\n\nTo See the results for this check in you can use `" + mainConfig.commandPrefix + "ci resultlist`" +
-                "\nIf another check-in is run after this one the command is then `" + mainConfig.commandPrefix + "ci resultlist " + ciResult.getId() + "`");
-        checkInProgressionEmbed.editMessage(checkInProgressionEntry.getEmbed(false)).queue();
+                "\n\nTo See the results for this check in you can use `" + mainConfig.commandPrefix + "ci list`" +
+                "\nIf another check-in is run after this one the command is then `" + mainConfig.commandPrefix + "ci list " + ciResult.getId() + "`");
+        checkInProgressionEmbed.editMessageEmbeds(checkInProgressionEntry.getEmbed(false)).queue();
 
-        checkInSessionChannelEntry.setTitle("Check-In Ended").setDesign(EmbedDesign.SUCCESS).setMessage("**The Check-In Has Ended for This Session***");
-        checkInSessionChannelEmbed.editMessage(checkInSessionChannelEntry.getEmbed(false)).queue();
+        checkInSessionChannelEntry.setTitle("Check-In Ended").setDesign(EmbedDesign.SUCCESS).setMessage("**The Check-In Has Ended for This Session**\n\nYou may resume normal chatter and bot commands.");
+        checkInSessionChannelEmbed.editMessageEmbeds(checkInSessionChannelEntry.getEmbed(false)).queue();
         try {
             fileHandler.saveDatabase();
         }
         catch (IOException e) {
             e.printStackTrace();
         }
+
+
+        int checkedIn = 0;
+        int failedCheckIn = 0;
+        int removedFromCheckIn = 0;
+        int index = 0;
+        List<CheckInPlayer> players = ciResult.getPlayers();
+
+        while (index < players.size()) {
+            CheckInPlayer p = players.get(index++);
+
+            if (p.isQueuedToCheckIn() && p.successfullyCheckedIn()) {
+                checkedIn++;
+            }
+            else if (p.isQueuedToCheckIn() && !p.successfullyCheckedIn()) {
+                failedCheckIn++;
+            }
+            else {
+                removedFromCheckIn++;
+            }
+        }
+
+
+        String result = "This Check-In is now completed from the session channel\n" +
+                sessionChannel.getAsMention() +
+                "\n\n:white_check_mark: Successfully Checked-In: **" + checkedIn + "**" +
+                "\n:warning: Failed To Check-In: **" + failedCheckIn + "**" +
+                "\n:x: Removed From Check-In Queue: **" + removedFromCheckIn + "**" +
+                "\n\n**To See these results in more detail in the future, you may run `" +
+                mainConfig.commandPrefix + "checkin list " + ciResult.getId() + "`**";
+
+        embed.setAsInfo("Check-In " + ciResult.getId() + " Ended", result);
+        embed.sendToLogChannel();
     }
     private void sendCheckInStartupPrompts(Message originalCmd, boolean update) {
-        String memberListPrefix = "These members were successfully queried from the discord server:";
+        String memberListPrefix = "These members were successfully queried from the discord server:" +
+                "\n:white_check_mark: = **Queued to be Checked-In**" +
+                "\n:x: = **Not Queued to be Checked-In**";
         String duplicateMatches = "These are the queries I performed on this server, and when I tried to search this player it returned" +
                 " multiple accounts with any of these roles:\n# \n\n";
         EmbedDesign duplicateMatchesStatus = EmbedDesign.ERROR;
         String unrecogizedPlayers = "These players I did not find a player a discord account for." +
                 "\nThis could be due to a slight misread, or it could be due to a rando in the session. " +
                 "\n*Please review this list to see if there's any members I might've missed*\n\n";
-        String controlHelp = "Use `" + mainConfig.commandPrefix + "checkin add <Player Mention(s)>` " +
-                "to add additional players that should be checked in. " +
-                "You'll want to add the players that you believe their names were misread and got sent to *Members Not Found*. " +
-                "You may add multiple players here." +
-                "\n" +
-                "\nUse `" + mainConfig.commandPrefix + "checkin remove/del <id>` " +
-                "to remove players that were accidently added to *Members To Be Checked-In* due to a zoobot misread. " +
-                "You may remove multiple players here." +
-                "\n" +
-                "\nTo get player mentions for adding to the checkin queue you can use `" + mainConfig.commandPrefix +
-                "search <query>` (`" + mainConfig.commandPrefix + "s <query>` for short) whereas `<query>` " +
-                "you'd place part of or all of a player's name. " +
-                "The bot will then search every member of this server, in their nickname if they have one and their usernames." +
-                "\n" +
-                "\nAs you use commands I'll be reacting to them with :white_check_mark: or :x: " +
-                "to indicate if it was successful or a failure. The messages above will also edit themselves to reflect the change." +
-                "\n" +
-                "\nWhen you're finished, use `" + mainConfig.commandPrefix + "checkin confirm` " +
-                "when you believe everyone that's in the session is underneath the *Members To Be Checked-In* section.";
-
 
         int index = 0;
-        int emojiIndex = 1;
+        int emojiIndex = 0;
         List<String> memberList = new ArrayList<>();
         // Setup Check-In List
-
+        List<CheckInPlayer> playerList = ciCore.getCheckInList();
+        AtomicReference<Member> member = new AtomicReference<>();
         String tempString = "";
         do {
-            if (ciCore.getCheckInList().get(index).isQueuedToCheckIn()) {
-                tempString = tempString.concat(emojiList.get(emojiIndex++) + " :white_check_mark: **" + ciCore.getCheckInList().get(index).getPlayer().getEffectiveName() + "**\n");
+            guild.retrieveMemberById(playerList.get(index).getPlayerDiscordId()).queue(member::set);
+            if (playerList.get(index).isQueuedToCheckIn()) {
+                tempString = tempString.concat(emojiList.get(emojiIndex++) + " :white_check_mark: **" + member.get().getEffectiveName() + "**\n");
             }
             else {
-                tempString = tempString.concat(emojiList.get(emojiIndex++) + " :x: ~~" + ciCore.getCheckInList().get(index).getPlayer().getEffectiveName() + "~~\n");
+                tempString = tempString.concat(emojiList.get(emojiIndex++) + " :x: ~~" + member.get().getEffectiveName() + "~~\n");
             }
 
-            if (index % 10 == 0) {
+            if (++index % 10 == 0) {
                 memberList.add(tempString);
                 tempString = "";
-                emojiIndex = 1;
+                emojiIndex = 0;
             }
-        } while (++index < ciCore.getCheckInList().size());
+        } while (index < playerList.size());
         // This ensures the remainder of the tempString is into the memberList
-        memberList.add(tempString);
+        if (tempString != "") memberList.add(tempString);
 
         if (!update) {
-            TargetChannelSet queueEmbedChannelSet = TargetChannelSet.TEAM;
-
-            if (originalCmd.getChannel() == ciConfig.getCheckInChannel()) {
-                queueEmbedChannelSet = TargetChannelSet.SAME;
-            }
 
             checkInQueueEmbed = new CheckInQueueEmbed(new MessageEntry("Members To Be Checked-In",
-                    EmbedDesign.SUCCESS, mainConfig, originalCmd, queueEmbedChannelSet), memberListPrefix, memberList,
-                    null, emojiList, this);
+                    EmbedDesign.SUCCESS, mainConfig, originalCmd, ciConfig.getCheckInChannel()).setAsIsListEmbed(),
+                    memberListPrefix, memberList, null, emojiList, this);
+
             discord.addAsReactionListEmbed(checkInQueueEmbed);
+            toPurge.add(embed.getMessageEntryObj(originalCmd).getResultEmbed());
         }
         else {
             discord.updateReactionListEmbed(checkInQueueEmbed, memberList);
@@ -749,10 +767,9 @@ public class CheckInMain extends ListenerAdapter {
         // Construct Strings that were not recognized as a player - any if there are any
         if (!ciCore.getUnrecognizedPlayerList().isEmpty()) {
             index = 0;
-            do {
+            while (index < ciCore.getUnrecognizedPlayerList().size()) {
                 unrecogizedPlayers = unrecogizedPlayers.concat("**- " + ciCore.getUnrecognizedPlayerList().get(index++) + "**\n");
             }
-            while (index < ciCore.getUnrecognizedPlayerList().size());
         }
         else {
             unrecognizedPlayerStatus = EmbedDesign.SUCCESS;
@@ -761,60 +778,76 @@ public class CheckInMain extends ListenerAdapter {
                     "it is advisible to check zoobot's screenshot and compare that to the member list.";
         }
         if (update) checkInStartupEntryObjects.clear();
-        checkInStartupEntryObjects.add(checkInQueueEmbed.getMessageEntry());
         checkInStartupEntryObjects.add(new MessageEntry("Duplicate Accounts", duplicateMatches, duplicateMatchesStatus, mainConfig));
         checkInStartupEntryObjects.add(new MessageEntry("Members Not Found", unrecogizedPlayers, unrecognizedPlayerStatus, mainConfig));
-        checkInStartupEntryObjects.add(new MessageEntry("Check-In Pre-Start Controls", controlHelp, EmbedDesign.HELP, mainConfig));
 
         printStartupEmbeds(update);
     }
     void sendCheckInProgressEmbed(@Nullable Message msg,  boolean update) {
+        List<CheckInPlayer> players = ciCore.getCheckInList();
+        int index = 0;
+        int count = 0;
+        do {
+            if (!players.get(index).successfullyCheckedIn() && players.get(index).isQueuedToCheckIn()) {
+                count++;
+            }
+        } while (++index < players.size());
+
         String prefix = "**A Check-In has started for " + sessionChannel.getAsMention() + "**" +
                 "\nTime Remaining: **" + ciTimer.getRemainingTime() + "**" +
+                "\nPlayers Remaining: **" + count + "/" + players.size() + "**" +
                 "\n\n*Players List*:" +
                 "\n:white_check_mark: **Indicates the player has checked in**" +
                 "\n:warning: **Indicates the player has not check-in yet...**" +
-                "\n:x: **Indicates the player was removed from the check-in queue prior to confirmation**";
+                "\n:x: **Indicates the player was removed from the check-in queue prior to confirmation**" +
+                "\n\n";
 
         String progressString = "";
-        List<String> pages = new ArrayList<>();
-
-        int index = 0;
+        index = 0;
         List<CheckInPlayer> checkInList = ciCore.getCheckInList();
+        AtomicReference<Member> member = new AtomicReference<>();
         do {
+            guild.retrieveMemberById(checkInList.get(index).getPlayerDiscordId()).queue(member::set);
             if (checkInList.get(index).successfullyCheckedIn() && checkInList.get(index).isQueuedToCheckIn()) {
-                progressString = progressString.concat(":white_check_mark: **" + checkInList.get(index).getPlayer().getEffectiveName() +
-                        "** @ " + checkInList.get(index).getCheckInRemainingTime() + "\n");
+                progressString = progressString.concat(":white_check_mark: ~~" + member.get().getEffectiveName() +
+                        "~~ @ **" + checkInList.get(index).getCheckInRemainingTime() + "**\n");
             }
             else if (checkInList.get(index).isQueuedToCheckIn()) {
-                progressString = progressString.concat(":warning: **" + checkInList.get(index).getPlayer().getEffectiveName() + "**\n");
+                progressString = progressString.concat(":warning: **" + member.get().getEffectiveName() + "**\n");
             }
             else {
-                progressString = progressString.concat(":x: ~~" + checkInList.get(index).getPlayer().getEffectiveName() + "~~\n");
+                progressString = progressString.concat(":x: ~~" + member.get().getEffectiveName() + "~~\n");
             }
         } while (++index < checkInList.size());
 
         if (update) {
-            checkInProgressionEmbed.editMessage(checkInProgressionEntry.setMessage(progressString).getEmbed()).queue(m -> {
+            checkInProgressionEmbed.editMessageEmbeds(checkInProgressionEntry.setMessage(prefix + progressString).getEmbed()).queue(m -> {
                 checkInProgressionEmbed = m;
             });
         }
         else {
-            checkInProgressionEntry = new MessageEntry("Check-In In Progress", EmbedDesign.WARNING,
+            checkInProgressionEntry = new MessageEntry("Check-In In Progress", prefix + progressString,  EmbedDesign.WARNING,
                     mainConfig, msg, TargetChannelSet.TEAM);
-            getCheckInProgressionEmbedChannel().sendMessage(checkInProgressionEntry.getEmbed()).queue(m -> {
+            getCheckInProgressionEmbedChannel().sendMessageEmbeds(checkInProgressionEntry.getEmbed()).queue(m -> {
                 checkInProgressionEmbed = m;
             });
         }
     }
-    public void addSearchCommands(Message msg) {
-        toSearchPurge.add(msg);
+    public void addSearchCommands(MessageEntry entry) {
+        toSearchPurge.add(entry.getResultEmbed());
+        toSearchPurge.add(entry.getOriginalCmd());
     }
     private void purgeAllCommands() {
-        getCheckInManagementEmbedChannel().purgeMessages(toPurge);
+        toPurge.forEach(m -> {
+            m.delete().queue(success -> {}, error -> {
+                log.warn("Normal Purge for the Check-In Channel threw an error: " + error.getMessage());
+            });
+        });
         toPurge.clear();
         toSearchPurge.forEach(msg -> {
-            embed.deleteResultsByCommand(msg);
+            msg.delete().queue(success -> {}, error -> {
+                log.warn("Search Purge for the Check-In Channel threw an error: " + error.getMessage());
+            });
         });
         toSearchPurge.clear();
     }
@@ -822,11 +855,14 @@ public class CheckInMain extends ListenerAdapter {
         int index = 0;
         do {
             if (update) {
-                checkInStartupMessages.get(index).editMessage(checkInStartupEntryObjects.get(index).getEmbed(false)).queue();
+                checkInStartupMessages.get(index).editMessageEmbeds(checkInStartupEntryObjects.get(index).getEmbed(false)).queue();
             }
             else {
-                getCheckInManagementEmbedChannel().sendMessage(checkInStartupEntryObjects.get(index).getEmbed(false))
-                        .queue(msg -> checkInStartupMessages.add(msg));
+                getCheckInManagementEmbedChannel().sendMessageEmbeds(checkInStartupEntryObjects.get(index).getEmbed(false))
+                        .queue(msg -> {
+                            checkInStartupMessages.add(msg);
+                            toPurge.add(msg);
+                        });
             }
         } while (++index < checkInStartupEntryObjects.size());
     }
@@ -856,8 +892,17 @@ public class CheckInMain extends ListenerAdapter {
         return checkInRunning;
     }
 
+    public boolean isCommand(String arg0, String arg1) {
+        if (commands.contains(arg0.toLowerCase()) && firstArg.contains(arg1.toLowerCase())) return true;
+        else if (commands.contains(arg0) && (arg0.toLowerCase().equalsIgnoreCase("afk")
+                || arg0.toLowerCase().equalsIgnoreCase("afkcheck"))) {
+            return true;
+        }
+        else return false;
+    }
+
     public String getStatusString() {
-        String defaultOutput = "*__Check-In Feature__*";
+        String defaultOutput = "\n\n*__Check-In Feature__*";
         defaultOutput = defaultOutput.concat("\nStatus: **?**");
 
         if (ciConfig.isEnabled()) {
@@ -891,6 +936,7 @@ public class CheckInMain extends ListenerAdapter {
                         defaultOutput = defaultOutput.replace("?", "Waiting for Command...");
                     else if (isBusy) defaultOutput = defaultOutput.replace("?", ":warning: Busy");
                     else defaultOutput = defaultOutput.replace("?", ":warning: Connected - Not Ready");
+                    break;
                 default:
                     defaultOutput = defaultOutput.replace("?", "Unknown");
             }
@@ -917,7 +963,7 @@ public class CheckInMain extends ListenerAdapter {
                 defaultOutput = defaultOutput.replace("!", "Queued To Start");
             }
             else {
-                defaultOutput.replace("!", "Idle");
+                defaultOutput = defaultOutput.replace("!", "Idle");
             }
         }
         else {
@@ -926,5 +972,9 @@ public class CheckInMain extends ListenerAdapter {
 
 
         return defaultOutput;
+    }
+
+    public CheckInConfiguration getConfig() {
+        return ciConfig;
     }
 }

@@ -6,24 +6,30 @@ import java.util.List;
 // This is for all check-ins run. All of their results go here.
 class CheckInResult {
     private final int id;
-    private final ZonedDateTime startDate;
+    private final ZonedDateTime endDate;
     private final List<CheckInPlayer> players;
+    private final boolean cancelled;
 
-    CheckInResult(int id, ZonedDateTime startDate, List<CheckInPlayer> players) {
+    CheckInResult(int id, ZonedDateTime endDate, List<CheckInPlayer> players, boolean isCancelled) {
         this.id = id;
-        this.startDate = startDate;
+        this.endDate = endDate;
         this.players = players;
+        this.cancelled = isCancelled;
     }
 
     int getId() {
         return id;
     }
 
-    ZonedDateTime getStartDate() {
-        return startDate;
+    ZonedDateTime getEndDate() {
+        return endDate;
     }
 
     List<CheckInPlayer> getPlayers() {
         return players;
+    }
+
+    boolean isCancelled() {
+        return cancelled;
     }
 }

@@ -52,9 +52,18 @@ public class EmbedEngine {
     }
 
     public void editEmbed(Message originalCmd, @Nullable String newTitle, @Nullable String newMsg, @Nullable EmbedDesign requestedType) {
-        MessageEntry entry = commandMessageMap.get(originalCmd);
-        Message botResponse = commandMessageMap.get(originalCmd).getResultEmbed();
+        MessageEntry entry = null;
 
+        while (true) {
+            entry = commandMessageMap.get(originalCmd);
+            if (entry != null) break;
+            else {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {}
+            }
+        }
+        Message botResponse = commandMessageMap.get(originalCmd).getResultEmbed();
         if (requestedType != null) {
             entry.setDesign(requestedType);
         }
@@ -68,7 +77,8 @@ public class EmbedEngine {
         else if (newMsg != null && newTitle != null) {
             entry.setTitle(newTitle).setMessage(newMsg);
         }
-        botResponse.getChannel().editMessageById(botResponse.getIdLong(), entry.getEmbed(entry.isFieldOriginallyIncluded())).queue();
+
+        botResponse.getChannel().editMessageEmbedsById(botResponse.getIdLong(), entry.getEmbed(entry.isFieldOriginallyIncluded())).queue();
     }
     ///////////////////////////////////////////////////////////
     // Output Handler Methods
@@ -99,8 +109,9 @@ public class EmbedEngine {
     }
 
     public void sendToChannel(Message msg, MessageChannel channel) {
-        channel.sendMessage(messageQueue.get(messageQueue.size() - 1).getEmbed()).queue(m -> {
-            if (msg != null) commandMessageMap.put(msg, messageQueue.get(messageQueue.size() - 1));
+        MessageEntry entry = messageQueue.get(messageQueue.size() - 1);
+        channel.sendMessageEmbeds(entry.getEmbed()).queue(m -> {
+            if (msg != null) commandMessageMap.put(msg, entry);
         });
     }
     public void sendToChannels(Message msg, TargetChannelSet... sets) {
@@ -129,17 +140,17 @@ public class EmbedEngine {
         while (true) {
             try {
                 messageQueue.forEach(entry -> {
-                    entry.getChannels().forEach(channel -> {
+                    entry.getTargetChannels().forEach(channel -> {
                         switch (channel) {
                             case DM:
-                                entry.getTargetUser().openPrivateChannel().flatMap(c -> c.sendMessage(entry.getEmbed())).queue(m -> {
+                                entry.getTargetUser().openPrivateChannel().flatMap(c -> c.sendMessageEmbeds(entry.getEmbed())).queue(m -> {
                                     if (entry.getOriginalCmd() != null) {
                                         placeInCmdMap(entry.setResultEmbed(m));
                                     }
                                 });
                                 break;
                             case LOG:
-                                mainConfig.logChannel.sendMessage(entry.getEmbed()).queue();
+                                mainConfig.logChannel.sendMessageEmbeds(entry.getEmbed()).queue();
                                 break;
                             case TEAM:
                                 if (!entry.getOriginalCmd().getChannel().equals(mainConfig.managementChannel) && (!mainConfig.forceToManagementChannel ||
@@ -147,12 +158,12 @@ public class EmbedEngine {
                                         || entry.getOriginalCmd().getChannel().equals(mainConfig.discussionChannel) ||
                                         // V Bypass mainConfig.forceToManagementChannel being true, in cases where channels has more than 1 target and
                                         // TEAM is one of them, go to discussion channel.
-                                        entry.getChannels().size() > 1 && entry.getChannels().contains(TargetChannelSet.TEAM))) {
+                                        entry.getTargetChannels().size() > 1 && entry.getTargetChannels().contains(TargetChannelSet.TEAM))) {
                                     if (entry.getTargetUser() != null && (!entry.getOriginalCmd().getChannel().equals(mainConfig.discussionChannel) && !entry.getOriginalCmd().getChannel().equals(mainConfig.managementChannel))
                                             && discord.isTeamMember(entry.getTargetUser().getIdLong())) {
                                         mainConfig.discussionChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                     }
-                                    mainConfig.discussionChannel.sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
+                                    mainConfig.discussionChannel.sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
                                         placeInCmdMap(entry.setResultEmbed(m));
                                     });
                                 }
@@ -160,7 +171,7 @@ public class EmbedEngine {
                                     if (entry.getTargetUser() != null && !entry.getOriginalCmd().getChannel().equals(mainConfig.managementChannel)) {
                                         mainConfig.managementChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                     }
-                                    mainConfig.managementChannel.sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
+                                    mainConfig.managementChannel.sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
                                         placeInCmdMap(entry.setResultEmbed(m));
                                     });
                                 }
@@ -173,8 +184,8 @@ public class EmbedEngine {
                                         if (!entry.getOriginalCmd().getChannel().equals(mainConfig.botSpamChannel) &&
                                                 (!mainConfig.forceToDedicatedChannel ||
                                                         mainConfig.dedicatedOutputChannelID.equalsIgnoreCase("None"))) {
-                                            if (!entry.getOriginalCmd().getMember().hasPermission(mainConfig.helpChannel, Permission.MESSAGE_READ)) {
-                                                entry.getOriginalCmd().getChannel().sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
+                                            if (!entry.getOriginalCmd().getMember().hasPermission(mainConfig.helpChannel, Permission.VIEW_CHANNEL)) {
+                                                entry.getOriginalCmd().getChannel().sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
                                                     placeInCmdMap(entry.setResultEmbed(m).setChannels(TargetChannelSet.SAME));
                                                 });
                                                 break;
@@ -183,20 +194,20 @@ public class EmbedEngine {
                                             if (entry.getTargetUser() != null && !entry.getOriginalCmd().getChannel().equals(mainConfig.helpChannel)) {
                                                 mainConfig.helpChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                             }
-                                            mainConfig.helpChannel.sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
+                                            mainConfig.helpChannel.sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
                                                 placeInCmdMap(entry.setResultEmbed(m));
                                             });
                                         }
                                         else if (mainConfig.forceToDedicatedChannel || !entry.getOriginalCmd().getChannel().equals(mainConfig.dedicatedOutputChannel)) {
                                             if (!mainConfig.botSpamChannelID.equalsIgnoreCase("None")
                                                     && entry.getOriginalCmd().getChannel().equals(mainConfig.botSpamChannel)) {
-                                                mainConfig.botSpamChannel.sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
+                                                mainConfig.botSpamChannel.sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
                                                     placeInCmdMap(entry.setResultEmbed(m));
                                                 });
                                             }
                                             else {
-                                                if (!entry.getOriginalCmd().getMember().hasPermission(mainConfig.dedicatedOutputChannel, Permission.MESSAGE_READ)) {
-                                                    entry.getOriginalCmd().getChannel().sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
+                                                if (!entry.getOriginalCmd().getMember().hasPermission(mainConfig.dedicatedOutputChannel, Permission.VIEW_CHANNEL)) {
+                                                    entry.getOriginalCmd().getChannel().sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
                                                         placeInCmdMap(entry.setResultEmbed(m).setChannels(TargetChannelSet.SAME));
                                                     });
                                                     break;
@@ -204,7 +215,7 @@ public class EmbedEngine {
                                                 if (entry.getTargetUser() != null && !entry.getOriginalCmd().getChannel().equals(mainConfig.dedicatedOutputChannel)) {
                                                     mainConfig.dedicatedOutputChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                                 }
-                                                mainConfig.dedicatedOutputChannel.sendMessage(messageQueue.get(0).getEmbed()).queue(m -> {
+                                                mainConfig.dedicatedOutputChannel.sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
                                                     placeInCmdMap(entry.setResultEmbed(m));
                                                 });
                                             }
@@ -215,8 +226,15 @@ public class EmbedEngine {
                                     }
                                 }
                                 break;
+                            case CUSTOM:
+                                entry.getCustomChannels().forEach(c -> {
+                                    c.sendMessageEmbeds(entry.getEmbed()).queue(m -> {
+                                        placeInCmdMap(entry.setResultEmbed(m));
+                                    });
+                                });
+                                break;
                             case SAME:
-                                entry.getOriginalCmd().getChannel().sendMessage(entry.getEmbed()).queue(m -> {
+                                entry.getOriginalCmd().getChannel().sendMessageEmbeds(entry.getEmbed()).queue(m -> {
                                     placeInCmdMap(entry.setResultEmbed(m));
                                 });
                                 break;

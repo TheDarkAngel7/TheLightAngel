@@ -9,17 +9,13 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 class CheckInQueueEmbed extends CustomListEmbed {
-
     private final List<String> reactions;
-    private final MessageEntry entry;
     private final CheckInMain ciMain;
 
     CheckInQueueEmbed(MessageEntry entry, String prefixString, List<String> alternateStrings, @Nullable String suffixString, List<String> emoteList, CheckInMain ciMain) {
         super(entry, prefixString, alternateStrings, suffixString);
         reactions = emoteList;
-        this.entry = entry;
         this.ciMain = ciMain;
-
     }
 
     @Override
@@ -36,9 +32,5 @@ class CheckInQueueEmbed extends CustomListEmbed {
     public void takeAction(Message originalCmd, MessageReactionAddEvent event) {
         ciMain.fromReactionEmoji(originalCmd,
                 (getCurrentPage() - 1) * 10 + (reactions.indexOf(event.getReaction().getReactionEmote().getAsReactionCode()) + 1));
-    }
-
-    MessageEntry getMessageEntry() {
-        return entry;
     }
 }

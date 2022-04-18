@@ -2,6 +2,7 @@ package Angel;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 
@@ -19,7 +20,8 @@ public class MessageEntry {
     private AtomicReference<Message> resultEmbed = new AtomicReference<>();
     private boolean fieldOriginallyIncluded = true;
     private boolean isListEmbed = false;
-    private List<TargetChannelSet> channels = new ArrayList<>();
+    private List<TargetChannelSet> targetChannels = new ArrayList<>();
+    private List<MessageChannel> customChannels = new ArrayList<>();
     private User targetUser;
     private final MainConfiguration mainConfig;
 
@@ -30,6 +32,27 @@ public class MessageEntry {
         this.mainConfig = mainConfig;
     }
 
+    // Constructor Specifically For Custom Channels, We Don't Ask For a TargetChannelSet here and we ask for the MessageChannel objects
+
+    public MessageEntry(String title, EmbedDesign design, MainConfiguration mainConfig, Message originalCmd, MessageChannel... channels) {
+        this.title = title;
+        this.design = design;
+        this.originalCmd.set(originalCmd);
+        this.mainConfig = mainConfig;
+        this.customChannels = Arrays.asList(channels);
+        this.targetChannels.add(TargetChannelSet.CUSTOM);
+    }
+    // Constructor Exactly Like the one above except an initial message is included
+    public MessageEntry(String title, String msg, EmbedDesign design, MainConfiguration mainConfig, Message originalCmd, MessageChannel... channels) {
+        this.title = title;
+        this.msg = msg;
+        this.design = design;
+        this.originalCmd.set(originalCmd);
+        this.mainConfig = mainConfig;
+        this.customChannels = Arrays.asList(channels);
+        this.targetChannels.add(TargetChannelSet.CUSTOM);
+    }
+
     // Constructor Specifically for Creating new ListEmbed objects
     // We won't require a message string here as that'll be set by the ListEmbed constructor method
 
@@ -38,7 +61,17 @@ public class MessageEntry {
         this.design = design;
         this.mainConfig = mainConfig;
         this.originalCmd.set(originalCmd);
-        this.channels = Arrays.asList(sets);
+        this.targetChannels = Arrays.asList(sets);
+        isListEmbed = true;
+    }
+
+    public MessageEntry (String title, String msg, EmbedDesign design, MainConfiguration mainConfig, Message originalCmd, TargetChannelSet... sets) {
+        this.title = title;
+        this.msg = msg;
+        this.design = design;
+        this.mainConfig = mainConfig;
+        this.originalCmd.set(originalCmd);
+        this.targetChannels = Arrays.asList(sets);
         isListEmbed = true;
     }
 
@@ -53,22 +86,35 @@ public class MessageEntry {
     }
 
     public MessageEntry setChannels(List<TargetChannelSet> channels) {
-        this.channels = channels;
+        this.targetChannels = channels;
         return this;
     }
 
     public MessageEntry setChannels(TargetChannelSet... channels) {
-        this.channels = Arrays.asList(channels);
+        this.targetChannels = Arrays.asList(channels);
+        return this;
+    }
+
+    public MessageEntry setCustomChannels(MessageChannel... messageChannels) {
+        customChannels = Arrays.asList(messageChannels);
+        targetChannels.add(TargetChannelSet.CUSTOM);
+        return this;
+
+    }
+
+    public MessageEntry setCustomChannels(List<MessageChannel> messageChannels) {
+        customChannels.addAll(messageChannels);
+        targetChannels.add(TargetChannelSet.CUSTOM);
         return this;
     }
 
     public MessageEntry addChannel(TargetChannelSet channel) {
-        channels.add(channel);
+        targetChannels.add(channel);
         return this;
     }
 
     public MessageEntry addChannel(List<TargetChannelSet> channels) {
-        this.channels.addAll(channels);
+        this.targetChannels.addAll(channels);
         return this;
     }
 
@@ -97,15 +143,24 @@ public class MessageEntry {
         return this;
     }
 
-    List<TargetChannelSet> getChannels() {
-        return channels;
+    public MessageEntry setAsIsListEmbed() {
+        isListEmbed = true;
+        return this;
     }
 
-    Message getOriginalCmd() {
+    List<TargetChannelSet> getTargetChannels() {
+        return targetChannels;
+    }
+
+    List<MessageChannel> getCustomChannels() {
+        return customChannels;
+    }
+
+    public Message getOriginalCmd() {
         return originalCmd.get();
     }
 
-    Message getResultEmbed() {
+    public Message getResultEmbed() {
         return resultEmbed.get();
     }
 
@@ -129,6 +184,8 @@ public class MessageEntry {
         return isListEmbed;
     }
 
+    // Default Setting False as that is what this class is initalized with,
+    // but using this method will just construct the MessageEmbed object with the setting that is current
     public MessageEmbed getEmbed() {
         return getEmbed(fieldOriginallyIncluded);
     }

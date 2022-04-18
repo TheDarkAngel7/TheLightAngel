@@ -1,22 +1,21 @@
-package Angel.CheckIn.AFKChecks;
+package Angel.CheckIn.AFKTool;
 
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-
 class AFKCheck extends ListenerAdapter implements Runnable {
     private final Logger log = LogManager.getLogger(AFKCheck.class);
-    private final List<Member> afkChecked;
+    private final Member afkChecked;
     private final Member overseeingStaffMember;
     private final TextChannel sessionChannel;
     private Message currentSessionChannelMsg;
+    private Message afkCheckedMessage;
     private final int length;
     private final int mentionOn;
     private int minutes;
@@ -30,8 +29,8 @@ class AFKCheck extends ListenerAdapter implements Runnable {
             "\n" +
             ":warning: *Everyone else in the session, **do not tell them they're being AFK checked, otherwise that defeats the point***";
 
-    AFKCheck(List<Member> afkCheckVictims, Member overseeingStaffMember, TextChannel sessionChannel, int length, int mentionOn) {
-        this.afkChecked = afkCheckVictims;
+    AFKCheck(Member afkCheckVictim, Member overseeingStaffMember, TextChannel sessionChannel, int length, int mentionOn) {
+        this.afkChecked = afkCheckVictim;
         this.overseeingStaffMember = overseeingStaffMember;
         this.sessionChannel = sessionChannel;
         this.length = length;
@@ -41,10 +40,13 @@ class AFKCheck extends ListenerAdapter implements Runnable {
     }
 
     @Override
-    public void onGuildMessageReceived(@NotNull GuildMessageReceivedEvent event) {
-        if (afkChecked.contains(event.getMember()) && event.getMessage().getChannel() == sessionChannel) {
+    public void onMessageReceived(@NotNull MessageReceivedEvent event) {
+        if (event.getAuthor().isBot() || !event.getChannelType().isGuild()) return;
+        if (afkChecked.getIdLong() == event.getAuthor().getIdLong() && event.getMessage().getChannel() == sessionChannel) {
             afkCheckRunning = false;
             successfulCheckIn = true;
+            afkCheckedMessage = event.getMessage();
+            log.info(afkChecked.getEffectiveName() + " successfully completed their AFK check with " + getRemainingTime() + " left on the clock!");
         }
     }
 
@@ -52,29 +54,22 @@ class AFKCheck extends ListenerAdapter implements Runnable {
     public void run() {
         if (afkCheckRunning) {
             if (minutes == length && seconds == 0) {
-                sessionChannel.sendMessage(afkCheckMessage.replace("$", getMemberNames()).replace("%", String.valueOf(length))).queue(m -> {
-                    currentSessionChannelMsg = m;
-                });
+                sessionChannel.sendMessage(afkCheckMessage.replace("$", getMemberNames()).replace("%", String.valueOf(length))).queue(m -> currentSessionChannelMsg = m);
                 log.info(overseeingStaffMember.getEffectiveName() + " just started an AFK Check on " + getMemberNames() + " for " +
                         length + " minutes");
             }
 
             if (minutes == mentionOn && seconds == 0) {
-                sessionChannel.sendMessage(afkCheckMessage.replace("**$**", getMemberMentions()).replace(String.valueOf(length), String.valueOf(mentionOn))).queue(m -> {
-                    currentSessionChannelMsg = m;
-                });
-                log.info(getMemberNames() + " only has " + mentionOn + " minutes remaining on their AFK Check!");
+                sessionChannel.sendMessage(afkCheckMessage.replace("**$**", getMemberMentions()).replace("%", String.valueOf(mentionOn))).queue(m -> currentSessionChannelMsg = m);
+                log.info("The " + mentionOn + " minute warning has been given in the session channel");
             }
 
             if (minutes == 0 && seconds == 0) {
                 afkCheckRunning = false;
                 log.info(getMemberNames() + " has missed their AFK Check!");
-
-                currentSessionChannelMsg.editMessage(currentSessionChannelMsg.getContentRaw().replace(
-                        "\n\n:warning: **Do Not Bump This Message, except with kickvotes or other emergencies**", "")).queue();
             }
             else if (seconds == 0) {
-                minutes--;
+                log.info(getMemberNames() + " has " + minutes-- + " minutes remaining on their AFK check");
                 seconds = 59;
             }
             else {
@@ -100,34 +95,14 @@ class AFKCheck extends ListenerAdapter implements Runnable {
         }
     }
     String getMemberNames() {
-        if (afkChecked.size() == 1) {
-            return afkChecked.get(0).getEffectiveName();
-        }
-        else {
-            int index = 1;
-            String result = afkChecked.get(0).getEffectiveName();
-            do {
-                result = result.concat(" & " + afkChecked.get(index).getEffectiveName());
-            } while (++index < afkChecked.size());
-            return result;
-        }
+        return afkChecked.getEffectiveName();
     }
 
     String getMemberMentions() {
-        if (afkChecked.size() == 1) {
-            return afkChecked.get(0).getAsMention();
-        }
-        else {
-            int index = 1;
-            String result = afkChecked.get(0).getAsMention();
-            do {
-                result = result.concat(" & " + afkChecked.get(index).getAsMention());
-            } while (++index < afkChecked.size());
-            return result;
-        }
+        return afkChecked.getAsMention();
     }
 
-    List<Member> getAfkCheckVictims() {
+    Member getAfkCheckVictims() {
         return afkChecked;
     }
     Member getOverseeingStaffMember() {
@@ -150,5 +125,8 @@ class AFKCheck extends ListenerAdapter implements Runnable {
     }
     Message getCurrentSessionChannelMsg() {
         return currentSessionChannelMsg;
+    }
+    Message getCheckInMessage() {
+        return afkCheckedMessage;
     }
 }

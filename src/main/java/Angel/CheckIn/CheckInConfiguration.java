@@ -10,7 +10,7 @@ import net.dv8tion.jda.api.entities.TextChannel;
 import java.util.ArrayList;
 import java.util.List;
 
-abstract class CheckInConfiguration {
+public abstract class CheckInConfiguration {
     Guild guild;
     private final Gson gson = new Gson();
     private JsonObject configObj;
@@ -53,7 +53,7 @@ abstract class CheckInConfiguration {
     abstract void setCheckInRole(Role role);
     abstract void setCheckInDuration(int newDuration);
 
-    boolean isEnabled() {
+    public boolean isEnabled() {
         return enabled;
     }
 

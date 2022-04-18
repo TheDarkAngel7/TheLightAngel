@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.ReconnectedEvent;
+import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionRemoveAllEvent;
@@ -198,26 +199,48 @@ public class DiscordBotMain extends ListenerAdapter {
                             entry.setMessage(listEmbed.getCurrentPage());
 
                             if (listEmbed.getTotalPages() == 0) {
-                                entry.getResultEmbed().editMessage(listEmbed.getMessageEntry().getEmbed()).queue();
+                                entry.getResultEmbed().editMessageEmbeds(listEmbed.getMessageEntry().getEmbed()).queue();
                                 entry.getResultEmbed().clearReactions().queue();
                             }
                             else if (listEmbed.getTotalPages() == 1) {
                                 msg.clearReactions().queue();
                                 addCustomEmotes(msg);
-                                entry.getResultEmbed().editMessage(entry.setTitle(entry.getTitle().split(" - Page")[0]).getEmbed()).queue();
+                                entry.getResultEmbed().editMessageEmbeds(entry.setTitle(entry.getTitle().split(" - Page")[0]).getEmbed()).queue();
                             }
                         }
                 }
                 if (listEmbed.getTotalPages() >= 2) {
-                    entry.getResultEmbed().editMessage(entry.setTitle(entry.getTitle().replace(
+                    entry.getResultEmbed().editMessageEmbeds(entry.setTitle(entry.getTitle().replace(
                             previousIndex + "/" + listEmbed.getTotalPages(),
                             listEmbed.getCurrentPageIndex() + "/" + listEmbed.getTotalPages()))
                             .getEmbed()).queue();
                     reactionClearTimers.remove(msg).cancel(true);
-                    reactionClearTimers.put(msg, msg.clearReactions().queueAfter(30, TimeUnit.MINUTES));
+                    reactionClearTimers.put(msg, msg.clearReactions().queueAfter(30, TimeUnit.MINUTES, success -> {
+                        log.info("Reaction Clear Queue: All Reactions Cleared Successfully");
+                    }, error -> {
+                        log.warn("Reaction Clear Queue: Message to Clear Reactions From Not Found - " + error.getMessage());
+                        reactionClearTimers.remove(msg);
+                    }));
                 }
             }
         });
+    }
+
+    @Override
+    public void onMessageDelete(@NotNull MessageDeleteEvent event) {
+        Enumeration<Message> messages = reactionClearTimers.keys();
+
+        do {
+            try {
+                Message messageInQuestion = messages.nextElement();
+                if (messageInQuestion.getIdLong() == event.getMessageIdLong()) {
+                    reactionClearTimers.remove(messageInQuestion).cancel(true);
+                }
+            }
+            catch (NoSuchElementException ex) {
+                break;
+            }
+        } while (messages.hasMoreElements());
     }
 
     @Override
@@ -430,7 +453,8 @@ public class DiscordBotMain extends ListenerAdapter {
                             "\n\n*__Request to Ack Pings__*" +
                             "\nMain Thread: **" + msg.getJDA().getGatewayPing() + "ms**" +
                             "\nBot Abuse Thread: **#**" +
-                            "\nNickname Thread: **$**";
+                            "\nNickname Thread: **$**" +
+                            "\nCheck-In Thread: **!**";
 
                     if (baFeature.getConfig().isEnabled()) {
                         editedPing = editedPing.replace("#", String.valueOf(baInit.getPing()) + "ms");
@@ -444,6 +468,12 @@ public class DiscordBotMain extends ListenerAdapter {
                     }
                     else {
                         editedPing = editedPing.replace("$", "Disabled");
+                    }
+                    if (ciFeature.getConfig().isEnabled()) {
+                        editedPing = editedPing.replace("!", String.valueOf(ciInit.getPing()) + "ms");
+                    }
+                    else {
+                        editedPing = editedPing.replace("!", "Disabled");
                     }
 
                     embed.editEmbed(msg, null, originalOutput.replace(
@@ -464,7 +494,8 @@ public class DiscordBotMain extends ListenerAdapter {
                         else embed.sendDM(msg, msg.getAuthor());
                         try { Thread.sleep(2000); } catch (InterruptedException e) {}
 
-                        String defaultOutput = baFeature.getStatusString().concat(nickFeature.getStatusString());
+                        String defaultOutput = baFeature.getStatusString().concat(nickFeature.getStatusString())
+                                .concat(ciFeature.getStatusString());
                         EmbedDesign requestedType;
 
                         if (!defaultOutput.contains("true")) {
@@ -544,7 +575,7 @@ public class DiscordBotMain extends ListenerAdapter {
     private void helpCommand(Message msg) {
         String[] args = msg.getContentRaw().substring(1).split(" ");
         if (args.length == 1) {
-            embed.setAsInfo("About " + mainConfig.commandPrefix + "help",
+            embed.setAsHelp("About " + mainConfig.commandPrefix + "help",
                     "Syntax: `" + mainConfig.commandPrefix + "help <Command Name>`");
         }
         else if (args.length == 2) {
@@ -1071,7 +1102,6 @@ public class DiscordBotMain extends ListenerAdapter {
                 title = "No Results Found";
                 results = "**:x: No Results found with that search query...**";
                 embedType = EmbedDesign.ERROR;
-                embed.setAsError(title, results);
                 log.error("No Results returned with the search query \"" + query + "\"");
             }
             else {
@@ -1081,20 +1111,32 @@ public class DiscordBotMain extends ListenerAdapter {
                 results = results.concat("\n*You may use these results to get a mention you need in your next command " +
                         "or for any other purpose. Right click on the desired mention and click **Mention***");
                 log.info("Search Query \"" + query + "\" returned " + searchResults.size() + " result(s)");
-                embed.setAsInfo(title, results);
+                embedType = EmbedDesign.INFO;
             }
         }
         else {
             title = "Error While Parsing Command";
             results = "**Invalid Number of Arguments! Syntax: `" + mainConfig.commandPrefix + "search <Name>`**";
             embedType = EmbedDesign.ERROR;
-            embed.setAsError(title, results);
         }
+
+        MessageEntry entry = new MessageEntry(title, results, embedType, mainConfig).setOriginalCmd(msg);
+
         if (ciFeature.isCheckInRunning() && msg.getChannel() == ciFeature.getCheckInManagementEmbedChannel()) {
-            embed.sendToChannel(msg, ciFeature.getCheckInManagementEmbedChannel());
-            ciFeature.addSearchCommands(msg);
+            entry.setCustomChannels(ciFeature.getCheckInManagementEmbedChannel());
         }
-        else embed.sendToTeamOutput(msg, msg.getAuthor());
+        else {
+            entry.setChannels(TargetChannelSet.TEAM);
+        }
+        embed.sendAsMessageEntryObj(entry);
+
+        while (true) {
+            try {
+                ciFeature.addSearchCommands(embed.getMessageEntryObj(msg));
+                break;
+            }
+            catch (NullPointerException ex) {}
+        }
     }
 
     // Specifically for Embeds That Edit Themselves Based on Reactions
@@ -1116,7 +1158,28 @@ public class DiscordBotMain extends ListenerAdapter {
 
         addCustomEmotes(changingEmbed.getResultEmbed());
 
-        switch (listEmbed.getTotalPages()) {
+        processPagesOnListEmbed(changingEmbed, listEmbed.getTotalPages());
+    }
+
+    public void addAsReactionListEmbed(CustomListEmbed customListEmbed) {
+        addAsReactionListEmbed(customListEmbed.getListEmbed());
+    }
+    public void updateReactionListEmbed(ListEmbed listEmbed, List<String> newAlternatingStrings) {
+        ListEmbed oldListEmbed = listEmbeds.remove(listEmbeds.indexOf(listEmbed));
+
+        ListEmbed newListEmbed = oldListEmbed.setNewAlternatingStrings(newAlternatingStrings);
+
+        listEmbeds.add(newListEmbed);
+        newListEmbed.getMessageEntry().setMessage(newListEmbed.getCurrentPage());
+        newListEmbed.getMessageEntry().getResultEmbed().editMessageEmbeds(newListEmbed.getMessageEntry().getEmbed()).queue();
+
+        processPagesOnListEmbed(newListEmbed.getMessageEntry(), listEmbed.getTotalPages());
+    }
+    public void updateReactionListEmbed(CustomListEmbed customListEmbed, List<String> newAlternatingStrings) {
+        updateReactionListEmbed(customListEmbed.getListEmbed(), newAlternatingStrings);
+    }
+    private void processPagesOnListEmbed(MessageEntry changingEmbed, int newPageCount) {
+        switch (newPageCount) {
             case 0:
             case 1: break;
             case 2:
@@ -1139,23 +1202,10 @@ public class DiscordBotMain extends ListenerAdapter {
                 // Last Page
                 changingEmbed.getResultEmbed().addReaction("\u23ED\uFE0F").queue();
         }
-         reactionClearTimers.put(changingEmbed.getResultEmbed(),
-                 changingEmbed.getResultEmbed().clearReactions().queueAfter(30, TimeUnit.MINUTES));
-    }
-
-    public void addAsReactionListEmbed(CustomListEmbed customListEmbed) {
-        addAsReactionListEmbed(customListEmbed.getListEmbed());
-    }
-    public void updateReactionListEmbed(ListEmbed listEmbed, List<String> newAlternatingStrings) {
-        ListEmbed oldListEmbed = listEmbeds.remove(listEmbeds.indexOf(listEmbed));
-
-        ListEmbed newListEmbed = oldListEmbed.setNewAlternatingStrings(newAlternatingStrings);
-
-        listEmbeds.add(newListEmbed);
-        newListEmbed.getMessageEntry().getResultEmbed().editMessage(newListEmbed.getCurrentPage()).queue();
-    }
-    public void updateReactionListEmbed(CustomListEmbed customListEmbed, List<String> newAlternatingStrings) {
-        updateReactionListEmbed(customListEmbed.getListEmbed(), newAlternatingStrings);
+        reactionClearTimers.put(changingEmbed.getResultEmbed(),
+                changingEmbed.getResultEmbed().clearReactions().queueAfter(30, TimeUnit.MINUTES, success -> {}, error -> {
+                    log.warn("Unable to Clear Reactions from MessageEntry Object Timer - " + error.getMessage());
+                }));
     }
     // This is used when we want to update prefix or suffixes of the list embed objects
     public void replaceListEmbedObjects(ListEmbed oldListEmbed, ListEmbed newListEmbed) {
@@ -1225,6 +1275,7 @@ public class DiscordBotMain extends ListenerAdapter {
         if (baFeature.isCommand(cmd[0])) return true;
         if (cmd.length > 1 ) {
             if (nickFeature.isCommand(cmd[0], cmd[1])) return true;
+            if (ciFeature.isCommand(cmd[0], cmd[1])) return true;
         }
         int index = 0;
         while (index < mainCommands.size()) {

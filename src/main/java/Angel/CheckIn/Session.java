@@ -28,13 +28,11 @@ class Session {
     static class Players {
         private final String name;
         private final List<String> crew;
-        private boolean isStaff = false;
 
 
-        Players(String name, List<String> crew, boolean isStaff) {
+        Players(String name, List<String> crew) {
             this.name = name;
             this.crew = crew;
-            this.isStaff = isStaff;
         }
 
         String getPlayerName() {
@@ -42,6 +40,9 @@ class Session {
         }
         boolean isSAFE() {
             return crew.contains("SAFE");
+        }
+        boolean isStaff() {
+            return crew.contains("staff");
         }
     }
 }

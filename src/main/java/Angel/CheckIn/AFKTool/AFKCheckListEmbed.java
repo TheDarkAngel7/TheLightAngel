@@ -1,4 +1,4 @@
-package Angel.CheckIn.AFKChecks;
+package Angel.CheckIn.AFKTool;
 
 import Angel.CustomListEmbed;
 import Angel.MessageEntry;
@@ -51,10 +51,11 @@ class AFKCheckListEmbed extends CustomListEmbed {
                 event.getGuild().retrieveMemberById(event.getUser().getIdLong()).queue(targetStaffMember::set);
                 event.getGuild().retrieveMemberById(targetDiscordID).queue(targetMember::set);
 
-                afkMain.cancelAFKCheck(targetDiscordID);
+                log.info("The AFK Check against " + targetMember.get().getEffectiveName() +
+                        " has just been requested to be cancelled by " + targetStaffMember.get().getEffectiveName());
 
-                log.info(targetStaffMember.get().getEffectiveName() + " just cancelled the AFK Check of " +
-                        targetMember.get().getEffectiveName());
+                afkMain.cancelAFKCheck(targetDiscordID);
+                afkMain.refreshAFKCheckListEmbed();
                 break;
         }
     }

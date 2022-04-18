@@ -40,7 +40,6 @@ class FileHandler implements FileDatabases {
     public void getDatabase() throws IOException {
         FileReader fileReader = new FileReader(jsonCheckInDataFile);
         JsonObject database = JsonParser.parseReader(fileReader).getAsJsonObject();
-        ciCore.setRecords(gson.fromJson(database.get("ciRecords").getAsString(), new TypeToken<List<CheckInRecord>>(){}.getType()));
         ciCore.setResults(gson.fromJson(database.get("ciResults").getAsString(), new TypeToken<List<CheckInResult>>(){}.getType()));
         fileReader.close();
     }
@@ -48,7 +47,6 @@ class FileHandler implements FileDatabases {
     public void saveDatabase() throws IOException {
         JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(new FileOutputStream(jsonCheckInDataTempFile)));
         jsonWriter.beginObject()
-                .name("ciRecords").value(gson.toJson(ciCore.getRecords()))
                 .name("ciResults").value(gson.toJson(ciCore.getResults()))
                 .endObject().close();
         log.info("JSONWriter Successfully Ran to Check In Database Temp File");
