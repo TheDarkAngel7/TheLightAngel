@@ -106,7 +106,7 @@ public class BotAbuseMain extends ListenerAdapter {
         // If they're supposed to be Bot Abused and they don't have the role on join
         if (baCore.botAbuseIsCurrent(event.getMember().getIdLong()) &&
                 !event.getMember().getRoles().contains(botConfig.getBotAbuseRole())) {
-            guild.addRoleToMember(event.getMember().getIdLong(),
+            guild.addRoleToMember(event.getMember(),
                    botConfig.getBotAbuseRole()).queue();
             embed.setAsInfo("Join Event Information", "**[System - Join Event] Added the Bot Abuse Role to "
                     + event.getMember().getAsMention() +
@@ -117,7 +117,7 @@ public class BotAbuseMain extends ListenerAdapter {
         // If they're not supposed to be Bot Abused and they do have the role
         else if (!baCore.botAbuseIsCurrent(event.getMember().getIdLong()) &&
                 event.getMember().getRoles().contains(botConfig.getBotAbuseRole())) {
-            guild.removeRoleFromMember(event.getMember().getIdLong(),
+            guild.removeRoleFromMember(event.getMember(),
                     botConfig.getBotAbuseRole()).queue();
             embed.setAsInfo("Join Event Information", "**[System - Join Event] Removed the Bot Abuse Role from "
                     + event.getMember().getAsMention() +
@@ -917,7 +917,7 @@ public class BotAbuseMain extends ListenerAdapter {
 
             // We now check if they have the Bot Abuse role, if they do then it's removed.
             if (msg.getMentionedMembers().get(index).getRoles().contains(botConfig.getBotAbuseRole())) {
-                guild.removeRoleFromMember(msg.getMentionedMembers().get(index).getIdLong(),
+                guild.removeRoleFromMember(msg.getMentionedMembers().get(index),
                         botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " cleared the bot abuse records of " + msg.getMentionedMembers().get(index).getEffectiveName()).queue();
                 embed.setAsInfo("Bot Abuse Role Removed", "**Successfully Removed Bot Abuse Role from "
                         + msg.getMentionedMembers().get(index).getAsMention() + " as their Records just got Cleared**");
@@ -960,7 +960,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 setCommandUserByID(targetDiscordID);
                 if (guild.isMember(targetUser)) {
                     if (guild.getMemberById(targetDiscordID).getRoles().contains(botConfig.getBotAbuseRole())) {
-                        guild.removeRoleFromMember(targetDiscordID,
+                        guild.removeRoleFromMember(User.fromId(targetDiscordID),
                                 botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " cleared the records of discord ID " + targetDiscordID).queue();
                         embed.setAsInfo("Bot Abuse Role Removed",
                                 "Successfully Removed Bot Abuse Role from "
@@ -1037,9 +1037,9 @@ public class BotAbuseMain extends ListenerAdapter {
         if (args.length == 3) {
             if (msg.getMentionedMembers().size() == 2) {
                 if (baCore.botAbuseIsCurrent(msg.getMentionedMembers().get(0).getIdLong())) {
-                    guild.addRoleToMember(msg.getMentionedMembers().get(1).getIdLong(),
+                    guild.addRoleToMember(msg.getMentionedMembers().get(1),
                             botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " transferred all bot abuse records to this player").queue();
-                    guild.removeRoleFromMember(msg.getMentionedMembers().get(0).getIdLong(),
+                    guild.removeRoleFromMember(msg.getMentionedMembers().get(0),
                             botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " transferred all bot abuse records from this player").queue();
                 }
                 log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
@@ -1051,11 +1051,11 @@ public class BotAbuseMain extends ListenerAdapter {
                 try {
                     // If they provide a Discord ID First and a Mention Last
                     if (baCore.botAbuseIsCurrent(Long.parseLong(args[1]))) {
-                        guild.addRoleToMember(msg.getMentionedMembers().get(0).getIdLong(),
+                        guild.addRoleToMember(msg.getMentionedMembers().get(0),
                                 botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() +
                                 " transferred all bot abuse records to this player").queue();
                         try {
-                            guild.removeRoleFromMember(Long.parseLong(args[1]),
+                            guild.removeRoleFromMember(User.fromId(Long.parseLong(args[1])),
                                     botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() +
                                     " transferred all bot abuse records from this player").queue();
                         }
@@ -1083,7 +1083,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     // If they provide a mention first and a Discord ID Last
                     if (baCore.botAbuseIsCurrent(msg.getMentionedMembers().get(0).getIdLong())) {
                         try {
-                            guild.addRoleToMember(Long.parseLong(args[2]),
+                            guild.addRoleToMember(User.fromId(Long.parseLong(args[2])),
                                     botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() +
                                     " transferred all bot abuse records to this player").queue();
                         }
@@ -1093,7 +1093,7 @@ public class BotAbuseMain extends ListenerAdapter {
                                     + args[2] + " because they do not exist in the Discord Server**");
                             embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                         }
-                        guild.removeRoleFromMember(msg.getMentionedMembers().get(0).getIdLong(),
+                        guild.removeRoleFromMember(msg.getMentionedMembers().get(0),
                                 botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() +
                                 " transferred all bot abuse records from this player").queue();
                     }
@@ -1115,7 +1115,7 @@ public class BotAbuseMain extends ListenerAdapter {
             else if (msg.getMentionedMembers().isEmpty()) {
                 if (baCore.botAbuseIsCurrent(Long.parseLong(args[1]))) {
                     try {
-                        guild.addRoleToMember(Long.parseLong(args[2]),
+                        guild.addRoleToMember(User.fromId(Long.parseLong(args[2])),
                                 botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " transferred all bot abuse records to this player").queue();
                     }
                     catch (ErrorResponseException ex) {
@@ -1127,7 +1127,7 @@ public class BotAbuseMain extends ListenerAdapter {
                                 args[2] + " because they do not exist in the Discord Server");
                     }
                     try {
-                        guild.removeRoleFromMember(Long.parseLong(args[1]),
+                        guild.removeRoleFromMember(User.fromId(Long.parseLong(args[1])),
                                 botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " transferred all bot abuse records from this player").queue();
                     }
                     catch (ErrorResponseException ex) {

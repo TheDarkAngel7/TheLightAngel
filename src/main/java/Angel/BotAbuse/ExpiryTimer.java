@@ -2,6 +2,7 @@ package Angel.BotAbuse;
 
 import Angel.EmbedEngine;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,7 +38,7 @@ class ExpiryTimer implements Runnable {
                 embed.setAsSuccess("Successfully Removed Expired Bot Abuse", "**:white_check_mark: Removed Expired Bot Abuse for "
                         + guild.getMemberById(removedID).getAsMention() + "**");
                 embed.sendToLogChannel();
-                guild.removeRoleFromMember(removedID,
+                guild.removeRoleFromMember(User.fromId(removedID),
                         baFeature.getConfig().getBotAbuseRole()).reason("Bot Abuse Expired Normally").queue();
                 log.info("Successfully Removed the Bot Abuse role from " +
                         guild.getMemberById(removedID).getEffectiveName());

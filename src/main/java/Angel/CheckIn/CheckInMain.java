@@ -2,10 +2,7 @@ package Angel.CheckIn;
 
 import Angel.CheckIn.AFKTool.AFKCheckManagement;
 import Angel.*;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.ReconnectedEvent;
@@ -388,7 +385,7 @@ public class CheckInMain extends ListenerAdapter {
                     guild.retrieveMemberById(m.getPlayerDiscordId()).queue(member::set);
                     if (!mainConfig.testModeEnabled && m.isQueuedToCheckIn()) {
 
-                        guild.addRoleToMember(m.getPlayerDiscordId(), ciConfig.getCheckInRole()).submit().whenComplete(new BiConsumer<Void, Throwable>() {
+                        guild.addRoleToMember(User.fromId(m.getPlayerDiscordId()), ciConfig.getCheckInRole()).submit().whenComplete(new BiConsumer<Void, Throwable>() {
                             @Override
                             public void accept(Void unused, Throwable throwable) {
                                 if (throwable != null) {
