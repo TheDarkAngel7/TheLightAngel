@@ -1,40 +1,53 @@
 package Angel.BotAbuse;
 
-import Angel.DiscordBotMain;
 import Angel.MainConfiguration;
-import net.dv8tion.jda.api.entities.User;
+import com.google.gson.JsonObject;
+import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 class BotAbuseCore { // This is where all the magic happens, where all the data is added and queried from the appropriate arrays to
     // Display all the requested data.
     Angel.BotAbuse.FileHandler fileHandler;
     private final Logger log = LogManager.getLogger(BotAbuseCore.class);
-    BotAbuseConfiguration botConfig;
-    MainConfiguration mainConfig;
-    List<BotAbuseRecord> records = new ArrayList<>();
+    private final Guild guild;
+    private final BotAbuseMain baMain;
+    private BotAbuseConfiguration botConfig;
+    private final MainConfiguration mainConfig;
+    private List<BotAbuseRecord> records = new ArrayList<>();
     Dictionary<String, String> reasonsDictionary = new Hashtable<>();
-    private Calendar c;
+    private ZonedDateTime c;
 
-    BotAbuseCore() {
+    BotAbuseCore(Guild guild, BotAbuseMain baMain, MainConfiguration mainConfig) {
+        this.baMain = baMain;
         this.fileHandler = new FileHandler(this);
+        this.guild = guild;
+        this.mainConfig = mainConfig;
     }
-    void startup() throws IOException {
-        log.info("Bot Abuse Core Initiated...");
+    void startup(boolean firstStartup) throws IOException {
         try {
+            if (firstStartup) log.info("Bot Abuse Core Initiated...");
+            else log.info("Bot Abuse Database Gotten From Resume...");
             fileHandler.getDatabase();
         }
         catch (IllegalStateException ex) {
             log.warn("No Data Existed in the Bot Abuse Arrays - Data File is Empty");
         }
     }
-    void setBotConfig(BotAbuseConfiguration importBotConfig) {
-        botConfig = importBotConfig;
+    void setBotConfig(BotAbuseConfiguration botConfig) {
+        this.botConfig = botConfig;
+    }
+    JsonObject getConfig() throws IOException {
+        return fileHandler.getConfig();
+    }
+    void saveDatabase() throws IOException {
+        fileHandler.saveDatabase();
     }
 
     String setBotAbuse(long targetDiscordID, boolean isPermanent, String reason, @Nullable String imageURL, long teamMember)
@@ -42,7 +55,6 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         reason = reason.toLowerCase();
         String getReason = "";
         BotAbuseRecord thisRecord = null;
-        SimpleDateFormat sdf = this.getDefaultSDF();
         if (!botAbuseIsCurrent(targetDiscordID)) {
             if (isPermanent) {
                 getReason = "Contact SAFE Team";
@@ -59,13 +71,13 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
             // If they've been previously Bot Abused before then we need the index value of it
             if (getLastRecord(targetDiscordID) == null) { // This is their first offense
                 thisRecord = new BotAbuseRecord(
-                        getNextID(), targetDiscordID, teamMember, 1, c.getTime(), getExpiryDate(targetDiscordID), getReason, imageURL);
+                        getNextID(), targetDiscordID, teamMember, 1, c, getExpiryDate(targetDiscordID), getReason, imageURL);
                 records.add(thisRecord);
             }
             else {
                 // The Bot Abuse Time gets progressively longer - This isn't their first offense
                 thisRecord = new BotAbuseRecord(getNextID(), targetDiscordID, teamMember, getLastRecord(targetDiscordID).getRepOffenses() + 1,
-                        c.getTime(), getExpiryDate(targetDiscordID), getReason, imageURL);
+                        c, getExpiryDate(targetDiscordID), getReason, imageURL);
                 records.add(thisRecord);
             }
             if (this.mainConfig.testModeEnabled) {
@@ -77,7 +89,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                     "**\nBot Abuse ID: **" + thisRecord.getId() +
                     "**\nIssuing Team Member: <@!" + thisRecord.getIssuingTeamMember() + ">" +
                     "\nOffense Number: **" + thisRecord.getRepOffenses() +
-                    "**\nDate Issued: **" + sdf.format(thisRecord.getIssuedDate()) +
+                    "**\nDate Issued: **" + baMain.getDiscordFormat(thisRecord.getIssuedDate()) +
                     "**\nExpiry Date: **" + getNewExpiryDate(targetDiscordID) +
                     "**\nReason: **" + thisRecord.getReason()+
                     "**\nViolation Image: **" + thisRecord.getProofImage() + "**";
@@ -107,17 +119,17 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         else if (!botAbuseIsCurrent(targetDiscordID) && isPermanent) {
             if (getLastRecord(targetDiscordID) == null) {
                 thisRecord = new BotAbuseRecord(getNextID(), targetDiscordID, teamMember, getLastRecord(targetDiscordID).getRepOffenses() + 1,
-                        c.getTime(), null, getReason, imageURL);
+                        c, null, getReason, imageURL);
 
             }
             else {
                 // If we Try to Perm Bot Abuse someone that's never had a Bot Abuse offense before.
                 thisRecord = new BotAbuseRecord(getNextID(), targetDiscordID, teamMember, 1,
-                        c.getTime(), null, getReason, imageURL);
+                        c, null, getReason, imageURL);
             }
             if (this.mainConfig.testModeEnabled) {
                 thisRecord = new BotAbuseRecord(getNextID(), targetDiscordID, teamMember, getLastRecord(targetDiscordID).getRepOffenses() + 1,
-                        c.getTime(), null, getReason, imageURL);
+                        c, null, getReason, imageURL);
             }
             fileHandler.saveDatabase();
             // Output to return from a perm Bot Abuse, we check to see if proofImages in the corresponding index is null, if so Violation image will say "None Provided"
@@ -127,7 +139,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                         "**\nBot Abuse ID: **" + thisRecord.getId() +
                         "**\nIssuing Team Member: <!@" + thisRecord.getIssuingTeamMember() + ">" +
                         "**\nOffense Number: **" + thisRecord.getRepOffenses() +
-                        "**\nDate Issued: **" + sdf.format(thisRecord.getIssuedDate()) +
+                        "**\nDate Issued: **" + baMain.getDiscordFormat(thisRecord.getIssuedDate()) +
                         "**\nExpiry Date: **" + getNewExpiryDate(targetDiscordID) +
                         "**\nReason: **" + thisRecord.getReason() +
                         "**\nViolation Image: **None Provided**";
@@ -137,7 +149,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                         "**\nBot Abuse ID: **" + thisRecord.getId() +
                         "**\nIssuing Team Member: <!@" + thisRecord.getIssuingTeamMember() + ">" +
                         "**\nOffense Number: **" + thisRecord.getRepOffenses() +
-                        "**\nDate Issued: **" + sdf.format(thisRecord.getIssuedDate()) +
+                        "**\nDate Issued: **" + baMain.getDiscordFormat(thisRecord.getIssuedDate()) +
                         "**\nExpiry Date: **" + getNewExpiryDate(targetDiscordID) +
                         "**\nReason: **" + thisRecord.getReason() +
                         "**\nViolation Image: **" + thisRecord.getProofImage() + "**";
@@ -147,10 +159,11 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
             // Checking to see if a moderator tried to bot abuse someone that is Permanently Bot Abused.
             // The Expiry Date will be null if that's the case.
             if (!botAbuseIsPermanent(targetDiscordID)) {
+                thisRecord = getLastRecord(targetDiscordID);
                 return ":x: **This Player is Already Bot Abused!**\nDiscord Account: <@!" + targetDiscordID + ">" +
                         "**\nBot Abuse ID: **" + thisRecord.getId() +
                         "\nOffense Number: **" + thisRecord.getRepOffenses() +
-                        "**\nExpiry Date: **" + sdf.format(thisRecord.getExpiryDate()) + "**";
+                        "**\nExpiry Date: **" + baMain.getDiscordFormat(thisRecord.getExpiryDate()) + "**";
             }
             else {
                 return ":x: **This Player is Already Bot Abused!**\nDiscord Account: <@!" + targetDiscordID + ">" +
@@ -160,16 +173,15 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
             }
         }
     }
-    private Date getExpiryDate(long targetDiscordID) {
-        Calendar cExp = Calendar.getInstance();
+    private ZonedDateTime getExpiryDate(long targetDiscordID) {
+        ZonedDateTime cExp = ZonedDateTime.now(ZoneId.of("UTC"));
         int prevOffenses = this.getHotOffenses(targetDiscordID);
         if (mainConfig.testModeEnabled) {
             try {
-                cExp.add(Calendar.MINUTE, botConfig.botAbuseTimes.get(prevOffenses));
+                cExp = cExp.plusMinutes(botConfig.getBotAbuseTimes().get(prevOffenses));
             }
             catch (IndexOutOfBoundsException ex) {
-                if (!botConfig.autoPermanent) cExp.add(Calendar.MINUTE,
-                        botConfig.botAbuseTimes.get(botConfig.botAbuseTimes.size() - 1));
+                if (!botConfig.isAutoPermanent()) cExp = cExp.plusMinutes(botConfig.getBotAbuseTimes().get(botConfig.getBotAbuseTimes().size() - 1));
                 else return null;
             }
         }
@@ -177,15 +189,14 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         // prevOffenses would equal to the index value where the days are located
         else {
             try {
-                cExp.add(Calendar.DAY_OF_MONTH, botConfig.botAbuseTimes.get(prevOffenses));
+                cExp = cExp.plusDays(botConfig.getBotAbuseTimes().get(prevOffenses));
             }
             catch (IndexOutOfBoundsException ex) {
-                if (!botConfig.autoPermanent) cExp.add(Calendar.DAY_OF_MONTH,
-                        botConfig.botAbuseTimes.get(botConfig.botAbuseTimes.size() - 1));
+                if (!botConfig.isAutoPermanent()) cExp = cExp.plusDays(botConfig.getBotAbuseTimes().get(botConfig.getBotAbuseTimes().size() - 1));
                 else return null;
             }
         }
-        return cExp.getTime();
+        return cExp;
     }
     private int getNextID() {
         int newID;
@@ -200,7 +211,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         return newID;
     }
     String undoBotAbuse(long teamMember, boolean isUndoingLast, long targetDiscordID) throws IOException {
-        Calendar cTooLate = Calendar.getInstance();
+        ZonedDateTime cTooLate;
         int id;
         BotAbuseRecord thisRecord = null;
         if (isUndoingLast) {
@@ -215,56 +226,57 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                 return ":x: **You Cannot Undo Someone Elses Bot Abuse**";
             }
         }
-        cTooLate.setTime(thisRecord.getIssuedDate());
+        cTooLate = thisRecord.getIssuedDate();
         if (this.mainConfig.testModeEnabled) {
-            cTooLate.add(Calendar.HOUR_OF_DAY, botConfig.maxDaysAllowedForUndo);
+            cTooLate = cTooLate.plusHours(botConfig.getMaxDaysAllowedForUndo());
         }
         else {
-            cTooLate.add(Calendar.DAY_OF_MONTH, botConfig.maxDaysAllowedForUndo);
+            cTooLate = cTooLate.plusDays(botConfig.getMaxDaysAllowedForUndo());
         }
-        if (c.getTime().before(cTooLate.getTime()) && botAbuseIsCurrent(targetDiscordID)) {
+        if (c.isBefore(cTooLate) && botAbuseIsCurrent(targetDiscordID)) {
             records.remove(thisRecord);
         }
-        else if (!(c.getTime().before(cTooLate.getTime())) && botAbuseIsCurrent(targetDiscordID)) {
-            log.error("Undo Failed for " + botConfig.guild.getMemberById(targetDiscordID).getUser().getAsTag() +
+        else if (!c.isBefore(cTooLate) && botAbuseIsCurrent(targetDiscordID)) {
+            log.error("Undo Failed for " + guild.getMemberById(targetDiscordID).getUser().getAsTag() +
                     " as this bot abuse is older than the configured "
-                    + botConfig.maxDaysAllowedForUndo + " days");
-            return ":x: **Undo Failed for <@" + targetDiscordID + "> because Bot Abuses Older than " + botConfig.maxDaysAllowedForUndo
+                    + botConfig.getMaxDaysAllowedForUndo() + " days");
+            return ":x: **Undo Failed for <@" + targetDiscordID + "> because Bot Abuses Older than " + botConfig.getMaxDaysAllowedForUndo()
                     + " Days Cannot Be Undone.**";
         }
         else {
-            log.error("Undo Failed for " + botConfig.guild.getMemberById(targetDiscordID).getUser().getAsTag() +
+            log.error("Undo Failed for " + guild.getMemberById(targetDiscordID).getUser().getAsTag() +
                     " as this player's bot abuse is no longer current");
             return ":x: **Undo Failed Because This Bot Abuse Is No Longer Current!**";
         }
         fileHandler.saveDatabase();
-        log.info("Undo Successful for " + botConfig.guild.getMemberById(targetDiscordID).getUser().getAsTag());
-        return ":white_check_mark: **Successfully Undid Bot Abuse ID <@" + thisRecord.getDiscordID() + ">**\n So... Whatever it was you were doing... Try Again...";
+        log.info("Undo Successful for " + guild.getMemberById(targetDiscordID).getUser().getAsTag());
+        return ":white_check_mark: **Successfully Undid Bot Abuse for <@" + thisRecord.getDiscordID() + ">**" +
+                "\nID: " + thisRecord.getId() +
+                "\n So... Whatever it was you were doing... Try Again...";
     }
     String getInfo(long targetDiscordID, double timeOffset, boolean isTeamMember) { // This method is for queries
         int prevOffenses = this.getLifetimeOffenses(targetDiscordID);
 
-        SimpleDateFormat sdf = this.getDefaultSDF();
         BotAbuseRecord thisRecord = getLastRecord(targetDiscordID);
-
         if (botAbuseIsCurrent(targetDiscordID)) {
-            Calendar dateIssued = Calendar.getInstance();
-            Calendar dateToExpire = Calendar.getInstance();
+            ZonedDateTime dateIssued;
+            ZonedDateTime dateToExpire;
             String result = ":information_source: <@!" + targetDiscordID + ">'s Bot Abuse Info: ";
             String trueOffset = this.getTimeZoneString(timeOffset);
-            if (trueOffset != null) {
-                sdf.setTimeZone(TimeZone.getTimeZone(trueOffset));
+            if (trueOffset == null) {
+                trueOffset = "UTC";
             }
             if (mainConfig.testModeEnabled) System.out.println(trueOffset);
             // Checking to see if the queried player is perm bot abused
-            dateIssued.setTime(thisRecord.getIssuedDate());
+            dateIssued = ZonedDateTime.ofInstant(thisRecord.getIssuedDate().toInstant(), ZoneId.of(trueOffset));
+            dateToExpire = ZonedDateTime.ofInstant(thisRecord.getExpiryDate().toInstant(), ZoneId.of(trueOffset));
             if (botAbuseIsPermanent(targetDiscordID)) {
                 if (!isTeamMember && thisRecord.getProofImage() == null) {
                     return result.concat(
                             "\nBot Abuse ID: **" + thisRecord.getId() +
                             "**\nOffense Number: **" + thisRecord.getRepOffenses() +
-                            "**\nDate Issued: **" + sdf.format(dateIssued.getTime()) +
-                            "**\nExpiry Date: **" + sdf.format(dateToExpire.getTime()) +
+                            "**\nDate Issued: **" + baMain.getDiscordFormat(dateIssued) +
+                            "**\nExpiry Date: **" + baMain.getDiscordFormat(dateToExpire) +
                             "**\nReason: **" + thisRecord.getReason() +
                             "**\nViolation Image: **None Provided**" +
                             "\n\nYou have had " + (prevOffenses - 1) + " Previous Offenses**");
@@ -273,7 +285,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                     return result.concat(
                             "\nBot Abuse ID: **" + thisRecord.getId() +
                             "**\nOffense Number: **" + thisRecord.getRepOffenses() +
-                            "**\nDate Issued: **" + sdf.format(dateIssued.getTime()) +
+                            "**\nDate Issued: **" + baMain.getDiscordFormat(dateIssued) +
                             "**\nExpiry Date: **Never" +
                             "**\nReason: **" + thisRecord.getReason() +
                             "**\nViolation Image: **" + thisRecord.getProofImage() +
@@ -282,9 +294,9 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                 else {
                     return result.concat(
                             "\nBot Abuse ID: **" + thisRecord.getId() +
-                            "**\nIssuing Team Member: <@!" + thisRecord.getDiscordID() + ">" +
+                            "**\nIssuing Team Member: <@!" + thisRecord.getIssuingTeamMember() + ">" +
                             "\nOffense Number: **" + thisRecord.getRepOffenses() +
-                            "**\nDate Issued: **" + sdf.format(dateIssued.getTime()) +
+                            "**\nDate Issued: **" + baMain.getDiscordFormat(dateIssued) +
                             "**\nExpiry Date: **Never" +
                             "**\nReason: **" + thisRecord.getReason() +
                             "**\nViolation Image: **" + thisRecord.getProofImage() +
@@ -292,13 +304,12 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                 }
             }
             else { // They Are Currently Bot Abused but not permanently
-                dateToExpire.setTime(thisRecord.getExpiryDate());
                 if (!isTeamMember) {
                     return result.concat(
                             "\nBot Abuse ID: **" + thisRecord.getId() +
                             "**\nOffense Number: **" + thisRecord.getRepOffenses() +
-                            "**\nDate Issued: **" + sdf.format(dateIssued.getTime()) +
-                            "**\nExpiry Date: **" + sdf.format(dateToExpire.getTime()) +
+                            "**\nDate Issued: **" + baMain.getDiscordFormat(dateIssued) +
+                            "**\nExpiry Date: **" + baMain.getDiscordFormat(dateToExpire) +
                             "**\nReason: **" + thisRecord.getReason() +
                             "**\nViolation Image: **" + thisRecord.getProofImage() +
                             "\n\nYou have had " + (prevOffenses - 1) + " Previous Offenses" +
@@ -307,10 +318,10 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                 else {
                     return result.concat(
                             "\nBot Abuse ID: **" + thisRecord.getId() +
-                            "**\nIssuing Team Member: <@!" + thisRecord.getDiscordID() + ">" +
+                            "**\nIssuing Team Member: <@!" + thisRecord.getIssuingTeamMember() + ">" +
                             "\nOffense Number: **" + thisRecord.getRepOffenses() +
-                            "**\nDate Issued: **" + sdf.format(dateIssued.getTime()) +
-                            "**\nExpiry Date: **" + sdf.format(dateToExpire.getTime()) +
+                            "**\nDate Issued: **" + baMain.getDiscordFormat(dateIssued) +
+                            "**\nExpiry Date: **" + baMain.getDiscordFormat(dateToExpire) +
                             "**\nReason: **" + thisRecord.getReason() +
                             "**\nViolation Image: **" + thisRecord.getProofImage() +
                             "\n\nThey have had " + (prevOffenses - 1) + " Previous Offenses" +
@@ -324,29 +335,28 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                     "\n" +
                     "\nNumber of Lifetime Bot Abuses: **" + this.getLifetimeOffenses(targetDiscordID) + "**" +
                     "\nNumber of Hot Bot Abuses: **" + this.getHotOffenses(targetDiscordID) + "**" +
-                    "\n\n*Hot Bot Abuses are offenses that took place less than **" + botConfig.hotOffenseMonths + "** months ago*" +
+                    "\n\n*Hot Bot Abuses are offenses that took place less than **" + botConfig.getHotOffenseMonths() + "** months ago*" +
                     "\n*Psst... They're also called \"Hot\" because they haven't cooled down*";
         }
     }
     private String getNewExpiryDate(long targetDiscordID) { // This Method gets called only when a new Bot Abuse is applied
-        SimpleDateFormat sdf = this.getDefaultSDF();
         if (botAbuseIsPermanent(targetDiscordID)) {
             return "Permanent";
         }
         // They're Not Perm Bot Abused
         else {
-            return sdf.format(getLastRecord(targetDiscordID).getExpiryDate());
+            return baMain.getDiscordFormat(getLastRecord(targetDiscordID).getExpiryDate());
         }
     }
     int getHotOffenses(long targetDiscordID) {
-        Calendar cOld = Calendar.getInstance();
+        ZonedDateTime cOld = ZonedDateTime.now(ZoneId.of("UTC"));
 
         if (this.mainConfig.testModeEnabled) {
-            cOld.add(Calendar.HOUR_OF_DAY, botConfig.hotOffenseMonths * -1);
+            cOld = cOld.minusHours(botConfig.getHotOffenseMonths());
         }
         else {
             // Take off the configured number of months
-            cOld.add(Calendar.MONTH, botConfig.hotOffenseMonths * -1);
+            cOld = cOld.minusMonths(botConfig.getHotOffenseMonths());
         }
         int index = 0;
         int prevOffenses = 0;
@@ -359,7 +369,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
             // otherwise be ignored by the bot, records whose expiryDates are before the cOld time would be ignored.
             if (records.get(index).getDiscordID() == targetDiscordID &&
                     (records.get(index).getExpiryDate() == null || 
-                            records.get(index).getExpiryDate().after(cOld.getTime()))) {
+                            records.get(index).getExpiryDate().isAfter(cOld))) {
                 prevOffenses++;
             }
             index++;
@@ -392,7 +402,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
             // Otherwise return true or false if the date in the expiryDates array is after current time,
             // return true if the Bot Abuse is still current
             // return false if the Bot Abuse is not current
-            return c.getTime().before(getLastRecord(targetDiscordID).getExpiryDate());
+            return c.isBefore(getLastRecord(targetDiscordID).getExpiryDate());
         }
     }
     boolean botAbuseIsPermanent(long targetDiscordID) {
@@ -403,18 +413,17 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
     }
     long checkExpiredBotAbuse() throws IOException { // This is the method that gets run each second by the timer in Angel.DiscordBotMain
         // Because this method gets run every second, we advance the calendar object too.
-        c = Calendar.getInstance();
-        c.setTimeZone(TimeZone.getTimeZone(mainConfig.timeZone));
+        c = ZonedDateTime.now(ZoneId.of("UTC"));
         int index = records.size() - 1;
         while (index >= 0) {
             long targetDiscordID = records.get(index).getDiscordID();
-            Date targetDate = records.get(index).getExpiryDate();
+            ZonedDateTime targetDate = records.get(index).getExpiryDate();
             // This Catches the program from trying to remove a permanent Bot Abuse
             if (botAbuseIsPermanent(targetDiscordID)) {
                 // Take No Action
             }
             // If the current time is after the target date then remove the bot abuse for that discord ID
-            else if (c.getTime().after(targetDate) && records.get(index).isCurrentlyBotAbused()) {
+            else if (c.isAfter(targetDate) && records.get(index).isCurrentlyBotAbused()) {
                 records.get(index).setBotAbuseAsExpired();
                 if (this.mainConfig.testModeEnabled) {
                     System.out.println(records.get(index).getDiscordID() + "\n" + records.get(index).getRepOffenses() +
@@ -468,10 +477,9 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
     }
     String seeHistory(long targetDiscordID, double timeOffset, boolean isTeamMember) {
         int index = 0;
-        String output = "**/checkhistory Results";
-        SimpleDateFormat sdf = this.getDefaultSDF();
-        Calendar dateIssued = Calendar.getInstance();
-        Calendar dateToExpire = Calendar.getInstance();
+        String output = "**" + mainConfig.commandPrefix + "checkhistory Results";
+        ZonedDateTime dateIssued = null;
+        ZonedDateTime dateToExpire = null;
         if (isTeamMember) {
             output += "\n:information_source: <@!" + targetDiscordID + ">'s Bot Abuse History is as Follows: **";
         }
@@ -480,55 +488,55 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         }
         // Setting the TimeZones of both formatter objects
         String trueOffset = this.getTimeZoneString(timeOffset);
-        if (trueOffset != null) {
-            sdf.setTimeZone(TimeZone.getTimeZone(trueOffset));
+        if (trueOffset == null) {
+            trueOffset = "UTC";
         }
         List<BotAbuseRecord> records = getAllRecordsByID(targetDiscordID);
         int recordsCount = records.size();
         // We check the discordID array and then get all the elements in the corresponding index of the other arrays
         while (index < records.size()) {
             boolean recordIsPermanent = records.get(index).getExpiryDate() == null;
-            dateIssued.setTime(records.get(index).getIssuedDate());
+            dateIssued = ZonedDateTime.ofInstant(records.get(index).getIssuedDate().toInstant(), ZoneId.of(trueOffset));
             if (!recordIsPermanent) {
-                dateToExpire.setTime(records.get(index).getExpiryDate());
+                dateToExpire = ZonedDateTime.ofInstant(records.get(index).getExpiryDate().toInstant(), ZoneId.of(trueOffset));
             }
             if (!isTeamMember && !recordIsPermanent) {
                 output = output.concat(
                         "\n\nBot Abuse ID: **" + records.get(index).getId()
-                                + "\n**Offense Number: **" + records.get(index).getRepOffenses()
-                                + "\n**Date Issued: **" + sdf.format(dateIssued.getTime())
-                                + "\n**Date Expired: **" + sdf.format(dateToExpire.getTime())
-                                + "\n**Reason: **" + records.get(index).getReason()
-                                + "\n**Proof Image: **" + records.get(index).getProofImage() + "**");
+                                + "**\nOffense Number: **" + records.get(index).getRepOffenses()
+                                + "**\nDate Issued: **" + baMain.getDiscordFormat(dateIssued)
+                                + "**\nDate Expired: **" + baMain.getDiscordFormat(dateToExpire)
+                                + "**\nReason: **" + records.get(index).getReason()
+                                + "**\nProof Image: **" + records.get(index).getProofImage() + "**");
             }
             else if (isTeamMember && !recordIsPermanent) {
                 output = output.concat(
                         "\n\nBot Abuse ID: **" + records.get(index).getId()
-                                + "\n**Offense Number: **" + records.get(index).getRepOffenses()
-                                + "\n**Issuing Team Member: <@" + records.get(index).getIssuingTeamMember() + ">"
-                                + "\nDate Issued: **" + sdf.format(dateIssued.getTime())
-                                + "\n**Date Expired: **" + sdf.format(dateToExpire.getTime())
-                                + "\n**Reason: **" + records.get(index).getReason()
-                                + "\n**Proof Image: **" + records.get(index).getProofImage() + "**");
+                                + "**\nOffense Number: **" + records.get(index).getRepOffenses()
+                                + "**\nIssuing Team Member: <@" + records.get(index).getIssuingTeamMember() + ">"
+                                + "\nDate Issued: **" + baMain.getDiscordFormat(dateIssued)
+                                + "**\nDate Expired: **" + baMain.getDiscordFormat(dateToExpire)
+                                + "**\nReason: **" + records.get(index).getReason()
+                                + "**\nProof Image: **" + records.get(index).getProofImage() + "**");
             }
             else if (!isTeamMember) {
                 output = output.concat(
                         "\n\nBot Abuse ID: **" + records.get(index).getId()
-                                + "\n**Offense Number: **" + records.get(index).getRepOffenses()
-                                + "\n**Date Issued: **" + sdf.format(dateIssued.getTime())
-                                + "\n**Expiry Date: **Never"
-                                + "\n**Reason: **" + records.get(index).getReason()
-                                + "\n**Proof Image: **" + records.get(index).getProofImage() + "**");
+                                + "**\nOffense Number: **" + records.get(index).getRepOffenses()
+                                + "**\nDate Issued: **" + baMain.getDiscordFormat(dateIssued)
+                                + "**\nExpiry Date: **Never"
+                                + "**\nReason: **" + records.get(index).getReason()
+                                + "**\nProof Image: **" + records.get(index).getProofImage() + "**");
             }
             else {
                 output = output.concat(
                         "\n\nBot Abuse ID: **" + records.get(index).getId()
-                                + "\n**Offense Number: **" + records.get(index).getRepOffenses()
-                                + "\n**Issuing Team Member: <@" + records.get(index).getIssuingTeamMember() + ">"
-                                + "\nDate Issued: **" + sdf.format(dateIssued.getTime())
-                                + "\n**Expiry Date: **Never"
-                                + "\n**Reason: **" + records.get(index).getReason()
-                                + "\n**Proof Image: **" + records.get(index).getProofImage() + "**");
+                                + "**\nOffense Number: **" + records.get(index).getRepOffenses()
+                                + "**\nIssuing Team Member: <@" + records.get(index).getIssuingTeamMember() + ">"
+                                + "\nDate Issued: **" + baMain.getDiscordFormat(dateIssued)
+                                + "**\nExpiry Date: **Never"
+                                + "**\nReason: **" + records.get(index).getReason()
+                                + "**\nProof Image: **" + records.get(index).getProofImage() + "**");
             }
             index++;
         }
@@ -600,72 +608,67 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         if (timeOffset != 100 && ((timeOffset / 0.5) % 2 == 1) || (timeOffset / -0.5) % 2 == 1) {
             // Ex 4.5 7.5
             if (strippedTimeOffset.charAt(1) == '.') {
-                return "GMT+" + strippedTimeOffset.substring(0, 1).concat(":30");
+                return "UTC+" + strippedTimeOffset.substring(0, 1).concat(":30");
             }
             // Ex 10.5 -4.5
             else if (strippedTimeOffset.charAt(2) == '.') {
                 // Ex Handles 10.5 11.5
                 if (strippedTimeOffset.charAt(0) != '-') {
-                    return "GMT+" + strippedTimeOffset.substring(0, 2).concat(":30");
+                    return "UTC+" + strippedTimeOffset.substring(0, 2).concat(":30");
                 }
                 // Ex Handles -4.5 -6.5
                 else {
-                    return "GMT" + strippedTimeOffset.substring(0, 2).concat(":30");
+                    return "UTC" + strippedTimeOffset.substring(0, 2).concat(":30");
                 }
             }
             // Ex Handles -10.5 -11.5
             else {
-                return "GMT" + strippedTimeOffset.substring(0, 3).concat(":30");
+                return "UTC" + strippedTimeOffset.substring(0, 3).concat(":30");
             }
         }
         else if (timeOffset >= 0 && timeOffset != 100) {
             // Because it's a float, we need to strip the trailing .0
             if (timeOffset >= 10) {
-                return "GMT+" + strippedTimeOffset.substring(0, 2);
+                return "UTC+" + strippedTimeOffset.substring(0, 2);
             } else {
-                return "GMT+" + strippedTimeOffset.substring(0, 1);
+                return "UTC+" + strippedTimeOffset.substring(0, 1);
             }
         }
         else if (timeOffset < 0 && timeOffset != 100) {
             if (timeOffset <= -10) {
-                return "GMT" + strippedTimeOffset.substring(0, 3);
+                return "UTC" + strippedTimeOffset.substring(0, 3);
             }
             else {
-                return "GMT" + strippedTimeOffset.substring(0, 2);
+                return "UTC" + strippedTimeOffset.substring(0, 2);
             }
 
         }
         else return null;
     }
     boolean timingsAreValid() {
-        if (botConfig.botAbuseTimes.get(botConfig.botAbuseTimes.size() - 1) <= (botConfig.hotOffenseMonths * 30) / 2) {
+        if (botConfig.getBotAbuseTimes().get(botConfig.getBotAbuseTimes().size() - 1) <= (botConfig.hotOffenseMonths * 30) / 2) {
             int index = 0;
-            if (botConfig.hotOffenseWarning > botConfig.botAbuseTimes.size()) return false;
-            while (index < botConfig.botAbuseTimes.size()) {
-                if (botConfig.maxDaysAllowedForUndo > botConfig.botAbuseTimes.get(index++)) return false;
+            if (botConfig.getHotOffenseWarning() > botConfig.getBotAbuseTimes().size()) return false;
+            while (index < botConfig.getBotAbuseTimes().size()) {
+                if (botConfig.getMaxDaysAllowedForUndo() > botConfig.getBotAbuseTimes().get(index++)) return false;
             }
             index = 1;
             int dayTotal = 0;
-            while (index < botConfig.botAbuseTimes.size()) {
-                if (botConfig.botAbuseTimes.get(index) <= botConfig.botAbuseTimes.get(index - 1)) {
-                    botConfig.botAbuseTimes.sort(Comparator.naturalOrder());
+            while (index < botConfig.getBotAbuseTimes().size()) {
+                if (botConfig.getBotAbuseTimes().get(index) <= botConfig.getBotAbuseTimes().get(index - 1)) {
+                    botConfig.getBotAbuseTimes().sort(Comparator.naturalOrder());
                     index = 1;
                     dayTotal = 0;
                 }
-                else if (dayTotal > botConfig.hotOffenseMonths * 30) return false;
+                else if (dayTotal > botConfig.getHotOffenseMonths() * 30) return false;
                 else {
-                    if (index == 1) dayTotal = dayTotal + botConfig.botAbuseTimes.get(0);
-                    dayTotal = dayTotal + botConfig.botAbuseTimes.get(index++);
+                    if (index == 1) dayTotal = dayTotal + botConfig.getBotAbuseTimes().get(0);
+                    dayTotal = dayTotal + botConfig.getBotAbuseTimes().get(index++);
                 }
             }
             return true;
         }
         else return false;
-    }
-    private SimpleDateFormat getDefaultSDF() {
-        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yy HH:mm:ss zzz");
-        sdf.setTimeZone(TimeZone.getTimeZone(mainConfig.timeZone));
-        return sdf;
     }
     BotAbuseRecord getLastRecord(long targetDiscordID) {
         int index = records.size() - 1;
@@ -709,5 +712,11 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         });
 
         return recordByTeamMember;
+    }
+    void setRecords(List<BotAbuseRecord> records) {
+        this.records = records;
+    }
+    List<BotAbuseRecord> getRecords() {
+        return records;
     }
 }

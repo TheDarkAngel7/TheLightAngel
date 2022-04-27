@@ -1,7 +1,7 @@
 package Angel.BotAbuse;
 
 import Angel.DiscordBotMain;
-import Angel.EmbedHandler;
+import Angel.EmbedEngine;
 import Angel.MainConfiguration;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -23,14 +23,14 @@ public class BotAbuseInit implements Runnable {
     private final boolean commandsSuspended;
     private final int restartValue;
     private final MainConfiguration mainConfig;
-    private final EmbedHandler embed;
+    private final EmbedEngine embed;
     private final Guild guild;
     private final DiscordBotMain discord;
     private JDA jda;
 
     private BotAbuseMain baFeature;
 
-    public BotAbuseInit(boolean commandsSuspended, int restartValue, MainConfiguration mainConfig, EmbedHandler embed, Guild guild, DiscordBotMain discord) {
+    public BotAbuseInit(boolean commandsSuspended, int restartValue, MainConfiguration mainConfig, EmbedEngine embed, Guild guild, DiscordBotMain discord) {
         this.commandsSuspended = commandsSuspended;
         this.restartValue = restartValue;
         this.mainConfig = mainConfig;
@@ -40,15 +40,14 @@ public class BotAbuseInit implements Runnable {
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
                 GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_EMOJIS);
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE,
-                CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE);
+                CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE, CacheFlag.ONLINE_STATUS);
         try {
             jda = JDABuilder.create(mainConfig.token, enabledIntents).disableCache(disabledFlags).setRequestTimeoutRetry(true)
                     .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).setMaxReconnectDelay(60).build();
             log.info("Bot Abuse Feature JDA Instance Created");
         }
         catch (LoginException e) {
-            log.error("Bot Abuse JDA Threw Login Exception During Build");
-            e.printStackTrace();
+            log.error("Bot Abuse JDA Threw Login Exception During Build", e);
         }
     }
 
@@ -68,8 +67,5 @@ public class BotAbuseInit implements Runnable {
     }
     public long getPing() {
         return jda.getGatewayPing();
-    }
-    public JDA.Status getStatus() {
-        return jda.getStatus();
     }
 }

@@ -211,7 +211,8 @@ class CheckInCore {
     }
 
     CheckInResult endCheckIn(boolean cancelledCheckIn) {
-        CheckInResult ciResult = new CheckInResult(currentCheckInID, ZonedDateTime.now(ZoneId.of("UTC")), new ArrayList<>(checkInList), cancelledCheckIn);
+        CheckInResult ciResult = new CheckInResult(getCurrentCheckInID(), ZonedDateTime.now(ZoneId.of("UTC")),
+                new ArrayList<>(checkInList), cancelledCheckIn);
         results.add(ciResult);
         unrecognizedPlayer.clear();
         checkInList.clear();

@@ -15,7 +15,7 @@ class ModifyCheckInConfiguration extends CheckInConfiguration {
     // Return 1 if errors were found but the role list is still usable
     // Return 2 if errors were found and the role list is not usable
     @Override
-    int setupRoles() {
+    public int setupRoles() {
         int index = 0;
         boolean error = false;
 
@@ -35,22 +35,22 @@ class ModifyCheckInConfiguration extends CheckInConfiguration {
     }
 
     @Override
-    void setCheckInChannel(long channelID) {
+    public void setCheckInChannel(long channelID) {
         checkInChannel = guild.getTextChannelById(channelID);
     }
 
     @Override
-    void setCheckInChannel(TextChannel channel) {
+    public void setCheckInChannel(TextChannel channel) {
         checkInChannel = channel;
     }
 
     @Override
-    void setCheckInRole(Role role) {
+    public void setCheckInRole(Role role) {
 
     }
 
     @Override
-    void setCheckInDuration(int newDuration) {
+    public void setCheckInDuration(int newDuration) {
 
     }
 }

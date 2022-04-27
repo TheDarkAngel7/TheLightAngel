@@ -52,7 +52,7 @@ public class CheckInMain extends ListenerAdapter {
     private boolean checkInConfirmed = false;
     private boolean isBusy = false;
     private final List<String> commands = Arrays.asList("checkin", "ci", "reprint", "afk", "afkcheck");
-    private final List<String> firstArg = Arrays.asList("start", "confirm", "cancel", "refresh", "remove", "delete", "del", "resultlist", "rlist", "list", "help");
+    private final List<String> firstArg = Arrays.asList("add", "start", "confirm", "cancel", "refresh", "remove", "delete", "del", "resultlist", "rlist", "list", "help");
     private final List<String> emojiList;
     private CheckInQueueEmbed checkInQueueEmbed;
     private AFKCheckManagement afkCheck;
@@ -369,6 +369,7 @@ public class CheckInMain extends ListenerAdapter {
                 embed.sendToTeamOutput(msg, msg.getAuthor());
             }
             else {
+                toPurge.add(msg);
                 checkInConfirmed = true;
                 purgeAllCommands();
                 embed.setAsWarning("Check-In Starting", "**Check-In Confirmed! " +
@@ -457,7 +458,7 @@ public class CheckInMain extends ListenerAdapter {
             }
 
             prefix = "Check-In ID: **" + resultList.getId() + "**\n" +
-                    "Date Ended: **" + discord.getDefaultSDF().format(resultList.getEndDate()) + "**\n\n" +
+                    "Date Ended: **" + discord.getDiscordFormat(resultList.getEndDate()) + "**\n\n" +
                     ":white_check_mark: *Indicates The Player Did Check-In along with how much time was remaining when they did.*\n" +
                     ":warning: *Indicates The Player Failed to Check-In*\n" +
                     ":x: *Indicates The Player Was Removed From the Check-In Queue* \n";

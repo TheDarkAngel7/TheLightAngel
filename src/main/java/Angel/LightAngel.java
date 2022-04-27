@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
@@ -22,7 +23,9 @@ class LightAngel {
     static DiscordBotMain discord;
     static File BADataFile = new File("data/BAdata.json");
     static File nickDataFile = new File("data/nickdata.json");
+    static File checkInDataFile = new File("data/checkIndata.json");
     static {
+        Thread.currentThread().setName("Main Thread");
         log.info("New Log Starting at time: " + Calendar.getInstance().getTime());
         log.info("TheLightAngel is Starting! Please Wait...");
         try {
@@ -50,6 +53,18 @@ class LightAngel {
             else {
                 log.info("Successfully Found Existing Nickname Data File");
             }
+            if (!checkInDataFile.exists()) {
+                if (checkInDataFile.createNewFile()) {
+                    FileOutputStream fos = new FileOutputStream(nickDataFile);
+                    ObjectOutputStream objectOutputStream = new ObjectOutputStream(fos);
+                    log.info("Successfully Created new Check-In Data File");
+                    objectOutputStream.close();
+                    fos.close();
+                }
+            }
+            else {
+                log.info("Successfully Found Existing Check-In Data File");
+            }
             fileHandler = new FileHandler();
         }
         catch (IOException e) {
@@ -74,19 +89,42 @@ class LightAngel {
             else restartValue = 0;
         }
         else if (args.length > 1) {
-            log.warn("Invalid Number of Arguments on Startup - Reverting to an restartValue of \"0\"");
+            log.warn("Invalid Number of Arguments on Startup - Reverting to an restartValue of \"false\"");
             restartValue = 0;
         }
-        else restartValue = 0;
+        else {
+            try {
+                if (!new FileCreator().startup()) {
+                    FileWarningMessage warningMessage = new FileWarningMessage();
+                    warningMessage.startup();
+
+                    while (true) {
+                        try { Thread.sleep(500); } catch (InterruptedException ex) {}
+                        if (!warningMessage.isContinueBoot() && !warningMessage.isTimerRunning()) {
+                            System.exit(1);
+                        }
+                        else if (warningMessage.isContinueBoot()) {
+                            break;
+                        }
+                    }
+                }
+                new ProcessBuilder("cmd", "/c", "start", "java", "-jar", "-Dlog4j.configurationFile=./log4j2.properties", "TheLightAngel.jar", "false").start();
+                System.exit(1);
+            }
+            catch (URISyntaxException e) {
+                System.exit(1);
+            }
+            return;
+        }
         MainConfiguration mainConfig = new ModifyMainConfiguration(fileHandler.getMainConfig());
         mainConfig.initialSetup();
-        EmbedHandler embed = new EmbedHandler(mainConfig);
+        EmbedEngine embed = new EmbedEngine(mainConfig);
         discord = new DiscordBotMain(restartValue, mainConfig, embed, fileHandler);
         embed.setDiscordInstance(discord);
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
-                GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_EMOJIS);
+                GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MESSAGE_REACTIONS);
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE,
-                CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE);
+                CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE, CacheFlag.ONLINE_STATUS);
         JDABuilder.create(mainConfig.token, enabledIntents)
                 .disableCache(disabledFlags).addEventListeners(discord).setRequestTimeoutRetry(true)
                 .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).build();

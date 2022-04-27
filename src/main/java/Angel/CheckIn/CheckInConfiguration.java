@@ -46,34 +46,34 @@ public abstract class CheckInConfiguration {
         configObj = reloadedObject;
         setup();
     }
-    abstract int setupRoles();
+    public abstract int setupRoles();
 
-    abstract void setCheckInChannel(long channelID);
-    abstract void setCheckInChannel(TextChannel channel);
-    abstract void setCheckInRole(Role role);
-    abstract void setCheckInDuration(int newDuration);
+    public abstract void setCheckInChannel(long channelID);
+    public abstract void setCheckInChannel(TextChannel channel);
+    public abstract void setCheckInRole(Role role);
+    public abstract void setCheckInDuration(int newDuration);
 
     public boolean isEnabled() {
         return enabled;
     }
 
-    Role getCheckInRole() {
+    public Role getCheckInRole() {
         return checkInRole;
     }
 
-    TextChannel getCheckInChannel() {
+    public TextChannel getCheckInChannel() {
         return checkInChannel;
     }
 
-    List<Role> getRolesThatCanBeCheckedIn() {
+    public List<Role> getRolesThatCanBeCheckedIn() {
         return rolesThatCanBeCheckedIn;
     }
 
-    int getCheckInDuration() {
+    public int getCheckInDuration() {
         return checkInDuration;
     }
 
-    int getCheckInUpdate() {
+    public int getCheckInUpdate() {
         return checkInUpdate;
     }
 }
