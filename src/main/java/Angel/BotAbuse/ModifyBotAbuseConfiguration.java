@@ -2,6 +2,7 @@ package Angel.BotAbuse;
 
 import Angel.MainConfiguration;
 import com.google.gson.JsonObject;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 
 import java.util.ArrayList;
@@ -9,14 +10,17 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 class ModifyBotAbuseConfiguration extends BotAbuseConfiguration {
+    private final BotAbuseMain baMain;
+    private final Guild guild;
     private final ArrayList<String> configs = new ArrayList<>(
             Arrays.asList("botabuserole", "rolescanint", "rolescannerinterval", "hotmonths", "hotoffensemonths",
                     "maxdaysundo", "maxdaysallowedforundo", "autoperm", "autopermanent"));
 
-    ModifyBotAbuseConfiguration(JsonObject configObj, BotAbuseMain baMain, FileHandler fileHandler, MainConfiguration mainConfig) {
-        super(configObj, baMain, fileHandler, mainConfig);
+    ModifyBotAbuseConfiguration(JsonObject configObj, BotAbuseMain baMain, MainConfiguration mainConfig, Guild guild) {
+        super(configObj, baMain, mainConfig, guild);
+        this.baMain = baMain;
+        this.guild = guild;
     }
-
 
     public void setConfig(String key, int value) {
         switch (key.toLowerCase()) {
@@ -26,6 +30,8 @@ class ModifyBotAbuseConfiguration extends BotAbuseConfiguration {
             case "hotoffensemonths": hotOffenseMonths = value; break;
             case "hotwarning":
             case "hotoffensewarning": hotOffenseWarning = value; break;
+            case "maxdaysundo":
+            case "maxdaysallowedforundo": maxDaysAllowedForUndo = value; break;
         }
     }
     public void setConfig(String key, boolean value) {
@@ -35,13 +41,11 @@ class ModifyBotAbuseConfiguration extends BotAbuseConfiguration {
         }
     }
     public boolean setNewBotAbuseRole(long newRoleID) {
-        try {
+        if (guild.getRoleById(newRoleID) != null) {
             botAbuseRole = guild.getRoleById(newRoleID);
             return true;
         }
-        catch (NullPointerException ex) {
-            return false;
-        }
+        else return false;
     }
 
     public void setNewBotAbuseRole(Role newRole) {
@@ -51,7 +55,7 @@ class ModifyBotAbuseConfiguration extends BotAbuseConfiguration {
     public String addExpiryTime(int newTime) {
         botAbuseTimes.add(newTime);
         botAbuseTimes.sort(Comparator.naturalOrder());
-        if (baMain.baCore.timingsAreValid()) return "**Successfully Added " + newTime + " Days**\n\n" + getExpiryTimeArray();
+        if (baMain.getCore().timingsAreValid()) return "**Successfully Added " + newTime + " Days**\n\n" + getExpiryTimeArray();
         else {
             removeExpiryTime(newTime, true);
             return ":x: **Cannot Add " + newTime + " Days**" +

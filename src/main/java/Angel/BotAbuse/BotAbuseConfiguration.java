@@ -1,33 +1,34 @@
 package Angel.BotAbuse;
 
 import Angel.MainConfiguration;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public abstract class BotAbuseConfiguration {
     private JsonObject configObj;
-    BotAbuseMain baMain;
-    FileHandler fileHandler;
-    MainConfiguration mainConfig;
-    String botAbuseRoleID;
-    Guild guild;
+    private final boolean enabled;
+    private final BotAbuseMain baMain;
+    private String botAbuseRoleID;
+    private final Guild guild;
+    private final Gson gson = new Gson();
     Role botAbuseRole;
     int roleScannerInterval;
     int maxDaysAllowedForUndo;
     int hotOffenseMonths;
     int hotOffenseWarning;
     boolean autoPermanent;
-    ArrayList<Integer> botAbuseTimes;
+    List<Integer> botAbuseTimes;
 
-    BotAbuseConfiguration(JsonObject configObj, BotAbuseMain baMain, FileHandler fileHandler, MainConfiguration mainConfig) {
+    BotAbuseConfiguration(JsonObject configObj, BotAbuseMain baMain, MainConfiguration mainConfig, Guild guild) {
         this.configObj = configObj;
         this.baMain = baMain;
-        this.fileHandler = fileHandler;
-        this.mainConfig = mainConfig;
+        this.guild = guild;
+        this.enabled = configObj.get("enabled").getAsBoolean();
     }
 
     // Initial setup contains all of the configuration fields that need to be read.
@@ -38,7 +39,7 @@ public abstract class BotAbuseConfiguration {
         botAbuseRoleID = configObj.get("botAbuseRoleID").getAsString();
         roleScannerInterval = configObj.get("roleScannerIntervalMinutes").getAsInt();
         hotOffenseMonths = configObj.get("oldOffensesConsideredHotInMonths").getAsInt();
-        botAbuseTimes = fileHandler.gson.fromJson(configObj.get("botAbuseTimingsInDays").getAsString(), new TypeToken<ArrayList<Integer>>(){}.getType());
+        botAbuseTimes = gson.fromJson(configObj.get("botAbuseTimingsInDays").getAsString(), new TypeToken<List<Integer>>(){}.getType());
         maxDaysAllowedForUndo = configObj.get("maxDaysUndoIsAllowed").getAsInt();
         hotOffenseWarning = configObj.get("warnOnHotOffenseNumber").getAsInt();
         autoPermanent = configObj.get("autoPermanent").getAsBoolean();
@@ -71,4 +72,37 @@ public abstract class BotAbuseConfiguration {
     public abstract String addExpiryTime(int newTime);
     public abstract String removeExpiryTime(int removeThisTime, boolean fromInvalidTime);
     public abstract boolean isValidConfig(String key);
+    // Separate Methods for Getting Configurations
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    Role getBotAbuseRole() {
+        return botAbuseRole;
+    }
+
+    int getRoleScannerInterval() {
+        return roleScannerInterval;
+    }
+
+    int getMaxDaysAllowedForUndo() {
+        return maxDaysAllowedForUndo;
+    }
+
+    int getHotOffenseMonths() {
+        return hotOffenseMonths;
+    }
+
+    int getHotOffenseWarning() {
+        return hotOffenseWarning;
+    }
+
+    boolean isAutoPermanent() {
+        return autoPermanent;
+    }
+
+    List<Integer> getBotAbuseTimes() {
+        return botAbuseTimes;
+    }
 }

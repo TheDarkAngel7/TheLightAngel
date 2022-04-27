@@ -1,14 +1,14 @@
 package Angel.Nicknames;
 
-import Angel.EmbedHandler;
+import Angel.EmbedEngine;
 import Angel.MainConfiguration;
 
 class Help {
-    private EmbedHandler embed;
+    private EmbedEngine embed;
     private NicknameMain nickMain;
     private MainConfiguration mainConfig;
 
-    Help(EmbedHandler embed, NicknameMain nickMain, MainConfiguration mainConfig) {
+    Help(EmbedEngine embed, NicknameMain nickMain, MainConfiguration mainConfig) {
         this.embed = embed;
         this.nickMain = nickMain;
         this.mainConfig = mainConfig;
@@ -17,8 +17,8 @@ class Help {
         String result = "**Only Usable by players in:**\n";
         int index = 0;
 
-        while (index < nickMain.nickConfig.restrictedRoles.size()) {
-            result = result.concat("\n**-" + nickMain.nickConfig.restrictedRoles.get(index++).getAsMention());
+        while (index < nickMain.getConfig().restrictedRoles.size()) {
+            result = result.concat("\n**-" + nickMain.getConfig().restrictedRoles.get(index++).getAsMention());
         }
         return result;
     }
@@ -80,6 +80,18 @@ class Help {
                             "\n" +
                             "This prints all of the captured effective name changes of the player ID or mention given. " +
                             "When I say \"effective name\", I mean the name that is displayed within our discord server.");
+        }
+        else {
+            embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions to see this help**");
+        }
+    }
+    void clearHistoryCommand(boolean isTeamMember) {
+        if (isTeamMember) {
+            embed.setAsHelp(mainConfig.commandPrefix + "nickname clearhistory",
+                    "**Only uable by Staff Members (Sr. Staff+)**" +
+                            "\n\n`" + mainConfig.commandPrefix + "nickname clearhistory <Mention or Discord ID>`" +
+                            "\n`" + mainConfig.commandPrefix + "nn clh <Mention or Discord ID>`"
+                    );
         }
         else {
             embed.setAsError("No Permissions", ":x: **You Do Not Have Permissions to see this help**");

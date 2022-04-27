@@ -10,9 +10,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Hashtable;
+import java.util.concurrent.atomic.AtomicReference;
 
-class NickCore {
-    private final Logger log = LogManager.getLogger(NickCore.class);
+class NicknameCore {
+    private final Logger log = LogManager.getLogger(NicknameCore.class);
     Angel.Nicknames.FileHandler fileHandler;
     private Guild guild;
     private NickConfiguration nickConfig;
@@ -21,7 +22,8 @@ class NickCore {
     ArrayList<String> oldNickname = new ArrayList<>();
     ArrayList<String> newNickname = new ArrayList<>();
     Dictionary<Long, ArrayList<String>> oldNickDictionary = new Hashtable<>();
-    NickCore(Guild importGuild) {
+
+    NicknameCore(Guild importGuild) {
         fileHandler = new FileHandler(this);
         guild = importGuild;
     }
@@ -90,7 +92,6 @@ class NickCore {
             return result;
         }
         else return ":x: FATAL ERROR: While submitting request, something didn't run correctly";
-
     }
 
     String acceptRequest(long targetDiscordID, int targetRequestID) throws IOException {
@@ -112,6 +113,7 @@ class NickCore {
         else {
             String result = "Successfully Accepted the Request";
             if (targetDiscordID == -1) {
+                targetDiscordID = Long.parseLong(nicknames[1]);
                 result = result.concat("\nDiscord: <@!" + nicknames[1] + ">"
                         + "\nOld Nickname: **" + nicknames[2]
                         + "**\nNew Nickname: **" + nicknames[3] + "**");
@@ -121,7 +123,7 @@ class NickCore {
                         + "**\nOld Nickname: **" + nicknames[2]
                         + "**\nNew Nickname: **" + nicknames[3] + "**");
             }
-            return result;
+            return replaceNulls(targetDiscordID, result);
         }
     }
 
@@ -169,23 +171,25 @@ class NickCore {
         if (discordID.isEmpty()) return null;
         while (index < discordID.size()) {
             result = result.concat(replaceNulls(discordID.get(index),
-                    "\n\nRequest ID: **" + requestID.get(index) +
+                    "Request ID: **" + requestID.get(index) +
                     "**\nDiscord Account: <@!" + discordID.get(index) + ">" +
                     "\nOld Nickname: **" + oldNickname.get(index) +
                     "**\nNew Nickname: **" + newNickname.get(index++) + "**"));
+            if (index <= discordID.size() - 1) result = result.concat("\n\n");
         }
         return result;
     }
-    String replaceNulls(long targetDiscordID, String oldString) {
-        User targetUser = guild.getJDA().retrieveUserById(targetDiscordID).complete();
+    private String replaceNulls(long targetDiscordID, String oldString) {
+        AtomicReference<User> targetUser = new AtomicReference<>();
+        if (targetDiscordID != -1) guild.getJDA().retrieveUserById(targetDiscordID).queue(user -> targetUser.set(user));
         String result = oldString;
         if (oldString.contains("New Nickname: **null**")) {
             result = oldString.replace("null",
-                    targetUser.getName() + " (Reset to Discord Username)");
+                    targetUser.get().getName() + " (Reset to Discord Username)");
         }
         else if (oldString.contains("Old Nickname: **null**")) {
             result = oldString.replace("null",
-                    targetUser.getName() + " (Current Discord Username)");
+                    targetUser.get().getName() + " (Current Discord Username)");
         }
         return result;
     }
@@ -203,6 +207,13 @@ class NickCore {
     }
     ArrayList<String> getHistory(long targetDiscordID) {
         return oldNickDictionary.get(targetDiscordID);
+    }
+    String clearNameHistory(long targetDiscordID) throws IOException {
+        String defaultReturn = "**Successfully Cleared The Name History of <@" + targetDiscordID + ">**";
+        oldNickDictionary.remove(targetDiscordID);
+        log.info("Successfully Cleared the Name History for " + guild.getMemberById(targetDiscordID).getEffectiveName());
+        fileHandler.saveDatabase();
+        return defaultReturn;
     }
     boolean arraySizesEqual() {
         return requestID.size() == discordID.size() && oldNickname.size() == newNickname.size();

@@ -9,9 +9,7 @@ import net.dv8tion.jda.api.entities.TextChannel;
 public abstract class MainConfiguration {
     private JsonObject configObj;
     Guild guild;
-    public String systemPath;
     public String token;
-    public String timeZone;
     public boolean testModeEnabled;
     boolean deleteOriginalNonStaffCommands;
     boolean deleteOriginalStaffCommands;
@@ -55,15 +53,12 @@ public abstract class MainConfiguration {
 
     MainConfiguration(JsonObject importConfigObj) {
         configObj = importConfigObj;
-        systemPath = configObj.get("systemPath").getAsString();
         token = configObj.get("token").getAsString();
         testModeEnabled = configObj.get("testModeEnabled").getAsBoolean();
     }
 
     void initialSetup() {
         commandPrefix = configObj.get("commandPrefix").getAsString().charAt(0);
-
-        timeZone = configObj.get("defaultTimeZone").getAsString();
 
         ownerDiscordID = configObj.get("ownerDiscordID").getAsString();
         adminRoleID = configObj.get("adminRole").getAsString();

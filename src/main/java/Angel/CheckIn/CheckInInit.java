@@ -1,4 +1,4 @@
-package Angel.Nicknames;
+package Angel.CheckIn;
 
 import Angel.DiscordBotMain;
 import Angel.EmbedEngine;
@@ -13,55 +13,51 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.security.auth.login.LoginException;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-public class NicknameInit implements Runnable {
-    private final Logger log = LogManager.getLogger(NicknameInit.class);
-    private final boolean commandsSuspended;
+public class CheckInInit implements Runnable {
+    private final Logger log = LogManager.getLogger(CheckInInit.class);
     private final MainConfiguration mainConfig;
     private final EmbedEngine embed;
-    private final Guild guild;
     private final DiscordBotMain discord;
+    private final Guild guild;
     private JDA jda;
 
-    private NicknameMain nickFeature;
+    private CheckInMain checkIn;
 
-    public NicknameInit(boolean commandsSuspended, MainConfiguration mainConfig, EmbedEngine embed, Guild guild, DiscordBotMain discord) {
-        this.commandsSuspended = commandsSuspended;
+    public CheckInInit(MainConfiguration mainConfig, EmbedEngine embed, DiscordBotMain discord, Guild guild) {
         this.mainConfig = mainConfig;
         this.embed = embed;
-        this.guild = guild;
         this.discord = discord;
+        this.guild = guild;
+
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
-                GatewayIntent.GUILD_MESSAGES);
+                GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_EMOJIS);
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE,
                 CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE, CacheFlag.ONLINE_STATUS);
+
         try {
             jda = JDABuilder.create(mainConfig.token, enabledIntents).disableCache(disabledFlags).setRequestTimeoutRetry(true)
-                    .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).setMaxReconnectDelay(120).build();
-            log.info("Nickname Feature JDA Instance Created");
+                    .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).setMaxReconnectDelay(180).build();
+            log.info("Check-In Feature JDA Instance Created");
         }
-        catch (LoginException e) {
-            log.error("Nickname JDA Threw Login Exception During Build", e);
+        catch (LoginException ex) {
+            log.error("Check-In JDA Threw Login Exception During Build");
         }
     }
 
     @Override
     public void run() {
-        try {
-            nickFeature = new NicknameMain(commandsSuspended, mainConfig, embed, guild, discord);
-            jda.addEventListener(nickFeature);
-            log.info("Nickname Feature Added as Event Listener to its JDA instance");
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+        checkIn = new CheckInMain(discord, guild, mainConfig, embed);
+        jda.addEventListener(checkIn);
+        log.info("Check-In Feature Added as Event Listener to its JDA instance");
     }
-    public NicknameMain getNickFeature() {
-        return nickFeature.getThis();
+
+    public CheckInMain getThis() {
+        return checkIn;
     }
+
     public long getPing() {
         return jda.getGatewayPing();
     }

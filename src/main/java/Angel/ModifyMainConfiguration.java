@@ -20,7 +20,6 @@ class ModifyMainConfiguration extends MainConfiguration {
     }
     void setConfig(String key, String value) {
         switch (key.toLowerCase()) {
-            case "timezone": timeZone = value; break;
             case "checkiconurl": checkIconURL = value; break;
             case "warningiconurl": warningIconURL = value; break;
             case "erroriconurl": errorIconURL = value; break;

@@ -1,15 +1,15 @@
 package Angel.BotAbuse;
 
-import Angel.EmbedHandler;
+import Angel.EmbedEngine;
 import Angel.MainConfiguration;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 class Help {
     private BotAbuseMain baMain;
-    private EmbedHandler embed;
+    private EmbedEngine embed;
     private MainConfiguration mainConfig;
 
-    public Help(BotAbuseMain baMain, EmbedHandler embed, MainConfiguration mainConfig) {
+    public Help(BotAbuseMain baMain, EmbedEngine embed, MainConfiguration mainConfig) {
         this.baMain = baMain;
         this.embed = embed;
         this.mainConfig = mainConfig;
@@ -52,8 +52,8 @@ class Help {
     void checkCommand(boolean isTeamMember) {
         String defaultTitle = mainConfig.commandPrefix + "check Command Help";
         TextChannel outputChannel = null;
-        if (baMain.mainConfig.forceToDedicatedChannel) outputChannel = baMain.mainConfig.dedicatedOutputChannel;
-        else outputChannel = baMain.mainConfig.helpChannel;
+        if (mainConfig.forceToDedicatedChannel) outputChannel = mainConfig.dedicatedOutputChannel;
+        else outputChannel = mainConfig.helpChannel;
         if (isTeamMember) {
             embed.setAsHelp(defaultTitle,"**Full Syntax:\n `" + mainConfig.commandPrefix + "check [TimeZone Offset] <Mention or Discord ID>`**\n" +
                     "\n" +
