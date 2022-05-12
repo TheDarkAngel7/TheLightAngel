@@ -102,6 +102,7 @@ public class NicknameMain extends ListenerAdapter {
 
     @Override
     public void onUserUpdateName(@Nonnull UserUpdateNameEvent event) {
+        if (!nickConfig.isEnabled()) return;
         isBusy = true;
         guild.unloadMember(event.getUser().getIdLong());
         try {
@@ -149,6 +150,7 @@ public class NicknameMain extends ListenerAdapter {
 
     @Override
     public void onGuildMemberUpdateNickname(@Nonnull GuildMemberUpdateNicknameEvent event) {
+        if (!nickConfig.isEnabled()) return;
         isBusy = true;
         AtomicReference<AuditLogEntry> entry = new AtomicReference<>(null);
         guild.retrieveAuditLogs().queue(l -> {
@@ -263,6 +265,7 @@ public class NicknameMain extends ListenerAdapter {
 
     @Override
     public void onGuildMemberRemove(@Nonnull GuildMemberRemoveEvent event) {
+        if (!nickConfig.isEnabled()) return;
         isBusy = true;
         try {
             String result = nickCore.withdrawRequest(event.getUser().getIdLong(), true, false);
@@ -284,7 +287,7 @@ public class NicknameMain extends ListenerAdapter {
 
     @Override
     public void onGuildMemberRoleRemove(@NotNull GuildMemberRoleRemoveEvent event) {
-        if (inNickRestrictedRole(event.getUser().getIdLong())) return;
+        if (inNickRestrictedRole(event.getUser().getIdLong()) || !nickConfig.isEnabled()) return;
         else {
             isBusy = true;
             try {
@@ -347,7 +350,13 @@ public class NicknameMain extends ListenerAdapter {
         if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix) {
             if (args[0].equalsIgnoreCase("nickname") || args[0].equalsIgnoreCase("nn") && !commandsSuspended) {
                 try {
-                    nicknameCommand(msg);
+                    if (nickConfig.isEnabled()) {
+                        nicknameCommand(msg);
+                    }
+                    else {
+                        embed.setAsError("Nickname Feature Disabled", ":x: **You used a command for a section of the bot that is currently disabled**");
+                        embed.sendToChannel(msg, msg.getChannel());
+                    }
                 }
                 catch (IOException e) {
                     log.error("Nickname Command", e);

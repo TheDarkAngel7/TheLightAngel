@@ -126,11 +126,16 @@ public class CheckInMain extends ListenerAdapter {
             return;
         }
 
-        if (event.getMessage().getTextChannel() == ciConfig.getCheckInChannel() && checkInConfirmed) {
+        if (!ciConfig.isEnabled()) {
+            embed.setAsError("Check-In Feature Disabled", ":x: **You used a command for a section of the bot that is currently disabled***");
+            embed.sendToChannel(msg, msg.getChannel());
+        }
+
+        else if (event.getMessage().getTextChannel() == ciConfig.getCheckInChannel() && checkInConfirmed) {
             checkInPlayer(msg);
         }
 
-        if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && !commandsSuspended) {
+        else if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && !commandsSuspended) {
             switch (args[0].toLowerCase()) {
                 case "ci":
                 case "checkin": checkInCommand(msg); break;

@@ -101,6 +101,7 @@ public class BotAbuseMain extends ListenerAdapter {
 
     @Override
     public void onGuildMemberJoin(@Nonnull GuildMemberJoinEvent event) {
+        if (!botConfig.isEnabled()) return;
         isBusy = true;
         try { Thread.sleep(10000); } catch (InterruptedException e) {}
         // If they're supposed to be Bot Abused and they don't have the role on join
@@ -165,7 +166,6 @@ public class BotAbuseMain extends ListenerAdapter {
 
         boolean isTeamMember = discord.isTeamMember(event.getAuthor().getIdLong());
         boolean isStaffMember = discord.isStaffMember(event.getAuthor().getIdLong());
-
 
         if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && !commandsSuspended && botConfig.isEnabled())  {
             switch (args[0].toLowerCase()) {
@@ -275,13 +275,8 @@ public class BotAbuseMain extends ListenerAdapter {
             }
         }
         else if (!botConfig.isEnabled() && isCommand(args[0])) {
-            embed.setAsError("Disabled", "**:x: Unable to Perform This Action - The Bot Abuse Feature is currently disabled**");
-            if (discord.isTeamMember(msg.getAuthor().getIdLong())) {
-                embed.sendToTeamOutput(msg, msg.getAuthor());
-            }
-            else {
-                embed.sendToMemberOutput(msg, msg.getAuthor());
-            }
+            embed.setAsError("Bot Abuse Feature Disabled", ":x: **You used a command for a section of the bot that is currently disabled**");
+            embed.sendToChannel(msg, msg.getChannel());
         }
         isNotBusy();
     }

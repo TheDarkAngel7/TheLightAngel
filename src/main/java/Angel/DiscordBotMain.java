@@ -932,7 +932,7 @@ public class DiscordBotMain extends ListenerAdapter {
                             .replace("syn", defaultSyntax));
                 }
             }
-            // /set config nameRestrictredRoles add/del/remove <Role Mention or ID>
+            // /set role nameRestrictedRoles add/del/remove <Role Mention or ID>
             else if (args[1].equalsIgnoreCase("role") &&
                     (args[2].equalsIgnoreCase("nameRestrictedRoles") || args[2].equalsIgnoreCase("nameRoles"))
                     && args.length == 5) {
