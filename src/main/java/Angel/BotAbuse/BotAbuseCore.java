@@ -254,22 +254,19 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                 "\nID: " + thisRecord.getId() +
                 "\n So... Whatever it was you were doing... Try Again...";
     }
-    String getInfo(long targetDiscordID, double timeOffset, boolean isTeamMember) { // This method is for queries
-        int prevOffenses = this.getLifetimeOffenses(targetDiscordID);
+    String getInfo(long targetDiscordID, boolean isTeamMember) { // This method is for queries
+        // Lifetime Offenses Count the Current Offense
+        // we subtract one to get how many previous offenses they've had before this one
+        int prevOffenses = this.getLifetimeOffenses(targetDiscordID) - 1;
 
         BotAbuseRecord thisRecord = getLastRecord(targetDiscordID);
         if (botAbuseIsCurrent(targetDiscordID)) {
             ZonedDateTime dateIssued;
             ZonedDateTime dateToExpire;
             String result = ":information_source: <@!" + targetDiscordID + ">'s Bot Abuse Info: ";
-            String trueOffset = this.getTimeZoneString(timeOffset);
-            if (trueOffset == null) {
-                trueOffset = "UTC";
-            }
-            if (mainConfig.testModeEnabled) System.out.println(trueOffset);
             // Checking to see if the queried player is perm bot abused
-            dateIssued = ZonedDateTime.ofInstant(thisRecord.getIssuedDate().toInstant(), ZoneId.of(trueOffset));
-            dateToExpire = ZonedDateTime.ofInstant(thisRecord.getExpiryDate().toInstant(), ZoneId.of(trueOffset));
+            dateIssued = ZonedDateTime.ofInstant(thisRecord.getIssuedDate().toInstant(), ZoneId.of("UTC"));
+            dateToExpire = ZonedDateTime.ofInstant(thisRecord.getExpiryDate().toInstant(), ZoneId.of("UTC"));
             if (botAbuseIsPermanent(targetDiscordID)) {
                 if (!isTeamMember && thisRecord.getProofImage() == null) {
                     return result.concat(
@@ -279,7 +276,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                             "**\nExpiry Date: **" + baMain.getDiscordFormat(dateToExpire) +
                             "**\nReason: **" + thisRecord.getReason() +
                             "**\nViolation Image: **None Provided**" +
-                            "\n\nYou have had " + (prevOffenses - 1) + " Previous Offenses**");
+                            "\n\nYou have had " + prevOffenses + " Previous Offenses**");
                 }
                 else if (!isTeamMember) {
                     return result.concat(
@@ -289,7 +286,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                             "**\nExpiry Date: **Never" +
                             "**\nReason: **" + thisRecord.getReason() +
                             "**\nViolation Image: **" + thisRecord.getProofImage() +
-                            "\n\n You have had " + (prevOffenses - 1) + " Previous Offenses**");
+                            "\n\n You have had " + prevOffenses + " Previous Offenses**");
                 }
                 else {
                     return result.concat(
@@ -300,7 +297,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                             "**\nExpiry Date: **Never" +
                             "**\nReason: **" + thisRecord.getReason() +
                             "**\nViolation Image: **" + thisRecord.getProofImage() +
-                            "\n\nYou have had " + (prevOffenses - 1) + " Previous Offenses**");
+                            "\n\nYou have had " + prevOffenses + " Previous Offenses**");
                 }
             }
             else { // They Are Currently Bot Abused but not permanently
@@ -312,7 +309,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                             "**\nExpiry Date: **" + baMain.getDiscordFormat(dateToExpire) +
                             "**\nReason: **" + thisRecord.getReason() +
                             "**\nViolation Image: **" + thisRecord.getProofImage() +
-                            "\n\nYou have had " + (prevOffenses - 1) + " Previous Offenses" +
+                            "\n\nYou have had " + prevOffenses + " Previous Offenses" +
                             "\nYou also have " + this.getHotOffenses(targetDiscordID) + " Hot Offenses**");
                 }
                 else {
@@ -324,7 +321,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
                             "**\nExpiry Date: **" + baMain.getDiscordFormat(dateToExpire) +
                             "**\nReason: **" + thisRecord.getReason() +
                             "**\nViolation Image: **" + thisRecord.getProofImage() +
-                            "\n\nThey have had " + (prevOffenses - 1) + " Previous Offenses" +
+                            "\n\nThey have had " + prevOffenses + " Previous Offenses" +
                             "\nThey also have " + this.getHotOffenses(targetDiscordID) + " Hot Offenses**");
                 }
             }
@@ -600,6 +597,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
             return false;
         }
     }
+    @Deprecated
     String getTimeZoneString(double timeOffset) {
         // What we do here is basically we process the timeOffset entered by the user into
         String strippedTimeOffset = String.valueOf(timeOffset);

@@ -298,7 +298,7 @@ public class BotAbuseMain extends ListenerAdapter {
         if (args[1].isEmpty()) {
             msg.getChannel().sendMessage(":x: " + msg.getAuthor().getAsMention() + " I was expecting a target player").queue();
         }
-        else if (msg.getMentionedMembers().isEmpty()) {
+        else if (msg.getMentions().getMembers().isEmpty()) {
             try {
                 setCommandUserByID(Long.parseLong(args[1]));
                 if (msg.getAttachments().isEmpty()) {
@@ -385,13 +385,13 @@ public class BotAbuseMain extends ListenerAdapter {
                 log.error("Set Bot Abuse Exception - Mentioned Members Empty", e);
             }
         }
-        else if (msg.getMentionedMembers().size() == 1) {
+        else if (msg.getMentions().getMembers().size() == 1) {
             try {
-                targetUser = msg.getMentionedMembers().get(0).getUser();
+                targetUser = msg.getMentions().getMembers().get(0).getUser();
                 if (msg.getAttachments().isEmpty()) {
-                    String result = baCore.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
+                    String result = baCore.setBotAbuse(msg.getMentions().getMembers().get(0).getIdLong(),
                             false, args[2], args[3], msg.getAuthor().getIdLong());
-                    guild.addRoleToMember(msg.getMentionedMembers().get(0),
+                    guild.addRoleToMember(msg.getMentions().getMembers().get(0),
                             botConfig.getBotAbuseRole()).reason("Successful Bot Abuse Dispensed").queue();
                     if (result.contains("FATAL ERROR")) {
                         discord.failedIntegrityCheck(this.getClass().getName(), msg, "Bot Abuse: setBotAbuse - No Picture Attachment and Mention Member Value");
@@ -400,10 +400,10 @@ public class BotAbuseMain extends ListenerAdapter {
                         embed.setAsSuccess(defaultTitle, result);
                         embed.sendToLogChannel();
                         embed.setAsSuccess(defaultTitle,"**:white_check_mark: " +
-                                " Successfully Bot Abused " + msg.getMentionedMembers().get(0).getAsMention() + "**");
+                                " Successfully Bot Abused " + msg.getMentions().getMembers().get(0).getAsMention() + "**");
                         embed.sendToTeamOutput(msg, msg.getAuthor());
                         log.info(msg.getMember().getEffectiveName() + " Successfully Bot Abused "
-                                + msg.getMentionedMembers().get(0).getEffectiveName());
+                                + msg.getMentions().getMembers().get(0).getEffectiveName());
                     }
                     else if (result.contains(":x:")) {
                         embed.setAsError("Whoops... Something went wrong", result);
@@ -413,9 +413,9 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
                 else if (msg.getAttachments().size() == 1 &&
                         (msg.getChannel().equals(mainConfig.discussionChannel) || msg.getChannel().equals(mainConfig.managementChannel))) {
-                    String result = baCore.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
+                    String result = baCore.setBotAbuse(msg.getMentions().getMembers().get(0).getIdLong(),
                             false, args[2], msg.getAttachments().get(0).getProxyUrl(), msg.getAuthor().getIdLong());
-                    guild.addRoleToMember(msg.getMentionedMembers().get(0),
+                    guild.addRoleToMember(msg.getMentions().getMembers().get(0),
                             botConfig.getBotAbuseRole()).reason("Successful Bot Abuse Dispensed").queue();
                     if (result.contains("FATAL ERROR")) {
                         discord.failedIntegrityCheck(this.getClass().getName(), msg, "Bot Abuse: setBotAbuse - Picture Attachment Found and Mention Member Value");
@@ -424,11 +424,11 @@ public class BotAbuseMain extends ListenerAdapter {
                         embed.setAsSuccess("Successful Bot Abuse", result);
                         embed.sendToLogChannel();
                         embed.setAsSuccess(defaultTitle, "**:white_check_mark: " + msg.getAuthor().getAsMention()
-                                + " Successfully Bot Abused " + msg.getMentionedMembers().get(0).getAsMention() + "**"
+                                + " Successfully Bot Abused " + msg.getMentions().getMembers().get(0).getAsMention() + "**"
                         + "\n\n :warning: Image Attachment Detected, **Do Not Delete the original command!**");
                         embed.sendToTeamOutput(msg, null);
                         log.info(msg.getMember().getEffectiveName() + " Successfully Bot Abused "
-                                + msg.getMentionedMembers().get(0).getEffectiveName());
+                                + msg.getMentions().getMembers().get(0).getEffectiveName());
                     }
                     else if (result.contains(":x:")) {
                         embed.setAsError("Whoops... Something went wrong", result);
@@ -450,7 +450,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 log.error("Set Bot Abuse - Mentioned Members Size 1", e);
             }
         }
-        else if (msg.getMentionedMembers().size() > 1 ) {
+        else if (msg.getMentions().getMembers().size() > 1 ) {
             embed.setAsError("Target ID Error", ":x: Too many Target IDs");
             embed.sendToTeamOutput(msg, msg.getAuthor());
         }
@@ -473,7 +473,7 @@ public class BotAbuseMain extends ListenerAdapter {
         String defaultTitle = "Successful Perm Bot Abuse";
 
         // If length is 3, then an image url was provided.
-        if (msg.getMentionedMembers().isEmpty() && args.length == 3) {
+        if (msg.getMentions().getMembers().isEmpty() && args.length == 3) {
             try {
                 setCommandUserByID(Long.parseLong(args[1]));
                 embed.setAsSuccess(defaultTitle, baCore.setBotAbuse(Long.parseLong(args[1]),
@@ -507,22 +507,22 @@ public class BotAbuseMain extends ListenerAdapter {
                 log.error("Perm Bot Abuse, Mentioned Members Empty and Args Length 3", e);
             }
         }
-        else if (msg.getMentionedMembers().size() == 1 && args.length == 3) {
+        else if (msg.getMentions().getMembers().size() == 1 && args.length == 3) {
             try {
                 embed.setAsSuccess(defaultTitle,
-                baCore.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
+                baCore.setBotAbuse(msg.getMentions().getMembers().get(0).getIdLong(),
                         true, "staff", args[2], msg.getAuthor().getIdLong()));
                 embed.sendToLogChannel();
-                guild.addRoleToMember(msg.getMentionedMembers().get(0),
+                guild.addRoleToMember(msg.getMentions().getMembers().get(0),
                         botConfig.getBotAbuseRole()).reason("Successful Permanent Bot Abuse Dispensed").queue();
                 log.info("[Admin Override] " + msg.getMember().getEffectiveName()
-                        + " Successfully Permanently Bot Abused " + msg.getMentionedMembers().get(0).getEffectiveName());
+                        + " Successfully Permanently Bot Abused " + msg.getMentions().getMembers().get(0).getEffectiveName());
             }
             catch (IOException e) {
                 log.error("Perm Bot Abuse, Mentioned Members Size 1 and Args Length 3", e);
             }
         }
-        else if (msg.getMentionedMembers().isEmpty() && args.length == 2) {
+        else if (msg.getMentions().getMembers().isEmpty() && args.length == 2) {
             try {
                 setCommandUserByID(Long.parseLong(args[1]));
                 embed.setAsSuccess(defaultTitle,
@@ -552,15 +552,15 @@ public class BotAbuseMain extends ListenerAdapter {
                 log.error("Perm Bot Abuse, Mentioned Members Empty and Args Length 2", ex);
             }
         }
-        else if (msg.getMentionedMembers().size() == 1 && args.length == 2) {
+        else if (msg.getMentions().getMembers().size() == 1 && args.length == 2) {
             try {
-                embed.setAsSuccess(defaultTitle, baCore.setBotAbuse(msg.getMentionedMembers().get(0).getIdLong(),
+                embed.setAsSuccess(defaultTitle, baCore.setBotAbuse(msg.getMentions().getMembers().get(0).getIdLong(),
                         true, "staff", null, msg.getAuthor().getIdLong()));
                 embed.sendToLogChannel();
-                guild.addRoleToMember(msg.getMentionedMembers().get(0),
+                guild.addRoleToMember(msg.getMentions().getMembers().get(0),
                         botConfig.getBotAbuseRole()).reason("Successful Permanent Bot Abuse Dispensed").queue();
                 log.info("[Admin Override] " + msg.getMember().getEffectiveName()
-                        + " Successfully Permanently Bot Abused " + msg.getMentionedMembers().get(0).getEffectiveName());
+                        + " Successfully Permanently Bot Abused " + msg.getMentions().getMembers().get(0).getEffectiveName());
             }
             catch (IOException e) {
                 log.error("Perm Bot Abuse, Mentioned Members Size 1 and Args Length 2", e);
@@ -600,7 +600,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     embed.sendToLogChannel();
                 }
             }
-            else if (args.length == 2 && msg.getMentionedMembers().isEmpty()) {
+            else if (args.length == 2 && msg.getMentions().getMembers().isEmpty()) {
                 setCommandUserByID(Long.parseLong(args[1]));
                 guild.removeRoleFromMember(guild.getMember(targetUser),
                         botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " undid their bot abuse").queue();
@@ -622,10 +622,10 @@ public class BotAbuseMain extends ListenerAdapter {
                     embed.sendToLogChannel();
                 }
             }
-            else if (args.length == 2 && msg.getMentionedMembers().size() == 1) {
-                guild.removeRoleFromMember(msg.getMentionedMembers().get(0),
+            else if (args.length == 2 && msg.getMentions().getMembers().size() == 1) {
+                guild.removeRoleFromMember(msg.getMentions().getMembers().get(0),
                         botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " undid their bot abuse").queue();
-                result = baCore.undoBotAbuse(msg.getAuthor().getIdLong(), false, msg.getMentionedMembers().get(0).getIdLong());
+                result = baCore.undoBotAbuse(msg.getAuthor().getIdLong(), false, msg.getMentions().getMembers().get(0).getIdLong());
                 if (result.contains("FATAL ERROR")) {
                     discord.failedIntegrityCheck(this.getClass().getName(), msg, "undo Command - Mention Value of who to Undo");
                 }
@@ -636,7 +636,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 else {
                     embed.setAsSuccess(defaultTitle, result);
                     log.info(msg.getMember().getEffectiveName() + " just undid the Bot Abuse for "
-                            + msg.getMentionedMembers().get(0).getEffectiveName());
+                            + msg.getMentions().getMembers().get(0).getEffectiveName());
                     embed.sendToTeamOutput(msg, msg.getAuthor());
                     embed.setAsInfo("Bot Abuse Undo", msg.getAuthor().getAsMention() + " just undid one of their previous bot abuses: " +
                             "\n **ID " + result.split("\n")[1].split("ID: ")[1] + "**");
@@ -695,9 +695,9 @@ public class BotAbuseMain extends ListenerAdapter {
                 "\n\n";
 
         // This handles a /check for someone to check their own Bot Abuse status
-        if (msg.getMentionedUsers().isEmpty() && args.length == 1) {
+        if (msg.getMentions().getUsers().isEmpty() && args.length == 1) {
             if (!isTeamMember) {
-                String result = baCore.getInfo(msg.getAuthor().getIdLong(), 100, false);
+                String result = baCore.getInfo(msg.getAuthor().getIdLong(), false);
                 if (result.contains(":white_check_mark:")) {
                     if (baCore.getLifetimeOffenses(msg.getAuthor().getIdLong()) > 0) {
                         embed.setAsSuccess("You Are No Longer Bot Abused", result);
@@ -720,9 +720,9 @@ public class BotAbuseMain extends ListenerAdapter {
             }
         }
         // This handles if the player opts for a Direct Message instead "/check dm"
-        else if (msg.getMentionedUsers().isEmpty() && args.length == 2 && args[1].equalsIgnoreCase("dm")) {
+        else if (msg.getMentions().getUsers().isEmpty() && args.length == 2 && args[1].equalsIgnoreCase("dm")) {
             if (!isTeamMember) {
-                String result = baCore.getInfo(msg.getAuthor().getIdLong(), 100, false);
+                String result = baCore.getInfo(msg.getAuthor().getIdLong(), false);
                 if (result.contains(":white_check_mark:")) {
                     embed.setAsSuccess("You Are Not Bot Abused", result);
                 }
@@ -740,9 +740,9 @@ public class BotAbuseMain extends ListenerAdapter {
             }
         }
         // /check <Discord ID>
-        else if (isTeamMember && args.length == 2 && msg.getMentionedUsers().isEmpty()) {
+        else if (isTeamMember && args.length == 2 && msg.getMentions().getUsers().isEmpty()) {
             try {
-                String result = baCore.getInfo(Long.parseLong(args[1]), 100 ,true);
+                String result = baCore.getInfo(Long.parseLong(args[1]), true);
                 if (result.contains(":white_check_mark:")) {
                     embed.setAsError("Player Not Bot Abused",":x: **This Player is Not Bot Abused**" +
                             "\n\n" + "Lifetime Offenses: **" + baCore.getLifetimeOffenses(Long.parseLong(args[1])) + "**" +
@@ -771,130 +771,21 @@ public class BotAbuseMain extends ListenerAdapter {
             }
         }
         // /check <Mention>
-        else if ((msg.getMentionedUsers().size() == 1 && isTeamMember) && args.length == 2) {
-            String result = baCore.getInfo(msg.getMentionedMembers().get(0).getIdLong(), 100 ,true);
+        else if ((msg.getMentions().getUsers().size() == 1 && isTeamMember) && args.length == 2) {
+            String result = baCore.getInfo(msg.getMentions().getMembers().get(0).getIdLong(), true);
             if (result.contains(":white_check_mark:")) {
                 embed.setAsError("Player Not Bot Abused", ":x: **This Player is Not Bot Abused**" +
-                        "\n\n" + "Lifetime Offenses: **" + baCore.getLifetimeOffenses(msg.getMentionedMembers().get(0).getIdLong()) + "**" +
-                        "\nHot Offenses: **" + baCore.getHotOffenses(msg.getMentionedMembers().get(0).getIdLong()) + "**");
+                        "\n\n" + "Lifetime Offenses: **" + baCore.getLifetimeOffenses(msg.getMentions().getMembers().get(0).getIdLong()) + "**" +
+                        "\nHot Offenses: **" + baCore.getHotOffenses(msg.getMentions().getMembers().get(0).getIdLong()) + "**");
                 log.error(msg.getMember().getEffectiveName() + " just checked on " +
-                        msg.getMentionedMembers().get(0).getEffectiveName() + "'s Bot Abuse Status but they were not Bot Abused");
+                        msg.getMentions().getMembers().get(0).getEffectiveName() + "'s Bot Abuse Status but they were not Bot Abused");
             }
             else {
                 embed.setAsInfo(defaultTitle, result);
                 log.info(msg.getMember().getEffectiveName() + " just checked on "+
-                        msg.getMentionedMembers().get(0).getEffectiveName() + "'s Bot Abuse Status");
+                        msg.getMentions().getMembers().get(0).getEffectiveName() + "'s Bot Abuse Status");
             }
             embed.sendToTeamOutput(msg, null);
-        }
-        // /check <Timezone Offset>
-        else if (msg.getMentionedUsers().isEmpty() && args.length == 2) {
-            if (!isTeamMember) {
-                if (baCore.checkOffset(args[1])) {
-                    String result = baCore.getInfo(msg.getAuthor().getIdLong(), Double.parseDouble(args[1]), false);
-                    if (result.contains(":white_check_mark:")) {
-                        embed.setAsSuccess("You Are Not Bot Abused", result);
-                    }
-                    else embed.setAsInfo(defaultTitle, result);
-                    embed.sendToMemberOutput(msg, msg.getAuthor());
-                    log.info(msg.getAuthor().getAsTag() +
-                            " just checked on their own Bot Abuse status using TimeZone offset " + args[1]);
-                }
-                else {
-                    embed.setAsError("Check Info Error", ":x: **Invalid Timezone Offset**");
-                    embed.sendToMemberOutput(msg, null);
-                    log.error(msg.getAuthor().getAsTag() + " just entered an invalid TimeZone offset into check command");
-                }
-            }
-            else {
-                embed.setAsError("No Permissions",
-                        ":x: **You should not need to do that... you're a team member!**");
-                embed.sendToTeamOutput(msg, msg.getAuthor());
-            }
-        }
-        // /check [dm] <Timezone Offset>
-        else if (msg.getMentionedUsers().isEmpty() && args.length == 3 && args[1].equalsIgnoreCase("dm")) {
-            if (!isTeamMember) {
-                if (baCore.checkOffset(args[2])) {
-                    String result = baCore.getInfo(msg.getMember().getIdLong(), Float.parseFloat(args[2]), false);
-                    if (result.contains(":white_check_mark:")) {
-                        embed.setAsSuccess("You Are Not Bot Abused", result);
-                    }
-                    else embed.setAsInfo(defaultTitle, result);
-                    embed.sendDM(msg, msg.getAuthor());
-                    log.info(msg.getMember().getEffectiveName() +
-                            " just checked on their own Bot Abuse status while opting for a DM");
-                }
-                else {
-                    embed.setAsError("TimeZone Offset Error", ":x: **Invalid Timezone Offset**");
-                    embed.sendToMemberOutput(msg, null);
-                    log.error(msg.getMember().getEffectiveName() +
-                            " just entered an invalid Discord ID while opting for a DM");
-                }
-            }
-            else {
-                embed.setAsError("No Permissions",
-                        ":x: **You should not need to do that... you're a team member!**");
-                embed.sendToTeamOutput(msg, msg.getAuthor());
-            }
-        }
-        // /check <Timezone Offset> <Mention or Discord ID>
-        else if (isTeamMember && args.length == 3) {
-            if (baCore.checkOffset(args[1])) {
-                if (msg.getMentionedUsers().isEmpty()) {
-                    try {
-                        String result = baCore.getInfo(Long.parseLong(args[2]), Double.parseDouble(args[1]), true);
-                        if (result.contains(":white_check_mark:")) {
-                            embed.setAsError("Player Not Bot Abused", ":x: **This Player is Not Bot Abused**" +
-                                    "\n\n" + "Lifetime Offenses: **" + baCore.getLifetimeOffenses(Long.parseLong(args[2])) + "**" +
-                                    "\nHot Offenses: **" + baCore.getHotOffenses(Long.parseLong(args[2])) + "**");
-                            log.error(msg.getMember().getEffectiveName() + " just checked on " +
-                                    guild.getMemberById(Long.parseLong(args[2])).getEffectiveName() +
-                                    "'s Bot Abuse Status but they were not Bot Abused");
-                        }
-                        else embed.setAsInfo(defaultTitle, result);
-                        embed.sendToTeamOutput(msg, null);
-                        try {
-                            log.info(msg.getMember().getEffectiveName() +
-                                    " just checked on " + guild.getMemberById(Long.parseLong(args[2])).getEffectiveName()
-                                    + "'s Bot Abuse status using TimeZone offset " + args[1]);
-                        }
-                        catch (NullPointerException ex) {
-                            AtomicReference<User> user = new AtomicReference<>();
-                            guild.getJDA().retrieveUserById(args[2]).queue(u -> {
-                                user.set(u);
-                            });
-                            log.info(msg.getMember().getEffectiveName() +
-                                    " just checked on " + user.get().getAsTag()
-                                    + "'s Bot Abuse status using TimeZone offset " + args[1]);
-                        }
-
-                    }
-                    catch (NumberFormatException f) {
-                        embed.setAsError("Invalid Mention", ":x: **The Mention You Entered is Invalid**" +
-                                "\nTry right clicking on their name and click mention, copy and paste that mention into that argument");
-                        embed.sendToTeamOutput(msg, msg.getAuthor());
-                    }
-                }
-                else if (msg.getMentionedUsers().size() == 1) {
-                    String result = baCore.getInfo(msg.getMentionedMembers().get(0).getIdLong(), Double.parseDouble(args[1]), true);
-                    if (result.contains(":white_check_mark:")) {
-                        embed.setAsError("Player Not Bot Abused", ":x: **This Player is Not Bot Abused**" +
-                                "\n\n" + "Lifetime Offenses: **" + baCore.getLifetimeOffenses(msg.getMentionedMembers().get(0).getIdLong()) + "**" +
-                                "\nHot Offenses: **" + baCore.getHotOffenses(msg.getMentionedMembers().get(0).getIdLong()) + "**");
-                    }
-                    else embed.setAsInfo(defaultTitle, result);
-                    embed.sendToTeamOutput(msg, null);
-                    log.info(msg.getMember().getEffectiveName() +
-                            " just checked on " + msg.getMentionedMembers().get(0).getEffectiveName()
-                            + "'s Bot Abuse status using TimeZone offset " + args[1]);
-                }
-            }
-            else {
-                embed.setAsError("Check Info Error", ":x: **Invalid Timezone Offset**");
-                embed.sendToTeamOutput(msg, null);
-                log.error("Team Member " + msg.getMember().getEffectiveName() + " just entered an invalid TimeZone offset.");
-            }
         }
         else {
             embed.setAsError("Permission Error", "You Don't have Permission to check on someone else's Bot Abuse status");
@@ -908,36 +799,36 @@ public class BotAbuseMain extends ListenerAdapter {
         String defaultTitle = "Successfully Cleared Records";
         int index = 0;
         // This Handles the list of mentioned members
-        while (index < msg.getMentionedMembers().size()) {
+        while (index < msg.getMentions().getMembers().size()) {
 
             // We now check if they have the Bot Abuse role, if they do then it's removed.
-            if (msg.getMentionedMembers().get(index).getRoles().contains(botConfig.getBotAbuseRole())) {
-                guild.removeRoleFromMember(msg.getMentionedMembers().get(index),
-                        botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " cleared the bot abuse records of " + msg.getMentionedMembers().get(index).getEffectiveName()).queue();
+            if (msg.getMentions().getMembers().get(index).getRoles().contains(botConfig.getBotAbuseRole())) {
+                guild.removeRoleFromMember(msg.getMentions().getMembers().get(index),
+                        botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " cleared the bot abuse records of " + msg.getMentions().getMembers().get(index).getEffectiveName()).queue();
                 embed.setAsInfo("Bot Abuse Role Removed", "**Successfully Removed Bot Abuse Role from "
-                        + msg.getMentionedMembers().get(index).getAsMention() + " as their Records just got Cleared**");
+                        + msg.getMentions().getMembers().get(index).getAsMention() + " as their Records just got Cleared**");
                 embed.sendToLogChannel();
                 log.info("Successfully Removed Bot Abuse Role from " +
-                         msg.getMentionedMembers().get(index).getEffectiveName() + " as their Records just got Cleared");
+                         msg.getMentions().getMembers().get(index).getEffectiveName() + " as their Records just got Cleared");
             }
             try {
-                int clearedRecords = baCore.clearRecords(msg.getMentionedMembers().get(index).getIdLong());
+                int clearedRecords = baCore.clearRecords(msg.getMentions().getMembers().get(index).getIdLong());
                 if (clearedRecords == -1) {
                     discord.failedIntegrityCheck(this.getClass().getName(), msg, "Bot Abuse: clear Command - Mentioned Members");
                     break;
                 }
                 else if (clearedRecords == 0) {
                     embed.setAsError("No Records Cleared",
-                            "**No Records Found for " + msg.getMentionedMembers().get(0).getEffectiveName() + "**");
+                            "**No Records Found for " + msg.getMentions().getMembers().get(0).getEffectiveName() + "**");
                     embed.sendToTeamOutput(msg, msg.getAuthor());
-                    log.error("No Records Cleared for " + msg.getMentionedMembers().get(index).getEffectiveName());
+                    log.error("No Records Cleared for " + msg.getMentions().getMembers().get(index).getEffectiveName());
                 }
                 else {
                     embed.setAsSuccess(defaultTitle, ":white_check_mark: **Successfully Cleared " +
-                            clearedRecords + " Records from " + msg.getMentionedMembers().get(index).getAsMention() + "**");
+                            clearedRecords + " Records from " + msg.getMentions().getMembers().get(index).getAsMention() + "**");
                     embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                     log.info("Successfully Cleared " + clearedRecords + " Records from " +
-                            msg.getMentionedMembers().get(index).getEffectiveName());
+                            msg.getMentions().getMembers().get(index).getEffectiveName());
                 }
                 index++;
             }
@@ -1030,23 +921,23 @@ public class BotAbuseMain extends ListenerAdapter {
         String defaultTitle = "Successful Transfer of Records";
 
         if (args.length == 3) {
-            if (msg.getMentionedMembers().size() == 2) {
-                if (baCore.botAbuseIsCurrent(msg.getMentionedMembers().get(0).getIdLong())) {
-                    guild.addRoleToMember(msg.getMentionedMembers().get(1),
+            if (msg.getMentions().getMembers().size() == 2) {
+                if (baCore.botAbuseIsCurrent(msg.getMentions().getMembers().get(0).getIdLong())) {
+                    guild.addRoleToMember(msg.getMentions().getMembers().get(1),
                             botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " transferred all bot abuse records to this player").queue();
-                    guild.removeRoleFromMember(msg.getMentionedMembers().get(0),
+                    guild.removeRoleFromMember(msg.getMentions().getMembers().get(0),
                             botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " transferred all bot abuse records from this player").queue();
                 }
                 log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
-                        + msg.getMentionedMembers().get(0).getEffectiveName() + " to " + msg.getMentionedMembers().get(1).getEffectiveName());
-                embed.setAsSuccess(defaultTitle, baCore.transferRecords(msg.getMentionedMembers().get(0).getIdLong(), msg.getMentionedMembers().get(1).getIdLong()));
+                        + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " + msg.getMentions().getMembers().get(1).getEffectiveName());
+                embed.setAsSuccess(defaultTitle, baCore.transferRecords(msg.getMentions().getMembers().get(0).getIdLong(), msg.getMentions().getMembers().get(1).getIdLong()));
                 embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
             }
-            else if (msg.getMentionedMembers().size() == 1) {
+            else if (msg.getMentions().getMembers().size() == 1) {
                 try {
                     // If they provide a Discord ID First and a Mention Last
                     if (baCore.botAbuseIsCurrent(Long.parseLong(args[1]))) {
-                        guild.addRoleToMember(msg.getMentionedMembers().get(0),
+                        guild.addRoleToMember(msg.getMentions().getMembers().get(0),
                                 botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() +
                                 " transferred all bot abuse records to this player").queue();
                         try {
@@ -1062,21 +953,21 @@ public class BotAbuseMain extends ListenerAdapter {
                         }
                     }
                     embed.setAsSuccess(defaultTitle,
-                            baCore.transferRecords(Long.parseLong(args[1]), msg.getMentionedMembers().get(0).getIdLong()));
+                            baCore.transferRecords(Long.parseLong(args[1]), msg.getMentions().getMembers().get(0).getIdLong()));
                     embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                     try {
                         log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
                                 + guild.getMemberById(Long.parseLong(args[1])).getEffectiveName()
-                                + " to " + msg.getMentionedMembers().get(0).getEffectiveName());
+                                + " to " + msg.getMentions().getMembers().get(0).getEffectiveName());
                     }
                     catch (NullPointerException e) {
                         log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of " + args[1]
-                                + " to " + msg.getMentionedMembers().get(0).getEffectiveName());
+                                + " to " + msg.getMentions().getMembers().get(0).getEffectiveName());
                     }
                 }
                 catch (NumberFormatException ex) {
                     // If they provide a mention first and a Discord ID Last
-                    if (baCore.botAbuseIsCurrent(msg.getMentionedMembers().get(0).getIdLong())) {
+                    if (baCore.botAbuseIsCurrent(msg.getMentions().getMembers().get(0).getIdLong())) {
                         try {
                             guild.addRoleToMember(User.fromId(Long.parseLong(args[2])),
                                     botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() +
@@ -1088,26 +979,26 @@ public class BotAbuseMain extends ListenerAdapter {
                                     + args[2] + " because they do not exist in the Discord Server**");
                             embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                         }
-                        guild.removeRoleFromMember(msg.getMentionedMembers().get(0),
+                        guild.removeRoleFromMember(msg.getMentions().getMembers().get(0),
                                 botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() +
                                 " transferred all bot abuse records from this player").queue();
                     }
                     embed.setAsSuccess("Successful Transfer of Records",
-                            baCore.transferRecords(msg.getMentionedMembers().get(0).getIdLong(), Long.parseLong(args[2])));
+                            baCore.transferRecords(msg.getMentions().getMembers().get(0).getIdLong(), Long.parseLong(args[2])));
                     embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                     try {
                         log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
-                                + msg.getMentionedMembers().get(0).getEffectiveName() + " to " +
+                                + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " +
                                 guild.getMemberById(Long.parseLong(args[2])).getEffectiveName());
                     }
                     catch (NullPointerException e) {
                         log.info(msg.getMember().getEffectiveName() +
                                 " Successfully Transferred the Records of "
-                                + msg.getMentionedMembers().get(0).getEffectiveName() + " to " + args[2]);
+                                + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " + args[2]);
                     }
                 }
             }
-            else if (msg.getMentionedMembers().isEmpty()) {
+            else if (msg.getMentions().getMembers().isEmpty()) {
                 if (baCore.botAbuseIsCurrent(Long.parseLong(args[1]))) {
                     try {
                         guild.addRoleToMember(User.fromId(Long.parseLong(args[2])),
@@ -1191,7 +1082,7 @@ public class BotAbuseMain extends ListenerAdapter {
             catch (NumberFormatException ex) {
                 try {
                     // The code above would throw a NumberFormatException if it's a mention
-                    String result = baCore.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), 100, true);
+                    String result = baCore.seeHistory(msg.getMentions().getMembers().get(0).getIdLong(), 100, true);
                     if (result.contains(":x:")) {
                         embed.setAsError(defaultTitle, result);
                         embed.sendToTeamOutput(msg, msg.getAuthor());
@@ -1200,7 +1091,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         this.checkHistoryDivision(result, msg);
                     }
                     embed.setAsInfo(defaultTitle, ":information_source: **" + msg.getAuthor().getAsMention() + " just checked the history of " +
-                            msg.getMentionedMembers().get(0).getAsMention() + "**");
+                            msg.getMentions().getMembers().get(0).getAsMention() + "**");
                     embed.sendToLogChannel();
                 }
                 // If the History is longer than 2000 characters, then this code would catch it and the history would be split down into smaller pieces to be sent.
@@ -1277,8 +1168,8 @@ public class BotAbuseMain extends ListenerAdapter {
             defaultTitle = "Bot Abuse History";
             if (baCore.checkOffset(args[1])) {
                 try {
-                    if (msg.getMentionedMembers().size() == 1) {
-                        String result = baCore.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), Double.parseDouble(args[1]), true);
+                    if (msg.getMentions().getMembers().size() == 1) {
+                        String result = baCore.seeHistory(msg.getMentions().getMembers().get(0).getIdLong(), Double.parseDouble(args[1]), true);
                         if (result.contains(":x:")) {
                             embed.setAsError(defaultTitle, result);
                             embed.sendToTeamOutput(msg, null);
@@ -1287,9 +1178,9 @@ public class BotAbuseMain extends ListenerAdapter {
                             this.checkHistoryDivision(result, msg);
                         }
                         log.info(msg.getMember().getEffectiveName() + " just checked the history of " +
-                                msg.getMentionedMembers().get(0).getEffectiveName() + " using TimeZone offset " + args[1]);
+                                msg.getMentions().getMembers().get(0).getEffectiveName() + " using TimeZone offset " + args[1]);
                     }
-                    else if (msg.getMentionedMembers().isEmpty()) {
+                    else if (msg.getMentions().getMembers().isEmpty()) {
                         String result = baCore.seeHistory(Long.parseLong(args[2]), Double.parseDouble(args[1]), true);
                         if (result.contains(":x:")) {
                             embed.setAsError(defaultTitle, result);
@@ -1304,10 +1195,10 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
                 catch (NumberFormatException e) {
                     try {
-                        this.checkHistoryDivision(baCore.seeHistory(msg.getMentionedMembers().get(0).getIdLong(), Double.parseDouble(args[1]), true),
+                        this.checkHistoryDivision(baCore.seeHistory(msg.getMentions().getMembers().get(0).getIdLong(), Double.parseDouble(args[1]), true),
                                 msg);
                         log.info(msg.getMember().getEffectiveName() + " just checked the history of " +
-                                msg.getMentionedMembers().get(0).getEffectiveName() + " using TimeZone offset " + args[1]);
+                                msg.getMentions().getMembers().get(0).getEffectiveName() + " using TimeZone offset " + args[1]);
                     }
                     catch (IndexOutOfBoundsException f) {
                         embed.setAsError("Invalid Mention", ":x: **The Mention You Entered is Invalid**" +
