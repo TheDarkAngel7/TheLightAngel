@@ -1,5 +1,8 @@
 package Angel;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import javax.annotation.Nullable;
 import java.io.*;
 import java.net.URISyntaxException;
@@ -8,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 class FileCreator {
+    private final Logger log = LogManager.getLogger(FileCreator.class);
     private final String jarDirectory = new File(FileCreator.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()).getParentFile().getPath().replace('\\', '/');
     private final Path configFolder = Paths.get(jarDirectory + "/configs");
     private final Path dataFolder = Paths.get(jarDirectory + "/data");
@@ -21,10 +25,13 @@ class FileCreator {
         boolean everythingExisted = true;
         try {
             if (!Files.exists(dataFolder)) {
+                log.warn("Data Folder Did Not Exist! Creating New...");
                 Files.createDirectory(dataFolder);
                 everythingExisted = false;
+
             }
             if (!Files.exists(configFolder)) {
+                log.warn("Config Folder Did Not Exist! Creating New...");
                 Files.createDirectory(configFolder);
                 exportResource(configFolder.getFileName().toString(), "/config.json");
                 exportResource(configFolder.getFileName().toString(),"/botabuseconfig.json");
@@ -33,27 +40,33 @@ class FileCreator {
                 everythingExisted = false;
             }
             if (!Files.exists(dbBackupsFolder)) {
+                log.warn("Database Backups Folder Did Not Exist! Creating New...");
                 Files.createDirectory(dbBackupsFolder);
 
                 everythingExisted = false;
             }
             if (!Files.exists(Paths.get(dbBackupsFolder + "/Nicknames"))) {
+                log.warn("Nicknames Folder in Database Backups Folder Did Not Exist! Creating New...");
                 Files.createDirectory(Paths.get(dbBackupsFolder + "/Nicknames"));
                 everythingExisted = false;
             }
             if (!Files.exists(Paths.get(dbBackupsFolder + "/BotAbuse"))) {
+                log.warn("Bot Abuse Folder in Database Backups Folder Did Not Exist! Creating New...");
                 Files.createDirectory(Paths.get(dbBackupsFolder + "/BotAbuse"));
                 everythingExisted = false;
             }
-            if (!Files.exists(Paths.get(jarDirectory + "/CheckIn"))) {
+            if (!Files.exists(Paths.get(dbBackupsFolder + "/CheckIn"))) {
+                log.warn("Check-In Folder in Database Backups Folder Did Not Exist! Creating New...");
                 Files.createDirectory(Paths.get(dbBackupsFolder + "/CheckIn"));
                 everythingExisted = false;
             }
             if (!Files.exists(logFolder)) {
+                log.warn("Log Folder Did Not Exist! Creating New...");
                 Files.createDirectory(logFolder);
                 everythingExisted = false;
             }
             if (!Files.exists(Paths.get(jarDirectory + "/log4j2.properties"))) {
+                log.warn("Log4J2 Config Not Found, Exporting Default...");
                 exportResource(null, "/log4j2.properties");
                 everythingExisted = false;
             }
@@ -90,7 +103,5 @@ class FileCreator {
         catch (IOException ex) {
             ex.printStackTrace();
         }
-
-        System.out.println(jarFolder + resourceName);
     }
 }
