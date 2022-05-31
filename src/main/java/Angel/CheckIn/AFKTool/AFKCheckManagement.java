@@ -46,12 +46,12 @@ public class AFKCheckManagement extends Timer {
         String[] args = msg.getContentRaw().substring(1).split(" ");
 
         if (discord.isTeamMember(msg.getAuthor().getIdLong())) {
-            if (msg.getMentionedMembers().size() >= 4) {
+            if (msg.getMentions().getMembers().size() >= 4) {
                 embed.setAsError("Too Many Mentions",
                         "**To Be Honest... if you're going to AFK Check this many people... you should just run a Check-In at this point...**");
                 embed.sendToTeamOutput(msg, msg.getAuthor());
             }
-            else if (msg.getMentionedMembers().isEmpty()) {
+            else if (msg.getMentions().getMembers().isEmpty()) {
                 embed.setAsError("Invalid Syntax",
                         "I need mentions for this command! You may use `" + mainConfig.commandPrefix + "search <name>` to get mentions of players by effective name or even username." +
                                 "\n\nSyntax: `" + mainConfig.commandPrefix + "afkcheck <Mentions (Up to 3)> [Session Channel]`" +
@@ -59,7 +59,7 @@ public class AFKCheckManagement extends Timer {
                                 "When I'm not given this argument, I automatically assume that the channel this command was used in is the session channel.**");
                 embed.sendToTeamOutput(msg, msg.getAuthor());
             }
-            else if (msg.getMentionedChannels().size() >= 2) {
+            else if (msg.getMentions().getChannels(TextChannel.class).size() >= 2) {
                 embed.setAsError("Too Many Channels", "**Hey... there can only be one session channel**");
                 embed.sendToTeamOutput(msg, msg.getAuthor());
             }
@@ -69,23 +69,23 @@ public class AFKCheckManagement extends Timer {
                 int index = 0;
 
                 do {
-                    if (getAFKCheckObjByMember(msg.getMentionedMembers().get(index)) == null) {
-                        masterList.add(msg.getMentionedMembers().get(index));
+                    if (getAFKCheckObjByMember(msg.getMentions().getMembers().get(index)) == null) {
+                        masterList.add(msg.getMentions().getMembers().get(index));
                     }
                     else {
                         embed.sendAsMessageEntryObj(new MessageEntry("AFK Check Already Running",
-                                ":x: **An AFK Check is already running for " + msg.getMentionedMembers().get(index) + "**",
+                                ":x: **An AFK Check is already running for " + msg.getMentions().getMembers().get(index) + "**",
                                 EmbedDesign.ERROR, mainConfig).setChannels(TargetChannelSet.SAME).setOriginalCmd(msg));
                     }
-                } while (++index < msg.getMentionedMembers().size());
+                } while (++index < msg.getMentions().getMembers().size());
 
                 masterList.forEach(m -> {
                     AFKCheck afkCheck;
-                    if (msg.getMentionedChannels().isEmpty()) {
+                    if (msg.getMentions().getChannels(TextChannel.class).isEmpty()) {
                         afkCheck = new AFKCheck(m, msg.getMember(), msg.getTextChannel(), length, mentionOn);
                     }
                     else {
-                        afkCheck = new AFKCheck(m, msg.getMember(), msg.getMentionedChannels().get(0), length, mentionOn);
+                        afkCheck = new AFKCheck(m, msg.getMember(), msg.getMentions().getChannels(TextChannel.class).get(0), length, mentionOn);
                     }
                     queueAFKCheck(msg, afkCheck);
                 });

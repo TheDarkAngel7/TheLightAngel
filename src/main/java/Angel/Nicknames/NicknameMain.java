@@ -590,7 +590,7 @@ public class NicknameMain extends ListenerAdapter {
                             }
                             catch (NumberFormatException ex) {
                                 try {
-                                    targetDiscordID = msg.getMentionedMembers().get(0).getIdLong();
+                                    targetDiscordID = msg.getMentions().getMembers().get(0).getIdLong();
                                     oldNickArray = nickCore.getHistory(targetDiscordID);
                                 } 
                                 catch (IndexOutOfBoundsException e) {
@@ -693,8 +693,8 @@ public class NicknameMain extends ListenerAdapter {
                                 embed.sendToTeamOutput(msg, null);
                             }
                             catch (NumberFormatException ex) {
-                                if (msg.getMentionedMembers().size() == 1) {
-                                    memberInQuestion = msg.getMentionedMembers().get(0);
+                                if (msg.getMentions().getMembers().size() == 1) {
+                                    memberInQuestion = msg.getMentions().getMembers().get(0);
                                     oldNickname = memberInQuestion.getNickname();
                                     if (oldNickname == null) oldNickname = memberInQuestion.getUser().getName();
 
@@ -767,7 +767,7 @@ public class NicknameMain extends ListenerAdapter {
                                 targetUser.set(guild.getJDA().getUserById(Long.parseLong(args[2])));
                             }
                             catch (NumberFormatException ex) {
-                                targetUser.set(msg.getMentionedMembers().get(0).getUser());
+                                targetUser.set(msg.getMentions().getMembers().get(0).getUser());
                             }
                             catch (NullPointerException ex) {
                                 guild.getJDA().retrieveUserById(Long.parseLong(args[2])).queue(user -> targetUser.set(user));
@@ -853,7 +853,7 @@ public class NicknameMain extends ListenerAdapter {
             }
             catch (NumberFormatException ex) {
                 isMention = true;
-                targetDiscordID = msg.getMentionedMembers().get(0).getIdLong();
+                targetDiscordID = msg.getMentions().getMembers().get(0).getIdLong();
                 oldNickname = nickCore.oldNickname.get(nickCore.discordID.indexOf(targetDiscordID));
                 newNickname = nickCore.newNickname.get(nickCore.discordID.indexOf(targetDiscordID));
                 guild.retrieveMemberById(targetDiscordID).queue(m -> memberInQuestion.set(m));

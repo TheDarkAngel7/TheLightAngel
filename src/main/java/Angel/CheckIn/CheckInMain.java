@@ -37,6 +37,9 @@ public class CheckInMain extends ListenerAdapter {
     // Embed in one of our channels while the check-in is in progress
     private Message checkInProgressionEmbed;
     private MessageEntry checkInProgressionEntry;
+    // Embed that confirms the !ci start command was used
+    private Message checkinStartConfirmationEmbed;
+    private MessageEntry checkinStartConfirmationEntry;
     // Messages to Purge when check-in is confirmed
     private List<Message> toPurge = new ArrayList<>();
     // Messages to tell EmbedEngine to purge when the check-in is confirmed
@@ -126,13 +129,9 @@ public class CheckInMain extends ListenerAdapter {
             return;
         }
 
-        if (!ciConfig.isEnabled()) {
+        if (!ciConfig.isEnabled() && isCommand(args[0], args[1])) {
             embed.setAsError("Check-In Feature Disabled", ":x: **You used a command for a section of the bot that is currently disabled***");
             embed.sendToChannel(msg, msg.getChannel());
-        }
-
-        else if (event.getMessage().getTextChannel() == ciConfig.getCheckInChannel() && checkInConfirmed) {
-            checkInPlayer(msg);
         }
 
         else if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && !commandsSuspended) {
@@ -287,11 +286,11 @@ public class CheckInMain extends ListenerAdapter {
                         break;
                     // /checkin start <Session Channel Mention Inserted>
                     case 3:
-                        sessionName = msg.getMentionedChannels().get(0).getName().split("_")[0];
-                        sessionChannel = msg.getMentionedChannels().get(0);
+                        sessionName = msg.getMentions().getChannels(TextChannel.class).get(0).getName().split("_")[0];
+                        sessionChannel = msg.getMentions().getChannels(TextChannel.class).get(0);
                         break;
                 }
-                if (msg.getMentionedChannels().size() >= 2) {
+                if (msg.getMentions().getChannels(TextChannel.class).size() >= 2) {
                     embed.setAsError("Too Many Mentioned Channels",
                             ":x: **You gave me too many channel mentions, I was only expecting 1**");
                 }
@@ -304,8 +303,13 @@ public class CheckInMain extends ListenerAdapter {
                                 ":x: The session you have selected is currently empty... there's nobody to check-in");
                     }
                     else {
-                        embed.setAsSuccess("Successful Check-In Start",
-                                "**Successfully started a check-in for " + sessionChannel.getAsMention() + "**");
+                        checkinStartConfirmationEntry = new MessageEntry("Successful Check-In Startup",
+                                "**Successfully started a check-in for " + sessionChannel.getAsMention() + "!**" +
+                                        "\n\n**Please Wait While I go fetch the names from zoobot and match those names up to discord accounts...**",
+                                EmbedDesign.WARNING, mainConfig);
+                        getCheckInProgressionEmbedChannel().sendMessageEmbeds(checkinStartConfirmationEntry.getEmbed(false)).queue(m -> {
+                            checkinStartConfirmationEmbed = m;
+                        });
                         sendCheckInStartupPrompts(msg, false);
                         return;
                     }
@@ -398,6 +402,9 @@ public class CheckInMain extends ListenerAdapter {
                                     log.error("Could Not Complete Check-In Role Addition For " + member.get().getEffectiveName() +
                                             " (Discord ID: " + m.getPlayerDiscordId() + ")");
                                     ciCore.removeMemberFromCheckIn(member.get());
+                                    embed.setAsError("Could Not Add Check-In Role", ":x: Unable to add check-in role for "
+                                            + member.get().getAsMention() + ", so I automatically excused them from the check-in");
+                                    embed.sendToLogChannel();
                                 }
                                 else {
                                     log.info("Successfully Added Role " + ciConfig.getCheckInRole().getName() + " to " +
@@ -414,7 +421,7 @@ public class CheckInMain extends ListenerAdapter {
                 sendSessionChannelMessage(false);
 
                 ciTimer.startTimer();
-                embed.editEmbed(msg, "Check-In Started", "**Check-In has Successfully Started for " +
+                embed.editEmbed(msg, "Check-In Running", "**Check-In has Successfully Started for " +
                         sessionChannel.getAsMention() + "**" +
                         "\n\n**The "+ ciConfig.getCheckInRole().getAsMention() +
                         " role may need a little additional time to get applied**", EmbedDesign.SUCCESS);
@@ -510,7 +517,7 @@ public class CheckInMain extends ListenerAdapter {
 
     void sendSessionChannelMessage(boolean update) {
         String checkInWarningString = ":warning: **A Check-In has started for this session!**" +
-                "\n\n*Please reply in ? with `" + mainConfig.commandPrefix + "checkin` or with a message to confirm you are paying attention to discord.*" +
+                "\n\n*Please reply in ? with `" + mainConfig.commandPrefix + "checkin` to confirm you are paying attention to discord.*" +
                 "\nYou'll receive confirmation you have checked-in via direct message" +
                 "\n\nTime Remaining: **" + ciTimer.getRemainingTime() + "**" +
                 "\n\n:warning: ***Do Not Bump This Message** except with kickvotes or other emergencies*";
@@ -524,9 +531,7 @@ public class CheckInMain extends ListenerAdapter {
 
         if (update) {
             checkInSessionChannelEmbed.editMessageEmbeds(checkInSessionChannelEntry.setMessage(checkInWarningString)
-                    .getEmbed(false)).queue(m -> {
-                        checkInSessionChannelEmbed = m;
-            });
+                    .getEmbed(false)).queue();
         }
         else {
             checkInSessionChannelEntry = new MessageEntry(
@@ -547,8 +552,8 @@ public class CheckInMain extends ListenerAdapter {
                 embed.sendToTeamOutput(msg, msg.getAuthor());
             }
             // /checkin add <Member Mention(s)>
-            else if (!msg.getMentionedMembers().isEmpty()) {
-                ciCore.addMemberToCheckIn(msg.getMentionedMembers());
+            else if (!msg.getMentions().getMembers().isEmpty()) {
+                ciCore.addMemberToCheckIn(msg.getMentions().getMembers());
                 addCheckMarkReactionToMessage(msg);
             }
             else {
@@ -570,16 +575,16 @@ public class CheckInMain extends ListenerAdapter {
                         ":x: **You Cannot Do That... you have to start the check-in first**");
                 embed.sendToTeamOutput(msg, msg.getAuthor());
             }
-            else if (msg.getMentionedMembers().size() == 1) {
-                if (ciCore.removeMemberFromCheckIn(msg.getMentionedMembers().get(0))) {
+            else if (msg.getMentions().getMembers().size() == 1) {
+                if (ciCore.removeMemberFromCheckIn(msg.getMentions().getMembers().get(0))) {
                     addCheckMarkReactionToMessage(msg);
                 }
                 else {
                     addXReactionToMessage(msg);
                 }
             }
-            else if (msg.getMentionedMembers().size() >= 2) {
-                if (ciCore.removeMemberFromCheckIn(msg.getMentionedMembers())) {
+            else if (msg.getMentions().getMembers().size() >= 2) {
+                if (ciCore.removeMemberFromCheckIn(msg.getMentions().getMembers())) {
                     addCheckMarkReactionToMessage(msg);
                 }
                 else {
@@ -618,7 +623,7 @@ public class CheckInMain extends ListenerAdapter {
 
         ciResult.getPlayers().forEach(p -> {
             guild.retrieveMemberById(p.getPlayerDiscordId()).queue(member::set);
-            if (p.isQueuedToCheckIn()) {
+            if (p.isQueuedToCheckIn() && !p.successfullyCheckedIn()) {
                 if (mainConfig.testModeEnabled) {
                     log.warn("Would Have Removed the Role " + ciConfig.getCheckInRole().getName() + " from " + member.get().getEffectiveName() +
                             " (Discord ID: " + p.getPlayerDiscordId() + ") because the check-in ended, but couldn't because I'm in test mode...");
@@ -725,13 +730,15 @@ public class CheckInMain extends ListenerAdapter {
         if (tempString != "") memberList.add(tempString);
 
         if (!update) {
-
             checkInQueueEmbed = new CheckInQueueEmbed(new MessageEntry("Members To Be Checked-In",
                     EmbedDesign.SUCCESS, mainConfig, originalCmd, ciConfig.getCheckInChannel()).setAsIsListEmbed(),
                     memberListPrefix, memberList, null, emojiList, this);
 
             discord.addAsReactionListEmbed(checkInQueueEmbed);
             toPurge.add(embed.getMessageEntryObj(originalCmd).getResultEmbed());
+
+            checkinStartConfirmationEmbed.editMessageEmbeds(checkinStartConfirmationEntry.setDesign(EmbedDesign.SUCCESS).setMessage(
+                    "**Successfully started a check-in for " + sessionChannel.getAsMention() + "!**").getEmbed(false)).queue();
         }
         else {
             discord.updateReactionListEmbed(checkInQueueEmbed, memberList);
@@ -740,12 +747,14 @@ public class CheckInMain extends ListenerAdapter {
         // Construct Duplicate Matches Error Message if there are any
         Enumeration<String> keys = ciCore.getDuplicateMatchHashTable().keys();
         Enumeration<List<Member>> members = ciCore.getDuplicateMatchHashTable().elements();
-
+        boolean thereIsDuplicates = false;
         if (!members.hasMoreElements()) {
             duplicateMatches = "**No Duplicate Members Found**";
             duplicateMatchesStatus = EmbedDesign.SUCCESS;
+
         }
         else {
+            thereIsDuplicates = true;
             index = 0;
             String roleList = "";
             while (index < ciConfig.getRolesThatCanBeCheckedIn().size()) {
@@ -781,7 +790,7 @@ public class CheckInMain extends ListenerAdapter {
                     "it is advisible to check zoobot's screenshot and compare that to the member list.";
         }
         if (update) checkInStartupEntryObjects.clear();
-        checkInStartupEntryObjects.add(new MessageEntry("Duplicate Accounts", duplicateMatches, duplicateMatchesStatus, mainConfig));
+        if (thereIsDuplicates) checkInStartupEntryObjects.add(new MessageEntry("Duplicate Accounts", duplicateMatches, duplicateMatchesStatus, mainConfig));
         checkInStartupEntryObjects.add(new MessageEntry("Members Not Found", unrecogizedPlayers, unrecognizedPlayerStatus, mainConfig));
 
         printStartupEmbeds(update);
@@ -824,9 +833,7 @@ public class CheckInMain extends ListenerAdapter {
         } while (++index < checkInList.size());
 
         if (update) {
-            checkInProgressionEmbed.editMessageEmbeds(checkInProgressionEntry.setMessage(prefix + progressString).getEmbed()).queue(m -> {
-                checkInProgressionEmbed = m;
-            });
+            checkInProgressionEmbed.editMessageEmbeds(checkInProgressionEntry.setMessage(prefix + progressString).getEmbed()).queue();
         }
         else {
             checkInProgressionEntry = new MessageEntry("Check-In In Progress", prefix + progressString,  EmbedDesign.WARNING,

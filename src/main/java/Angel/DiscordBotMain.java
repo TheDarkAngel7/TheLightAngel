@@ -9,10 +9,7 @@ import Angel.CustomEmbeds.CustomEmbedMain;
 import Angel.Nicknames.NicknameInit;
 import Angel.Nicknames.NicknameMain;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.ChannelType;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.ReconnectedEvent;
@@ -325,7 +322,7 @@ public class DiscordBotMain extends ListenerAdapter {
                 embed.sendToTeamOutput(msg, msg.getAuthor());
             }
         }
-        if (!msg.getChannelType().equals(ChannelType.PRIVATE) && msg.getMentionedMembers().contains(guild.getSelfMember())) {
+        if (!msg.getChannelType().equals(ChannelType.PRIVATE) && msg.getMentions().getMembers().contains(guild.getSelfMember())) {
             msg.getChannel().sendMessage("<:blobnomping:" + mainConfig.blobNomPingID + ">").queue();
             log.info("Nommed the Ping from " + msg.getAuthor().getAsTag());
         }
@@ -555,7 +552,7 @@ public class DiscordBotMain extends ListenerAdapter {
                     break;
             }
         }
-        if (!msg.getChannelType().equals(ChannelType.PRIVATE) && !msg.getMentionedMembers().contains(guild.getSelfMember())
+        if (!msg.getChannelType().equals(ChannelType.PRIVATE) && !msg.getMentions().getMembers().contains(guild.getSelfMember())
                 && !msg.getChannel().equals(mainConfig.botSpamChannel) && !msg.getChannel().equals(mainConfig.managementChannel)
                 && msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && msg.getAttachments().isEmpty()
                 && mainConfig.deleteOriginalNonStaffCommands) {
@@ -563,7 +560,7 @@ public class DiscordBotMain extends ListenerAdapter {
             log.warn("Message Deleted - Channel Type Not Private, Does Not Mention Me, Not Bot Spam Channel, " +
                     "Not Management Channel, Prefix Found, Attachments Empty, Delete Original Staff Commands True");
         }
-        else if (!msg.getChannelType().equals(ChannelType.PRIVATE) && !msg.getMentionedMembers().contains(guild.getSelfMember()) &&
+        else if (!msg.getChannelType().equals(ChannelType.PRIVATE) && !msg.getMentions().getMembers().contains(guild.getSelfMember()) &&
                 isTeamMember(msg.getAuthor().getIdLong()) && isValidCommand(msg) &&
                 (!msg.getChannel().equals(mainConfig.discussionChannel) || mainConfig.deleteOriginalStaffCommands) &&
                 !msg.getChannel().equals(mainConfig.managementChannel) && !msg.getChannel().equals(ciFeature.getConfig().getCheckInChannel()) && msg.getAttachments().isEmpty()) {
@@ -690,17 +687,17 @@ public class DiscordBotMain extends ListenerAdapter {
                     }
                 }
                 catch (NumberFormatException ex) {
-                    if (!msg.getMentionedRoles().isEmpty()) {
-                        if (msg.getMentionedRoles().size() == 1) {
+                    if (!msg.getMentions().getRoles().isEmpty()) {
+                        if (msg.getMentions().getRoles().size() == 1) {
                             if (mainConfig.isValidConfig(args[2])) {
-                                mainConfig.setRoleConfig(args[2], msg.getMentionedRoles().get(0));
+                                mainConfig.setRoleConfig(args[2], msg.getMentions().getRoles().get(0));
                                 embed.setAsSuccess(defaultTitle,
                                         defaultOutput.replace("key", args[2])
-                                                .replace("value", msg.getMentionedRoles().get(0).getAsMention()));
+                                                .replace("value", msg.getMentions().getRoles().get(0).getAsMention()));
                                 successfulRun = true;
                             }
                             else if (baFeature.getConfig().isValidConfig(args[2])) {
-                                baFeature.getConfig().setNewBotAbuseRole(msg.getMentionedRoles().get(0));
+                                baFeature.getConfig().setNewBotAbuseRole(msg.getMentions().getRoles().get(0));
                                 embed.setAsSuccess(defaultTitle, defaultOutput.replace("key", args[2])
                                         .replace("value", guild.getRoleById(args[3]).getAsMention()));
                                 successfulRun = true;
@@ -733,13 +730,13 @@ public class DiscordBotMain extends ListenerAdapter {
                     successfulRun = true;
                 }
                 catch (NumberFormatException ex) {
-                    if (!msg.getMentionedChannels().isEmpty()) {
+                    if (!msg.getMentions().getChannels(TextChannel.class).isEmpty()) {
                         if (mainConfig.isValidConfig(args[2])) {
-                            if (msg.getMentionedChannels().size() == 1) {
-                                mainConfig.setChannelConfig(args[2], msg.getMentionedChannels().get(0));
+                            if (msg.getMentions().getChannels(TextChannel.class).size() == 1) {
+                                mainConfig.setChannelConfig(args[2], msg.getMentions().getChannels(TextChannel.class).get(0));
                                 embed.setAsSuccess(defaultTitle,
                                         defaultOutput.replace("key", args[2])
-                                                .replace("value", msg.getMentionedChannels().get(0).getAsMention()));
+                                                .replace("value", msg.getMentions().getChannels(TextChannel.class).get(0).getAsMention()));
                                 successfulRun = true;
                             }
                             else {
@@ -954,11 +951,11 @@ public class DiscordBotMain extends ListenerAdapter {
                     }
                     catch (NumberFormatException ex) {
                         try {
-                            nickFeature.getConfig().addNewNameRestrictedRole(msg.getMentionedRoles().get(0));
+                            nickFeature.getConfig().addNewNameRestrictedRole(msg.getMentions().getRoles().get(0));
                             embed.setAsSuccess(defaultSuccessTitle.replace("?", "Added"),
                                     defaultSuccess.replace("?", "Added")
-                                    .replace("!", msg.getMentionedRoles().get(0).getAsMention() + " To"));
-                            log.info(msg.getMember().getEffectiveName() + " Successfully Added " + msg.getMentionedRoles().get(0).getName() +
+                                    .replace("!", msg.getMentions().getRoles().get(0).getAsMention() + " To"));
+                            log.info(msg.getMember().getEffectiveName() + " Successfully Added " + msg.getMentions().getRoles().get(0).getName() +
                             " to the name restricted roles list");
                             successfulRun = true;
                             nameRestrictedRoleUpdated = true;
@@ -995,11 +992,11 @@ public class DiscordBotMain extends ListenerAdapter {
                     }
                     catch (NumberFormatException ex) {
                         try {
-                            if (nickFeature.getConfig().removeNewNameRestrictedRole(msg.getMentionedRoles().get(0))) {
+                            if (nickFeature.getConfig().removeNewNameRestrictedRole(msg.getMentions().getRoles().get(0))) {
                                 embed.setAsSuccess(defaultSuccessTitle.replace("?", "Removed"),
                                         defaultSuccess.replace("?", "Removed")
-                                        .replace("!", msg.getMentionedRoles().get(0).getAsMention() + " From"));
-                                log.info(msg.getMember().getEffectiveName() + " Successfully Added " + msg.getMentionedRoles().get(0).getName() +
+                                        .replace("!", msg.getMentions().getRoles().get(0).getAsMention() + " From"));
+                                log.info(msg.getMember().getEffectiveName() + " Successfully Added " + msg.getMentions().getRoles().get(0).getName() +
                                         " from the name restricted roles list");
                                 successfulRun = true;
                                 nameRestrictedRoleUpdated = true;

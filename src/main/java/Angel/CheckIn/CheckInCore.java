@@ -93,8 +93,8 @@ class CheckInCore {
                 else if (ms.size() > 1) {
                     List<Member> membersFoundByRole = new ArrayList<>();
                     int searchIndex = 0;
-                    int roleIndex = 0;
                     while (searchIndex < ms.size()) {
+                        int roleIndex = 0;
                         while (roleIndex < ciConfig.getRolesThatCanBeCheckedIn().size()) {
                             if (ms.get(searchIndex).getRoles().contains(ciConfig.getRolesThatCanBeCheckedIn().get(roleIndex++))) {
                                 membersFoundByRole.add(ms.get(searchIndex));
@@ -104,9 +104,13 @@ class CheckInCore {
                         searchIndex++;
                     }
                     if (membersFoundByRole.size() == 1) {
-                        checkInList.add(new CheckInPlayer(checkInList.size() + 1, membersFoundByRole.get(0).getIdLong()));
+                        Member m = membersFoundByRole.get(0);
+                        log.info("Member Successfully Found By Role From Duplicate Account Nicknames: " +
+                                m.getEffectiveName() + " - ID: " + m.getIdLong());
+                        checkInList.add(new CheckInPlayer(checkInList.size() + 1, m.getIdLong()));
                     }
                     else if (membersFoundByRole.isEmpty()) {
+                        log.warn("Member Has Not Been Found By Duplicate Accounts: " + playerName);
                         unrecognizedPlayer.add(playerName);
                     }
                     else {
