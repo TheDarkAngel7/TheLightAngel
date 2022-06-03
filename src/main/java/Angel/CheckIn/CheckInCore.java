@@ -183,7 +183,16 @@ class CheckInCore {
         return false;
     }
     void toggleInQueueFromReaction(int targetCheckInID) {
-        CheckInPlayer p = checkInList.get(targetCheckInID - 1);
+        CheckInPlayer p = null;
+
+        try {
+            p = checkInList.get(targetCheckInID - 1);
+        }
+        catch (IndexOutOfBoundsException ex) {
+            log.warn("IndexOutOfBoundsException Caught - Most Likely an Invalid Reaction Was Clicked: " + ex.getMessage());
+            return;
+        }
+
         if (p.isQueuedToCheckIn()) {
             p.removeFromCheckInQueue();
         }

@@ -307,8 +307,11 @@ public class CheckInMain extends ListenerAdapter {
                                 "**Successfully started a check-in for " + sessionChannel.getAsMention() + "!**" +
                                         "\n\n**Please Wait While I go fetch the names from zoobot and match those names up to discord accounts...**",
                                 EmbedDesign.WARNING, mainConfig);
-                        getCheckInProgressionEmbedChannel().sendMessageEmbeds(checkinStartConfirmationEntry.getEmbed(false)).queue(m -> {
-                            checkinStartConfirmationEmbed = m;
+                        getCheckInProgressionEmbedChannel().sendMessageEmbeds(checkinStartConfirmationEntry.getEmbed(false)).submit().whenComplete(new BiConsumer<Message, Throwable>() {
+                            @Override
+                            public void accept(Message message, Throwable throwable) {
+                                checkinStartConfirmationEmbed = message;
+                            }
                         });
                         sendCheckInStartupPrompts(msg, false);
                         return;
@@ -351,6 +354,7 @@ public class CheckInMain extends ListenerAdapter {
                                     .setDesign(EmbedDesign.SUCCESS).getEmbed(false)).queue();
                     checkInProgressionEmbed.editMessageEmbeds(
                             checkInProgressionEntry.setTitle("Check-In Successfully Cancellled").setMessage(":white_check_mark: **The Check-In was successfully cancelled**").getEmbed()).queue();
+                    ciTimer = new CheckInTimer(this, ciConfig);
                 }
                 else {
                     purgeAllCommands();
@@ -360,6 +364,7 @@ public class CheckInMain extends ListenerAdapter {
                     embed.setAsSuccess("Cancelled Check-In", "The Check-In Feature was successfully taken out " +
                             "of initialization and all pre-start data dumped.");
                     log.info("The initialized check-in was successfully cancelled");
+                    msg.delete().queue();
                 }
             }
             else {
@@ -433,6 +438,7 @@ public class CheckInMain extends ListenerAdapter {
     private void refreshCheckIn(Message msg) {
         if (discord.isTeamMember(msg.getAuthor().getIdLong())) {
             if (checkInRunning && !checkInConfirmed) {
+                toPurge.add(msg);
                 purgeAllCommands();
                 checkInStartupMessages.clear();
                 checkInStartupEntryObjects.clear();
@@ -706,11 +712,21 @@ public class CheckInMain extends ListenerAdapter {
 
         int index = 0;
         int emojiIndex = 0;
+        int count = 0;
         List<String> memberList = new ArrayList<>();
         // Setup Check-In List
         List<CheckInPlayer> playerList = ciCore.getCheckInList();
         AtomicReference<Member> member = new AtomicReference<>();
         String tempString = "";
+
+        do {
+            if (playerList.get(index).isQueuedToCheckIn()) {
+                count++;
+            }
+        } while (++index < playerList.size());
+        tempString = tempString.concat("Players: **" + count + "**\n\n");
+        index = 0;
+
         do {
             guild.retrieveMemberById(playerList.get(index).getPlayerDiscordId()).queue(member::set);
             if (playerList.get(index).isQueuedToCheckIn()) {
@@ -737,8 +753,14 @@ public class CheckInMain extends ListenerAdapter {
             discord.addAsReactionListEmbed(checkInQueueEmbed);
             toPurge.add(embed.getMessageEntryObj(originalCmd).getResultEmbed());
 
-            checkinStartConfirmationEmbed.editMessageEmbeds(checkinStartConfirmationEntry.setDesign(EmbedDesign.SUCCESS).setMessage(
-                    "**Successfully started a check-in for " + sessionChannel.getAsMention() + "!**").getEmbed(false)).queue();
+            while (true) {
+                try {
+                    checkinStartConfirmationEmbed.editMessageEmbeds(checkinStartConfirmationEntry.setDesign(EmbedDesign.SUCCESS).setMessage(
+                            "**Successfully started a check-in for " + sessionChannel.getAsMention() + "!**").getEmbed(false)).queue();
+                    break;
+                }
+                catch (NullPointerException ex) {}
+            }
         }
         else {
             discord.updateReactionListEmbed(checkInQueueEmbed, memberList);
@@ -805,9 +827,17 @@ public class CheckInMain extends ListenerAdapter {
             }
         } while (++index < players.size());
 
+        index = 0;
+        int queued = 0;
+        do {
+            if (players.get(index).isQueuedToCheckIn()) {
+                queued++;
+            }
+        } while (++index < players.size());
+
         String prefix = "**A Check-In has started for " + sessionChannel.getAsMention() + "**" +
                 "\nTime Remaining: **" + ciTimer.getRemainingTime() + "**" +
-                "\nPlayers Remaining: **" + count + "/" + players.size() + "**" +
+                "\nPlayers Remaining: **" + count + "/" + queued + "**" +
                 "\n\n*Players List*:" +
                 "\n:white_check_mark: **Indicates the player has checked in**" +
                 "\n:warning: **Indicates the player has not check-in yet...**" +
@@ -915,73 +945,78 @@ public class CheckInMain extends ListenerAdapter {
         String defaultOutput = "\n\n*__Check-In Feature__*";
         defaultOutput = defaultOutput.concat("\nStatus: **?**");
 
-        if (ciConfig.isEnabled()) {
-            switch (guild.getJDA().getStatus()) {
-                case AWAITING_LOGIN_CONFIRMATION:
-                case ATTEMPTING_TO_RECONNECT:
-                case LOGGING_IN:
-                case WAITING_TO_RECONNECT:
-                case CONNECTING_TO_WEBSOCKET:
-                case IDENTIFYING_SESSION:
-                    defaultOutput = defaultOutput.replace("?", ":warning: Connecting");
-                    break;
-                case INITIALIZED:
-                case INITIALIZING:
-                case LOADING_SUBSYSTEMS:
-                    defaultOutput = defaultOutput.replace("?", ":warning: Starting");
-                    break;
-                case DISCONNECTED:
-                case FAILED_TO_LOGIN:
-                    defaultOutput = defaultOutput.replace("?", ":warning: Disconnected");
-                    break;
-                case RECONNECT_QUEUED:
-                    defaultOutput = defaultOutput.replace("?", ":warning: Connection Queued");
-                    break;
-                case CONNECTED:
-                    if (commandsSuspended && !isBusy && isConnected) defaultOutput =
-                            defaultOutput.replace("?", "Limited");
-                    else if (guild.getJDA().getGatewayPing() >= mainConfig.highPingTime && isConnected)
-                        defaultOutput = defaultOutput.replace("?", ":warning: High Ping");
-                    else if (isConnected && !isBusy && !commandsSuspended)
-                        defaultOutput = defaultOutput.replace("?", "Waiting for Command...");
-                    else if (isBusy) defaultOutput = defaultOutput.replace("?", ":warning: Busy");
-                    else defaultOutput = defaultOutput.replace("?", ":warning: Connected - Not Ready");
-                    break;
-                default:
-                    defaultOutput = defaultOutput.replace("?", "Unknown");
-            }
+        try {
+            if (ciConfig.isEnabled()) {
+                switch (guild.getJDA().getStatus()) {
+                    case AWAITING_LOGIN_CONFIRMATION:
+                    case ATTEMPTING_TO_RECONNECT:
+                    case LOGGING_IN:
+                    case WAITING_TO_RECONNECT:
+                    case CONNECTING_TO_WEBSOCKET:
+                    case IDENTIFYING_SESSION:
+                        defaultOutput = defaultOutput.replace("?", ":warning: Connecting");
+                        break;
+                    case INITIALIZED:
+                    case INITIALIZING:
+                    case LOADING_SUBSYSTEMS:
+                        defaultOutput = defaultOutput.replace("?", ":warning: Starting");
+                        break;
+                    case DISCONNECTED:
+                    case FAILED_TO_LOGIN:
+                        defaultOutput = defaultOutput.replace("?", ":warning: Disconnected");
+                        break;
+                    case RECONNECT_QUEUED:
+                        defaultOutput = defaultOutput.replace("?", ":warning: Connection Queued");
+                        break;
+                    case CONNECTED:
+                        if (commandsSuspended && !isBusy && isConnected) defaultOutput =
+                                defaultOutput.replace("?", "Limited");
+                        else if (guild.getJDA().getGatewayPing() >= mainConfig.highPingTime && isConnected)
+                            defaultOutput = defaultOutput.replace("?", ":warning: High Ping");
+                        else if (isConnected && !isBusy && !commandsSuspended)
+                            defaultOutput = defaultOutput.replace("?", "Waiting for Command...");
+                        else if (isBusy) defaultOutput = defaultOutput.replace("?", ":warning: Busy");
+                        else defaultOutput = defaultOutput.replace("?", ":warning: Connected - Not Ready");
+                        break;
+                    default:
+                        defaultOutput = defaultOutput.replace("?", "Unknown");
+                }
 
-            defaultOutput = defaultOutput.concat("\nCheck-In Status: **!**");
+                defaultOutput = defaultOutput.concat("\nCheck-In Status: **!**");
 
-            if (checkInRunning && checkInConfirmed) {
-                int remainingPlayers = 0;
-                int index = 0;
+                if (checkInRunning && checkInConfirmed) {
+                    int remainingPlayers = 0;
+                    int index = 0;
 
-                List<CheckInPlayer> playerList = ciCore.getCheckInList();
+                    List<CheckInPlayer> playerList = ciCore.getCheckInList();
 
-                do {
-                    if (!playerList.get(index++).successfullyCheckedIn()) {
-                        remainingPlayers++;
-                    }
-                } while (index < playerList.size());
+                    do {
+                        if (!playerList.get(index++).successfullyCheckedIn()) {
+                            remainingPlayers++;
+                        }
+                    } while (index < playerList.size());
 
-                defaultOutput = defaultOutput.replace("!", "Running")
-                        .concat("\nRemaining Players: **" + remainingPlayers)
-                        .concat("**\nTime Remaining: **" + ciTimer.getRemainingTime() + "**");
-            }
-            else if (checkInRunning && !checkInConfirmed) {
-                defaultOutput = defaultOutput.replace("!", "Queued To Start");
+                    defaultOutput = defaultOutput.replace("!", "Running")
+                            .concat("\nRemaining Players: **" + remainingPlayers)
+                            .concat("**\nTime Remaining: **" + ciTimer.getRemainingTime() + "**");
+                }
+                else if (checkInRunning && !checkInConfirmed) {
+                    defaultOutput = defaultOutput.replace("!", "Queued To Start");
+                }
+                else {
+                    defaultOutput = defaultOutput.replace("!", "Idle");
+                }
             }
             else {
-                defaultOutput = defaultOutput.replace("!", "Idle");
+                defaultOutput = defaultOutput.replace("?", "Disabled");
             }
-        }
-        else {
-            defaultOutput = defaultOutput.replace("?", "Disabled");
-        }
 
 
-        return defaultOutput;
+            return defaultOutput;
+        }
+        catch (NullPointerException ex) {
+            return defaultOutput.replace("?", ":warning: Starting");
+        }
     }
 
     public CheckInConfiguration getConfig() {

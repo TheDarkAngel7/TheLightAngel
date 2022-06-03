@@ -125,33 +125,8 @@ public class AFKCheckManagement extends Timer {
             discord.addAsReactionListEmbed(afkCheckListEmbed);
         }
         else {
-            embed.setAsError("No Check-Ins Running", ":x: **There are no Check-Ins Running**");
+            embed.setAsError("No AFK Checks Running", ":x: **There are no AFK Checks Running**");
             embed.sendToTeamOutput(msg, msg.getAuthor());
-        }
-    }
-
-    public boolean reprint(TextChannel channel) {
-        int index = 0;
-        List<AFKCheck> afkChecks = getAFKChecksBySessionChannel(channel);
-        AFKCheck afkCheck = null;
-
-        do {
-            if (!afkChecks.get(index).isRemainingMinutesSafe()) {
-                afkCheck = afkChecks.get(index);
-                break;
-            }
-        } while (++index < afkChecks.size());
-
-        if (afkCheck != null) {
-            AtomicReference<Message> newMessage = new AtomicReference<>();
-            afkCheck.getCurrentSessionChannelMsg().delete().queue();
-            afkCheck.getSessionChannel().sendMessage(
-                    afkCheck.getCurrentSessionChannelMsg().getContentRaw().replace(afkCheck.getMemberMentions(), "#")).queue(newMessage::set);
-            newMessage.get().editMessage(newMessage.get().getContentRaw().replace("#", afkCheck.getMemberMentions())).queue();
-            return true;
-        }
-        else {
-            return false;
         }
     }
 
@@ -180,11 +155,9 @@ public class AFKCheckManagement extends Timer {
                                         ":white_check_mark: **You have successfully completed an AFK check!** :white_check_mark:" +
                                         "\n\n***Please bear in mind that there is a rule that you must be attentive to discord " +
                                         "while in our official sessions as per GTA Rule #5.***" +
-                                        "\n\n***This does not mean you are out of the woods, the reason why you were AFK checked " +
-                                        "was there was a suspicion that you were not obeying that rule, " +
-                                        "and it can happen a second time. " +
-                                        "So if you would like to idle in GTA Online in order to let your businesses run, " +
-                                        "then our advice would be to do so in a solo GTA Online Session***", EmbedDesign.WARNING, mainConfig,
+                                        "\n\n**So, if you would like to idle in GTA Online in order to let your businesses run," +
+                                                " then our advice would be to do so in a solo GTA Online Session**",
+                                        EmbedDesign.SUCCESS, mainConfig,
                                         afk.getCheckInMessage(), afk.getSessionChannel()));
                             }
                             else if (afk.hasPlayerFailedCheckIn()) {
@@ -209,15 +182,13 @@ public class AFKCheckManagement extends Timer {
                 }
 
                 afkCheckQueue.forEach(queue -> {
-                    if (isSessionChannelSafe(queue.getSessionChannel())) {
-                        services.scheduleAtFixedRate(queue, 0, 1, TimeUnit.SECONDS);
-                        jda.addEventListener(queue);
-                        log.info("Successfully Started AFK Check for " + queue.getMemberNames());
-                        embed.setAsSuccess("Successfully Started AFK Check",
-                                "**An AFK Check was successfully started for " + queue.getMemberMentions() + " from the queue**");
-                        embed.sendToTeamOutput(null, queue.getOverseeingStaffMember().getUser());
-                        afkChecks.add(afkCheckQueue.remove(afkCheckQueue.indexOf(queue)));
-                    }
+                    services.scheduleAtFixedRate(queue, 0, 1, TimeUnit.SECONDS);
+                    jda.addEventListener(queue);
+                    log.info("Successfully Started AFK Check for " + queue.getMemberNames());
+                    embed.setAsSuccess("Successfully Started AFK Check",
+                            "**An AFK Check was successfully started for " + queue.getMemberMentions() + " from the queue**");
+                    embed.sendToTeamOutput(null, queue.getOverseeingStaffMember().getUser());
+                    afkChecks.add(afkCheckQueue.remove(afkCheckQueue.indexOf(queue)));
                 });
             }
         }, 0, 1000);
@@ -237,31 +208,17 @@ public class AFKCheckManagement extends Timer {
         discord.updateReactionListEmbed(afkCheckListEmbed, getAFKCheckList());
     }
     private void queueAFKCheck(Message msg, AFKCheck afkCheck) {
-        if (isSessionChannelSafe(afkCheck.getSessionChannel())) {
-            afkChecks.add(afkCheck);
-            scheduledFutures.add(services.scheduleAtFixedRate(afkCheck, 0, 1, TimeUnit.SECONDS));
-            jda.addEventListener(afkCheck);
-            log.info("Successfully Started AFK Check for " + afkCheck.getMemberNames());
-            TargetChannelSet target = TargetChannelSet.SAME;
-            if (msg.getTextChannel() == afkCheck.getSessionChannel()) {
-                target = TargetChannelSet.TEAM;
-            }
-            embed.sendAsMessageEntryObj(new MessageEntry("Successfully Started AFK Check",
-                    "**An AFK Check was successfully started for *" + afkCheck.getMemberNames() +
-                            "***", EmbedDesign.SUCCESS, mainConfig).setChannels(target).setOriginalCmd(msg));
+        afkChecks.add(afkCheck);
+        scheduledFutures.add(services.scheduleAtFixedRate(afkCheck, 0, 1, TimeUnit.SECONDS));
+        jda.addEventListener(afkCheck);
+        log.info("Successfully Started AFK Check for " + afkCheck.getMemberNames());
+        TargetChannelSet target = TargetChannelSet.SAME;
+        if (msg.getTextChannel() == afkCheck.getSessionChannel()) {
+            target = TargetChannelSet.TEAM;
         }
-        else {
-            afkCheckQueue.add(afkCheck);
-            TargetChannelSet target = TargetChannelSet.SAME;
-            if (msg.getTextChannel() == afkCheck.getSessionChannel()) {
-                target = TargetChannelSet.TEAM;
-            }
-
-            embed.sendAsMessageEntryObj(new MessageEntry("AFK Check Queued",
-                    "I was not able to start this AFK Check immediately since " +
-                            "there's currently an AFK Check in that session channel with less than 5 minutes to go." +
-                            "\n\n**It has been queued and will be started when current AFK Check has stopped.**", EmbedDesign.WARNING, mainConfig, msg, target));
-        }
+        embed.sendAsMessageEntryObj(new MessageEntry("Successfully Started AFK Check",
+                "**An AFK Check was successfully started for *" + afkCheck.getMemberNames() +
+                        "***", EmbedDesign.SUCCESS, mainConfig).setChannels(target).setOriginalCmd(msg));
 
         if (!knownSessionChannels.contains(afkCheck.getSessionChannel())) {
             knownSessionChannels.add(afkCheck.getSessionChannel());
@@ -271,7 +228,7 @@ public class AFKCheckManagement extends Timer {
         int index = 0;
         if (afkChecks.isEmpty()) return null;
         do {
-            if (afkChecks.get(index).getAfkCheckVictims().getIdLong() == m.getIdLong()) {
+            if (afkChecks.get(index).getAfkCheckVictim().getIdLong() == m.getIdLong()) {
                 return afkChecks.get(index);
             }
         } while (++index < afkChecks.size());
@@ -306,16 +263,5 @@ public class AFKCheckManagement extends Timer {
     }
     private int getNumberOfAFKChecksBySessionChannel(TextChannel sessionChannel) {
         return getAFKChecksBySessionChannel(sessionChannel).size();
-    }
-    private boolean isSessionChannelSafe(TextChannel channel) {
-        List<AFKCheck> checks = getAFKChecksBySessionChannel(channel);
-        int index = 0;
-
-        while (index < checks.size()) {
-            if (!checks.get(index++).isRemainingMinutesSafe()) {
-                return false;
-            }
-        }
-        return true;
     }
 }

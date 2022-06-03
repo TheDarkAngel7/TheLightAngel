@@ -14,7 +14,6 @@ class AFKCheck extends ListenerAdapter implements Runnable {
     private final Member afkChecked;
     private final Member overseeingStaffMember;
     private final TextChannel sessionChannel;
-    private Message currentSessionChannelMsg;
     private Message afkCheckedMessage;
     private final int length;
     private final int mentionOn;
@@ -54,13 +53,13 @@ class AFKCheck extends ListenerAdapter implements Runnable {
     public void run() {
         if (afkCheckRunning) {
             if (minutes == length && seconds == 0) {
-                sessionChannel.sendMessage(afkCheckMessage.replace("$", getMemberNames()).replace("%", String.valueOf(length))).queue(m -> currentSessionChannelMsg = m);
+                sessionChannel.sendMessage(afkCheckMessage.replace("$", getMemberNames()).replace("%", String.valueOf(length))).queue();
                 log.info(overseeingStaffMember.getEffectiveName() + " just started an AFK Check on " + getMemberNames() + " for " +
                         length + " minutes");
             }
 
             if (minutes == mentionOn && seconds == 0) {
-                sessionChannel.sendMessage(afkCheckMessage.replace("**$**", getMemberMentions()).replace("%", String.valueOf(mentionOn))).queue(m -> currentSessionChannelMsg = m);
+                sessionChannel.sendMessage(afkCheckMessage.replace("**$**", getMemberMentions()).replace("%", String.valueOf(mentionOn))).queue();
                 log.info("The " + mentionOn + " minute warning has been given in the session channel");
             }
 
@@ -102,7 +101,7 @@ class AFKCheck extends ListenerAdapter implements Runnable {
         return afkChecked.getAsMention();
     }
 
-    Member getAfkCheckVictims() {
+    Member getAfkCheckVictim() {
         return afkChecked;
     }
     Member getOverseeingStaffMember() {
@@ -119,12 +118,6 @@ class AFKCheck extends ListenerAdapter implements Runnable {
     }
     boolean hasPlayerFailedCheckIn() {
         return !successfulCheckIn && !afkCheckRunning && !isCancelled();
-    }
-    boolean isRemainingMinutesSafe() {
-        return minutes >= mentionOn;
-    }
-    Message getCurrentSessionChannelMsg() {
-        return currentSessionChannelMsg;
     }
     Message getCheckInMessage() {
         return afkCheckedMessage;
