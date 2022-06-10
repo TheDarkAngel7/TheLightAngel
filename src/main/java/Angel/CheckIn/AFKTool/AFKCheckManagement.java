@@ -153,7 +153,7 @@ public class AFKCheckManagement extends Timer {
 
                                 embed.sendAsMessageEntryObj(new MessageEntry("AFK Check Completed",
                                         ":white_check_mark: **You have successfully completed an AFK check!** :white_check_mark:" +
-                                        "\n\n***Please bear in mind that there is a rule that you must be attentive to discord " +
+                                        "\n\n***Please bear in mind that you must be attentive to discord " +
                                         "while in our official sessions as per GTA Rule #5.***" +
                                         "\n\n**So, if you would like to idle in GTA Online in order to let your businesses run," +
                                                 " then our advice would be to do so in a solo GTA Online Session**",

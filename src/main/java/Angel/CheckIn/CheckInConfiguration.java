@@ -21,6 +21,7 @@ public abstract class CheckInConfiguration {
     List<Long> rolesThatCanBeCheckedInLong;
     int checkInDuration;
     int checkInUpdate;
+    int mentionCheckInRole;
 
     String checkInChannelID;
 
@@ -38,6 +39,7 @@ public abstract class CheckInConfiguration {
         }
         checkInDuration = configObj.get("checkInDuration").getAsInt();
         checkInUpdate = configObj.get("checkInProgressionUpdateInSeconds").getAsInt();
+        mentionCheckInRole = configObj.get("mentionCheckInRoleAtMinute").getAsInt();
 
         rolesThatCanBeCheckedInLong = gson.fromJson(configObj.get("rolesThatCanBeCheckedInIDs").getAsString(), new TypeToken<List<Long>>(){}.getType());
 
@@ -75,5 +77,9 @@ public abstract class CheckInConfiguration {
 
     public int getCheckInUpdate() {
         return checkInUpdate;
+    }
+
+    public int getWhenMentionCheckInRole() {
+        return mentionCheckInRole;
     }
 }

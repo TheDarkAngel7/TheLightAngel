@@ -29,7 +29,7 @@ class CheckInResult {
         return players;
     }
 
-    boolean isCancelled() {
+    boolean isCanceled() {
         return cancelled;
     }
 }

@@ -1,5 +1,8 @@
 package Angel.CheckIn;
 
+import Angel.EmbedDesign;
+import Angel.MainConfiguration;
+import Angel.MessageEntry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -10,13 +13,19 @@ class CheckInTimer extends Timer {
     private final Logger log = LogManager.getLogger(CheckInTimer.class);
     private final CheckInMain ciMain;
     private final CheckInConfiguration ciConfig;
+    private final MainConfiguration mainConfig;
     private int minutes = 0;
     private int seconds = 0;
+    private int mentionOn;
+    private boolean mentionEnabled;
     private int updateTicker;
 
-    CheckInTimer(CheckInMain ciMain, CheckInConfiguration ciConfig) {
+    CheckInTimer(CheckInMain ciMain, CheckInConfiguration ciConfig, MainConfiguration mainConfig) {
         this.ciMain = ciMain;
         this.ciConfig = ciConfig;
+        this.mainConfig = mainConfig;
+        mentionOn = ciConfig.getWhenMentionCheckInRole();
+        mentionEnabled = mentionOn > 0;
     }
 
     void startTimer() {
@@ -33,6 +42,15 @@ class CheckInTimer extends Timer {
                         updateTicker = 1;
                     }
                     catch (NullPointerException ex) {}
+                }
+
+                if (minutes == mentionOn && seconds == 0 && mentionEnabled) {
+                    log.info("There is " + mentionOn + " minutes remaining in the Check-In... Sending " + mentionOn + " minute warning!");
+                    ciConfig.getCheckInChannel().sendMessage(ciConfig.getCheckInRole().getAsMention()).queue();
+                    ciConfig.getCheckInChannel().sendMessageEmbeds(new MessageEntry(mentionOn + " Minutes Remaining!",
+                            ":warning: **There is " + mentionOn + " minutes remaining on the Check-In! Please respond with `"+ mainConfig.commandPrefix + "checkin` or else you're in violation of GTA Rule #5!**" +
+                                    "\n\n**Once you check-in I will send you a receipt that proves you did.**",
+                            EmbedDesign.WARNING, mainConfig).getEmbed()).queue();
                 }
 
                 if (minutes == 0 && seconds == 0) {

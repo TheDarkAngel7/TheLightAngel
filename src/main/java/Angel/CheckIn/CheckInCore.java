@@ -324,6 +324,24 @@ class CheckInCore {
     CheckInResult getLatestResult() {
         return results.get(results.size() - 1);
     }
+    Dictionary<CheckInResult, CheckInPlayer> getResultsByPlayer(Member m) {
+        Dictionary<CheckInResult, CheckInPlayer> memberResults = new Hashtable<>();
+
+        results.forEach(r -> {
+            List<CheckInPlayer> players = r.getPlayers();
+            int index = 0;
+            while (index < players.size()) {
+                CheckInPlayer p = players.get(index++);
+                if (p.getPlayerDiscordId() == m.getIdLong()) {
+                    memberResults.put(r, p);
+                    break;
+                }
+            }
+        });
+
+        return memberResults;
+    }
+
     List<CheckInPlayer> getCheckInList() {
         return checkInList;
     }
@@ -334,9 +352,5 @@ class CheckInCore {
 
     List<String> getUnrecognizedPlayerList() {
         return unrecognizedPlayer;
-    }
-
-    List<CheckInResult> getResults() {
-        return results;
     }
 }

@@ -8,7 +8,10 @@ import com.google.gson.stream.JsonWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -45,10 +48,11 @@ class FileHandler implements FileDatabases {
     }
 
     public void saveDatabase() throws IOException {
-        JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(new FileOutputStream(jsonCheckInDataTempFile)));
+        JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(Files.newOutputStream(jsonCheckInDataTempFile.toPath())));
         jsonWriter.beginObject()
-                .name("ciResults").value(gson.toJson(ciCore.getResults()))
-                .endObject().close();
+                .name("ciResults").value(gson.toJson(ciCore.getAllResults()))
+                .endObject();
+        jsonWriter.close();
         log.info("JSONWriter Successfully Ran to Check In Database Temp File");
         while (true) {
             try {
