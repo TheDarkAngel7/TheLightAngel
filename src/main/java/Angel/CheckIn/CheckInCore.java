@@ -276,6 +276,7 @@ class CheckInCore {
                 response.append(inputLine);
             }
             in.close();
+            connection.disconnect();
         }
         catch (IOException ex) {
             ex.printStackTrace();

@@ -5,11 +5,14 @@ import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.*;
 
 public class EmbedEngine {
+    private final Logger log = LogManager.getLogger(EmbedEngine.class);
     private MainConfiguration mainConfig;
     private DiscordBotMain discord;
     private List<MessageEntry> messageQueue = new ArrayList<>();
@@ -147,6 +150,8 @@ public class EmbedEngine {
                                     if (entry.getOriginalCmd() != null) {
                                         placeInCmdMap(entry.setResultEmbed(m));
                                     }
+                                }, error -> {
+                                    log.warn("Whoops... apparently I cannot send a DM to " + entry.getTargetUser().getAsTag() + " - " + error.getMessage());
                                 });
                                 break;
                             case LOG:
@@ -165,6 +170,8 @@ public class EmbedEngine {
                                     }
                                     mainConfig.discussionChannel.sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
                                         placeInCmdMap(entry.setResultEmbed(m));
+                                    }, error -> {
+                                        log.error("sendAllMessages Team Discussion Channel: " + error.getMessage());
                                     });
                                 }
                                 else {
@@ -173,6 +180,8 @@ public class EmbedEngine {
                                     }
                                     mainConfig.managementChannel.sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
                                         placeInCmdMap(entry.setResultEmbed(m));
+                                    }, error -> {
+                                        log.error("sendAllMessages Management Channel: " + error.getMessage());
                                     });
                                 }
                                 break;
@@ -187,6 +196,8 @@ public class EmbedEngine {
                                             if (!entry.getOriginalCmd().getMember().hasPermission(mainConfig.helpChannel, Permission.VIEW_CHANNEL)) {
                                                 entry.getOriginalCmd().getChannel().sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
                                                     placeInCmdMap(entry.setResultEmbed(m).setChannels(TargetChannelSet.SAME));
+                                                }, error -> {
+                                                    log.error("sendAllMessages SAME Channel Due to Lack of Permissions to Help Channel: #" + entry.getOriginalCmd().getChannel().getName()+ ": " + error.getMessage());
                                                 });
                                                 break;
                                             }
@@ -196,6 +207,8 @@ public class EmbedEngine {
                                             }
                                             mainConfig.helpChannel.sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
                                                 placeInCmdMap(entry.setResultEmbed(m));
+                                            }, error -> {
+                                                log.error("sendAllMessages Help Channel: " + error.getMessage());
                                             });
                                         }
                                         else if (mainConfig.forceToDedicatedChannel || !entry.getOriginalCmd().getChannel().equals(mainConfig.dedicatedOutputChannel)) {
@@ -203,12 +216,16 @@ public class EmbedEngine {
                                                     && entry.getOriginalCmd().getChannel().equals(mainConfig.botSpamChannel)) {
                                                 mainConfig.botSpamChannel.sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
                                                     placeInCmdMap(entry.setResultEmbed(m));
+                                                }, error -> {
+                                                    log.error("sendAllMessages Bot Spam Channel: " + error.getMessage());
                                                 });
                                             }
                                             else {
                                                 if (!entry.getOriginalCmd().getMember().hasPermission(mainConfig.dedicatedOutputChannel, Permission.VIEW_CHANNEL)) {
                                                     entry.getOriginalCmd().getChannel().sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
                                                         placeInCmdMap(entry.setResultEmbed(m).setChannels(TargetChannelSet.SAME));
+                                                    }, error -> {
+                                                        log.error("sendAllMessages SAME Channel Due to Lack of Permissions to Dedicated Channel: #" + entry.getOriginalCmd().getChannel().getName()+ ": " + error.getMessage());
                                                     });
                                                     break;
                                                 }
@@ -217,6 +234,8 @@ public class EmbedEngine {
                                                 }
                                                 mainConfig.dedicatedOutputChannel.sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
                                                     placeInCmdMap(entry.setResultEmbed(m));
+                                                }, error -> {
+                                                    log.error("sendAllMessages Dedicated Output Channel: " + error.getMessage());
                                                 });
                                             }
                                         }
@@ -230,12 +249,16 @@ public class EmbedEngine {
                                 entry.getCustomChannels().forEach(c -> {
                                     c.sendMessageEmbeds(entry.getEmbed()).queue(m -> {
                                         placeInCmdMap(entry.setResultEmbed(m));
+                                    }, error -> {
+                                        log.error("sendAllMessages CUSTOM Channel: #" + c.getName() + ": " + error.getMessage());
                                     });
                                 });
                                 break;
                             case SAME:
                                 entry.getOriginalCmd().getChannel().sendMessageEmbeds(entry.getEmbed()).queue(m -> {
                                     placeInCmdMap(entry.setResultEmbed(m));
+                                }, error -> {
+                                    log.error("sendAllMessages SAME Channel : #" + entry.getOriginalCmd().getChannel().getName()+ ": " + error.getMessage());
                                 });
                                 break;
                         }

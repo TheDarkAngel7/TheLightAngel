@@ -498,6 +498,10 @@ public class CheckInMain extends ListenerAdapter {
                 embed.sendToTeamOutput(msg, msg.getAuthor());
             }
         }
+        else {
+            embed.setAsError("No Permissions", ":x: **You do not have permissions to run this command**");
+            embed.sendToTeamOutput(msg, msg.getAuthor());
+        }
     }
 
     private void listCheckIns(Message msg) {
@@ -843,7 +847,7 @@ public class CheckInMain extends ListenerAdapter {
                 "\n\n**To See these results in more detail in the future, you may run `" +
                 mainConfig.commandPrefix + "checkin list " + ciResult.getId() + "`**";
 
-        if (ciResult.isCanceled()) {
+        if (!ciResult.isCanceled()) {
             result = result.replace("?", "completed");
             design = EmbedDesign.ERROR;
         }

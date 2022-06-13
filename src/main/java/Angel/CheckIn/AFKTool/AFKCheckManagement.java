@@ -141,8 +141,8 @@ public class AFKCheckManagement extends Timer {
                             try {Thread.sleep(100);} catch (InterruptedException e) {}
                             MessageEntry entry;
                             if (afk.hasPlayerSuccessfullyCheckedIn()) {
-                                entry = new MessageEntry(afk.getMemberNames() + " AFK Check Status",
-                                        "**" + afk.getMemberMentions() + " has successfully responded to your posted AFK check with " +
+                                entry = new MessageEntry(afk.getMemberName() + " AFK Check Status",
+                                        "**" + afk.getMemberMention() + " has successfully responded to your posted AFK check with " +
                                                 afk.getRemainingTime() + " left on the clock!**",
                                         EmbedDesign.SUCCESS, mainConfig);
                                 mainConfig.discussionChannel.sendMessage(afk.getOverseeingStaffMember().getAsMention()).queue();
@@ -150,6 +150,10 @@ public class AFKCheckManagement extends Timer {
                                 // Remove Event Listener and Delete from afkCheck List and scheduledFutures List
                                 scheduledFutures.remove(afkChecks.indexOf(afk)).cancel(true);
                                 jda.removeEventListener(afkChecks.remove(afkChecks.indexOf(afk)));
+
+                                embed.setAsSuccess("AFK Check Completed on " + afk.getMemberName(), afk.getMemberMention() +
+                                        " completed their AFK check with " + afk.getRemainingTime() + " on the clock!");
+                                embed.sendToLogChannel();
 
                                 embed.sendAsMessageEntryObj(new MessageEntry("AFK Check Completed",
                                         ":white_check_mark: **You have successfully completed an AFK check!** :white_check_mark:" +
@@ -161,8 +165,8 @@ public class AFKCheckManagement extends Timer {
                                         afk.getCheckInMessage(), afk.getSessionChannel()));
                             }
                             else if (afk.hasPlayerFailedCheckIn()) {
-                                entry = new MessageEntry(afk.getMemberNames() + " AFK Check Status",
-                                        "**" + afk.getMemberMentions() + " has failed to respond to your posted AFK check... I sense a suspension coming on...**",
+                                entry = new MessageEntry(afk.getMemberName() + " AFK Check Status",
+                                        "**" + afk.getMemberMention() + " has failed to respond to your posted AFK check... I sense a suspension coming on...**",
                                         EmbedDesign.ERROR, mainConfig);
                                 mainConfig.discussionChannel.sendMessage(afk.getOverseeingStaffMember().getAsMention()).queue();
                                 mainConfig.discussionChannel.sendMessageEmbeds(entry.getEmbed()).queue();
@@ -184,9 +188,9 @@ public class AFKCheckManagement extends Timer {
                 afkCheckQueue.forEach(queue -> {
                     services.scheduleAtFixedRate(queue, 0, 1, TimeUnit.SECONDS);
                     jda.addEventListener(queue);
-                    log.info("Successfully Started AFK Check for " + queue.getMemberNames());
+                    log.info("Successfully Started AFK Check for " + queue.getMemberName());
                     embed.setAsSuccess("Successfully Started AFK Check",
-                            "**An AFK Check was successfully started for " + queue.getMemberMentions() + " from the queue**");
+                            "**An AFK Check was successfully started for " + queue.getMemberMention() + " from the queue**");
                     embed.sendToTeamOutput(null, queue.getOverseeingStaffMember().getUser());
                     afkChecks.add(afkCheckQueue.remove(afkCheckQueue.indexOf(queue)));
                 });
@@ -202,7 +206,7 @@ public class AFKCheckManagement extends Timer {
         cancelledCheck.cancelAFKCheck();
 
         log.info(cancelledCheck.getOverseeingStaffMember().getEffectiveName() + " just cancelled the AFK Check of " +
-                cancelledCheck.getMemberNames() + " with " + cancelledCheck.getRemainingTime() + " left on the clock");
+                cancelledCheck.getMemberName() + " with " + cancelledCheck.getRemainingTime() + " left on the clock");
     }
     void refreshAFKCheckListEmbed() {
         discord.updateReactionListEmbed(afkCheckListEmbed, getAFKCheckList());
@@ -211,13 +215,13 @@ public class AFKCheckManagement extends Timer {
         afkChecks.add(afkCheck);
         scheduledFutures.add(services.scheduleAtFixedRate(afkCheck, 0, 1, TimeUnit.SECONDS));
         jda.addEventListener(afkCheck);
-        log.info("Successfully Started AFK Check for " + afkCheck.getMemberNames());
+        log.info("Successfully Started AFK Check for " + afkCheck.getMemberName());
         TargetChannelSet target = TargetChannelSet.SAME;
         if (msg.getTextChannel() == afkCheck.getSessionChannel()) {
             target = TargetChannelSet.TEAM;
         }
         embed.sendAsMessageEntryObj(new MessageEntry("Successfully Started AFK Check",
-                "**An AFK Check was successfully started for *" + afkCheck.getMemberNames() +
+                "**An AFK Check was successfully started for *" + afkCheck.getMemberName() +
                         "***", EmbedDesign.SUCCESS, mainConfig).setChannels(target).setOriginalCmd(msg));
 
         if (!knownSessionChannels.contains(afkCheck.getSessionChannel())) {
@@ -241,7 +245,7 @@ public class AFKCheckManagement extends Timer {
         while (index < afkChecks.size()) {
             AFKCheck afk = afkChecks.get(index++);
             results.add("Session Channel: " + afk.getSessionChannel().getAsMention() +
-                    "\nPlayer: " + afk.getMemberMentions() +
+                    "\nPlayer: " + afk.getMemberMention() +
                     "\nInitiated By: " + afk.getOverseeingStaffMember().getAsMention() +
                     "\nTime Left: **" + afk.getRemainingTime() + "**"
             );

@@ -53,22 +53,22 @@ class AFKCheck extends ListenerAdapter implements Runnable {
     public void run() {
         if (afkCheckRunning) {
             if (minutes == length && seconds == 0) {
-                sessionChannel.sendMessage(afkCheckMessage.replace("$", getMemberNames()).replace("%", String.valueOf(length))).queue();
-                log.info(overseeingStaffMember.getEffectiveName() + " just started an AFK Check on " + getMemberNames() + " for " +
+                sessionChannel.sendMessage(afkCheckMessage.replace("$", getMemberName()).replace("%", String.valueOf(length))).queue();
+                log.info(overseeingStaffMember.getEffectiveName() + " just started an AFK Check on " + getMemberName() + " for " +
                         length + " minutes");
             }
 
             if (minutes == mentionOn && seconds == 0) {
-                sessionChannel.sendMessage(afkCheckMessage.replace("**$**", getMemberMentions()).replace("%", String.valueOf(mentionOn))).queue();
+                sessionChannel.sendMessage(afkCheckMessage.replace("**$**", getMemberMention()).replace("%", String.valueOf(mentionOn))).queue();
                 log.info("The " + mentionOn + " minute warning has been given in the session channel");
             }
 
             if (minutes == 0 && seconds == 0) {
                 afkCheckRunning = false;
-                log.info(getMemberNames() + " has missed their AFK Check!");
+                log.info(getMemberName() + " has missed their AFK Check!");
             }
             else if (seconds == 0) {
-                log.info(getMemberNames() + " has " + minutes-- + " minutes remaining on their AFK check");
+                log.info(getMemberName() + " has " + minutes-- + " minutes remaining on their AFK check");
                 seconds = 59;
             }
             else {
@@ -93,11 +93,11 @@ class AFKCheck extends ListenerAdapter implements Runnable {
             return minutes + ":" + seconds;
         }
     }
-    String getMemberNames() {
+    String getMemberName() {
         return afkChecked.getEffectiveName();
     }
 
-    String getMemberMentions() {
+    String getMemberMention() {
         return afkChecked.getAsMention();
     }
 
