@@ -207,6 +207,12 @@ public class AFKCheckManagement extends Timer {
 
         log.info(cancelledCheck.getOverseeingStaffMember().getEffectiveName() + " just cancelled the AFK Check of " +
                 cancelledCheck.getMemberName() + " with " + cancelledCheck.getRemainingTime() + " left on the clock");
+
+        embed.setAsSuccess("AFK Check Cancelled", "**The AFK Check that was running against " + cancelledCheck.getAfkCheckVictim().getAsMention() +
+                " has been cancelled by " + cancelledCheck.getOverseeingStaffMember().getAsMention() + " with " + cancelledCheck.getRemainingTime() + " left on the clock**");
+        embed.sendToLogChannel();
+
+        refreshAFKCheckListEmbed();
     }
     void refreshAFKCheckListEmbed() {
         discord.updateReactionListEmbed(afkCheckListEmbed, getAFKCheckList());
