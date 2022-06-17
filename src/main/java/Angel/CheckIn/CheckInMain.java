@@ -115,7 +115,7 @@ public class CheckInMain extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
-        if (event.getAuthor().isBot()) return;
+        if (event.getAuthor().isBot() || event.getMessage().getChannel().getType() == ChannelType.PRIVATE) return;
         isBusy = true;
         Message msg = event.getMessage();
         String[] args;

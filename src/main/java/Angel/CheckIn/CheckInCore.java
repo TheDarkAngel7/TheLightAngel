@@ -73,10 +73,9 @@ class CheckInCore {
             checkInList.clear();
             unrecognizedPlayer.clear();
             duplicateMatches = new Hashtable<>();
+            sessionName = currentSession.getSessionName();
         }
-        else {
-            setupCheckIn(sessionName);
-        }
+        setupCheckIn(sessionName);
         if (currentSession == null || currentSession.getPlayerCount() == 0) return;
         int index = 0;
         List<Session.Players> players = currentSession.getPlayerList();
