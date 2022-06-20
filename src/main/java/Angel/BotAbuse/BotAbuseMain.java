@@ -687,12 +687,6 @@ public class BotAbuseMain extends ListenerAdapter {
 
         String[] args = msg.getContentRaw().substring(1).split(" ");
         String defaultTitle = "Bot Abuse Information";
-        String timeZoneHint = "**Hint**: You can ask me to convert these times to your own time zone. " +
-                "You just tell me how many hours ahead or behind UTC your time zone is." +
-                "\n**Example: **`" + mainConfig.commandPrefix +"check 6` would convert the times to 6 hours ahead of UTC." +
-                "\n`" + mainConfig.commandPrefix + "check -8` would convert the times to 8 hours behind UTC" +
-                "\n`" + mainConfig.commandPrefix +"check -3.5` would convert the times to 3 1/2 hours behind UTC (I don't support 3/4 hours)" +
-                "\n\n";
 
         // This handles a /check for someone to check their own Bot Abuse status
         if (msg.getMentions().getUsers().isEmpty() && args.length == 1) {
@@ -707,7 +701,6 @@ public class BotAbuseMain extends ListenerAdapter {
                     }
                 }
                 else {
-                    result = timeZoneHint.concat(result);
                     embed.setAsInfo(defaultTitle, result);
                 }
                 embed.sendToMemberOutput(msg, msg.getAuthor());
@@ -727,7 +720,6 @@ public class BotAbuseMain extends ListenerAdapter {
                     embed.setAsSuccess("You Are Not Bot Abused", result);
                 }
                 else {
-                    result = timeZoneHint.concat(result);
                     embed.setAsInfo(defaultTitle, result);
                 }
                 embed.sendDM(msg, msg.getAuthor());
