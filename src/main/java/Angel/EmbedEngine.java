@@ -158,13 +158,14 @@ public class EmbedEngine {
                                 mainConfig.logChannel.sendMessageEmbeds(entry.getEmbed()).queue();
                                 break;
                             case TEAM:
-                                if (!entry.getOriginalCmd().getChannel().equals(mainConfig.managementChannel) && (!mainConfig.forceToManagementChannel ||
+                                if (entry.getOriginalCmd().getChannel().getIdLong() != mainConfig.managementChannel.getIdLong() && (!mainConfig.forceToManagementChannel ||
                                         mainConfig.managementChannelID.equalsIgnoreCase("None")
-                                        || entry.getOriginalCmd().getChannel().equals(mainConfig.discussionChannel) ||
+                                        || entry.getOriginalCmd().getChannel().getIdLong() == mainConfig.discussionChannel.getIdLong() ||
                                         // V Bypass mainConfig.forceToManagementChannel being true, in cases where channels has more than 1 target and
                                         // TEAM is one of them, go to discussion channel.
                                         entry.getTargetChannels().size() > 1 && entry.getTargetChannels().contains(TargetChannelSet.TEAM))) {
-                                    if (entry.getTargetUser() != null && (!entry.getOriginalCmd().getChannel().equals(mainConfig.discussionChannel) && !entry.getOriginalCmd().getChannel().equals(mainConfig.managementChannel))
+                                    if (entry.getTargetUser() != null && (entry.getOriginalCmd().getChannel().getIdLong() != mainConfig.discussionChannel.getIdLong() &&
+                                            entry.getOriginalCmd().getChannel().getIdLong() != mainConfig.managementChannel.getIdLong())
                                             && discord.isTeamMember(entry.getTargetUser().getIdLong())) {
                                         mainConfig.discussionChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                     }
@@ -175,7 +176,7 @@ public class EmbedEngine {
                                     });
                                 }
                                 else {
-                                    if (entry.getTargetUser() != null && !entry.getOriginalCmd().getChannel().equals(mainConfig.managementChannel)) {
+                                    if (entry.getTargetUser() != null && entry.getOriginalCmd().getChannel().getIdLong() != mainConfig.managementChannel.getIdLong()) {
                                         mainConfig.managementChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                     }
                                     mainConfig.managementChannel.sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
@@ -190,7 +191,7 @@ public class EmbedEngine {
                                     entry.setChannels(Arrays.asList(TargetChannelSet.DM));
                                 else {
                                     try {
-                                        if (!entry.getOriginalCmd().getChannel().equals(mainConfig.botSpamChannel) &&
+                                        if (entry.getOriginalCmd().getChannel().getIdLong() != mainConfig.botSpamChannel.getIdLong() &&
                                                 (!mainConfig.forceToDedicatedChannel ||
                                                         mainConfig.dedicatedOutputChannelID.equalsIgnoreCase("None"))) {
                                             if (!entry.getOriginalCmd().getMember().hasPermission(mainConfig.helpChannel, Permission.VIEW_CHANNEL)) {
@@ -202,7 +203,7 @@ public class EmbedEngine {
                                                 break;
                                             }
 
-                                            if (entry.getTargetUser() != null && !entry.getOriginalCmd().getChannel().equals(mainConfig.helpChannel)) {
+                                            if (entry.getTargetUser() != null && entry.getOriginalCmd().getChannel().getIdLong() != mainConfig.helpChannel.getIdLong()) {
                                                 mainConfig.helpChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                             }
                                             mainConfig.helpChannel.sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
@@ -211,9 +212,9 @@ public class EmbedEngine {
                                                 log.error("sendAllMessages Help Channel: " + error.getMessage());
                                             });
                                         }
-                                        else if (mainConfig.forceToDedicatedChannel || !entry.getOriginalCmd().getChannel().equals(mainConfig.dedicatedOutputChannel)) {
+                                        else if (mainConfig.forceToDedicatedChannel || entry.getOriginalCmd().getChannel().getIdLong() != mainConfig.dedicatedOutputChannel.getIdLong()) {
                                             if (!mainConfig.botSpamChannelID.equalsIgnoreCase("None")
-                                                    && entry.getOriginalCmd().getChannel().equals(mainConfig.botSpamChannel)) {
+                                                    && entry.getOriginalCmd().getChannel().getIdLong() == mainConfig.botSpamChannel.getIdLong()) {
                                                 mainConfig.botSpamChannel.sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
                                                     placeInCmdMap(entry.setResultEmbed(m));
                                                 }, error -> {
@@ -229,7 +230,7 @@ public class EmbedEngine {
                                                     });
                                                     break;
                                                 }
-                                                if (entry.getTargetUser() != null && !entry.getOriginalCmd().getChannel().equals(mainConfig.dedicatedOutputChannel)) {
+                                                if (entry.getTargetUser() != null && entry.getOriginalCmd().getChannel().getIdLong() != mainConfig.dedicatedOutputChannel.getIdLong()) {
                                                     mainConfig.dedicatedOutputChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                                 }
                                                 mainConfig.dedicatedOutputChannel.sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
