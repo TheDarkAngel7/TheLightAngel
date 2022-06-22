@@ -242,7 +242,26 @@ public class EmbedEngine {
                                         }
                                     }
                                     catch (NullPointerException ex) {
-                                        // Take No Action
+                                        // Handler if Bot Spam is None
+                                        if (mainConfig.dedicatedOutputChannelID.equalsIgnoreCase("None") ||
+                                                !entry.getOriginalCmd().getMember().hasPermission(mainConfig.dedicatedOutputChannel, Permission.VIEW_CHANNEL)) {
+                                            entry.getOriginalCmd().getChannel().sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
+                                                placeInCmdMap(entry.setResultEmbed(m).setChannels(TargetChannelSet.SAME));
+                                            }, error -> {
+                                                log.error("sendAllMessages Same Channel - Set By Bot07 Spam None Handler");
+                                            });
+                                        }
+                                        else {
+                                            if (entry.getTargetUser() != null && entry.getOriginalCmd().getChannel().getIdLong() != mainConfig.dedicatedOutputChannel.getIdLong()) {
+                                                mainConfig.dedicatedOutputChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
+                                            }
+                                            mainConfig.dedicatedOutputChannel.sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
+                                                placeInCmdMap(entry.setResultEmbed(m));
+                                            }, error -> {
+                                                log.error("sendAllMessages Dedicated Output Channel - Bot Spam None Handler: " + error.getMessage());
+                                            });
+                                        }
+
                                     }
                                 }
                                 break;
