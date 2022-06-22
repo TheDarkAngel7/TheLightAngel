@@ -115,6 +115,7 @@ public class CheckInMain extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
+        isConnected = true;
         if (event.getAuthor().isBot() || event.getMessage().getChannel().getType() == ChannelType.PRIVATE) return;
         isBusy = true;
         Message msg = event.getMessage();
@@ -787,7 +788,7 @@ public class CheckInMain extends ListenerAdapter {
                     guild.removeRoleFromMember(member.get(), ciConfig.getCheckInRole()).submit().whenComplete(new BiConsumer<Void, Throwable>() {
                         @Override
                         public void accept(Void unused, Throwable throwable) {
-                            if (throwable != null) {
+                            if (throwable == null) {
                                 log.info("Successfully Removed the Role " + ciConfig.getCheckInRole().getName() + " from " + member.get().getEffectiveName() +
                                         " (Discord ID: " + p.getPlayerDiscordId() + ") because the check-in ended.");
                             }

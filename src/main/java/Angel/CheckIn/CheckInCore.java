@@ -127,7 +127,10 @@ class CheckInCore {
         }
     }
     void addMemberToCheckIn(List<Member> ms) {
-        ms.forEach(m -> checkInList.add(new CheckInPlayer(checkInList.size() + 1, m.getIdLong())));
+        ms.forEach(m -> {
+            checkInList.add(new CheckInPlayer(checkInList.size() + 1, m.getIdLong()));
+            log.info("Successfully Added " + m.getEffectiveName() + " to the pending Check-In (Discord ID: " + m.getIdLong() + ")");
+        });
     }
 
     boolean removeMemberFromCheckIn(List<Member> m) {
