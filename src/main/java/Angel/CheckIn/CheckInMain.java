@@ -850,10 +850,13 @@ public class CheckInMain extends ListenerAdapter {
 
         if (!ciResult.isCanceled()) {
             result = result.replace("?", "completed");
-            design = EmbedDesign.ERROR;
+            if (failedCheckIn > 0) {
+                design = EmbedDesign.WARNING;
+            }
         }
         else {
             result = result.replace("?", "cancelled");
+            design = EmbedDesign.ERROR;
         }
 
         embed.sendAsMessageEntryObj(new MessageEntry("Check-In " + ciResult.getId() + " Ended", result, design, mainConfig).setChannels(TargetChannelSet.LOG));
