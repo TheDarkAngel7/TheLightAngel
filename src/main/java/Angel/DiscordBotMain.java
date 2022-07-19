@@ -10,6 +10,7 @@ import Angel.Nicknames.NicknameInit;
 import Angel.Nicknames.NicknameMain;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.ReconnectedEvent;
@@ -173,7 +174,7 @@ public class DiscordBotMain extends ListenerAdapter {
 
                 int previousIndex = listEmbed.getCurrentPageIndex();
 
-                switch (event.getReaction().getReactionEmote().getAsReactionCode()) {
+                switch (event.getReaction().getEmoji().getAsReactionCode()) {
                         // First Page
                     case "\u23EE\uFE0F":
                         entry.setMessage(listEmbed.getFirstPage()); break;
@@ -1181,23 +1182,23 @@ public class DiscordBotMain extends ListenerAdapter {
             case 1: break;
             case 2:
                 // Previous Page
-                changingEmbed.getResultEmbed().addReaction("\u2B05\uFE0F").queue();
+                changingEmbed.getResultEmbed().addReaction(Emoji.fromUnicode("\u2B05\uFE0F")).queue();
                 // Stop Button
-                changingEmbed.getResultEmbed().addReaction("\u23F9\uFE0F").queue();
+                changingEmbed.getResultEmbed().addReaction(Emoji.fromUnicode("\u23F9\uFE0F")).queue();
                 // Next Page
-                changingEmbed.getResultEmbed().addReaction("\u27A1\uFE0F").queue();
+                changingEmbed.getResultEmbed().addReaction(Emoji.fromUnicode("\u27A1\uFE0F")).queue();
                 break;
             default:
                 // First Page
-                changingEmbed.getResultEmbed().addReaction("\u23EE\uFE0F").queue();
+                changingEmbed.getResultEmbed().addReaction(Emoji.fromUnicode("\u23EE\uFE0F")).queue();
                 // Previous Page
-                changingEmbed.getResultEmbed().addReaction("\u2B05\uFE0F").queue();
+                changingEmbed.getResultEmbed().addReaction(Emoji.fromUnicode("\u2B05\uFE0F")).queue();
                 // Stop Button
-                changingEmbed.getResultEmbed().addReaction("\u23F9\uFE0F").queue();
+                changingEmbed.getResultEmbed().addReaction(Emoji.fromUnicode("\u23F9\uFE0F")).queue();
                 // Next Page
-                changingEmbed.getResultEmbed().addReaction("\u27A1\uFE0F").queue();
+                changingEmbed.getResultEmbed().addReaction(Emoji.fromUnicode("\u27A1\uFE0F")).queue();
                 // Last Page
-                changingEmbed.getResultEmbed().addReaction("\u23ED\uFE0F").queue();
+                changingEmbed.getResultEmbed().addReaction(Emoji.fromUnicode("\u23ED\uFE0F")).queue();
         }
         reactionClearTimers.put(changingEmbed.getResultEmbed(),
                 changingEmbed.getResultEmbed().clearReactions().queueAfter(30, TimeUnit.MINUTES, success -> {}, error -> {
@@ -1216,7 +1217,7 @@ public class DiscordBotMain extends ListenerAdapter {
             int index = 0;
             while (index < listEmbed.getCustomListEmbed().getEmoteUnicodeToReactOn().size()) {
                 listEmbed.getMessageEntry().getResultEmbed().addReaction(
-                        listEmbed.getCustomListEmbed().getEmoteUnicodeToReactOn().get(index++)).queue();
+                        Emoji.fromUnicode(listEmbed.getCustomListEmbed().getEmoteUnicodeToReactOn().get(index++))).queue();
             }
         }
     }
@@ -1245,7 +1246,7 @@ public class DiscordBotMain extends ListenerAdapter {
     public boolean isTeamMember(long targetDiscordID) {
         AtomicReference<Member> member = new AtomicReference<>();
         try {
-            guild.retrieveMemberById(targetDiscordID, true).queue(m -> member.set(m));
+            guild.retrieveMemberById(targetDiscordID).queue(m -> member.set(m));
             return isStaffMember(targetDiscordID) ||
                     member.get().getRoles().contains(mainConfig.teamRole);
         }
@@ -1256,7 +1257,7 @@ public class DiscordBotMain extends ListenerAdapter {
     public boolean isStaffMember(long targetDiscordID) {
         AtomicReference<Member> member = new AtomicReference<>();
         try {
-            guild.retrieveMemberById(targetDiscordID, true).queue(m -> member.set(m));
+            guild.retrieveMemberById(targetDiscordID).queue(m -> member.set(m));
             return member.get().getRoles().contains(mainConfig.staffRole) ||
                     member.get().getRoles().contains(mainConfig.adminRole) ||
                     member.get().equals(mainConfig.owner);

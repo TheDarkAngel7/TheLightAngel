@@ -106,7 +106,7 @@ public class NicknameMain extends ListenerAdapter {
         isBusy = true;
         guild.unloadMember(event.getUser().getIdLong());
         try {
-            guild.retrieveMember(event.getUser(), true).queue(m -> {
+            guild.retrieveMember(event.getUser()).queue(m -> {
                 if (m.getNickname() == null && inNickRestrictedRole(event.getUser().getIdLong())) {
                     m.modifyNickname(event.getOldName()).reason(
                             "Automatically Added because this player was previously using their discord username as their social club name").queue();
@@ -396,7 +396,7 @@ public class NicknameMain extends ListenerAdapter {
                 "`" + mainConfig.commandPrefix + "nickname withdraw` (or `" + mainConfig.commandPrefix + "nn wd` for short) now.*";
         long cmdUserID = msg.getAuthor().getIdLong();
         try {
-            guild.retrieveMemberById(cmdUserID, true).queue(member -> {
+            guild.retrieveMemberById(cmdUserID).queue(member -> {
                 try {
                     String result = "";
                     if (args[1].equalsIgnoreCase("request") || args[1].equalsIgnoreCase("req")) {
@@ -1037,7 +1037,7 @@ public class NicknameMain extends ListenerAdapter {
     }
     private boolean inNickRestrictedRole(long targetDiscordID) {
         List<Role> hasRoles = new ArrayList<>();
-        guild.retrieveMemberById(targetDiscordID, true).queue(member -> {
+        guild.retrieveMemberById(targetDiscordID).queue(member -> {
            member.getRoles().forEach(role -> hasRoles.add(role));
         });
 

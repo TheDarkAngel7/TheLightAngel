@@ -324,7 +324,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     }
                 }
                 else if (msg.getAttachments().size() == 1 &&
-                        (msg.getChannel().equals(mainConfig.discussionChannel) || msg.getChannel().equals(mainConfig.managementChannel))) {
+                        (msg.getChannel().getIdLong() == mainConfig.discussionChannel.getIdLong() || msg.getChannel().getIdLong() == mainConfig.managementChannel.getIdLong())) {
                     String result = baCore.setBotAbuse(Long.parseLong(args[1]),
                             false, args[2], msg.getAttachments().get(0).getProxyUrl(), msg.getMember().getIdLong());
                     if (result.contains("FATAL ERROR")) {
@@ -352,7 +352,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     }
                 }
                 else if (msg.getAttachments().size() == 1
-                        && msg.getChannel() != mainConfig.discussionChannel && msg.getChannel() != mainConfig.managementChannel) {
+                        && msg.getChannel().getIdLong() != mainConfig.discussionChannel.getIdLong() && msg.getChannel().getIdLong() != mainConfig.managementChannel.getIdLong()) {
                     embed.setAsError("Channel Error for This Action",
                             "**That was the Wrong Channel to attach an image to this command. " +
                             "Do that again but please use this channel.**" +
@@ -412,7 +412,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     }
                 }
                 else if (msg.getAttachments().size() == 1 &&
-                        (msg.getChannel().equals(mainConfig.discussionChannel) || msg.getChannel().equals(mainConfig.managementChannel))) {
+                        (msg.getChannel().getIdLong() == mainConfig.discussionChannel.getIdLong() || msg.getChannel().getIdLong() == mainConfig.managementChannel.getIdLong())) {
                     String result = baCore.setBotAbuse(msg.getMentions().getMembers().get(0).getIdLong(),
                             false, args[2], msg.getAttachments().get(0).getProxyUrl(), msg.getAuthor().getIdLong());
                     guild.addRoleToMember(msg.getMentions().getMembers().get(0),
@@ -437,7 +437,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     }
                 }
                 else if (msg.getAttachments().size() == 1
-                        && msg.getChannel() != mainConfig.discussionChannel && msg.getChannel() != mainConfig.managementChannel) {
+                        && msg.getChannel().getIdLong() != mainConfig.discussionChannel.getIdLong() && msg.getChannel().getIdLong() != mainConfig.managementChannel.getIdLong()) {
                     embed.setAsError("Channel Error for This Action",
                             "**That was the Wrong Channel to attach an image to this command. " +
                             "Do that again but please use this channel.**" +

@@ -42,7 +42,7 @@ class NickRequestListEmbed extends CustomListEmbed {
         String reactionType = "";
 
         try {
-            switch (event.getReaction().getReactionEmote().getAsReactionCode()) {
+            switch (event.getReaction().getEmoji().getAsReactionCode()) {
                 case checkMarkUnicode:
                     reactionType = "Check Mark";
                     break;

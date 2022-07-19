@@ -82,7 +82,7 @@ public class AFKCheckManagement extends Timer {
                 masterList.forEach(m -> {
                     AFKCheck afkCheck;
                     if (msg.getMentions().getChannels(TextChannel.class).isEmpty()) {
-                        afkCheck = new AFKCheck(m, msg.getMember(), msg.getTextChannel(), length, mentionOn);
+                        afkCheck = new AFKCheck(m, msg.getMember(), msg.getChannel().asTextChannel(), length, mentionOn);
                     }
                     else {
                         afkCheck = new AFKCheck(m, msg.getMember(), msg.getMentions().getChannels(TextChannel.class).get(0), length, mentionOn);
@@ -223,7 +223,7 @@ public class AFKCheckManagement extends Timer {
         jda.addEventListener(afkCheck);
         log.info("Successfully Started AFK Check for " + afkCheck.getMemberName());
         TargetChannelSet target = TargetChannelSet.SAME;
-        if (msg.getTextChannel() == afkCheck.getSessionChannel()) {
+        if (msg.getChannel().asTextChannel().getIdLong() == afkCheck.getSessionChannel().getIdLong()) {
             target = TargetChannelSet.TEAM;
         }
         embed.sendAsMessageEntryObj(new MessageEntry("Successfully Started AFK Check",

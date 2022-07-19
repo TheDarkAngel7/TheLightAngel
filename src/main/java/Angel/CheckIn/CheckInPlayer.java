@@ -2,7 +2,7 @@ package Angel.CheckIn;
 
 class CheckInPlayer {
     // The ID here is not the same as the check-in ID or player discord ID,
-    // this IDs the player in the list of players to check-in
+    // this IDs the player in the list of players to check in
     private final int id;
     private final long playerDiscordId;
     private boolean queuedToCheckIn = true;

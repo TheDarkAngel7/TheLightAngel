@@ -33,8 +33,8 @@ class CheckInQueueEmbed extends CustomListEmbed {
 
     @Override
     public void takeAction(Message originalCmd, MessageReactionAddEvent event) {
-        log.info(event.getMember().getEffectiveName() + " clicked number " + (reactions.indexOf(event.getReaction().getReactionEmote().getAsReactionCode()) + 1));
+        log.info(event.getMember().getEffectiveName() + " clicked number " + (reactions.indexOf(event.getReaction().getEmoji().getAsReactionCode()) + 1));
         ciMain.fromReactionEmoji(originalCmd,
-                (getCurrentPage() - 1) * 10 + (reactions.indexOf(event.getReaction().getReactionEmote().getAsReactionCode()) + 1));
+                (getCurrentPage() - 1) * 10 + (reactions.indexOf(event.getReaction().getEmoji().getAsReactionCode()) + 1));
     }
 }

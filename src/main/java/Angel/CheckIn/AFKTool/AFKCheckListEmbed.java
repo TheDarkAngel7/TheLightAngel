@@ -38,7 +38,7 @@ class AFKCheckListEmbed extends CustomListEmbed {
 
     @Override
     public void takeAction(Message originalCmd, MessageReactionAddEvent event) {
-        switch (event.getReaction().getReactionEmote().getAsReactionCode()) {
+        switch (event.getReaction().getEmoji().getAsReactionCode()) {
             case refreshEmote:
                 log.info(event.getUser().getAsTag() + " just requested a refresh");
                 afkMain.refreshAFKCheckListEmbed();

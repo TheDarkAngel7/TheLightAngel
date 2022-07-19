@@ -3,6 +3,7 @@ package Angel.CheckIn;
 import Angel.CheckIn.AFKTool.AFKCheckManagement;
 import Angel.*;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.ReconnectedEvent;
@@ -133,7 +134,7 @@ public class CheckInMain extends ListenerAdapter {
             embed.sendToChannel(msg, msg.getChannel());
         }
 
-        else if (msg.getTextChannel().getIdLong() == ciConfig.getCheckInChannel().getIdLong()
+        else if (msg.getChannel().asTextChannel().getIdLong() == ciConfig.getCheckInChannel().getIdLong()
                 && checkInRunning && checkInConfirmed && !discord.isTeamMember(msg.getAuthor().getIdLong())) {
             checkInPlayer(msg);
         }
@@ -155,7 +156,7 @@ public class CheckInMain extends ListenerAdapter {
                     }
                     break;
                 case "reprint":
-                    if (checkInConfirmed && msg.getTextChannel() == sessionChannel) {
+                    if (checkInConfirmed && msg.getChannel().asTextChannel() == sessionChannel) {
                         checkInSessionChannelEmbed.delete().queue();
                         sessionChannel.sendMessageEmbeds(checkInSessionChannelEntry.getEmbed()).queue();
                     }
@@ -247,14 +248,14 @@ public class CheckInMain extends ListenerAdapter {
             embed.setAsError("Exempt From Check-In", ":x: **You Are Exempt From Needing to Check-In**");
             // Reserved For Team Member Needing Help with Check-In
         }
-        else if (msg.getTextChannel().getIdLong() != ciConfig.getCheckInChannel().getIdLong()) {
-            msg.getTextChannel().sendMessageEmbeds(new MessageEntry("Wrong Channel",
+        else if (msg.getChannel().asTextChannel().getIdLong() != ciConfig.getCheckInChannel().getIdLong()) {
+            msg.getChannel().asTextChannel().sendMessageEmbeds(new MessageEntry("Wrong Channel",
                     ":x: **You used this command in the wrong channel. Use this command in the " + ciConfig.getCheckInChannel().getAsMention() + " channel**",
                     EmbedDesign.ERROR, mainConfig).getEmbed()).submit().whenComplete(new BiConsumer<Message, Throwable>() {
                 @Override
                 public void accept(Message message, Throwable throwable) {
-                    msg.delete().queueAfter(5, TimeUnit.SECONDS);
-                    message.delete().queueAfter(5, TimeUnit.SECONDS);
+                    msg.delete().queueAfter(10, TimeUnit.SECONDS);
+                    message.delete().queueAfter(10, TimeUnit.SECONDS);
                 }
             });
             return;
@@ -301,7 +302,7 @@ public class CheckInMain extends ListenerAdapter {
                     // Using "/checkin start" in a session channel
                     case 2:
                         sessionName = msg.getChannel().getName().split("_")[0];
-                        sessionChannel = msg.getTextChannel();
+                        sessionChannel = msg.getChannel().asTextChannel();
                         break;
                     // /checkin start <Session Channel Mention Inserted>
                     case 3:
@@ -1091,11 +1092,11 @@ public class CheckInMain extends ListenerAdapter {
         else return mainConfig.discussionChannel;
     }
     private void addCheckMarkReactionToMessage(Message msg) {
-        msg.addReaction("\u2705").queue();
+        msg.addReaction(Emoji.fromUnicode("\u2705")).queue();
         toPurge.add(msg);
     }
     private void addXReactionToMessage(Message msg) {
-        msg.addReaction("\u274C").queue();
+        msg.addReaction(Emoji.fromUnicode("\u274C")).queue();
         toPurge.add(msg);
     }
 
