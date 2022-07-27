@@ -39,9 +39,9 @@ public class NicknameInit implements Runnable {
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOJI,
                 CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE, CacheFlag.ONLINE_STATUS, CacheFlag.STICKER);
         try {
+            log.info("Attempting to Create Nickname Feature JDA Instance");
             jda = JDABuilder.create(mainConfig.token, enabledIntents).disableCache(disabledFlags).setRequestTimeoutRetry(true)
                     .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).setMaxReconnectDelay(120).build();
-            log.info("Nickname Feature JDA Instance Created");
         }
         catch (LoginException e) {
             log.error("Nickname JDA Threw Login Exception During Build", e);

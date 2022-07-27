@@ -38,9 +38,9 @@ public class CheckInInit implements Runnable {
                 CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE, CacheFlag.ONLINE_STATUS, CacheFlag.STICKER);
 
         try {
+            log.info("Attempting to Create Check-In Feature JDA Instance");
             jda = JDABuilder.create(mainConfig.token, enabledIntents).disableCache(disabledFlags).setRequestTimeoutRetry(true)
                     .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).setMaxReconnectDelay(180).build();
-            log.info("Check-In Feature JDA Instance Created");
         }
         catch (LoginException ex) {
             log.error("Check-In JDA Threw Login Exception During Build");

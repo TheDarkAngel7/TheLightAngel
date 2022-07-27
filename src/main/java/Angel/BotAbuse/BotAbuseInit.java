@@ -42,9 +42,9 @@ public class BotAbuseInit implements Runnable {
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOJI,
                 CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE, CacheFlag.ONLINE_STATUS, CacheFlag.STICKER);
         try {
+            log.info("Attempting to Create Bot Abuse Feature JDA Instance");
             jda = JDABuilder.create(mainConfig.token, enabledIntents).disableCache(disabledFlags).setRequestTimeoutRetry(true)
                     .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).setMaxReconnectDelay(60).build();
-            log.info("Bot Abuse Feature JDA Instance Created");
         }
         catch (LoginException e) {
             log.error("Bot Abuse JDA Threw Login Exception During Build", e);

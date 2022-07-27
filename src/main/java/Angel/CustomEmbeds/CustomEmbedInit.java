@@ -35,9 +35,9 @@ public class CustomEmbedInit implements Runnable {
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOJI,
                 CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE, CacheFlag.ONLINE_STATUS, CacheFlag.STICKER);
         try {
+            log.info("Attempting to Create Custom Embed JDA Instance");
             jda = JDABuilder.create(mainConfig.token, enabledIntents).disableCache(disabledFlags).setRequestTimeoutRetry(true)
                     .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).setMaxReconnectDelay(60).build();
-            log.info("Custom Embed JDA Instance Created");
         }
         catch (LoginException e) {
             log.error("Custom Embed JDA Threw Login Exception During Build", e);
