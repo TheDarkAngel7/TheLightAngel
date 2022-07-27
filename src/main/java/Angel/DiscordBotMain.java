@@ -156,8 +156,6 @@ public class DiscordBotMain extends ListenerAdapter {
                 MessageEntry entry = null;
                 ListEmbed listEmbed = null;
 
-                int index = 0;
-
                 listEmbed = getListEmbedFromMsg(msg);
                 if (listEmbed != null) {
                     entry = listEmbed.getMessageEntry();

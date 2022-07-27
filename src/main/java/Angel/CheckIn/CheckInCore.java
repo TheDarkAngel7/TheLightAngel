@@ -184,6 +184,9 @@ class CheckInCore {
         log.error("Could Not Remove Target ID" + targetID + " from the upcoming check-in as they were not found");
         return false;
     }
+    long getPlayerDiscordIDFromReaction(int targetCheckInID) {
+        return checkInList.get(targetCheckInID - 1).getPlayerDiscordId();
+    }
     void toggleInQueueFromReaction(int targetCheckInID) {
         CheckInPlayer p = null;
 

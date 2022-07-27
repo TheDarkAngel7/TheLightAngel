@@ -710,7 +710,15 @@ public class CheckInMain extends ListenerAdapter {
             }
             // /checkin add <Member Mention(s)>
             else if (!msg.getMentions().getMembers().isEmpty()) {
-                ciCore.addMemberToCheckIn(msg.getMentions().getMembers());
+                List<Member> addTheseMembers = new ArrayList<>();
+
+                msg.getMentions().getMembers().forEach(m -> {
+                    if (!discord.isTeamMember(m.getIdLong())) {
+                        addTheseMembers.add(m);
+                    }
+                });
+
+                ciCore.addMemberToCheckIn(addTheseMembers);
                 addCheckMarkReactionToMessage(msg);
             }
             else {
@@ -769,8 +777,17 @@ public class CheckInMain extends ListenerAdapter {
         }
     }
     void fromReactionEmoji(Message msg, int numSelected) {
-        ciCore.toggleInQueueFromReaction(numSelected);
-        sendCheckInStartupPrompts(msg, true);
+        long targetDiscordID = ciCore.getPlayerDiscordIDFromReaction(numSelected);
+        guild.retrieveMemberById(targetDiscordID).queue(m -> {
+            if (!discord.isTeamMember(targetDiscordID)) {
+                ciCore.toggleInQueueFromReaction(numSelected);
+                sendCheckInStartupPrompts(msg, true);
+                log.info("Successfully Toggled Queue for " + m.getEffectiveName() + " (Discord ID: " + targetDiscordID + ")");
+            }
+            else {
+                log.warn("Could Not Toggle Queue for " + m.getEffectiveName() + " (Discord ID: " + targetDiscordID + ") as they are a team member");
+            }
+        });
     }
     void endCheckIn() {
         checkInRunning = false;
