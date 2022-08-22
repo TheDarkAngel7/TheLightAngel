@@ -778,14 +778,22 @@ public class CheckInMain extends ListenerAdapter {
     }
     void fromReactionEmoji(Message msg, int numSelected) {
         long targetDiscordID = ciCore.getPlayerDiscordIDFromReaction(numSelected);
-        guild.retrieveMemberById(targetDiscordID).queue(m -> {
-            if (!discord.isTeamMember(targetDiscordID)) {
-                ciCore.toggleInQueueFromReaction(numSelected);
-                sendCheckInStartupPrompts(msg, true);
-                log.info("Successfully Toggled Queue for " + m.getEffectiveName() + " (Discord ID: " + targetDiscordID + ")");
-            }
-            else {
-                log.warn("Could Not Toggle Queue for " + m.getEffectiveName() + " (Discord ID: " + targetDiscordID + ") as they are a team member");
+        guild.retrieveMemberById(targetDiscordID).submit().whenComplete(new BiConsumer<Member, Throwable>() {
+            @Override
+            public void accept(Member m, Throwable throwable) {
+                if (throwable == null) {
+                    if (!discord.isTeamMember(targetDiscordID)) {
+                        log.info("Successfully Toggled Queue for " + m.getEffectiveName() + " (Discord ID: " + targetDiscordID + ")");
+                        ciCore.toggleInQueueFromReaction(numSelected);
+                        sendCheckInStartupPrompts(msg, true);
+                    }
+                    else {
+                        log.warn("Could Not Toggle Queue for " + m.getEffectiveName() + " (Discord ID: " + targetDiscordID + ") as they are a team member");
+                    }
+                }
+                else {
+                    log.warn("Could Not Toggle Queue for Discord ID " + targetDiscordID + ": " + throwable.getMessage());
+                }
             }
         });
     }

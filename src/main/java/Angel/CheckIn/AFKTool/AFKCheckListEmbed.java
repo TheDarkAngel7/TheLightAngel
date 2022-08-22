@@ -55,7 +55,6 @@ class AFKCheckListEmbed extends CustomListEmbed {
                         " has just been requested to be cancelled by " + targetStaffMember.get().getEffectiveName());
 
                 afkMain.cancelAFKCheck(targetDiscordID);
-                afkMain.refreshAFKCheckListEmbed();
                 break;
         }
     }

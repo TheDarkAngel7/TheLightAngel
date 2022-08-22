@@ -128,24 +128,6 @@ public class BotAbuseMain extends ListenerAdapter {
         }
         isNotBusy();
     }
-    public void saveDatabase() {
-        try {
-            log.error("Disconneted from Discord Websocket - Saving Data for Bot Abuse...");
-            baCore.saveDatabase();
-        }
-        catch (IOException e) {
-            log.error("Save Database", e);
-        }
-    }
-    public void resumeBot() {
-        try {
-            baCore.startup(false);
-            startTimers();
-        }
-        catch (IOException e) {
-            log.error("Resume Timers and Re-Read", e);
-        }
-    }
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         isConnected = true;

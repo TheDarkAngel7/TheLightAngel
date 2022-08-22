@@ -60,7 +60,7 @@ class AFKCheck extends ListenerAdapter implements Runnable {
 
             if (minutes == mentionOn && seconds == 0) {
                 sessionChannel.sendMessage(afkCheckMessage.replace("**$**", getMemberMention()).replace("%", String.valueOf(mentionOn))).queue();
-                log.info("The " + mentionOn + " minute warning has been given in the session channel");
+                log.info("The " + mentionOn + " minute warning has been given in the session channel for " + afkChecked.getEffectiveName());
             }
 
             if (minutes == 0 && seconds == 0) {

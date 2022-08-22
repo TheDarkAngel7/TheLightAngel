@@ -305,33 +305,6 @@ public class NicknameMain extends ListenerAdapter {
             isBusy = false;
         }
     }
-
-    // These methods are for DiscordBotMain's disconnect and resume events.
-    public void saveDatabase() {
-        try {
-            log.error("Disconnected from Discord Websocket - Saving Data for Nicknames...");
-            if (nickCore.arraySizesEqual()) {
-                fileHandler.saveDatabase();
-            }
-            else {
-                log.fatal("Nicknames Data File Damaged on Disconnect - Reloading to Prevent Damage...");
-                nickCore.startup();
-            }
-        }
-        catch (IOException ex) {
-            log.error("Save Database", ex);
-        }
-    }
-
-    public void resumeBot() {
-        try {
-            fileHandler.getDatabase();
-        }
-        catch (IOException e) {
-            log.error("Resume Bot File Re-Read");
-        }
-    }
-    //////////
     @Override
     public void onMessageReceived(@Nonnull MessageReceivedEvent event) {
         isConnected = true;

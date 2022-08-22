@@ -11,9 +11,7 @@ import Angel.Nicknames.NicknameMain;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
-import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
-import net.dv8tion.jda.api.events.ReconnectedEvent;
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
@@ -120,20 +118,6 @@ public class DiscordBotMain extends ListenerAdapter {
                     "**All Systems Are Go! Remember I'm divided into 3 sections...**" +
                             "\n**You can check on their status with `" + mainConfig.commandPrefix + "status`**");
             embed.sendToChannel(null, mainConfig.discussionChannel);
-        }
-    }
-
-    @Override
-    public void onReconnected(@NotNull ReconnectedEvent event) {
-        if (baFeature.getConfig().isEnabled()) baFeature.resumeBot();
-        if (nickFeature.getConfig().isEnabled()) nickFeature.resumeBot();
-    }
-
-    @Override
-    public void onDisconnect(@Nonnull DisconnectEvent event) {
-        if (!isStarting) {
-            baFeature.saveDatabase();
-            nickFeature.saveDatabase();
         }
     }
 
