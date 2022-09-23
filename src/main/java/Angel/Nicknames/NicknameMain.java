@@ -4,6 +4,7 @@ import Angel.*;
 import net.dv8tion.jda.api.audit.AuditLogEntry;
 import net.dv8tion.jda.api.audit.TargetType;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.ReconnectedEvent;
@@ -193,10 +194,10 @@ public class NicknameMain extends ListenerAdapter {
             if (tempDiscordID.contains(event.getUser().getIdLong()) || nickCore.discordID.contains(event.getUser().getIdLong())) {
                 if (tempDiscordID.contains(event.getUser().getIdLong())) {
                     embed.setAsWarning("Instructions Warning",
-                            "Please Re-Read the Instructions I just gave you above this message");
+                            ":warning: **Please Re-Read the Instructions I just gave you above this message**");
                     embed.sendDM(null, event.getUser());
                     event.getMember().modifyNickname(event.getOldNickname())
-                            .reason("Already has tried to change their nickane on their own").queue();
+                            .reason(event.getMember().getEffectiveName() + " has tried to change their nickname on their own already...").queue();
 
                 }
                 else if (nickCore.discordID.contains(event.getUser().getIdLong())) {
@@ -328,7 +329,7 @@ public class NicknameMain extends ListenerAdapter {
                     }
                     else {
                         embed.setAsError("Nickname Feature Disabled", ":x: **You used a command for a section of the bot that is currently disabled**");
-                        embed.sendToChannel(msg, msg.getChannel());
+                        embed.sendToChannel(msg, msg.getChannel().asTextChannel());
                     }
                 }
                 catch (IOException e) {
@@ -998,7 +999,7 @@ public class NicknameMain extends ListenerAdapter {
 
         }
         if (isTeamMember) embed.sendToTeamOutput(msg, msg.getAuthor());
-        else embed.sendToChannel(msg, msg.getChannel());
+        else embed.sendToChannel(msg, msg.getChannel().asTextChannel());
     }
     private void isBusy(Message msg) {
         isBusy = true;

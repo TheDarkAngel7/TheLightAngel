@@ -1,10 +1,10 @@
 package Angel;
 
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -111,7 +111,7 @@ public class EmbedEngine {
         sendAllMessages();
     }
 
-    public void sendToChannel(Message msg, MessageChannel channel) {
+    public void sendToChannel(Message msg, TextChannel channel) {
         MessageEntry entry = messageQueue.get(messageQueue.size() - 1);
         channel.sendMessageEmbeds(entry.getEmbed()).queue(m -> {
             if (msg != null) commandMessageMap.put(msg, entry);

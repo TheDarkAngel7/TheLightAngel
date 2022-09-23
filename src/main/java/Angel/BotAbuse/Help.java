@@ -2,7 +2,7 @@ package Angel.BotAbuse;
 
 import Angel.EmbedEngine;
 import Angel.MainConfiguration;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
 class Help {
     private BotAbuseMain baMain;

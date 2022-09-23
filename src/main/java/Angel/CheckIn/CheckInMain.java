@@ -2,7 +2,12 @@ package Angel.CheckIn;
 
 import Angel.CheckIn.AFKTool.AFKCheckManagement;
 import Angel.*;
-import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.DisconnectEvent;
 import net.dv8tion.jda.api.events.ReadyEvent;
@@ -131,7 +136,7 @@ public class CheckInMain extends ListenerAdapter {
 
         if (!ciConfig.isEnabled() && isCommand(args[0], args[1])) {
             embed.setAsError("Check-In Feature Disabled", ":x: **You used a command for a section of the bot that is currently disabled***");
-            embed.sendToChannel(msg, msg.getChannel());
+            embed.sendToChannel(msg, msg.getChannel().asTextChannel());
         }
 
         else if (msg.getChannel().asTextChannel().getIdLong() == ciConfig.getCheckInChannel().getIdLong()

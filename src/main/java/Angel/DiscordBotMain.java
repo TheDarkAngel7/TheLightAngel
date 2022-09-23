@@ -9,7 +9,11 @@ import Angel.CustomEmbeds.CustomEmbedMain;
 import Angel.Nicknames.NicknameInit;
 import Angel.Nicknames.NicknameMain;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
@@ -264,7 +268,7 @@ public class DiscordBotMain extends ListenerAdapter {
                 embed.setAsStop("No Messages Here",
                         "*I know what you're trying to do*... what did you think I only base this filter on the first character?");
             }
-            embed.sendToChannel(msg, msg.getChannel());
+            embed.sendToChannel(msg, msg.getChannel().asTextChannel());
             msg.delete().queue();
             log.warn("Message Deleted - Management or Dedicated Output Channel - Not Valid Command");
             return;
@@ -530,7 +534,7 @@ public class DiscordBotMain extends ListenerAdapter {
                     else if (isValidCommand(msg)) helpCommand(msg);
                     else {
                         embed.setAsError("Invalid Command", ":x: **The Command you asked for help for does not exist anywhere within me...**");
-                        embed.sendToChannel(msg, msg.getChannel());
+                        embed.sendToChannel(msg, msg.getChannel().asTextChannel());
                     }
                     break;
             }
@@ -623,7 +627,7 @@ public class DiscordBotMain extends ListenerAdapter {
             }
         }
         if (isTeamMember(msg.getAuthor().getIdLong())) embed.sendToTeamOutput(msg, msg.getAuthor());
-        else embed.sendToChannel(msg, msg.getChannel());
+        else embed.sendToChannel(msg, msg.getChannel().asTextChannel());
     }
     private void configCommand(Message msg) {
         String[] args = msg.getContentRaw().substring(1).split(" ");
@@ -1005,10 +1009,10 @@ public class DiscordBotMain extends ListenerAdapter {
             }
             else {
                 embed.setAsError("Syntax Error", ":x: **I was expecting 4 or 5 arguments in this command...**");
-                embed.sendToChannel(msg, msg.getChannel());
+                embed.sendToChannel(msg, msg.getChannel().asTextChannel());
                 return;
             }
-            embed.sendToChannel(msg, msg.getChannel());
+            embed.sendToChannel(msg, msg.getChannel().asTextChannel());
             if (successfulRun && (botAbuseTimingChanged || nameRestrictedRoleUpdated)) return;
             else if (successfulRun && !botAbuseTimingChanged) {
                 log.info(msg.getMember().getEffectiveName() + " successfully updated configuration key " + args[2] + " to " + args[3]);

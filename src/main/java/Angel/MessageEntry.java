@@ -2,9 +2,9 @@ package Angel;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ public class MessageEntry {
     private boolean fieldOriginallyIncluded = true;
     private boolean isListEmbed = false;
     private List<TargetChannelSet> targetChannels = new ArrayList<>();
-    private List<MessageChannel> customChannels = new ArrayList<>();
+    private List<TextChannel> customChannels = new ArrayList<>();
     private User targetUser;
     private final MainConfiguration mainConfig;
 
@@ -34,7 +34,7 @@ public class MessageEntry {
 
     // Constructor Specifically For Custom Channels, We Don't Ask For a TargetChannelSet here and we ask for the MessageChannel objects
 
-    public MessageEntry(String title, EmbedDesign design, MainConfiguration mainConfig, Message originalCmd, MessageChannel... channels) {
+    public MessageEntry(String title, EmbedDesign design, MainConfiguration mainConfig, Message originalCmd, TextChannel... channels) {
         this.title = title;
         this.design = design;
         this.originalCmd.set(originalCmd);
@@ -43,7 +43,7 @@ public class MessageEntry {
         this.targetChannels.add(TargetChannelSet.CUSTOM);
     }
     // Constructor Exactly Like the one above except an initial message is included
-    public MessageEntry(String title, String msg, EmbedDesign design, MainConfiguration mainConfig, Message originalCmd, MessageChannel... channels) {
+    public MessageEntry(String title, String msg, EmbedDesign design, MainConfiguration mainConfig, Message originalCmd, TextChannel... channels) {
         this.title = title;
         this.msg = msg;
         this.design = design;
@@ -95,14 +95,14 @@ public class MessageEntry {
         return this;
     }
 
-    public MessageEntry setCustomChannels(MessageChannel... messageChannels) {
+    public MessageEntry setCustomChannels(TextChannel... messageChannels) {
         customChannels = Arrays.asList(messageChannels);
         targetChannels.add(TargetChannelSet.CUSTOM);
         return this;
 
     }
 
-    public MessageEntry setCustomChannels(List<MessageChannel> messageChannels) {
+    public MessageEntry setCustomChannels(List<TextChannel> messageChannels) {
         customChannels.addAll(messageChannels);
         targetChannels.add(TargetChannelSet.CUSTOM);
         return this;
@@ -152,7 +152,7 @@ public class MessageEntry {
         return targetChannels;
     }
 
-    List<MessageChannel> getCustomChannels() {
+    List<TextChannel> getCustomChannels() {
         return customChannels;
     }
 

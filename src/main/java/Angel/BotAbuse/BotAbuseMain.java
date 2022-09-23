@@ -258,7 +258,7 @@ public class BotAbuseMain extends ListenerAdapter {
         }
         else if (!botConfig.isEnabled() && isCommand(args[0])) {
             embed.setAsError("Bot Abuse Feature Disabled", ":x: **You used a command for a section of the bot that is currently disabled**");
-            embed.sendToChannel(msg, msg.getChannel());
+            embed.sendToChannel(msg, msg.getChannel().asTextChannel());
         }
         isNotBusy();
     }
@@ -1024,7 +1024,7 @@ public class BotAbuseMain extends ListenerAdapter {
             embed.setAsError("Error while Parsing Transfer Command",
                     "Invalid Number of Arguments!" +
                             "\nUsage: /transfer <Old Mention or Discord ID> <New Mention or Discord ID>");
-            embed.sendToChannel(msg, msg.getChannel());
+            embed.sendToChannel(msg, msg.getChannel().asTextChannel());
         }
     }
     private void checkHistory(Message msg, boolean isTeamMember) {
@@ -1193,7 +1193,7 @@ public class BotAbuseMain extends ListenerAdapter {
         }
         else {
             embed.setAsStop("FATAL ERROR", ":x: **Something went Seriously wrong when that happened**");
-            embed.sendToChannel(msg, msg.getChannel());
+            embed.sendToChannel(msg, msg.getChannel().asTextChannel());
         }
     }
     private void checkHistoryDivision(String stringToSplit, Message msg) {
