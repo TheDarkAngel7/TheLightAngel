@@ -6,7 +6,6 @@ import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -50,7 +49,7 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         fileHandler.saveDatabase();
     }
 
-    String setBotAbuse(long targetDiscordID, boolean isPermanent, String reason, @Nullable String imageURL, long teamMember)
+    String setBotAbuse(long targetDiscordID, boolean isPermanent, String reason, String imageURL, long teamMember)
             throws IOException, NullPointerException {
         reason = reason.toLowerCase();
         String getReason = "";

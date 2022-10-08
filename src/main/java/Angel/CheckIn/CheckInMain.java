@@ -9,10 +9,10 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
-import net.dv8tion.jda.api.events.DisconnectEvent;
-import net.dv8tion.jda.api.events.ReadyEvent;
-import net.dv8tion.jda.api.events.ReconnectedEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.session.ReadyEvent;
+import net.dv8tion.jda.api.events.session.SessionDisconnectEvent;
+import net.dv8tion.jda.api.events.session.SessionResumeEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -110,13 +110,13 @@ public class CheckInMain extends ListenerAdapter {
     }
 
     @Override
-    public void onReconnected(@NotNull ReconnectedEvent event) {
-        isConnected = true;
+    public void onSessionDisconnect(SessionDisconnectEvent event) {
+        isConnected = false;
     }
 
     @Override
-    public void onDisconnect(@NotNull DisconnectEvent event) {
-        isConnected = false;
+    public void onSessionResume(SessionResumeEvent event) {
+        isConnected = true;
     }
 
     @Override

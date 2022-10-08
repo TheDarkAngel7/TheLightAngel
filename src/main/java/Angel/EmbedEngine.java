@@ -8,7 +8,6 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nullable;
 import java.util.*;
 
 public class EmbedEngine {
@@ -54,7 +53,7 @@ public class EmbedEngine {
         messageQueue.add(new MessageEntry(title, msg, EmbedDesign.HELP, mainConfig));
     }
 
-    public void editEmbed(Message originalCmd, @Nullable String newTitle, @Nullable String newMsg, @Nullable EmbedDesign requestedType) {
+    public void editEmbed(Message originalCmd, String newTitle, String newMsg, EmbedDesign requestedType) {
         MessageEntry entry = null;
 
         while (true) {
@@ -88,18 +87,18 @@ public class EmbedEngine {
     // The "Member author" objects in the ToHelpChannel and ToDiscussionChannel methods are annotated as Nullable
     // as in some cases in the code I cannot get Member objects
     ///////////////////////////////////////////////////////////
-    public void sendDM(@Nullable Message msg, User user) {
+    public void sendDM(Message msg, User user) {
         MessageEntry entry = messageQueue.get(messageQueue.size() - 1);
         entry.setOriginalCmd(msg).setTargetUser(user).setChannels(Arrays.asList(TargetChannelSet.DM));
         sendAllMessages();
     }
-    public void sendToMemberOutput(Message msg, @Nullable User author) {
+    public void sendToMemberOutput(Message msg, User author) {
         MessageEntry entry = messageQueue.get(messageQueue.size() - 1);
         entry.setOriginalCmd(msg).setChannels(Arrays.asList(TargetChannelSet.MEMBER));
         if (author != null) entry.setTargetUser(author);
         sendAllMessages();
     }
-    public void sendToTeamOutput(Message msg, @Nullable User author) {
+    public void sendToTeamOutput(Message msg, User author) {
         MessageEntry entry = messageQueue.get(messageQueue.size() - 1);
         entry.setOriginalCmd(msg).setChannels(Arrays.asList(TargetChannelSet.TEAM));
         if (author != null) entry.setTargetUser(author);

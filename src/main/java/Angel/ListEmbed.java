@@ -1,6 +1,5 @@
 package Angel;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +20,7 @@ public class ListEmbed {
             "\n" + stopIcon;
     private int currentIndex = 0;
 
-    public ListEmbed(MessageEntry entry, String prefixString, List<String> alternateStrings, @Nullable String suffixString) {
+    public ListEmbed(MessageEntry entry, String prefixString, List<String> alternateStrings, String suffixString) {
         this.prefixString = prefixString;
         this.alternateStrings = new ArrayList<>();
         this.alternateStrings.addAll(alternateStrings);
@@ -30,7 +29,7 @@ public class ListEmbed {
         this.customListEmbed = null;
     }
 
-    ListEmbed(MessageEntry entry, String prefixString, List<String> alternateStrings, @Nullable String suffixString, CustomListEmbed cListEmbed) {
+    ListEmbed(MessageEntry entry, String prefixString, List<String> alternateStrings, String suffixString, CustomListEmbed cListEmbed) {
         this.prefixString = prefixString;
         this.alternateStrings = new ArrayList<>();
         this.alternateStrings.addAll(alternateStrings);

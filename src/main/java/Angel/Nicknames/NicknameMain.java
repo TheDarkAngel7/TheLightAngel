@@ -5,13 +5,13 @@ import net.dv8tion.jda.api.audit.AuditLogEntry;
 import net.dv8tion.jda.api.audit.TargetType;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
-import net.dv8tion.jda.api.events.DisconnectEvent;
-import net.dv8tion.jda.api.events.ReadyEvent;
-import net.dv8tion.jda.api.events.ReconnectedEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.session.ReadyEvent;
+import net.dv8tion.jda.api.events.session.SessionDisconnectEvent;
+import net.dv8tion.jda.api.events.session.SessionResumeEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdateNameEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -19,8 +19,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.ZoneId;
@@ -85,24 +83,22 @@ public class NicknameMain extends ListenerAdapter {
             init();
         }
     }
-
     @Override
-    public void onReady(@NotNull ReadyEvent event) {
-        isConnected = true;
-    }
-
-    @Override
-    public void onReconnected(@NotNull ReconnectedEvent event) {
-        isConnected = true;
-    }
-
-    @Override
-    public void onDisconnect(@NotNull DisconnectEvent event) {
+    public void onSessionDisconnect(SessionDisconnectEvent event) {
         isConnected = false;
     }
 
     @Override
-    public void onUserUpdateName(@Nonnull UserUpdateNameEvent event) {
+    public void onSessionResume(SessionResumeEvent event) {
+        isConnected = true;
+    }
+
+    @Override
+    public void onReady(ReadyEvent event) {
+        isConnected = true;
+    }
+    @Override
+    public void onUserUpdateName(UserUpdateNameEvent event) {
         if (!nickConfig.isEnabled()) return;
         isBusy = true;
         guild.unloadMember(event.getUser().getIdLong());
@@ -150,7 +146,7 @@ public class NicknameMain extends ListenerAdapter {
     }
 
     @Override
-    public void onGuildMemberUpdateNickname(@Nonnull GuildMemberUpdateNicknameEvent event) {
+    public void onGuildMemberUpdateNickname(GuildMemberUpdateNicknameEvent event) {
         if (!nickConfig.isEnabled()) return;
         isBusy = true;
         AtomicReference<AuditLogEntry> entry = new AtomicReference<>(null);
@@ -265,7 +261,7 @@ public class NicknameMain extends ListenerAdapter {
     }
 
     @Override
-    public void onGuildMemberRemove(@Nonnull GuildMemberRemoveEvent event) {
+    public void onGuildMemberRemove(GuildMemberRemoveEvent event) {
         if (!nickConfig.isEnabled()) return;
         isBusy = true;
         try {
@@ -307,7 +303,7 @@ public class NicknameMain extends ListenerAdapter {
         }
     }
     @Override
-    public void onMessageReceived(@Nonnull MessageReceivedEvent event) {
+    public void onMessageReceived(MessageReceivedEvent event) {
         isConnected = true;
         if (event.getAuthor().isBot()) return;
         Message msg = event.getMessage();
@@ -776,7 +772,7 @@ public class NicknameMain extends ListenerAdapter {
         }
     }
     // targetDiscordID argument is for accepting or denying the request via a reaction, it's -1 when it's via command
-    void requestHandler(Message msg, @Nullable Member handler, boolean requestAccepted, long targetDiscordID) throws IOException {
+    void requestHandler(Message msg, Member handler, boolean requestAccepted, long targetDiscordID) throws IOException {
         String[] args = msg.getContentRaw().substring(1).split(" ");
         String result = "";
         if (handler == null) {
@@ -1102,7 +1098,7 @@ public class NicknameMain extends ListenerAdapter {
             log.info("Name Restricted Roles Setup");
         }
     }
-    private void addNameHistory(long targetDiscordID, String oldName, @Nullable Message msg) {
+    private void addNameHistory(long targetDiscordID, String oldName, Message msg) {
         ArrayList<String> oldNickArray = nickCore.oldNickDictionary.get(targetDiscordID);
         if (oldNickArray == null) oldNickArray = new ArrayList<>();
         if (!oldNickArray.isEmpty() && oldNickArray.get(oldNickArray.size() - 1).equals(oldName)) return;

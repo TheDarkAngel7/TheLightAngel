@@ -6,18 +6,17 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.events.DisconnectEvent;
-import net.dv8tion.jda.api.events.ReadyEvent;
-import net.dv8tion.jda.api.events.ReconnectedEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.session.ReadyEvent;
+import net.dv8tion.jda.api.events.session.SessionDisconnectEvent;
+import net.dv8tion.jda.api.events.session.SessionResumeEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.Nonnull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.ZonedDateTime;
@@ -85,22 +84,21 @@ public class BotAbuseMain extends ListenerAdapter {
     }
 
     @Override
-    public void onReady(@NotNull ReadyEvent event) {
-        isConnected = true;
-    }
-
-    @Override
-    public void onReconnected(@NotNull ReconnectedEvent event) {
-        isConnected = true;
-    }
-
-    @Override
-    public void onDisconnect(@NotNull DisconnectEvent event) {
+    public void onSessionDisconnect(SessionDisconnectEvent event) {
         isConnected = false;
     }
 
     @Override
-    public void onGuildMemberJoin(@Nonnull GuildMemberJoinEvent event) {
+    public void onSessionResume(SessionResumeEvent event) {
+        isConnected = true;
+    }
+
+    @Override
+    public void onReady(ReadyEvent event) {
+        isConnected = true;
+    }
+
+    public void onGuildMemberJoin(GuildMemberJoinEvent event) {
         if (!botConfig.isEnabled()) return;
         isBusy = true;
         try { Thread.sleep(10000); } catch (InterruptedException e) {}

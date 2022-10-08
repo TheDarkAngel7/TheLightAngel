@@ -3,7 +3,6 @@ package Angel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nullable;
 import java.io.*;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -78,7 +77,7 @@ class FileCreator {
         }
     }
 
-    private void exportResource(@Nullable String subFolder, String resourceName) throws IOException {
+    private void exportResource(String subFolder, String resourceName) throws IOException {
         InputStream stream;
         OutputStream resStreamOut;
         String jarFolder = jarDirectory;
