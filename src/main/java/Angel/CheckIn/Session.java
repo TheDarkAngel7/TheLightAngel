@@ -15,6 +15,9 @@ class Session {
         this.session = session;
 
     }
+    String getDate() {
+        return date;
+    }
     int getPlayerCount() {
         return pc;
     }

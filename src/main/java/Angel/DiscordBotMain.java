@@ -249,7 +249,7 @@ public class DiscordBotMain extends ListenerAdapter {
             }
         }
 
-        if ((msg.getChannel().equals(mainConfig.managementChannel) || msg.getChannel().equals(mainConfig.dedicatedOutputChannel))
+        if ((msg.getChannel().asTextChannel().equals(mainConfig.managementChannel) || msg.getChannel().asTextChannel().equals(mainConfig.dedicatedOutputChannel))
                 && !isValidCommand(msg)) {
             if (msg.getContentRaw().charAt(0) != mainConfig.commandPrefix && isTeamMember(msg.getAuthor().getIdLong())) {
                 embed.setAsWarning("No Messages Here",
@@ -414,8 +414,8 @@ public class DiscordBotMain extends ListenerAdapter {
                             // If they use /ping before their cooldown time is over then we send them the ping information in a DM
                             else if (Calendar.getInstance().getTime().before
                                     (pingCooldownOverTimes.get(pingCooldownDiscordIDs.lastIndexOf(msg.getMember().getIdLong())))
-                                    && !msg.getChannel().equals(mainConfig.botSpamChannel)
-                                    && !msg.getChannel().equals(mainConfig.dedicatedOutputChannel)) {
+                                    && !msg.getChannel().asTextChannel().equals(mainConfig.botSpamChannel)
+                                    && !msg.getChannel().asTextChannel().equals(mainConfig.dedicatedOutputChannel)) {
                                 embed.sendDM(msg, msg.getAuthor());
                             }
                             // Otherwise we can send them this in the help channel.
@@ -505,8 +505,8 @@ public class DiscordBotMain extends ListenerAdapter {
                     break;
                 case "set":
                     if (isStaffMember(msg.getAuthor().getIdLong())) {
-                        if (msg.getChannel().equals(mainConfig.discussionChannel)
-                                || msg.getChannel().equals(mainConfig.managementChannel)) {
+                        if (msg.getChannel().asTextChannel().equals(mainConfig.discussionChannel)
+                                || msg.getChannel().asTextChannel().equals(mainConfig.managementChannel)) {
                             configCommand(msg);
                         }
                         else {
@@ -539,7 +539,7 @@ public class DiscordBotMain extends ListenerAdapter {
             }
         }
         if (!msg.getChannelType().equals(ChannelType.PRIVATE) && !msg.getMentions().getMembers().contains(guild.getSelfMember())
-                && !msg.getChannel().equals(mainConfig.botSpamChannel) && !msg.getChannel().equals(mainConfig.managementChannel)
+                && !msg.getChannel().asTextChannel().equals(mainConfig.botSpamChannel) && !msg.getChannel().asTextChannel().equals(mainConfig.managementChannel)
                 && msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && msg.getAttachments().isEmpty()
                 && mainConfig.deleteOriginalNonStaffCommands) {
             msg.delete().queue();
@@ -548,8 +548,8 @@ public class DiscordBotMain extends ListenerAdapter {
         }
         else if (!msg.getChannelType().equals(ChannelType.PRIVATE) && !msg.getMentions().getMembers().contains(guild.getSelfMember()) &&
                 isTeamMember(msg.getAuthor().getIdLong()) && isValidCommand(msg) &&
-                (!msg.getChannel().equals(mainConfig.discussionChannel) || mainConfig.deleteOriginalStaffCommands) &&
-                !msg.getChannel().equals(mainConfig.managementChannel) && !msg.getChannel().equals(ciFeature.getConfig().getCheckInChannel()) && msg.getAttachments().isEmpty()) {
+                (!msg.getChannel().asTextChannel().equals(mainConfig.discussionChannel) || mainConfig.deleteOriginalStaffCommands) &&
+                !msg.getChannel().asTextChannel().equals(mainConfig.managementChannel) && !msg.getChannel().asTextChannel().equals(ciFeature.getConfig().getCheckInChannel()) && msg.getAttachments().isEmpty()) {
             msg.delete().queue();
             log.warn("Message Deleted - Channel Type Not Private, Does Not Mention Me, Not Bot Spam Channel, Is Team Member, Is Valid Command " +
                     "Discussion Channel or Delete Original Staff Commands True, Not Management Channel, Not Check-In Channel, Attachments Empty");
