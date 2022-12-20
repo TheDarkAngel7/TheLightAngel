@@ -57,7 +57,7 @@ public class BotAbuseMain extends ListenerAdapter {
         this.guild = importGuild;
 
         if (botConfig.isEnabled()) {
-            baCore.startup(true);
+            baCore.startup();
             this.restartValue = restartValue;
             this.embed = importEmbed;
             this.help = new Help(this, embed, mainConfig);

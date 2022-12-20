@@ -73,7 +73,7 @@ class LightAngel {
     }
     public static void main(String[] args) throws LoginException, IOException {
         boolean isRestart;
-        int restartValue;
+        int restartValue = 0;
         if (args.length == 1) {
             // restartValue of 0 indicates Cold Start
             // restartValue of 1 indicates Restart
@@ -85,6 +85,10 @@ class LightAngel {
             }
             else if (args[0].equalsIgnoreCase("-s") || args[0].equalsIgnoreCase("silent")) {
                 restartValue = 2;
+            }
+            else if (args[0].equalsIgnoreCase("-min") || args[0].equalsIgnoreCase("minimized")) {
+                new ProcessBuilder("cmd", "/c", "start", "/MIN", "java", "-jar", "-Dlog4j.configurationFile=./log4j2.properties", "TheLightAngel.jar", "false").start();
+                System.exit(1);
             }
             else restartValue = 0;
         }

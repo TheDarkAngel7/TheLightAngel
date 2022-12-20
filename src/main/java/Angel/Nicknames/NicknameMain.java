@@ -872,7 +872,7 @@ public class NicknameMain extends ListenerAdapter {
                         }
                     }
                     else {
-                        String defaultTitle = "Successful Nickname Request Denial";
+                        String defaultTitle = "Successful Nickname Request Rejection";
                         embed.setAsSuccess(defaultTitle, msg.getAuthor().getAsMention() + " " + result);
                         embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                         String messageToPlayer = "**Your Nickname Request was Denied** \n" +
@@ -925,7 +925,7 @@ public class NicknameMain extends ListenerAdapter {
                         }
                     }
                     else {
-                        String defaultTitle = "Successful Nickname Request Denial";
+                        String defaultTitle = "Successful Nickname Request Rejection";
                         embed.setAsSuccess(defaultTitle, result);
                         embed.sendToTeamOutput(msg, null);
                         embed.setAsSuccess(defaultTitle, result);

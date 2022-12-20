@@ -3,6 +3,7 @@ package Angel.BotAbuse;
 import Angel.EmbedEngine;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.UserSnowflake;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,14 +35,17 @@ class ExpiryTimer implements Runnable {
         }
         if (removedID != 0) {
             try {
-                // For Printing in the Console and in Discord A Bot Abuse role has been removed.
-                embed.setAsSuccess("Successfully Removed Expired Bot Abuse", "**:white_check_mark: Removed Expired Bot Abuse for "
-                        + guild.getMemberById(removedID).getAsMention() + "**");
-                embed.sendToLogChannel();
-                guild.removeRoleFromMember(User.fromId(removedID),
-                        baFeature.getConfig().getBotAbuseRole()).reason("Bot Abuse Expired Normally").queue();
-                log.info("Successfully Removed the Bot Abuse role from " +
-                        guild.getMemberById(removedID).getEffectiveName());
+                guild.retrieveMember(UserSnowflake.fromId(removedID)).queue(m -> {
+                    guild.removeRoleFromMember(User.fromId(m.getIdLong()),
+                            baFeature.getConfig().getBotAbuseRole()).reason("Bot Abuse Expired Normally").queue(success -> {
+                        // For Printing in the Console and in Discord A Bot Abuse role has been removed.
+                        log.info("Bot Abuse Role Successfully Removed from " + m.getEffectiveName() + " (Discord ID: " + m.getUser().getIdLong() + ") because it has expired" );
+
+                        embed.setAsSuccess("Successfully Removed Expired Bot Abuse", "**:white_check_mark: Removed Expired Bot Abuse for "
+                                + m.getAsMention() + "**");
+                        embed.sendToLogChannel();
+                    });
+                });
             }
             catch (ErrorResponseException ex) {
                 // For Printing in Console and in Discord the Role couldn't be removed

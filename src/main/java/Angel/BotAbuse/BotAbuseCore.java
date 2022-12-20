@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 class BotAbuseCore { // This is where all the magic happens, where all the data is added and queried from the appropriate arrays to
     // Display all the requested data.
@@ -29,10 +30,9 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
         this.guild = guild;
         this.mainConfig = mainConfig;
     }
-    void startup(boolean firstStartup) throws IOException {
+    void startup() throws IOException {
         try {
-            if (firstStartup) log.info("Bot Abuse Core Initiated...");
-            else log.info("Bot Abuse Database Gotten From Resume...");
+            log.info("Bot Abuse Core Initiated...");
             fileHandler.getDatabase();
         }
         catch (IllegalStateException ex) {
@@ -44,9 +44,6 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
     }
     JsonObject getConfig() throws IOException {
         return fileHandler.getConfig();
-    }
-    void saveDatabase() throws IOException {
-        fileHandler.saveDatabase();
     }
 
     String setBotAbuse(long targetDiscordID, boolean isPermanent, String reason, String imageURL, long teamMember)
@@ -410,29 +407,25 @@ class BotAbuseCore { // This is where all the magic happens, where all the data 
     long checkExpiredBotAbuse() throws IOException { // This is the method that gets run each second by the timer in Angel.DiscordBotMain
         // Because this method gets run every second, we advance the calendar object too.
         c = ZonedDateTime.now(ZoneId.of("UTC"));
-        int index = records.size() - 1;
-        while (index >= 0) {
-            long targetDiscordID = records.get(index).getDiscordID();
-            ZonedDateTime targetDate = records.get(index).getExpiryDate();
-            // This Catches the program from trying to remove a permanent Bot Abuse
-            if (botAbuseIsPermanent(targetDiscordID)) {
-                // Take No Action
-            }
-            // If the current time is after the target date then remove the bot abuse for that discord ID
-            else if (c.isAfter(targetDate) && records.get(index).isCurrentlyBotAbused()) {
-                records.get(index).setBotAbuseAsExpired();
-                if (this.mainConfig.testModeEnabled) {
-                    System.out.println(records.get(index).getDiscordID() + "\n" + records.get(index).getRepOffenses() +
-                            "\n" + records.get(index).getExpiryDate().toString() + "\n" + records.get(index).getReason());
+        AtomicReference<Long> returnValue = new AtomicReference<>(Long.parseLong("0"));
+        guild.findMembersWithRoles(Arrays.asList(botConfig.getBotAbuseRole())).onSuccess(botAbusers -> {
+            botAbusers.forEach(m -> {
+                BotAbuseRecord r = getLastRecord(m.getIdLong());
+                long targetDiscordID = r.getDiscordID();
+
+                // This Catches the program from trying to remove a permanent Bot Abuse
+                if (botAbuseIsPermanent(targetDiscordID)) {
+                    // Take No Action
                 }
-                fileHandler.saveDatabase();
-                return targetDiscordID;
-            }
-            index--;
-        }
-        // If the while loop completes without removing any expired bot abuses,
-        // then return 0 to indicate nothing got removed
-        return 0;
+                // If the current time is after the target date then remove the bot abuse for that discord ID
+                else if (c.isAfter(r.getExpiryDate())) {
+                    returnValue.set(targetDiscordID);
+                }
+            });
+        }).onError(throwable -> {
+            log.warn("An Error Occurred when requesting members with Bot Abuse Roles", throwable);
+        });
+        return returnValue.get();
     }
     String transferRecords(long oldDiscordID, long newDiscordID) throws IOException {
         // We scan over the entire discordID array and if the oldDiscordID matches we set the value to the newDiscordID

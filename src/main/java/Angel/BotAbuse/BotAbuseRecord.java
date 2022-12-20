@@ -11,7 +11,6 @@ class BotAbuseRecord {
     private ZonedDateTime expiryDate;
     private String reason;
     private String proofImage;
-    private boolean currentlyBotAbused;
 
     BotAbuseRecord(int id, long discordID, long issuingTeamMember, int repOffenses, ZonedDateTime issuedDate, ZonedDateTime expiryDate, String reason, String proofImage) {
         this.id = id;
@@ -22,7 +21,6 @@ class BotAbuseRecord {
         this.expiryDate = expiryDate;
         this.reason = reason;
         this.proofImage = proofImage;
-        this.currentlyBotAbused = true;
     }
 
     void setDiscordID(long newDiscordID) {
@@ -39,10 +37,6 @@ class BotAbuseRecord {
 
     void setReason(String reason) {
         this.reason = reason;
-    }
-
-    void setBotAbuseAsExpired() {
-        currentlyBotAbused = false;
     }
 
     int getId() {
@@ -75,9 +69,5 @@ class BotAbuseRecord {
 
     String getProofImage() {
         return proofImage;
-    }
-
-    boolean isCurrentlyBotAbused() {
-        return currentlyBotAbused;
     }
 }
