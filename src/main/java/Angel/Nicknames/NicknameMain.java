@@ -25,6 +25,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
 public class NicknameMain extends ListenerAdapter {
     private final Logger log = LogManager.getLogger(NicknameMain.class);
@@ -1102,18 +1103,45 @@ public class NicknameMain extends ListenerAdapter {
         ArrayList<String> oldNickArray = nickCore.oldNickDictionary.get(targetDiscordID);
         if (oldNickArray == null) oldNickArray = new ArrayList<>();
         if (!oldNickArray.isEmpty() && oldNickArray.get(oldNickArray.size() - 1).equals(oldName)) return;
-        if (oldName == null) oldName = guild.getMemberById(targetDiscordID).getUser().getName();
-        oldNickArray.add(oldName);
-        nickCore.oldNickDictionary.put(targetDiscordID, oldNickArray);
-        if (nickCore.arraySizesEqual()) {
-            try {
-                nickCore.fileHandler.saveDatabase();
-            }
-            catch (IOException e) {
-                log.error("Nickname Name History Addition", e);
-            }
+        if (oldName == null) {
+            ArrayList<String> finalOldNickArray = oldNickArray;
+            guild.retrieveMember(UserSnowflake.fromId(targetDiscordID)).useCache(false).submit().whenComplete(new BiConsumer<Member, Throwable>() {
+                @Override
+                public void accept(Member member, Throwable throwable) {
+                    if (throwable != null) {
+                        log.fatal(throwable.getMessage());
+                    }
+                    else {
+                        finalOldNickArray.add(member.getUser().getName());
+                        nickCore.oldNickDictionary.put(targetDiscordID, finalOldNickArray);
+                        if (nickCore.arraySizesEqual()) {
+                            try {
+                                nickCore.fileHandler.saveDatabase();
+                            }
+                            catch (IOException e) {
+                                log.error("Nickname Name History WhenComplete Task", e);
+                            }
+                        }
+                        else discord.failedIntegrityCheck(this.getClass().getName(), msg, "Name History");
+                    }
+                }
+            });
         }
-        else discord.failedIntegrityCheck(this.getClass().getName(), msg, "Name History");
+        else {
+            oldNickArray.add(oldName);
+            nickCore.oldNickDictionary.put(targetDiscordID, oldNickArray);
+            if (nickCore.arraySizesEqual()) {
+                try {
+                    nickCore.fileHandler.saveDatabase();
+                }
+                catch (IOException e) {
+                    log.error("Nickname Name History Addition", e);
+                }
+            }
+            else discord.failedIntegrityCheck(this.getClass().getName(), msg, "Name History");
+        }
+
+
     }
     public boolean isCommand(String cmd, String arg) {
         int index = 0;
