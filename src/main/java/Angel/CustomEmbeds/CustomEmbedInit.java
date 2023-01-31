@@ -21,7 +21,7 @@ public class CustomEmbedInit implements Runnable {
     private final EmbedEngine embed;
     private final Guild guild;
     private final DiscordBotMain discord;
-    private JDA jda;
+    private final JDA jda;
 
     private CustomEmbedMain embedMain;
 
@@ -32,7 +32,7 @@ public class CustomEmbedInit implements Runnable {
         this.discord = discord;
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT);
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOJI,
-                CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE, CacheFlag.ONLINE_STATUS, CacheFlag.STICKER);
+                CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE, CacheFlag.ONLINE_STATUS, CacheFlag.STICKER, CacheFlag.SCHEDULED_EVENTS);
         log.info("Attempting to Create Custom Embed JDA Instance");
         jda = JDABuilder.create(mainConfig.token, enabledIntents).disableCache(disabledFlags).setRequestTimeoutRetry(true)
                 .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).setMaxReconnectDelay(60).build();
