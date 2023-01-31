@@ -1,7 +1,7 @@
 package Angel.CheckIn;
 
-import Angel.CheckIn.AFKTool.AFKCheckManagement;
 import Angel.*;
+import Angel.CheckIn.AFKTool.AFKCheckManagement;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -27,6 +27,7 @@ import java.util.function.BiConsumer;
 
 public class CheckInMain extends ListenerAdapter {
     private final Logger log = LogManager.getLogger(CheckInMain.class);
+    private final AngelUncaughtException aue = new AngelUncaughtException();
     private final DiscordBotMain discord;
     private FileHandler fileHandler;
     private final Guild guild;
@@ -121,6 +122,7 @@ public class CheckInMain extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
+        Thread.currentThread().setUncaughtExceptionHandler(aue);
         isConnected = true;
         if (event.getAuthor().isBot() || event.getMessage().getChannel().getType() == ChannelType.PRIVATE) return;
         isBusy = true;

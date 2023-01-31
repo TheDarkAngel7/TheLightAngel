@@ -29,6 +29,7 @@ import java.util.function.BiConsumer;
 
 public class NicknameMain extends ListenerAdapter {
     private final Logger log = LogManager.getLogger(NicknameMain.class);
+    private final AngelUncaughtException aue = new AngelUncaughtException();
     private Guild guild;
     private DiscordBotMain discord;
     private FileHandler fileHandler;
@@ -100,6 +101,7 @@ public class NicknameMain extends ListenerAdapter {
     }
     @Override
     public void onUserUpdateName(UserUpdateNameEvent event) {
+        Thread.currentThread().setUncaughtExceptionHandler(aue);
         if (!nickConfig.isEnabled()) return;
         isBusy = true;
         guild.unloadMember(event.getUser().getIdLong());
@@ -148,6 +150,7 @@ public class NicknameMain extends ListenerAdapter {
 
     @Override
     public void onGuildMemberUpdateNickname(GuildMemberUpdateNicknameEvent event) {
+        Thread.currentThread().setUncaughtExceptionHandler(aue);
         if (!nickConfig.isEnabled()) return;
         isBusy = true;
         AtomicReference<AuditLogEntry> entry = new AtomicReference<>(null);
@@ -263,6 +266,7 @@ public class NicknameMain extends ListenerAdapter {
 
     @Override
     public void onGuildMemberRemove(GuildMemberRemoveEvent event) {
+        Thread.currentThread().setUncaughtExceptionHandler(aue);
         if (!nickConfig.isEnabled()) return;
         isBusy = true;
         try {
@@ -285,6 +289,7 @@ public class NicknameMain extends ListenerAdapter {
 
     @Override
     public void onGuildMemberRoleRemove(@NotNull GuildMemberRoleRemoveEvent event) {
+        Thread.currentThread().setUncaughtExceptionHandler(aue);
         if (inNickRestrictedRole(event.getUser().getIdLong()) || !nickConfig.isEnabled()) return;
         else {
             isBusy = true;
@@ -305,6 +310,7 @@ public class NicknameMain extends ListenerAdapter {
     }
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
+        Thread.currentThread().setUncaughtExceptionHandler(aue);
         isConnected = true;
         if (event.getAuthor().isBot()) return;
         Message msg = event.getMessage();

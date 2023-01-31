@@ -36,6 +36,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class DiscordBotMain extends ListenerAdapter {
+    private final Logger log = LogManager.getLogger(DiscordBotMain.class);
+    private final AngelUncaughtException aue = new AngelUncaughtException();
     private MainConfiguration mainConfig;
     private EmbedEngine embed;
     private FileHandler fileHandler;
@@ -49,7 +51,6 @@ public class DiscordBotMain extends ListenerAdapter {
     private CheckInInit ciInit;
     private CheckInMain ciFeature = null;
     private int restartValue;
-    private final Logger log = LogManager.getLogger(DiscordBotMain.class);
     private boolean commandsSuspended = false;
     public boolean isStarting = true;
     private ArrayList<Date> pingCooldownOverTimes = new ArrayList<>();
@@ -68,6 +69,7 @@ public class DiscordBotMain extends ListenerAdapter {
 
     @Override
     public void onReady(ReadyEvent event) {
+        Thread.currentThread().setUncaughtExceptionHandler(aue);
         JDA jda = event.getJDA();
         guild = jda.getGuilds().get(0);
         mainConfig.guild = this.guild;
@@ -88,17 +90,21 @@ public class DiscordBotMain extends ListenerAdapter {
         Thread tCustomEmbedFeature = new Thread(customEmbedInit);
         Thread tCheckInFeature = new Thread(ciInit);
 
-        tNickFeature.start();
+        tNickFeature.setUncaughtExceptionHandler(aue);
         tNickFeature.setName("Nickname Thread");
+        tNickFeature.start();
 
-        tBotAbuseFeature.start();
+        tBotAbuseFeature.setUncaughtExceptionHandler(aue);
         tBotAbuseFeature.setName("Bot Abuse Thread");
+        tBotAbuseFeature.start();
 
-        tCheckInFeature.start();
+        tCheckInFeature.setUncaughtExceptionHandler(aue);
         tCheckInFeature.setName("Check-In Thread");
+        tCheckInFeature.start();
 
-        tCustomEmbedFeature.start();
+        tCustomEmbedFeature.setUncaughtExceptionHandler(aue);
         tCustomEmbedFeature.setName("Custom Embed Thread");
+        tCustomEmbedFeature.start();
 
         while (baFeature == null || nickFeature == null || customEmbedFeature == null || ciFeature == null) {
             try { Thread.sleep(1000); } catch (InterruptedException e) {}
@@ -126,6 +132,7 @@ public class DiscordBotMain extends ListenerAdapter {
 
     @Override
     public void onMessageReactionRemoveAll(@NotNull MessageReactionRemoveAllEvent event) {
+        Thread.currentThread().setUncaughtExceptionHandler(aue);
         int index = 0;
         do {
             if (listEmbeds.get(index).getMessageEntry().getResultEmbed().getIdLong() == event.getMessageIdLong()
@@ -138,6 +145,7 @@ public class DiscordBotMain extends ListenerAdapter {
 
     @Override
     public void onMessageReactionAdd(@NotNull MessageReactionAddEvent event) {
+        Thread.currentThread().setUncaughtExceptionHandler(aue);
         event.retrieveMessage().queue(msg -> {
             if (msg.getAuthor() == msg.getJDA().getSelfUser() && event.getUser() != msg.getJDA().getSelfUser()) {
                 MessageEntry entry = null;
@@ -211,6 +219,7 @@ public class DiscordBotMain extends ListenerAdapter {
 
     @Override
     public void onMessageDelete(@NotNull MessageDeleteEvent event) {
+        Thread.currentThread().setUncaughtExceptionHandler(aue);
         Enumeration<Message> messages = reactionClearTimers.keys();
 
         do {
@@ -228,6 +237,7 @@ public class DiscordBotMain extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
+        Thread.currentThread().setUncaughtExceptionHandler(aue);
         if (event.getAuthor().isBot()) return;
         Message msg = event.getMessage();
         String[] args = null;
@@ -249,7 +259,7 @@ public class DiscordBotMain extends ListenerAdapter {
             }
         }
 
-        if ((msg.getChannel().asTextChannel().equals(mainConfig.managementChannel) || msg.getChannel().asTextChannel().equals(mainConfig.dedicatedOutputChannel))
+        if ((msg.getChannel().getType() != ChannelType.PRIVATE && (msg.getChannel().asTextChannel().equals(mainConfig.managementChannel) || msg.getChannel().asTextChannel().equals(mainConfig.dedicatedOutputChannel)))
                 && !isValidCommand(msg)) {
             if (msg.getContentRaw().charAt(0) != mainConfig.commandPrefix && isTeamMember(msg.getAuthor().getIdLong())) {
                 embed.setAsWarning("No Messages Here",

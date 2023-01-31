@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class BotAbuseMain extends ListenerAdapter {
     private final Logger log = LogManager.getLogger(BotAbuseMain.class);
+    private final AngelUncaughtException aue = new AngelUncaughtException();
     private BotAbuseTimers baTimers;
     private Guild guild;
     private MainConfiguration mainConfig;
@@ -99,6 +100,7 @@ public class BotAbuseMain extends ListenerAdapter {
     }
 
     public void onGuildMemberJoin(GuildMemberJoinEvent event) {
+        Thread.currentThread().setUncaughtExceptionHandler(aue);
         if (!botConfig.isEnabled()) return;
         isBusy = true;
         try { Thread.sleep(10000); } catch (InterruptedException e) {}
@@ -128,6 +130,7 @@ public class BotAbuseMain extends ListenerAdapter {
     }
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
+        Thread.currentThread().setUncaughtExceptionHandler(aue);
         isConnected = true;
         if (event.getAuthor().isBot()) return;
         Message msg = event.getMessage();

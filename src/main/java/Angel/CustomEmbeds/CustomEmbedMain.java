@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class CustomEmbedMain extends ListenerAdapter {
     private final Logger log = LogManager.getLogger(CustomEmbedMain.class);
+    private final AngelUncaughtException aue = new AngelUncaughtException();
     private final MainConfiguration mainConfig;
     private final EmbedEngine embed;
     private final DiscordBotMain discord;
@@ -25,6 +26,7 @@ public class CustomEmbedMain extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
+        Thread.currentThread().setUncaughtExceptionHandler(aue);
         if (event.getAuthor().isBot() || !event.getChannelType().isGuild()) return;
         Message msg = event.getMessage();
         String[] args = null;
