@@ -144,124 +144,133 @@ public class NicknameMain extends ListenerAdapter {
         }
         catch (ErrorResponseException ex) {
             // Take No Action - This Exception indicates either this user is not a member of the guild or does not exist.
+            log.warn("Whoops... looks like this discord user is not in the guild or the user does not exist: " + ex.getMessage());
         }
         isBusy = false;
     }
 
     @Override
     public void onGuildMemberUpdateNickname(GuildMemberUpdateNicknameEvent event) {
-        Thread.currentThread().setUncaughtExceptionHandler(aue);
         if (!nickConfig.isEnabled()) return;
-        isBusy = true;
-        AtomicReference<AuditLogEntry> entry = new AtomicReference<>(null);
-        guild.retrieveAuditLogs().queue(l -> {
-            int index = 0;
-            do {
-                if (l.get(index).getTargetType() == TargetType.MEMBER) {
-                    if (l.get(index).getTargetIdLong() == event.getUser().getIdLong()) {
-                        entry.set(l.get(index));
-                        break;
+
+        guild.retrieveAuditLogs().submit().whenComplete(new BiConsumer<List<AuditLogEntry>, Throwable>() {
+            @Override
+            public void accept(List<AuditLogEntry> l, Throwable throwable) {
+                Thread.currentThread().setUncaughtExceptionHandler(aue);
+                if (throwable != null) {
+                    log.error("Exception Thrown by retrieving logs on Nickname Update: " + throwable.getMessage());
+                    return;
+                }
+                isBusy = true;
+                AuditLogEntry entry = null;
+                int index = 0;
+                do {
+                    if (l.get(index).getTargetType() == TargetType.MEMBER) {
+                        if (l.get(index).getTargetIdLong() == event.getUser().getIdLong()) {
+                            entry = l.get(index);
+                            break;
+                        }
+                    }
+
+                    if (entry == null && index == l.size()) {
+                        index = -1;
+                    }
+                } while (++index < l.size());
+
+                if (entry.getUser().isBot() || index == l.size()) return;
+                else if (discord.isTeamMember(entry.getUser().getIdLong())) {
+                    String newNickname = event.getNewNickname();
+                    AtomicReference<Member> member = new AtomicReference<>();
+                    AtomicReference<Member> memberResponsible = new AtomicReference<>();
+                    guild.retrieveMember(entry.getUser()).queue(m -> memberResponsible.set(m));
+                    guild.retrieveMember(event.getUser()).queue(m -> member.set(m));
+                    if (newNickname == null) {
+                        newNickname = member.get().getEffectiveName() + " (Their Discord Username)";
+                    }
+                    addNameHistory(event.getUser().getIdLong(), event.getOldNickname(), null);
+                    embed.setAsInfo("Staff Updated Nickname", "**" + entry.getUser().getAsMention() + " successfully changed a nickname via the discord GUI:**" +
+                            "\nMember: " + event.getUser().getAsMention() +
+                            "\nOld Nickname: **" + event.getOldNickname() +
+                            "**\nNew Nickname: **" + newNickname + "**");
+                    embed.sendToLogChannel();
+                    log.info(memberResponsible.get().getEffectiveName() + " changed " + member.get().getEffectiveName() +
+                            "'s nickname from " + event.getOldNickname() + " to " + event.getNewNickname());
+                }
+
+                else if (inNickRestrictedRole(event.getUser().getIdLong())) {
+                    if (tempDiscordID.contains(event.getUser().getIdLong()) || nickCore.discordID.contains(event.getUser().getIdLong())) {
+                        if (tempDiscordID.contains(event.getUser().getIdLong())) {
+                            embed.setAsWarning("Instructions Warning",
+                                    ":warning: **Please Re-Read the Instructions I just gave you above this message**");
+                            embed.sendDM(null, event.getUser());
+                            event.getMember().modifyNickname(event.getOldNickname())
+                                    .reason(event.getMember().getEffectiveName() + " has tried to change their nickname on their own already...").queue();
+
+                        }
+                        else if (nickCore.discordID.contains(event.getUser().getIdLong())) {
+                            embed.setAsError("Pending Request Info",
+                                    "You already have a pending nickname request");
+                            embed.sendDM(null, event.getUser());
+                            event.getMember().modifyNickname(event.getOldNickname())
+                                    .reason("Already has pending nickname request and again tried to change it on their own...").queue();
+                        }
+                        else return;
+                    }
+                    else {
+                        tempDiscordID.add(event.getUser().getIdLong());
+                        String results = "**You're in a role that prohibits modifying your name**";
+
+                        if (event.getOldNickname() != null && event.getNewNickname() != null) {
+                            results = results.concat(
+                                    "\n\nOld Nickname: **" + event.getOldNickname() + "**\nNew Nickname: **" + event.getNewNickname() + "**"
+                            );
+                        }
+                        else if (event.getOldNickname() == null && event.getNewNickname() != null) {
+                            results = results.concat(
+                                    "\n\nOld Nickname: **No Nickname Found" + "**\nNew Nickname: **" + event.getNewNickname() + "**"
+                            );
+                        }
+                        else if (event.getOldNickname() != null && event.getNewNickname() == null) {
+                            results = results.concat(
+                                    "\n\nOld Nickname: **" + event.getOldNickname() +
+                                            "**\nNew Nickname: ** " + event.getUser().getName() + "** (Reset to Discord Username)"
+                            );
+                        }
+                        tempOldNick.add(event.getOldNickname());
+                        tempNewNick.add(event.getNewNickname());
+
+                        results = results.concat("\n\nIf you wish to place a request to change your nickname to what is displayed here: " +
+                                "please respond with" +
+                                " `" + mainConfig.commandPrefix + "nickname request` (or `"
+                                + mainConfig.commandPrefix + "nn req` for short) and this will be submitted to the SAFE Team");
+
+                        embed.setAsError("You Cannot Modify Your Nickname", results);
+                        embed.sendDM(null, event.getUser());
+                        event.getMember().modifyNickname(event.getOldNickname()).reason("Automatically Reverted Nickname as this player is in a role that prevents nickname changes").queue();
+                        String logMessage = event.getMember().getAsMention() + " was not allowed to change their nickname to **"
+                                + event.getNewNickname() + "** as they are in a role that prohibits their effective name " +
+                                "from changing. So it got reverted back to **" + event.getOldNickname() + "**";
+                        embed.setAsSuccess("Nickname Change Prevented",
+                                logMessage.replace("null", event.getUser().getAsTag() + " (Their Discord Username)"));
+                        embed.sendToLogChannel();
                     }
                 }
-            } while (++index < l.size());
+                else if (!discord.isTeamMember(entry.getUser().getIdLong()) && !inNickRestrictedRole(event.getUser().getIdLong())) {
+                    String defaultMessage = event.getUser().getAsTag() + " updated their nickname from "
+                            + event.getOldNickname() + " to " + event.getNewNickname()
+                            + " as they did not have a role that prohibits it";
+                    String defaultDiscordMessage = event.getUser().getAsMention() + " updated their nickname from **"
+                            + event.getOldNickname() + "** to **" + event.getNewNickname() + "**. " +
+                            "\n*They were able to perform this action because they did not have a role that prohibits it*";
+                    embed.setAsInfo("Discord Nickname Updated", defaultDiscordMessage
+                            .replace("null", event.getUser().getAsTag() + " (Their Discord Username)"));
+                    embed.sendToLogChannel();
+                    addNameHistory(event.getUser().getIdLong(), event.getOldNickname(), null);
+                    log.info(defaultMessage);
+                }
+                isBusy = false;
+            }
         });
-
-        while (true) {
-            if (entry.get() != null) break;
-            try { Thread.sleep(100); } catch (InterruptedException e) {}
-        }
-        if (entry.get().getUser().isBot()) return;
-        else if (discord.isTeamMember(entry.get().getUser().getIdLong())) {
-            String newNickname = event.getNewNickname();
-            AtomicReference<Member> member = new AtomicReference<>();
-            AtomicReference<Member> memberResponsible = new AtomicReference<>();
-            guild.retrieveMember(entry.get().getUser()).queue(m -> memberResponsible.set(m));
-            guild.retrieveMember(event.getUser()).queue(m -> member.set(m));
-            if (newNickname == null) {
-                newNickname = member.get().getEffectiveName() + " (Their Discord Username)";
-            }
-            addNameHistory(event.getUser().getIdLong(), event.getOldNickname(), null);
-            embed.setAsInfo("Staff Updated Nickname", "**" + entry.get().getUser().getAsMention() + " successfully changed a nickname via the discord GUI:**" +
-                    "\nMember: " + event.getUser().getAsMention() +
-                    "\nOld Nickname: **" + event.getOldNickname() +
-                    "**\nNew Nickname: **" + newNickname + "**");
-            embed.sendToLogChannel();
-            log.info(memberResponsible.get().getEffectiveName() + " changed " + member.get().getEffectiveName() +
-                    "'s nickname from " + event.getOldNickname() + " to " + event.getNewNickname());
-        }
-
-        else if (inNickRestrictedRole(event.getUser().getIdLong())) {
-            if (tempDiscordID.contains(event.getUser().getIdLong()) || nickCore.discordID.contains(event.getUser().getIdLong())) {
-                if (tempDiscordID.contains(event.getUser().getIdLong())) {
-                    embed.setAsWarning("Instructions Warning",
-                            ":warning: **Please Re-Read the Instructions I just gave you above this message**");
-                    embed.sendDM(null, event.getUser());
-                    event.getMember().modifyNickname(event.getOldNickname())
-                            .reason(event.getMember().getEffectiveName() + " has tried to change their nickname on their own already...").queue();
-
-                }
-                else if (nickCore.discordID.contains(event.getUser().getIdLong())) {
-                    embed.setAsError("Pending Request Info",
-                            "You already have a pending nickname request");
-                    embed.sendDM(null, event.getUser());
-                    event.getMember().modifyNickname(event.getOldNickname())
-                            .reason("Already has pending nickname request and again tried to change it on their own...").queue();
-                }
-                else return;
-            }
-            else {
-                tempDiscordID.add(event.getUser().getIdLong());
-                String results = "**You're in a role that prohibits modifying your name**";
-
-                if (event.getOldNickname() != null && event.getNewNickname() != null) {
-                    results = results.concat(
-                            "\n\nOld Nickname: **" + event.getOldNickname() + "**\nNew Nickname: **" + event.getNewNickname() + "**"
-                    );
-                }
-                else if (event.getOldNickname() == null && event.getNewNickname() != null) {
-                    results = results.concat(
-                            "\n\nOld Nickname: **No Nickname Found" + "**\nNew Nickname: **" + event.getNewNickname() + "**"
-                    );
-                }
-                else if (event.getOldNickname() != null && event.getNewNickname() == null) {
-                    results = results.concat(
-                            "\n\nOld Nickname: **" + event.getOldNickname() +
-                                    "**\nNew Nickname: ** " + event.getUser().getName() + "** (Reset to Discord Username)"
-                    );
-                }
-                tempOldNick.add(event.getOldNickname());
-                tempNewNick.add(event.getNewNickname());
-
-                results = results.concat("\n\nIf you wish to place a request to change your nickname to what is displayed here: " +
-                        "please respond with" +
-                        " `" + mainConfig.commandPrefix + "nickname request` (or `"
-                        + mainConfig.commandPrefix + "nn req` for short) and this will be submitted to the SAFE Team");
-
-                embed.setAsError("You Cannot Modify Your Nickname", results);
-                embed.sendDM(null, event.getUser());
-                event.getMember().modifyNickname(event.getOldNickname()).reason("Automatically Reverted Nickname as this player is in a role that prevents nickname changes").queue();
-                String logMessage = event.getMember().getAsMention() + " was not allowed to change their nickname to **"
-                        + event.getNewNickname() + "** as they are in a role that prohibits their effective name " +
-                        "from changing. So it got reverted back to **" + event.getOldNickname() + "**";
-                embed.setAsSuccess("Nickname Change Prevented",
-                        logMessage.replace("null", event.getUser().getAsTag() + " (Their Discord Username)"));
-                embed.sendToLogChannel();
-            }
-        }
-        else if (!discord.isTeamMember(entry.get().getUser().getIdLong()) && !inNickRestrictedRole(event.getUser().getIdLong())) {
-            String defaultMessage = event.getUser().getAsTag() + " updated their nickname from "
-                    + event.getOldNickname() + " to " + event.getNewNickname()
-                    + " as they did not have a role that prohibits it";
-            String defaultDiscordMessage = event.getUser().getAsMention() + " updated their nickname from **"
-                    + event.getOldNickname() + "** to **" + event.getNewNickname() + "**. " +
-                    "\n*They were able to perform this action because they did not have a role that prohibits it*";
-            embed.setAsInfo("Discord Nickname Updated", defaultDiscordMessage
-                    .replace("null", event.getUser().getAsTag() + " (Their Discord Username)"));
-            embed.sendToLogChannel();
-            addNameHistory(event.getUser().getIdLong(), event.getOldNickname(), null);
-            log.info(defaultMessage);
-        }
-        isBusy = false;
     }
 
     @Override
@@ -272,7 +281,7 @@ public class NicknameMain extends ListenerAdapter {
         try {
             String result = nickCore.withdrawRequest(event.getUser().getIdLong(), true, false);
             if (result != null) {
-                embed.setAsInfo("Automatic Nickname Request Withdraw", result);
+                embed.setAsWarning("Automatic Nickname Request Withdraw", result);
                 embed.sendToLogChannel();
             }
         }

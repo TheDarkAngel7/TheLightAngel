@@ -133,7 +133,7 @@ public class MessageEntry {
         return this;
     }
 
-    MessageEntry setResultEmbed(Message resultEmbed) {
+    public MessageEntry setResultEmbed(Message resultEmbed) {
         this.resultEmbed.set(resultEmbed);
         return this;
     }
@@ -148,11 +148,11 @@ public class MessageEntry {
         return this;
     }
 
-    List<TargetChannelSet> getTargetChannels() {
+    public List<TargetChannelSet> getTargetChannels() {
         return targetChannels;
     }
 
-    List<TextChannel> getCustomChannels() {
+    public List<TextChannel> getCustomChannels() {
         return customChannels;
     }
 
@@ -164,23 +164,23 @@ public class MessageEntry {
         return resultEmbed.get();
     }
 
-    User getTargetUser() {
+    public User getTargetUser() {
         return targetUser;
     }
 
-    String getMessage() {
+    public String getMessage() {
         return msg;
     }
 
-    String getTitle() {
+    public String getTitle() {
         return title;
     }
 
-    boolean isFieldOriginallyIncluded() {
+    public boolean isFieldOriginallyIncluded() {
         return fieldOriginallyIncluded;
     }
 
-    boolean isListEmbed() {
+    public boolean isListEmbed() {
         return isListEmbed;
     }
 
