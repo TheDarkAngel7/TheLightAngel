@@ -27,7 +27,7 @@ import java.util.function.BiConsumer;
 
 public class CheckInMain extends ListenerAdapter {
     private final Logger log = LogManager.getLogger(CheckInMain.class);
-    private final AngelUncaughtException aue = new AngelUncaughtException();
+    private final AngelExceptionHandler aue = new AngelExceptionHandler();
     private final DiscordBotMain discord;
     private FileHandler fileHandler;
     private final Guild guild;

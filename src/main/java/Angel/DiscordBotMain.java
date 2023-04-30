@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class DiscordBotMain extends ListenerAdapter {
     private final Logger log = LogManager.getLogger(DiscordBotMain.class);
-    private final AngelUncaughtException aue = new AngelUncaughtException();
+    private final AngelExceptionHandler aue = new AngelExceptionHandler();
     private MainConfiguration mainConfig;
     private EmbedEngine embed;
     private FileHandler fileHandler;

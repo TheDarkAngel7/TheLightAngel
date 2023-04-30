@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class CustomEmbedMain extends ListenerAdapter {
     private final Logger log = LogManager.getLogger(CustomEmbedMain.class);
-    private final AngelUncaughtException aue = new AngelUncaughtException();
+    private final AngelExceptionHandler aue = new AngelExceptionHandler();
     private final MainConfiguration mainConfig;
     private final EmbedEngine embed;
     private final DiscordBotMain discord;

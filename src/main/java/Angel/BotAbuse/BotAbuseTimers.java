@@ -75,7 +75,7 @@ class BotAbuseTimers {
             baFeature.timersSuspended = false;
 
             service.scheduleAtFixedRate(expiryTimer, 0, 1, TimeUnit.SECONDS);
-            service.scheduleAtFixedRate(roleScanningTimer, 0, baFeature.getConfig().getRoleScannerInterval(), TimeUnit.MINUTES);
+            service.scheduleAtFixedRate(roleScanningTimer, 5000, baFeature.getConfig().getRoleScannerInterval(), TimeUnit.MINUTES);
             log.info("Timers are Running");
         }
         else if (baFeature.commandsSuspended) {

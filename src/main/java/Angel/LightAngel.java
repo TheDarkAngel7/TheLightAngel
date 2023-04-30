@@ -26,7 +26,7 @@ class LightAngel {
     static File checkInDataFile = new File("data/checkIndata.json");
     static {
         Thread.currentThread().setName("Main Thread");
-        Thread.currentThread().setUncaughtExceptionHandler(new AngelUncaughtException());
+        Thread.currentThread().setUncaughtExceptionHandler(new AngelExceptionHandler());
         log.info("New Log Starting at time: " + Calendar.getInstance().getTime());
         log.info("TheLightAngel is Starting! Please Wait...");
         try {

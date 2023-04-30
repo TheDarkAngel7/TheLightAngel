@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class BotAbuseMain extends ListenerAdapter {
     private final Logger log = LogManager.getLogger(BotAbuseMain.class);
-    private final AngelUncaughtException aue = new AngelUncaughtException();
+    private final AngelExceptionHandler aue = new AngelExceptionHandler();
     private BotAbuseTimers baTimers;
     private Guild guild;
     private MainConfiguration mainConfig;
@@ -214,6 +214,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         embed.setAsError("Error - No Permissions", "**:x: You Lack Permissions to do that!**");
                         embed.sendToMemberOutput(msg, msg.getAuthor());
                     }
+                    break;
                 case "checkhistory":
                     checkHistory(msg, isTeamMember);
                     break;
@@ -1459,7 +1460,13 @@ public class BotAbuseMain extends ListenerAdapter {
     public BotAbuseConfiguration getConfig() {
         return botConfig;
     }
-    String getDiscordFormat(ZonedDateTime time) {
-        return discord.getDiscordFormat(time);
+    String getDiscordFormat(ZonedDateTime time, long targetDiscordID) {
+        if (baCore.botAbuseIsPermanent(targetDiscordID)) {
+            return "Permanent";
+        }
+        // They're Not Perm Bot Abused
+        else {
+            return discord.getDiscordFormat(time);
+        }
     }
 }

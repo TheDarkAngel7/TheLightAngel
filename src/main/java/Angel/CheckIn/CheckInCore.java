@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 class CheckInCore {
@@ -80,50 +81,62 @@ class CheckInCore {
         int index = 0;
         List<Session.Players> players = currentSession.getPlayerList();
 
-        while (index < players.size()) {
-            String playerName = players.get(index).getPlayerName();
-            if (players.get(index).isSAFE()) {
-                List<Member> ms = guild.getMembersByEffectiveName(playerName, true);
-                if (ms.size() == 1) {
-                    CheckInPlayer p = new CheckInPlayer(checkInList.size() + 1, ms.get(0).getIdLong());
-                    if (players.get(index).isStaff()) p.removeFromCheckInQueue();
-                    checkInList.add(p);
-                }
-                else if (ms.size() > 1) {
-                    List<Member> membersFoundByRole = new ArrayList<>();
-                    int searchIndex = 0;
-                    while (searchIndex < ms.size()) {
-                        int roleIndex = 0;
-                        while (roleIndex < ciConfig.getRolesThatCanBeCheckedIn().size()) {
-                            if (ms.get(searchIndex).getRoles().contains(ciConfig.getRolesThatCanBeCheckedIn().get(roleIndex++))) {
-                                membersFoundByRole.add(ms.get(searchIndex));
-                                break;
+        CountDownLatch latch = new CountDownLatch(players.size());
+
+        do {
+            Session.Players player = players.get(index);
+            String playerName = player.getPlayerName();
+            if (player.isSAFE()) {
+                guild.retrieveMembersByPrefix(playerName, 10).onSuccess(ms -> {
+                    if (ms.size() == 1) {
+                        CheckInPlayer p = new CheckInPlayer(checkInList.size() + 1, ms.get(0).getIdLong());
+                        if (player.isStaff()) p.removeFromCheckInQueue();
+                        checkInList.add(p);
+                    }
+                    else if (ms.size() > 1) {
+                        List<Member> membersFoundByRole = new ArrayList<>();
+                        int searchIndex = 0;
+                        while (searchIndex < ms.size()) {
+                            int roleIndex = 0;
+                            while (roleIndex < ciConfig.getRolesThatCanBeCheckedIn().size()) {
+                                if (ms.get(searchIndex).getRoles().contains(ciConfig.getRolesThatCanBeCheckedIn().get(roleIndex++))) {
+                                    membersFoundByRole.add(ms.get(searchIndex));
+                                    break;
+                                }
                             }
+                            searchIndex++;
                         }
-                        searchIndex++;
-                    }
-                    if (membersFoundByRole.size() == 1) {
-                        Member m = membersFoundByRole.get(0);
-                        log.info("Member Successfully Found By Role From Duplicate Account Nicknames: " +
-                                m.getEffectiveName() + " - ID: " + m.getIdLong());
-                        checkInList.add(new CheckInPlayer(checkInList.size() + 1, m.getIdLong()));
-                    }
-                    else if (membersFoundByRole.isEmpty()) {
-                        log.warn("Member Has Not Been Found By Duplicate Accounts: " + playerName);
-                        unrecognizedPlayer.add(playerName);
+                        if (membersFoundByRole.size() == 1) {
+                            Member m = membersFoundByRole.get(0);
+                            log.info("Member Successfully Found By Role From Duplicate Account Nicknames: " +
+                                    m.getEffectiveName() + " - ID: " + m.getIdLong());
+                            checkInList.add(new CheckInPlayer(checkInList.size() + 1, m.getIdLong()));
+                        }
+                        else if (membersFoundByRole.isEmpty()) {
+                            log.warn("Member Has Not Been Found By Duplicate Accounts: " + playerName);
+                            unrecognizedPlayer.add(playerName);
+                        }
+                        else {
+                            duplicateMatches.put(playerName, ms);
+                        }
                     }
                     else {
-                        duplicateMatches.put(playerName, ms);
+                        unrecognizedPlayer.add(playerName);
                     }
-                }
-                else {
-                    unrecognizedPlayer.add(playerName);
-                }
+                    latch.countDown();
+                });
             }
             else {
                 unrecognizedPlayer.add(playerName);
+                latch.countDown();
             }
-            index++;
+        } while (++index < players.size());
+
+        try {
+            latch.await();
+        }
+        catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
     void addMemberToCheckIn(List<Member> ms) {

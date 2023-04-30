@@ -29,7 +29,7 @@ import java.util.function.BiConsumer;
 
 public class NicknameMain extends ListenerAdapter {
     private final Logger log = LogManager.getLogger(NicknameMain.class);
-    private final AngelUncaughtException aue = new AngelUncaughtException();
+    private final AngelExceptionHandler aue = new AngelExceptionHandler();
     private Guild guild;
     private DiscordBotMain discord;
     private FileHandler fileHandler;
