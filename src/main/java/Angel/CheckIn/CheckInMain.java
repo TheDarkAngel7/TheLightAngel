@@ -323,26 +323,25 @@ public class CheckInMain extends ListenerAdapter {
                 }
                 else if (ciCore.isValidSessionName(sessionName)) {
                     checkInRunning = true;
+                    log.info("Attempting to Start Check-In for the Session: " + sessionChannel.getName());
+
+                    checkinStartConfirmationEntry = new MessageEntry("Successful Check-In Startup",
+                            "**Successfully started a check-in for " + sessionChannel.getAsMention() + "!**" +
+                                    "\n\n**Please Wait While I go fetch the names from zoobot and match those names up to discord accounts...**",
+                            EmbedDesign.WARNING, mainConfig);
+                    getCheckInProgressionEmbedChannel().sendMessageEmbeds(checkinStartConfirmationEntry.getEmbed(false))
+                            .submit().whenComplete(new BiConsumer<Message, Throwable>() {
+                        @Override
+                        public void accept(Message message, Throwable throwable) {
+                            checkinStartConfirmationEmbed = message;
+                        }
+                    });
+
                     ciCore.loadSessionLists(sessionName, false);
 
-                    if (ciCore.getCheckInList().isEmpty()) {
-                        embed.setAsError("Session Empty",
-                                ":x: The session you have selected is currently empty... there's nobody to check-in");
-                    }
-                    else {
-                        checkinStartConfirmationEntry = new MessageEntry("Successful Check-In Startup",
-                                "**Successfully started a check-in for " + sessionChannel.getAsMention() + "!**" +
-                                        "\n\n**Please Wait While I go fetch the names from zoobot and match those names up to discord accounts...**",
-                                EmbedDesign.WARNING, mainConfig);
-                        getCheckInProgressionEmbedChannel().sendMessageEmbeds(checkinStartConfirmationEntry.getEmbed(false)).submit().whenComplete(new BiConsumer<Message, Throwable>() {
-                            @Override
-                            public void accept(Message message, Throwable throwable) {
-                                checkinStartConfirmationEmbed = message;
-                            }
-                        });
-                        sendCheckInStartupPrompts(msg, false);
-                        return;
-                    }
+                    sendCheckInStartupPrompts(msg, false);
+
+                    return;
                 }
                 else {
                     embed.setAsError("Not a Valid Session Channel",
@@ -941,17 +940,25 @@ public class CheckInMain extends ListenerAdapter {
         if (tempString != "") memberList.add(tempString);
 
         if (!update) {
-            checkInQueueEmbed = new CheckInQueueEmbed(new MessageEntry("Members To Be Checked-In",
-                    EmbedDesign.SUCCESS, mainConfig, originalCmd, ciConfig.getCheckInChannel()).setAsIsListEmbed(),
-                    memberListPrefix, memberList, null, emojiList, this);
+            if (!ciCore.getCheckInList().isEmpty()) {
+                checkInQueueEmbed = new CheckInQueueEmbed(new MessageEntry("Members To Be Checked-In",
+                        EmbedDesign.SUCCESS, mainConfig, originalCmd, ciConfig.getCheckInChannel()).setAsIsListEmbed(),
+                        memberListPrefix, memberList, null, emojiList, this);
 
-            discord.addAsReactionListEmbed(checkInQueueEmbed);
-            toPurge.add(embed.getMessageEntryObj(originalCmd).getResultEmbed());
+                discord.addAsReactionListEmbed(checkInQueueEmbed);
+                toPurge.add(embed.getMessageEntryObj(originalCmd).getResultEmbed());
+            }
 
             while (true) {
                 try {
-                    checkinStartConfirmationEmbed.editMessageEmbeds(checkinStartConfirmationEntry.setDesign(EmbedDesign.SUCCESS).setMessage(
-                            "**Successfully started a check-in for " + sessionChannel.getAsMention() + "!**").getEmbed(false)).queue();
+                    if (ciCore.getCheckInList().isEmpty()) {
+                        checkinStartConfirmationEmbed.editMessageEmbeds(checkinStartConfirmationEntry.setDesign(EmbedDesign.ERROR).setTitle("Session Empty")
+                                .setMessage(":x: **The session you have selected is currently empty... there's nobody to check-in**").getEmbed()).queue();
+                    }
+                    else {
+                        checkinStartConfirmationEmbed.editMessageEmbeds(checkinStartConfirmationEntry.setDesign(EmbedDesign.SUCCESS).setMessage(
+                                "**Successfully started a check-in for " + sessionChannel.getAsMention() + "!**").getEmbed(false)).queue();
+                    }
                     break;
                 }
                 catch (NullPointerException ex) {}

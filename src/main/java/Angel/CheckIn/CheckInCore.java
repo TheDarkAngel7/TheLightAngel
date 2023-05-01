@@ -82,6 +82,7 @@ class CheckInCore {
         List<Session.Players> players = currentSession.getPlayerList();
 
         CountDownLatch latch = new CountDownLatch(players.size());
+        log.info("Count Down Latch Engaged! Starting Count From " + latch.getCount());
 
         do {
             Session.Players player = players.get(index);
@@ -89,9 +90,14 @@ class CheckInCore {
             if (player.isSAFE()) {
                 guild.retrieveMembersByPrefix(playerName, 10).onSuccess(ms -> {
                     if (ms.size() == 1) {
-                        CheckInPlayer p = new CheckInPlayer(checkInList.size() + 1, ms.get(0).getIdLong());
-                        if (player.isStaff()) p.removeFromCheckInQueue();
+                        Member m = ms.get(0);
+                        CheckInPlayer p = new CheckInPlayer(checkInList.size() + 1, m.getIdLong());
+                        if (player.isStaff()) {
+                            p.removeFromCheckInQueue();
+                            log.info(m.getEffectiveName() + " was found to be a staff member and was removed from the Check-In Queue prior to start");
+                        }
                         checkInList.add(p);
+                        log.info(m.getEffectiveName() + " was successfully added to the Check-In List");
                     }
                     else if (ms.size() > 1) {
                         List<Member> membersFoundByRole = new ArrayList<>();
@@ -111,6 +117,7 @@ class CheckInCore {
                             log.info("Member Successfully Found By Role From Duplicate Account Nicknames: " +
                                     m.getEffectiveName() + " - ID: " + m.getIdLong());
                             checkInList.add(new CheckInPlayer(checkInList.size() + 1, m.getIdLong()));
+                            log.info(m.getEffectiveName() + " was successfully added to the Check-In List");
                         }
                         else if (membersFoundByRole.isEmpty()) {
                             log.warn("Member Has Not Been Found By Duplicate Accounts: " + playerName);
@@ -124,11 +131,13 @@ class CheckInCore {
                         unrecognizedPlayer.add(playerName);
                     }
                     latch.countDown();
+                    log.info("Count Down Latch Counting Down... Remaining Count: " + latch.getCount());
                 });
             }
             else {
                 unrecognizedPlayer.add(playerName);
                 latch.countDown();
+                log.info("Count Down Latch Counting Down... Remaining Count: " + latch.getCount());
             }
         } while (++index < players.size());
 
