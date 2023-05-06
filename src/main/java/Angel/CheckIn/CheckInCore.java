@@ -69,6 +69,7 @@ class CheckInCore {
         } while (++index < sessions.size());
     }
     void loadSessionLists(String sessionName, boolean refresh) {
+        log.info("Attempting to Load Session List for " + sessionName);
         runReader();
         if (refresh) {
             checkInList.clear();
@@ -124,10 +125,12 @@ class CheckInCore {
                             unrecognizedPlayer.add(playerName);
                         }
                         else {
+                            log.warn(playerName + " returned more than one account with Check-In roles!");
                             duplicateMatches.put(playerName, ms);
                         }
                     }
                     else {
+                        log.warn("No Players Found with the query " + playerName);
                         unrecognizedPlayer.add(playerName);
                     }
                     latch.countDown();
@@ -137,12 +140,15 @@ class CheckInCore {
             else {
                 unrecognizedPlayer.add(playerName);
                 latch.countDown();
+                log.warn("No Players Found with the query " + playerName);
                 log.info("Count Down Latch Counting Down... Remaining Count: " + latch.getCount());
             }
         } while (++index < players.size());
 
         try {
+            log.info("Main Thread Latched! Waiting for Release...");
             latch.await();
+            log.info("Session List Load Complete!");
         }
         catch (InterruptedException e) {
             throw new RuntimeException(e);
