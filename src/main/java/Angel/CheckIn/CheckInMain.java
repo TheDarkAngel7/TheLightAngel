@@ -21,6 +21,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -39,6 +40,7 @@ public class CheckInMain extends ListenerAdapter {
     // Embed in the session channel while the check-in is in progress
     private MessageEntry checkInSessionChannelEntry = null;
     private Message checkInSessionChannelEmbed = null;
+    private CountDownLatch checkInSessionChannelLatch;
     // Embed in one of our channels while the check-in is in progress
     private ListEmbed checkInProgressionEmbed;
     private MessageEntry checkInProgressionEntry;
@@ -83,9 +85,6 @@ public class CheckInMain extends ListenerAdapter {
             fileHandler = new FileHandler();
             ciConfig = new ModifyCheckInConfiguration(guild, fileHandler.getConfig());
             ciCore = new CheckInCore(ciConfig, guild);
-            ciTimer = new CheckInTimer(this, ciConfig, mainConfig);
-            afkCheck = new AFKCheckManagement(guild, event.getJDA(), discord, embed, mainConfig);
-            afkCheck.startTimer();
             fileHandler.setCiCore(ciCore);
             try {
                 fileHandler.getDatabase();
@@ -104,6 +103,9 @@ public class CheckInMain extends ListenerAdapter {
                         log.fatal("The configured roles that can be checked-in are not usable");
                         break;
             }
+            ciTimer = new CheckInTimer(this, ciConfig, mainConfig);
+            afkCheck = new AFKCheckManagement(guild, event.getJDA(), discord, embed, mainConfig);
+            afkCheck.startTimer();
         }
         catch (IOException ex) {
             log.error("IOException Caught while initalizing Check-In Config and Core: \n" + ex.getMessage());
@@ -449,6 +451,8 @@ public class CheckInMain extends ListenerAdapter {
                 checkInStartupEntryObjects.clear();
                 checkInStartupMessages.clear();
 
+                CountDownLatch latch = new CountDownLatch(ciCore.getCheckInList().size());
+
                 ciCore.getCheckInList().forEach(m -> {
                     AtomicReference<Member> member = new AtomicReference<>();
                     guild.retrieveMemberById(m.getPlayerDiscordId()).queue(member::set);
@@ -469,21 +473,35 @@ public class CheckInMain extends ListenerAdapter {
                                     log.info("Successfully Added Role " + ciConfig.getCheckInRole().getName() + " to " +
                                             member.get().getEffectiveName() + " (Discord ID: " + m.getPlayerDiscordId() + ")");
                                 }
+                                latch.countDown();
+                                log.info("Check-In Role Latch Counting Down: " + latch.getCount());
                             }
                         });
                     }
                     else if (mainConfig.testModeEnabled && m.isQueuedToCheckIn()) {
                         log.warn("Would Have Successfully Added Role " + ciConfig.getCheckInRole().getName() + " to " +
                                 member.get().getEffectiveName() + " (Discord ID: " + m.getPlayerDiscordId() + ") but could not because I'm in test mode...");
+                        latch.countDown();
+                        log.info("Check-In Role Latch Counting Down: " + latch.getCount());
                     }
                 });
+                try {
+                    log.info("Check-In Role Addition Latch Engaged!");
+                    latch.await(1, TimeUnit.MINUTES);
+                } catch (InterruptedException e) {
+                    aue.logCaughtException(Thread.currentThread(), e);
+                }
+                checkInSessionChannelLatch = new CountDownLatch(1);
                 sendSessionChannelMessage(false);
-
+                try {
+                    checkInSessionChannelLatch.await(5, TimeUnit.SECONDS);
+                }
+                catch (InterruptedException e) {
+                    aue.logCaughtException(Thread.currentThread(), e);
+                }
                 ciTimer.startTimer();
                 embed.editEmbed(msg, "Check-In Running", "**Check-In has Successfully Started for " +
-                        sessionChannel.getAsMention() + "**" +
-                        "\n\n**The "+ ciConfig.getCheckInRole().getAsMention() +
-                        " role may need a little additional time to get applied**", EmbedDesign.SUCCESS);
+                        sessionChannel.getAsMention() + "**", EmbedDesign.SUCCESS);
                 sendCheckInProgressEmbed(msg, false);
             }
         }
@@ -571,7 +589,7 @@ public class CheckInMain extends ListenerAdapter {
 
             if (!result.equals("")) pages.add(result);
             discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Check-In Result", EmbedDesign.INFO, mainConfig, msg, TargetChannelSet.TEAM),
-                    prefix, pages, suffix).invertButtonLabels(true));
+                    prefix, pages, suffix).invertButtonLabels().makeLabelsPlural());
         }
         catch (NumberFormatException ex) {
             if (msg.getMentions().getMembers().size() == 1) {
@@ -699,8 +717,12 @@ public class CheckInMain extends ListenerAdapter {
         else {
             checkInSessionChannelEntry = new MessageEntry(
                     "Check-In In Progress", checkInWarningString, EmbedDesign.WARNING, mainConfig);
-            sessionChannel.sendMessageEmbeds(checkInSessionChannelEntry.getEmbed(false)).queue(m -> {
-                checkInSessionChannelEmbed = m;
+            sessionChannel.sendMessageEmbeds(checkInSessionChannelEntry.getEmbed(false)).submit().whenComplete(new BiConsumer<Message, Throwable>() {
+                @Override
+                public void accept(Message message, Throwable throwable) {
+                    checkInSessionChannelEmbed = message;
+                    checkInSessionChannelLatch.countDown();
+                }
             });
         }
     }
@@ -807,30 +829,48 @@ public class CheckInMain extends ListenerAdapter {
         checkInRunning = false;
         checkInConfirmed = false;
         CheckInResult ciResult = ciCore.endCheckIn(false);
-        AtomicReference<Member> member = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(ciResult.getPlayers().size());
+
+        List<Member> players = new ArrayList<>();
 
         ciResult.getPlayers().forEach(p -> {
-            guild.retrieveMemberById(p.getPlayerDiscordId()).queue(member::set);
             if (p.isQueuedToCheckIn() && !p.successfullyCheckedIn()) {
-                if (mainConfig.testModeEnabled) {
-                    log.warn("Would Have Removed the Role " + ciConfig.getCheckInRole().getName() + " from " + member.get().getEffectiveName() +
-                            " (Discord ID: " + p.getPlayerDiscordId() + ") because the check-in ended, but couldn't because I'm in test mode...");
-                }
-                else {
-                    guild.removeRoleFromMember(member.get(), ciConfig.getCheckInRole()).submit().whenComplete(new BiConsumer<Void, Throwable>() {
-                        @Override
-                        public void accept(Void unused, Throwable throwable) {
-                            if (throwable == null) {
-                                log.info("Successfully Removed the Role " + ciConfig.getCheckInRole().getName() + " from " + member.get().getEffectiveName() +
-                                        " (Discord ID: " + p.getPlayerDiscordId() + ") because the check-in ended.");
-                            }
-                            else {
-                                log.warn("Could Not Remove the Role " + ciConfig.getCheckInRole().getName() + " from " + member.get().getEffectiveName() +
-                                        " (Discord ID: " + p.getPlayerDiscordId() + ")");
-                            }
+                guild.retrieveMemberById(p.getPlayerDiscordId()).queue(m -> {
+                    players.add(m);
+                    latch.countDown();
+                });
+            }
+            else {
+                // Skip Player and Count Down the Latch
+                latch.countDown();
+            }
+        });
+
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            aue.logCaughtException(Thread.currentThread(), e);
+        }
+
+        players.forEach(m -> {
+            if (mainConfig.testModeEnabled) {
+                log.warn("Would Have Removed the Role " + ciConfig.getCheckInRole().getName() + " from " + m.getEffectiveName() +
+                        " (Discord ID: " + m.getIdLong() + ") because the check-in ended, but couldn't because I'm in test mode...");
+            }
+            else {
+                guild.removeRoleFromMember(m, ciConfig.getCheckInRole()).submit().whenComplete(new BiConsumer<Void, Throwable>() {
+                    @Override
+                    public void accept(Void unused, Throwable throwable) {
+                        if (throwable == null) {
+                            log.info("Successfully Removed the Role " + ciConfig.getCheckInRole().getName() + " from " + m.getEffectiveName() +
+                                    " (Discord ID: " + m.getIdLong() + ") because the check-in ended.");
                         }
-                    });
-                }
+                        else {
+                            log.warn("Could Not Remove the Role " + ciConfig.getCheckInRole().getName() + " from " + m.getEffectiveName() +
+                                    " (Discord ID: " + m.getIdLong() + ")");
+                        }
+                    }
+                });
             }
         });
 

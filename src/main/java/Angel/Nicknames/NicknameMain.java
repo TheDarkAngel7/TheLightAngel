@@ -606,7 +606,7 @@ public class NicknameMain extends ListenerAdapter {
                                 if (!tempString.isEmpty()) pages.add(tempString);
 
                                 discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Name History", EmbedDesign.INFO, mainConfig, msg, TargetChannelSet.TEAM), "<@!" + targetDiscordID + ">'s Name History is as Follows:",
-                                        pages, "Total Old Names: **" + oldNickArray.size() + "**").invertButtonLabels(true));
+                                        pages, "Total Old Names: **" + oldNickArray.size() + "**").invertButtonLabels().makeLabelsPlural());
                             }
                         }
                         else {

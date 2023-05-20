@@ -48,9 +48,10 @@ class CheckInTimer extends Timer {
                     log.info("There is " + mentionOn + " minutes remaining in the Check-In... Sending " + mentionOn + " minute warning!");
                     ciConfig.getCheckInChannel().sendMessage(ciConfig.getCheckInRole().getAsMention()).queue();
                     ciConfig.getCheckInChannel().sendMessageEmbeds(new MessageEntry(mentionOn + " Minutes Remaining!",
-                            ":warning: **There is " + mentionOn + " minutes remaining on the Check-In! Please respond with `"+ mainConfig.commandPrefix + "checkin` or else you're in violation of GTA Rule #5!**" +
+                            ":warning: **There is " + mentionOn + " minutes remaining on the Check-In!\n " +
+                                    "Please respond with `"+ mainConfig.commandPrefix + "checkin` as soon as possible to prove you are paying attention to discord!**" +
                                     "\n\n**Once you check-in I will send you a receipt that proves you did.**",
-                            EmbedDesign.WARNING, mainConfig).getEmbed()).queue();
+                            EmbedDesign.WARNING, mainConfig).dontUseFieldEmbed().getEmbed()).queue();
                 }
 
                 if (minutes == 0 && seconds == 0) {

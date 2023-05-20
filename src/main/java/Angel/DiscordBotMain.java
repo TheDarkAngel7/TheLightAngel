@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -1160,10 +1161,14 @@ public class DiscordBotMain extends ListenerAdapter {
     public void updateReactionListEmbed(ListEmbed listEmbed, List<String> newAlternatingStrings) {
         ListEmbed oldListEmbed = listEmbeds.remove(listEmbeds.indexOf(listEmbed));
 
-        ListEmbed newListEmbed = oldListEmbed.setNewAlternatingStrings(newAlternatingStrings);
+        ListEmbed newListEmbed = oldListEmbed.setNewPages(newAlternatingStrings);
 
         listEmbeds.add(newListEmbed);
         newListEmbed.getMessageEntry().setMessage(newListEmbed.getCurrentPage());
+        if (newListEmbed.getTotalPages() != oldListEmbed.getTotalPages()) {
+            newListEmbed.getMessageEntry().setTitle(newListEmbed.getMessageEntry().getTitle().split(" - Page")[0] +
+                    newListEmbed.getCurrentPage() + "/" + newListEmbed.getTotalPages());
+        }
         newListEmbed.getMessageEntry().getResultEmbed().editMessageEmbeds(newListEmbed.getMessageEntry().getEmbed()).queue();
 
         processPagesOnListEmbed(newListEmbed.getMessageEntry(), listEmbed.getTotalPages());
@@ -1240,24 +1245,42 @@ public class DiscordBotMain extends ListenerAdapter {
     // Permission Checkers that this class and the other features use:
     public boolean isTeamMember(long targetDiscordID) {
         AtomicReference<Member> member = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
         try {
-            guild.retrieveMemberById(targetDiscordID).queue(m -> member.set(m));
+            guild.retrieveMemberById(targetDiscordID).useCache(false).queue(m -> {
+                member.set(m);
+                latch.countDown();
+            });
+            latch.await();
             return isStaffMember(targetDiscordID) ||
                     member.get().getRoles().contains(mainConfig.teamRole);
         }
         catch (ErrorResponseException | NullPointerException ex) {
             return false;
         }
+        catch (InterruptedException e) {
+            aue.logCaughtException(Thread.currentThread(), e);
+            return false;
+        }
     }
     public boolean isStaffMember(long targetDiscordID) {
         AtomicReference<Member> member = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
         try {
-            guild.retrieveMemberById(targetDiscordID).queue(m -> member.set(m));
+            guild.retrieveMemberById(targetDiscordID).useCache(false).queue(m -> {
+                member.set(m);
+                latch.countDown();
+            });
+            latch.await();
             return member.get().getRoles().contains(mainConfig.staffRole) ||
                     member.get().getRoles().contains(mainConfig.adminRole) ||
                     member.get().equals(mainConfig.owner);
         }
         catch (ErrorResponseException | NullPointerException ex) {
+            return false;
+        }
+        catch (InterruptedException e) {
+            aue.logCaughtException(Thread.currentThread(), e);
             return false;
         }
     }
