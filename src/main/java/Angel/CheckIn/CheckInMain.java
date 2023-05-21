@@ -335,7 +335,13 @@ public class CheckInMain extends ListenerAdapter {
                             .submit().whenComplete(new BiConsumer<Message, Throwable>() {
                         @Override
                         public void accept(Message message, Throwable throwable) {
-                            checkinStartConfirmationEmbed = message;
+                            if (throwable == null) {
+                                checkinStartConfirmationEmbed = message;
+                            }
+                            else {
+                                log.fatal("Unable to Access the Check-In Progression Embed Channel! Please Check the Log for Details");
+                                aue.logCaughtException(Thread.currentThread(), throwable);
+                            }
                         }
                     });
 
@@ -483,6 +489,9 @@ public class CheckInMain extends ListenerAdapter {
                                 member.get().getEffectiveName() + " (Discord ID: " + m.getPlayerDiscordId() + ") but could not because I'm in test mode...");
                         latch.countDown();
                         log.info("Check-In Role Latch Counting Down: " + latch.getCount());
+                    }
+                    else {
+                        latch.countDown();
                     }
                 });
                 try {
@@ -720,7 +729,13 @@ public class CheckInMain extends ListenerAdapter {
             sessionChannel.sendMessageEmbeds(checkInSessionChannelEntry.getEmbed(false)).submit().whenComplete(new BiConsumer<Message, Throwable>() {
                 @Override
                 public void accept(Message message, Throwable throwable) {
-                    checkInSessionChannelEmbed = message;
+                    if (throwable == null) {
+                        checkInSessionChannelEmbed = message;
+                    }
+                    else {
+                        log.fatal("Unable to Access the Session Channel! Please Check the Log for Details");
+                        aue.logCaughtException(Thread.currentThread(), throwable);
+                    }
                     checkInSessionChannelLatch.countDown();
                 }
             });
@@ -1150,9 +1165,18 @@ public class CheckInMain extends ListenerAdapter {
             }
             else {
                 getCheckInManagementEmbedChannel().sendMessageEmbeds(checkInStartupEntryObjects.get(index).getEmbed(false))
-                        .queue(msg -> {
-                            checkInStartupMessages.add(msg);
-                            toPurge.add(msg);
+                        .submit().whenComplete(new BiConsumer<Message, Throwable>() {
+                            @Override
+                            public void accept(Message message, Throwable throwable) {
+                                if (throwable == null) {
+                                    checkInStartupMessages.add(message);
+                                    toPurge.add(message);
+                                }
+                                else {
+                                    log.fatal("Unable to Access the Management Channel! Please Check the Log for Details");
+                                    aue.logCaughtException(Thread.currentThread(), throwable);
+                                }
+                            }
                         });
             }
         } while (++index < checkInStartupEntryObjects.size());
