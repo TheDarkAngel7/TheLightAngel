@@ -894,7 +894,6 @@ public class BotAbuseMain extends ListenerAdapter {
     }
     private void transferRecords(Message msg) throws IOException {
         String[] args = msg.getContentRaw().substring(1).split(" ");
-        String defaultTitle = "Successful Transfer of Records";
 
         if (args.length == 3) {
             if (msg.getMentions().getMembers().size() == 2) {
@@ -904,10 +903,23 @@ public class BotAbuseMain extends ListenerAdapter {
                     guild.removeRoleFromMember(msg.getMentions().getMembers().get(0),
                             botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " transferred all bot abuse records from this player").queue();
                 }
-                log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
-                        + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " + msg.getMentions().getMembers().get(1).getEffectiveName());
-                embed.setAsSuccess(defaultTitle, baCore.transferRecords(msg.getMentions().getMembers().get(0).getIdLong(), msg.getMentions().getMembers().get(1).getIdLong()));
-                embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
+
+                String result = baCore.transferRecords(msg.getMentions().getMembers().get(0).getIdLong(), msg.getMentions().getMembers().get(1).getIdLong());
+                MessageEntry entry = new MessageEntry("Successful Transfer of Records", result, EmbedDesign.SUCCESS, mainConfig)
+                        .setOriginalCmd(msg).setChannels(TargetChannelSet.TEAM, TargetChannelSet.LOG);
+
+                if (result.contains(":warning:")) {
+                    entry.setDesign(EmbedDesign.WARNING).setTitle("No Records Transferred");
+                    log.warn(msg.getMember().getEffectiveName() + " Attempted to Transfer the Records of "
+                            + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " + msg.getMentions().getMembers().get(1).getEffectiveName() +
+                            " but was not able to as no records existed to be transferred");
+                }
+                else {
+                    log.info(msg.getMember().getEffectiveName() + " Attempted to Transfer the Records of "
+                            + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " + msg.getMentions().getMembers().get(1).getEffectiveName());
+                }
+
+                embed.sendAsMessageEntryObj(entry);
             }
             else if (msg.getMentions().getMembers().size() == 1) {
                 try {
@@ -928,18 +940,39 @@ public class BotAbuseMain extends ListenerAdapter {
                             embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                         }
                     }
-                    embed.setAsSuccess(defaultTitle,
-                            baCore.transferRecords(Long.parseLong(args[1]), msg.getMentions().getMembers().get(0).getIdLong()));
-                    embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
-                    try {
-                        log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
-                                + guild.getMemberById(Long.parseLong(args[1])).getEffectiveName()
-                                + " to " + msg.getMentions().getMembers().get(0).getEffectiveName());
+                    String result = baCore.transferRecords(Long.parseLong(args[1]), msg.getMentions().getMembers().get(0).getIdLong());
+                    MessageEntry entry = new MessageEntry("Successful Transfer of Records", result, EmbedDesign.SUCCESS, mainConfig)
+                            .setOriginalCmd(msg).setChannels(TargetChannelSet.TEAM, TargetChannelSet.LOG);
+
+                    if (result.contains(":warning:")) {
+                        entry.setDesign(EmbedDesign.WARNING).setTitle("No Records Transferred");
+
+                        try {
+                            log.info(msg.getMember().getEffectiveName() + " Attempted to Transfer the Records of "
+                                    + guild.getMemberById(Long.parseLong(args[1])).getEffectiveName()
+                                    + " to " + msg.getMentions().getMembers().get(0).getEffectiveName() +
+                                    " but was not able to as no records existed to be transferred");
+                        }
+                        catch (NullPointerException e) {
+                            log.info(msg.getMember().getEffectiveName() + " Attempted to Transfer the Records of " + args[1]
+                                    + " to " + msg.getMentions().getMembers().get(0).getEffectiveName() +
+                                    " but was not able to as no records existed to be transferred");
+                        }
                     }
-                    catch (NullPointerException e) {
-                        log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of " + args[1]
-                                + " to " + msg.getMentions().getMembers().get(0).getEffectiveName());
+
+                    else {
+                        try {
+                            log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
+                                    + guild.getMemberById(Long.parseLong(args[1])).getEffectiveName()
+                                    + " to " + msg.getMentions().getMembers().get(0).getEffectiveName());
+                        }
+                        catch (NullPointerException e) {
+                            log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of " + args[1]
+                                    + " to " + msg.getMentions().getMembers().get(0).getEffectiveName());
+                        }
                     }
+
+                    embed.sendAsMessageEntryObj(entry);
                 }
                 catch (NumberFormatException ex) {
                     // If they provide a mention first and a Discord ID Last
@@ -959,19 +992,41 @@ public class BotAbuseMain extends ListenerAdapter {
                                 botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() +
                                 " transferred all bot abuse records from this player").queue();
                     }
-                    embed.setAsSuccess("Successful Transfer of Records",
-                            baCore.transferRecords(msg.getMentions().getMembers().get(0).getIdLong(), Long.parseLong(args[2])));
-                    embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
-                    try {
-                        log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
-                                + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " +
-                                guild.getMemberById(Long.parseLong(args[2])).getEffectiveName());
+                    String result = baCore.transferRecords(msg.getMentions().getMembers().get(0).getIdLong(), Long.parseLong(args[2]));
+                    MessageEntry entry = new MessageEntry("Successful Transfer of Records", result, EmbedDesign.SUCCESS, mainConfig)
+                            .setOriginalCmd(msg).setChannels(TargetChannelSet.TEAM, TargetChannelSet.LOG);
+
+                    if (result.contains(":warning:")) {
+                        entry.setDesign(EmbedDesign.WARNING).setTitle("No Records Transferred");
+
+                        try {
+                            log.info(msg.getMember().getEffectiveName() + " Attempted to Transfer the Records of "
+                                    + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " +
+                                    guild.getMemberById(Long.parseLong(args[2])).getEffectiveName() +
+                                            " but was not able to as no records existed to be transferred");
+                        }
+                        catch (NullPointerException e) {
+                            log.info(msg.getMember().getEffectiveName() +
+                                    " Attempted to Transfer the Records of "
+                                    + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " + args[2] +
+                                    " but was not able to as no records existed to be transferred");
+                        }
                     }
-                    catch (NullPointerException e) {
-                        log.info(msg.getMember().getEffectiveName() +
-                                " Successfully Transferred the Records of "
-                                + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " + args[2]);
+
+                    else {
+                        try {
+                            log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
+                                    + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " +
+                                    guild.getMemberById(Long.parseLong(args[2])).getEffectiveName());
+                        }
+                        catch (NullPointerException e) {
+                            log.info(msg.getMember().getEffectiveName() +
+                                    " Successfully Transferred the Records of "
+                                    + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " + args[2]);
+                        }
                     }
+
+                    embed.sendAsMessageEntryObj(entry);
                 }
             }
             else if (msg.getMentions().getMembers().isEmpty()) {
@@ -1001,31 +1056,51 @@ public class BotAbuseMain extends ListenerAdapter {
                                 " because they do not exist in the Discord Server");
                     }
                 }
-                embed.setAsSuccess("Successful Transfer of Records",
-                        baCore.transferRecords(Long.parseLong(args[1]), Long.parseLong(args[2])));
-                embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
-                try {
-                    log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
-                            + guild.getMemberById(Long.parseLong(args[1])).getEffectiveName() + " to " +
-                            guild.getMemberById(Long.parseLong(args[2])).getEffectiveName());
+                String result = baCore.transferRecords(Long.parseLong(args[1]), Long.parseLong(args[2]));
+                MessageEntry entry = new MessageEntry("Successful Transfer of Records", result, EmbedDesign.SUCCESS, mainConfig)
+                        .setOriginalCmd(msg).setChannels(TargetChannelSet.TEAM, TargetChannelSet.LOG);
+
+                if (result.contains(":warning:")) {
+                    entry.setDesign(EmbedDesign.WARNING).setTitle("No Records Transferred");
+
+                    try {
+                        log.info(msg.getMember().getEffectiveName() + " Attempted to Transfer the Records of "
+                                + guild.getMemberById(Long.parseLong(args[1])) + " to " +
+                                guild.getMemberById(Long.parseLong(args[2])).getEffectiveName() +
+                                " but was not able to as no records existed to be transferred");
+                    }
+                    catch (NullPointerException e) {
+                        log.info(msg.getMember().getEffectiveName() +
+                                " Attempted to Transfer the Records of "
+                                + args[1] + " to " + args[2] +
+                                " but was not able to as no records existed to be transferred");
+                    }
                 }
-                catch (NullPointerException ex) {
-                    log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of " +
-                            args[1] + " to " + args[2]);
+                else {
+                    try {
+                        log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
+                                + guild.getMemberById(Long.parseLong(args[1])).getEffectiveName() + " to " +
+                                guild.getMemberById(Long.parseLong(args[2])).getEffectiveName());
+                    }
+                    catch (NullPointerException ex) {
+                        log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of " +
+                                args[1] + " to " + args[2]);
+                    }
                 }
 
+                embed.sendAsMessageEntryObj(entry);
             }
             else {
                 embed.setAsError("Error while Parsing Transfer Command",
                         "Invalid Number of Mentions!" +
-                        "\nUsage: /transfer <Old Mention or Discord ID> <New Mention or Discord ID>");
+                        "\nUsage: " + mainConfig.commandPrefix + "transfer <Old Mention or Discord ID> <New Mention or Discord ID>");
                 embed.sendToTeamOutput(msg, msg.getAuthor());
             }
         }
         else {
             embed.setAsError("Error while Parsing Transfer Command",
                     "Invalid Number of Arguments!" +
-                            "\nUsage: /transfer <Old Mention or Discord ID> <New Mention or Discord ID>");
+                            "\nUsage: " + mainConfig.commandPrefix + "transfer <Old Mention or Discord ID> <New Mention or Discord ID>");
             embed.sendToChannel(msg, msg.getChannel().asTextChannel());
         }
     }
