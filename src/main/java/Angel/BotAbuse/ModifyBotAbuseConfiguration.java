@@ -1,6 +1,6 @@
 package Angel.BotAbuse;
 
-import Angel.MainConfiguration;
+import Angel.MainConfig;
 import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
@@ -9,15 +9,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
-class ModifyBotAbuseConfiguration extends BotAbuseConfiguration {
+class ModifyBotAbuseConfiguration extends BotAbuseConfiguration implements MainConfig {
     private final BotAbuseMain baMain;
     private final Guild guild;
     private final ArrayList<String> configs = new ArrayList<>(
             Arrays.asList("botabuserole", "rolescanint", "rolescannerinterval", "hotmonths", "hotoffensemonths",
                     "maxdaysundo", "maxdaysallowedforundo", "autoperm", "autopermanent"));
 
-    ModifyBotAbuseConfiguration(JsonObject configObj, BotAbuseMain baMain, MainConfiguration mainConfig, Guild guild) {
-        super(configObj, baMain, mainConfig, guild);
+    ModifyBotAbuseConfiguration(JsonObject configObj, BotAbuseMain baMain, Guild guild) {
+        super(configObj, guild);
         this.baMain = baMain;
         this.guild = guild;
     }

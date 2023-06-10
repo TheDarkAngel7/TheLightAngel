@@ -13,8 +13,13 @@ class FileHandler {
 
     private final Logger log = LogManager.getLogger(FileHandler.class);
 
-    JsonObject getMainConfig() throws FileNotFoundException {
-        JsonElement element = JsonParser.parseReader(new FileReader("configs/config.json"));
+    JsonObject getMainConfig() {
+        JsonElement element;
+        try {
+            element = JsonParser.parseReader(new FileReader("configs/config.json"));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
         log.info("Main Configuration was Read");
         return element.getAsJsonObject();
     }

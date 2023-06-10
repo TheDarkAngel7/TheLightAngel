@@ -15,7 +15,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class AFKCheckManagement extends Timer {
+public class AFKCheckManagement extends Timer implements MainConfig {
     // AFK Check Variables
     private final Logger log = LogManager.getLogger(AFKCheckManagement.class);
     private final List<AFKCheck> afkChecks = new ArrayList<>();
@@ -27,15 +27,13 @@ public class AFKCheckManagement extends Timer {
     private final DiscordBotMain discord;
     private final JDA jda;
     private final EmbedEngine embed;
-    private final MainConfiguration mainConfig;
     private AFKCheckListEmbed afkCheckListEmbed;
     private final int maxNumberOfAFKChecksPerSession = 3;
 
-    public AFKCheckManagement(Guild guild, JDA jda, DiscordBotMain discord, EmbedEngine embed, MainConfiguration mainConfig) {
+    public AFKCheckManagement(Guild guild, JDA jda, DiscordBotMain discord, EmbedEngine embed) {
         this.guild = guild;
         this.jda = jda;
         this.embed = embed;
-        this.mainConfig = mainConfig;
         this.discord = discord;
         services.setRemoveOnCancelPolicy(true);
     }
@@ -75,7 +73,7 @@ public class AFKCheckManagement extends Timer {
                     else {
                         embed.sendAsMessageEntryObj(new MessageEntry("AFK Check Already Running",
                                 ":x: **An AFK Check is already running for " + msg.getMentions().getMembers().get(index) + "**",
-                                EmbedDesign.ERROR, mainConfig).setChannels(TargetChannelSet.SAME).setOriginalCmd(msg));
+                                EmbedDesign.ERROR).setChannels(TargetChannelSet.SAME).setOriginalCmd(msg));
                     }
                 } while (++index < msg.getMentions().getMembers().size());
 
@@ -119,7 +117,7 @@ public class AFKCheckManagement extends Timer {
 
     public void displayAFKCheckList(Message msg) {
         if (!getAFKCheckList().isEmpty()) {
-            afkCheckListEmbed = new AFKCheckListEmbed(new MessageEntry("AFK Checks In-Progress", EmbedDesign.INFO, mainConfig, msg, TargetChannelSet.TEAM),
+            afkCheckListEmbed = new AFKCheckListEmbed(new MessageEntry("AFK Checks In-Progress", EmbedDesign.INFO, msg, TargetChannelSet.TEAM),
                     "**This Information is current as of using the command:**", getAFKCheckList(), null, this);
 
             discord.addAsReactionListEmbed(afkCheckListEmbed);
@@ -144,7 +142,7 @@ public class AFKCheckManagement extends Timer {
                                 entry = new MessageEntry(afk.getMemberName() + " AFK Check Status",
                                         "**" + afk.getMemberMention() + " has successfully responded to your posted AFK check with " +
                                                 afk.getRemainingTime() + " left on the clock!**",
-                                        EmbedDesign.SUCCESS, mainConfig);
+                                        EmbedDesign.SUCCESS);
                                 mainConfig.discussionChannel.sendMessage(afk.getOverseeingStaffMember().getAsMention()).queue();
                                 mainConfig.discussionChannel.sendMessageEmbeds(entry.getEmbed()).queue();
                                 // Remove Event Listener and Delete from afkCheck List and scheduledFutures List
@@ -161,13 +159,13 @@ public class AFKCheckManagement extends Timer {
                                         "while in our official sessions as per GTA Rule #5.***" +
                                         "\n\n**So, if you would like to idle in GTA Online in order to let your businesses run," +
                                                 " then our advice would be to do so in a solo GTA Online Session**",
-                                        EmbedDesign.SUCCESS, mainConfig,
+                                        EmbedDesign.SUCCESS,
                                         afk.getCheckInMessage(), afk.getSessionChannel()));
                             }
                             else if (afk.hasPlayerFailedCheckIn()) {
                                 entry = new MessageEntry(afk.getMemberName() + " AFK Check Status",
                                         "**" + afk.getMemberMention() + " has failed to respond to your posted AFK check... I sense a suspension coming on...**",
-                                        EmbedDesign.ERROR, mainConfig);
+                                        EmbedDesign.ERROR);
                                 mainConfig.discussionChannel.sendMessage(afk.getOverseeingStaffMember().getAsMention()).queue();
                                 mainConfig.discussionChannel.sendMessageEmbeds(entry.getEmbed()).queue();
                                 // Remove Event Listener and Delete from afkCheck List
@@ -228,7 +226,7 @@ public class AFKCheckManagement extends Timer {
         }
         embed.sendAsMessageEntryObj(new MessageEntry("Successfully Started AFK Check",
                 "**An AFK Check was successfully started for *" + afkCheck.getMemberName() +
-                        "***", EmbedDesign.SUCCESS, mainConfig).setChannels(target).setOriginalCmd(msg));
+                        "***", EmbedDesign.SUCCESS).setChannels(target).setOriginalCmd(msg));
 
         if (!knownSessionChannels.contains(afkCheck.getSessionChannel())) {
             knownSessionChannels.add(afkCheck.getSessionChannel());

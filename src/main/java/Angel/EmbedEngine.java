@@ -10,17 +10,12 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
-public class EmbedEngine {
+public class EmbedEngine implements MainConfig {
     private final Logger log = LogManager.getLogger(EmbedEngine.class);
-    private MainConfiguration mainConfig;
     private DiscordBotMain discord;
     private List<MessageEntry> messageQueue = new ArrayList<>();
     // Dictionary<Command Message Object, Resulting MessageEntry Object>
     private Dictionary<Message, MessageEntry> commandMessageMap = new Hashtable();
-
-    EmbedEngine(MainConfiguration mainConfig) {
-        this.mainConfig = mainConfig;
-    }
 
     void setDiscordInstance(DiscordBotMain discordInstance) {
         discord = discordInstance;
@@ -35,22 +30,22 @@ public class EmbedEngine {
     ///////////////////////////////////////////////////////////////
 
     public void setAsSuccess(String title, String msg) {
-        messageQueue.add(new MessageEntry(title, msg, EmbedDesign.SUCCESS, mainConfig));
+        messageQueue.add(new MessageEntry(title, msg, EmbedDesign.SUCCESS));
     }
     public void setAsWarning(String title, String msg) {
-        messageQueue.add(new MessageEntry(title, msg, EmbedDesign.WARNING, mainConfig));
+        messageQueue.add(new MessageEntry(title, msg, EmbedDesign.WARNING));
     }
     public void setAsError(String title, String msg) {
-        messageQueue.add(new MessageEntry(title, msg, EmbedDesign.ERROR, mainConfig));
+        messageQueue.add(new MessageEntry(title, msg, EmbedDesign.ERROR));
     }
     public void setAsStop(String title, String msg) {
-        messageQueue.add(new MessageEntry(title, msg, EmbedDesign.STOP, mainConfig));
+        messageQueue.add(new MessageEntry(title, msg, EmbedDesign.STOP));
     }
     public void setAsInfo(String title, String msg) {
-        messageQueue.add(new MessageEntry(title, msg, EmbedDesign.INFO, mainConfig));
+        messageQueue.add(new MessageEntry(title, msg, EmbedDesign.INFO));
     }
     public void setAsHelp(String title, String msg) {
-        messageQueue.add(new MessageEntry(title, msg, EmbedDesign.HELP, mainConfig));
+        messageQueue.add(new MessageEntry(title, msg, EmbedDesign.HELP));
     }
 
     public void editEmbed(Message originalCmd, String newTitle, String newMsg, EmbedDesign requestedType) {

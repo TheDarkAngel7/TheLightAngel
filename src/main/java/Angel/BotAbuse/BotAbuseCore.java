@@ -1,6 +1,6 @@
 package Angel.BotAbuse;
 
-import Angel.MainConfiguration;
+import Angel.MainConfig;
 import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
@@ -11,23 +11,21 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 
-class BotAbuseCore { // This is where all the magic happens, where all the data is added and queried from the appropriate arrays to
+class BotAbuseCore implements MainConfig { // This is where all the magic happens, where all the data is added and queried from the appropriate arrays to
     // Display all the requested data.
     Angel.BotAbuse.FileHandler fileHandler;
     private final Logger log = LogManager.getLogger(BotAbuseCore.class);
     private final Guild guild;
     private final BotAbuseMain baMain;
     private BotAbuseConfiguration botConfig;
-    private final MainConfiguration mainConfig;
     private List<BotAbuseRecord> records = new ArrayList<>();
     Dictionary<String, String> reasonsDictionary = new Hashtable<>();
     private ZonedDateTime c;
 
-    BotAbuseCore(Guild guild, BotAbuseMain baMain, MainConfiguration mainConfig) {
+    BotAbuseCore(Guild guild, BotAbuseMain baMain) {
         this.baMain = baMain;
         this.fileHandler = new FileHandler(this);
         this.guild = guild;
-        this.mainConfig = mainConfig;
     }
     void startup() throws IOException {
         try {

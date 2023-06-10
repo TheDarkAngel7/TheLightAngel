@@ -2,7 +2,7 @@ package Angel.Nicknames;
 
 import Angel.DiscordBotMain;
 import Angel.EmbedEngine;
-import Angel.MainConfiguration;
+import Angel.MainConfig;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -16,10 +16,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-public class NicknameInit implements Runnable {
+public class NicknameInit implements Runnable, MainConfig {
     private final Logger log = LogManager.getLogger(NicknameInit.class);
     private final boolean commandsSuspended;
-    private final MainConfiguration mainConfig;
     private final EmbedEngine embed;
     private final Guild guild;
     private final DiscordBotMain discord;
@@ -27,9 +26,8 @@ public class NicknameInit implements Runnable {
 
     private NicknameMain nickFeature;
 
-    public NicknameInit(boolean commandsSuspended, MainConfiguration mainConfig, EmbedEngine embed, Guild guild, DiscordBotMain discord) {
+    public NicknameInit(boolean commandsSuspended, EmbedEngine embed, Guild guild, DiscordBotMain discord) {
         this.commandsSuspended = commandsSuspended;
-        this.mainConfig = mainConfig;
         this.embed = embed;
         this.guild = guild;
         this.discord = discord;
@@ -45,7 +43,7 @@ public class NicknameInit implements Runnable {
     @Override
     public void run() {
         try {
-            nickFeature = new NicknameMain(commandsSuspended, mainConfig, embed, guild, discord);
+            nickFeature = new NicknameMain(commandsSuspended, embed, guild, discord);
             jda.addEventListener(nickFeature);
             log.info("Nickname Feature Added as Event Listener to its JDA instance");
         }

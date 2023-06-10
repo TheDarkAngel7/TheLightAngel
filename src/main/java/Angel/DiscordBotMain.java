@@ -35,11 +35,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
-public class DiscordBotMain extends ListenerAdapter {
+public class DiscordBotMain extends ListenerAdapter implements MainConfig {
     private final Logger log = LogManager.getLogger(DiscordBotMain.class);
     private final AngelExceptionHandler aue = new AngelExceptionHandler();
-    private MainConfiguration mainConfig;
     private EmbedEngine embed;
     private FileHandler fileHandler;
     private Guild guild;
@@ -61,8 +61,7 @@ public class DiscordBotMain extends ListenerAdapter {
     private List<ListEmbed> listEmbeds = new ArrayList<>();
     private Dictionary<Message, ScheduledFuture<?>> reactionClearTimers = new Hashtable<>();
 
-    DiscordBotMain(int restartValue, MainConfiguration mainConfig, EmbedEngine embed, FileHandler fileHandler) {
-        this.mainConfig = mainConfig;
+    DiscordBotMain(int restartValue, EmbedEngine embed, FileHandler fileHandler) {
         this.fileHandler = fileHandler;
         this.embed = embed;
         this.restartValue = restartValue;
@@ -82,10 +81,10 @@ public class DiscordBotMain extends ListenerAdapter {
             log.info("Setting Up Main Config's Discord Settings");
             mainConfig.discordSetup();
         }
-        nickInit = new NicknameInit(commandsSuspended, mainConfig, embed, guild, this);
-        baInit = new BotAbuseInit(commandsSuspended, restartValue, mainConfig, embed, guild, this);
-        ciInit = new CheckInInit(mainConfig, embed, this, guild);
-        customEmbedInit = new CustomEmbedInit(mainConfig, embed, guild, this);
+        nickInit = new NicknameInit(commandsSuspended, embed, guild, this);
+        baInit = new BotAbuseInit(commandsSuspended, restartValue, embed, guild, this);
+        ciInit = new CheckInInit(embed, this, guild);
+        customEmbedInit = new CustomEmbedInit(embed, guild, this);
         Thread tNickFeature = new Thread(nickInit);
         Thread tBotAbuseFeature = new Thread(baInit);
         Thread tCustomEmbedFeature = new Thread(customEmbedInit);
@@ -251,12 +250,31 @@ public class DiscordBotMain extends ListenerAdapter {
             return;
         }
         if (event.getMessage().getContentRaw().charAt(0) == mainConfig.commandPrefix && isValidCommand(msg)) {
-            if (event.getMessage().getChannelType().equals(ChannelType.PRIVATE)) {
-                log.debug(event.getAuthor().getAsTag() + "@DM: " + event.getMessage().getContentRaw());
+            if (guild.isMember(event.getAuthor())) {
+                guild.retrieveMemberById(event.getAuthor().getIdLong()).useCache(false).submit().whenComplete(new BiConsumer<Member, Throwable>() {
+                    @Override
+                    public void accept(Member member, Throwable throwable) {
+                        if (throwable == null) {
+                            if (event.getMessage().getChannelType().equals(ChannelType.PRIVATE)) {
+                                log.debug(member.getEffectiveName() + "@DM: " + event.getMessage().getContentRaw());
+                            }
+                            else {
+                                log.debug(member.getEffectiveName() + "@" + event.getMessage().getChannel().getName() + ": " +
+                                        event.getMessage().getContentRaw());
+                            }
+                        }
+                        else {
+                            log.warn("Unable to Retrieve Member Data for Command: " + event.getMessage().getContentRaw() + " - " + throwable.getMessage());
+                        }
+                    }
+                });
             }
             else {
-                log.debug(event.getAuthor().getAsTag() + "@" + event.getMessage().getChannel().getName() + ": " +
-                        event.getMessage().getContentRaw());
+                MessageEntry entry = new MessageEntry("No Permissions to Use Me!", "You Do Not Have Permissions to use me at all because you're not a member of the SAFE Crew discord server!",
+                        EmbedDesign.STOP);
+
+                event.getMessage().replyEmbeds(entry.getEmbed()).queue();
+                return;
             }
         }
 
@@ -384,23 +402,18 @@ public class DiscordBotMain extends ListenerAdapter {
                         embed.setAsWarning("Reloading Configuration", "**Reloading Configuration... Please Wait a Few Seconds...**");
                         embed.sendToTeamOutput(msg, null);
                         try { Thread.sleep(5000); } catch (InterruptedException e) {}
-                        try {
-                            if (mainConfig.reload(fileHandler.getMainConfig())) {
-                                baFeature.reload(msg);
-                                nickFeature.reload(msg);
-                                log.info("Successfully Reloaded All Configurations");
-                                embed.editEmbed(msg, "Configuration Reloaded",
-                                        "**All Configurations Successfully Reloaded from config files**",
-                                        EmbedDesign.SUCCESS);
-                            }
-                            else {
-                                baFeature.commandsSuspended = true;
-                                nickFeature.commandsSuspended = true;
-                                log.fatal("Discord Configurations Not Found - All Commands Suspended");
-                            }
+                        if (mainConfig.reload(fileHandler.getMainConfig())) {
+                            baFeature.reload(msg);
+                            nickFeature.reload(msg);
+                            log.info("Successfully Reloaded All Configurations");
+                            embed.editEmbed(msg, "Configuration Reloaded",
+                                    "**All Configurations Successfully Reloaded from config files**",
+                                    EmbedDesign.SUCCESS);
                         }
-                        catch (IOException ex) {
-                            log.error("Reload Command", ex);
+                        else {
+                            baFeature.commandsSuspended = true;
+                            nickFeature.commandsSuspended = true;
+                            log.fatal("Discord Configurations Not Found - All Commands Suspended");
                         }
                     }
                     else {
@@ -1114,7 +1127,7 @@ public class DiscordBotMain extends ListenerAdapter {
             embedType = EmbedDesign.ERROR;
         }
 
-        MessageEntry entry = new MessageEntry(title, results, embedType, mainConfig).setOriginalCmd(msg);
+        MessageEntry entry = new MessageEntry(title, results, embedType).setOriginalCmd(msg);
 
         if (ciFeature.isCheckInRunning() && msg.getChannel() == ciFeature.getCheckInManagementEmbedChannel()) {
             entry.setCustomChannels(ciFeature.getCheckInManagementEmbedChannel());

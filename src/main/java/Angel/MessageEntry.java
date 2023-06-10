@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class MessageEntry {
+public class MessageEntry implements MainConfig {
     private String title;
     private String msg;
     private EmbedDesign design;
@@ -23,32 +23,28 @@ public class MessageEntry {
     private List<TargetChannelSet> targetChannels = new ArrayList<>();
     private List<TextChannel> customChannels = new ArrayList<>();
     private User targetUser;
-    private final MainConfiguration mainConfig;
 
-    public MessageEntry(String title, String msg, EmbedDesign design, MainConfiguration mainConfig) {
+    public MessageEntry(String title, String msg, EmbedDesign design) {
         this.title = title;
         this.msg = msg;
         this.design = design;
-        this.mainConfig = mainConfig;
     }
 
     // Constructor Specifically For Custom Channels, We Don't Ask For a TargetChannelSet here and we ask for the MessageChannel objects
 
-    public MessageEntry(String title, EmbedDesign design, MainConfiguration mainConfig, Message originalCmd, TextChannel... channels) {
+    public MessageEntry(String title, EmbedDesign design, Message originalCmd, TextChannel... channels) {
         this.title = title;
         this.design = design;
         this.originalCmd.set(originalCmd);
-        this.mainConfig = mainConfig;
         this.customChannels = Arrays.asList(channels);
         this.targetChannels.add(TargetChannelSet.CUSTOM);
     }
     // Constructor Exactly Like the one above except an initial message is included
-    public MessageEntry(String title, String msg, EmbedDesign design, MainConfiguration mainConfig, Message originalCmd, TextChannel... channels) {
+    public MessageEntry(String title, String msg, EmbedDesign design, Message originalCmd, TextChannel... channels) {
         this.title = title;
         this.msg = msg;
         this.design = design;
         this.originalCmd.set(originalCmd);
-        this.mainConfig = mainConfig;
         this.customChannels = Arrays.asList(channels);
         this.targetChannels.add(TargetChannelSet.CUSTOM);
     }
@@ -56,20 +52,18 @@ public class MessageEntry {
     // Constructor Specifically for Creating new ListEmbed objects
     // We won't require a message string here as that'll be set by the ListEmbed constructor method
 
-    public MessageEntry(String title, EmbedDesign design, MainConfiguration mainConfig, Message originalCmd, TargetChannelSet... sets) {
+    public MessageEntry(String title, EmbedDesign design, Message originalCmd, TargetChannelSet... sets) {
         this.title = title;
         this.design = design;
-        this.mainConfig = mainConfig;
         this.originalCmd.set(originalCmd);
         this.targetChannels = Arrays.asList(sets);
         isListEmbed = true;
     }
 
-    public MessageEntry (String title, String msg, EmbedDesign design, MainConfiguration mainConfig, Message originalCmd, TargetChannelSet... sets) {
+    public MessageEntry (String title, String msg, EmbedDesign design, Message originalCmd, TargetChannelSet... sets) {
         this.title = title;
         this.msg = msg;
         this.design = design;
-        this.mainConfig = mainConfig;
         this.originalCmd.set(originalCmd);
         this.targetChannels = Arrays.asList(sets);
         isListEmbed = true;

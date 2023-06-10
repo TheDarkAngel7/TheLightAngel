@@ -24,12 +24,11 @@ import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class BotAbuseMain extends ListenerAdapter {
+public class BotAbuseMain extends ListenerAdapter implements MainConfig {
     private final Logger log = LogManager.getLogger(BotAbuseMain.class);
     private final AngelExceptionHandler aue = new AngelExceptionHandler();
     private BotAbuseTimers baTimers;
     private Guild guild;
-    private MainConfiguration mainConfig;
     private BotAbuseConfiguration botConfig;
     private BotAbuseCore baCore;
     // embed calls the EmbedEngine class
@@ -47,21 +46,20 @@ public class BotAbuseMain extends ListenerAdapter {
     public final List<String> commands = new ArrayList<>(Arrays.asList("botAbuse", "ba", "permBotAbuse", "pba", "undo", "check",
             "checkHistory", "clear", "transfer", "reasonsmanager", "rmgr", "reasons", "r"));
 
-    BotAbuseMain(boolean getCommandsSuspended, int restartValue, MainConfiguration importMainConfig, EmbedEngine importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException, TimeoutException {
+    BotAbuseMain(boolean getCommandsSuspended, int restartValue, EmbedEngine importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException, TimeoutException {
         commandsSuspended = getCommandsSuspended;
-        baCore = new BotAbuseCore(importGuild, this, importMainConfig);
-        botConfig = new ModifyBotAbuseConfiguration(baCore.getConfig(), this, importMainConfig, importGuild);
+        baCore = new BotAbuseCore(importGuild, this);
+        botConfig = new ModifyBotAbuseConfiguration(baCore.getConfig(), this, importGuild);
         botConfig.initialSetup();
         baCore.setBotConfig(botConfig);
         discord = importDiscordBot;
-        mainConfig = importMainConfig;
         this.guild = importGuild;
 
         if (botConfig.isEnabled()) {
             baCore.startup();
             this.restartValue = restartValue;
             this.embed = importEmbed;
-            this.help = new Help(this, embed, mainConfig);
+            this.help = new Help(embed);
             baTimers = new BotAbuseTimers(guild, this, embed, mainConfig, discord);
             log.info("Bot Abuse Class Constructed");
             if (!botConfig.configsExist() && !commandsSuspended) {
@@ -905,7 +903,7 @@ public class BotAbuseMain extends ListenerAdapter {
                 }
 
                 String result = baCore.transferRecords(msg.getMentions().getMembers().get(0).getIdLong(), msg.getMentions().getMembers().get(1).getIdLong());
-                MessageEntry entry = new MessageEntry("Successful Transfer of Records", result, EmbedDesign.SUCCESS, mainConfig)
+                MessageEntry entry = new MessageEntry("Successful Transfer of Records", result, EmbedDesign.SUCCESS)
                         .setOriginalCmd(msg).setChannels(TargetChannelSet.TEAM, TargetChannelSet.LOG);
 
                 if (result.contains(":warning:")) {
@@ -941,7 +939,7 @@ public class BotAbuseMain extends ListenerAdapter {
                         }
                     }
                     String result = baCore.transferRecords(Long.parseLong(args[1]), msg.getMentions().getMembers().get(0).getIdLong());
-                    MessageEntry entry = new MessageEntry("Successful Transfer of Records", result, EmbedDesign.SUCCESS, mainConfig)
+                    MessageEntry entry = new MessageEntry("Successful Transfer of Records", result, EmbedDesign.SUCCESS)
                             .setOriginalCmd(msg).setChannels(TargetChannelSet.TEAM, TargetChannelSet.LOG);
 
                     if (result.contains(":warning:")) {
@@ -993,7 +991,7 @@ public class BotAbuseMain extends ListenerAdapter {
                                 " transferred all bot abuse records from this player").queue();
                     }
                     String result = baCore.transferRecords(msg.getMentions().getMembers().get(0).getIdLong(), Long.parseLong(args[2]));
-                    MessageEntry entry = new MessageEntry("Successful Transfer of Records", result, EmbedDesign.SUCCESS, mainConfig)
+                    MessageEntry entry = new MessageEntry("Successful Transfer of Records", result, EmbedDesign.SUCCESS)
                             .setOriginalCmd(msg).setChannels(TargetChannelSet.TEAM, TargetChannelSet.LOG);
 
                     if (result.contains(":warning:")) {
@@ -1057,7 +1055,7 @@ public class BotAbuseMain extends ListenerAdapter {
                     }
                 }
                 String result = baCore.transferRecords(Long.parseLong(args[1]), Long.parseLong(args[2]));
-                MessageEntry entry = new MessageEntry("Successful Transfer of Records", result, EmbedDesign.SUCCESS, mainConfig)
+                MessageEntry entry = new MessageEntry("Successful Transfer of Records", result, EmbedDesign.SUCCESS)
                         .setOriginalCmd(msg).setChannels(TargetChannelSet.TEAM, TargetChannelSet.LOG);
 
                 if (result.contains(":warning:")) {
@@ -1291,7 +1289,7 @@ public class BotAbuseMain extends ListenerAdapter {
         String prefix = pages.remove(0);
         String suffix = pages.remove(pages.size() - 1);
 
-        discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Bot Abuse History", EmbedDesign.INFO, mainConfig, msg, requestedSet),
+        discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Bot Abuse History", EmbedDesign.INFO, msg, requestedSet),
                 prefix, pages, suffix).invertButtonLabels());
     }
     public boolean isCommand(String cmd) {

@@ -1,6 +1,5 @@
 package Angel.BotAbuse;
 
-import Angel.MainConfiguration;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
@@ -12,7 +11,6 @@ import java.util.List;
 public abstract class BotAbuseConfiguration {
     private JsonObject configObj;
     private final boolean enabled;
-    private final BotAbuseMain baMain;
     private String botAbuseRoleID;
     private final Guild guild;
     private final Gson gson = new Gson();
@@ -24,9 +22,8 @@ public abstract class BotAbuseConfiguration {
     boolean autoPermanent;
     List<Integer> botAbuseTimes;
 
-    BotAbuseConfiguration(JsonObject configObj, BotAbuseMain baMain, MainConfiguration mainConfig, Guild guild) {
+    BotAbuseConfiguration(JsonObject configObj, Guild guild) {
         this.configObj = configObj;
-        this.baMain = baMain;
         this.guild = guild;
         this.enabled = configObj.get("enabled").getAsBoolean();
     }

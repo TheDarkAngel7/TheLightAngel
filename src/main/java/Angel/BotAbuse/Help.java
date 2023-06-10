@@ -1,18 +1,14 @@
 package Angel.BotAbuse;
 
 import Angel.EmbedEngine;
-import Angel.MainConfiguration;
+import Angel.MainConfig;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
-class Help {
-    private BotAbuseMain baMain;
-    private EmbedEngine embed;
-    private MainConfiguration mainConfig;
+class Help implements MainConfig {
+    private final EmbedEngine embed;
 
-    public Help(BotAbuseMain baMain, EmbedEngine embed, MainConfiguration mainConfig) {
-        this.baMain = baMain;
+    public Help(EmbedEngine embed) {
         this.embed = embed;
-        this.mainConfig = mainConfig;
     }
 
     void botAbuseCommand(boolean isTeamMember) {

@@ -1,7 +1,7 @@
 package Angel.CheckIn;
 
 import Angel.EmbedDesign;
-import Angel.MainConfiguration;
+import Angel.MainConfig;
 import Angel.MessageEntry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -9,21 +9,19 @@ import org.apache.logging.log4j.Logger;
 import java.util.Timer;
 import java.util.TimerTask;
 
-class CheckInTimer extends Timer {
+class CheckInTimer extends Timer implements MainConfig {
     private final Logger log = LogManager.getLogger(CheckInTimer.class);
     private final CheckInMain ciMain;
     private final CheckInConfiguration ciConfig;
-    private final MainConfiguration mainConfig;
     private int minutes = 0;
     private int seconds = 0;
     private int mentionOn;
     private boolean mentionEnabled;
     private int updateTicker;
 
-    CheckInTimer(CheckInMain ciMain, CheckInConfiguration ciConfig, MainConfiguration mainConfig) {
+    CheckInTimer(CheckInMain ciMain, CheckInConfiguration ciConfig) {
         this.ciMain = ciMain;
         this.ciConfig = ciConfig;
-        this.mainConfig = mainConfig;
         mentionOn = ciConfig.getWhenMentionCheckInRole();
         mentionEnabled = mentionOn > 0;
     }
@@ -51,7 +49,7 @@ class CheckInTimer extends Timer {
                             ":warning: **There is " + mentionOn + " minutes remaining on the Check-In!\n " +
                                     "Please respond with `"+ mainConfig.commandPrefix + "checkin` as soon as possible to prove you are paying attention to discord!**" +
                                     "\n\n**Once you check-in I will send you a receipt that proves you did.**",
-                            EmbedDesign.WARNING, mainConfig).dontUseFieldEmbed().getEmbed()).queue();
+                            EmbedDesign.WARNING).dontUseFieldEmbed().getEmbed()).queue();
                 }
 
                 if (minutes == 0 && seconds == 0) {

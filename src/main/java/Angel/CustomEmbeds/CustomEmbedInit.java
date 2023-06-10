@@ -2,7 +2,7 @@ package Angel.CustomEmbeds;
 
 import Angel.DiscordBotMain;
 import Angel.EmbedEngine;
-import Angel.MainConfiguration;
+import Angel.MainConfig;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -15,9 +15,8 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.Collection;
 
-public class CustomEmbedInit implements Runnable {
+public class CustomEmbedInit implements Runnable, MainConfig {
     private final Logger log = LogManager.getLogger(CustomEmbedInit.class);
-    private final MainConfiguration mainConfig;
     private final EmbedEngine embed;
     private final Guild guild;
     private final DiscordBotMain discord;
@@ -25,8 +24,7 @@ public class CustomEmbedInit implements Runnable {
 
     private CustomEmbedMain embedMain;
 
-    public CustomEmbedInit(MainConfiguration mainConfig, EmbedEngine embed, Guild guild, DiscordBotMain discord) {
-        this.mainConfig = mainConfig;
+    public CustomEmbedInit(EmbedEngine embed, Guild guild, DiscordBotMain discord) {
         this.embed = embed;
         this.guild = guild;
         this.discord = discord;
@@ -40,7 +38,7 @@ public class CustomEmbedInit implements Runnable {
 
     @Override
     public void run() {
-        embedMain = new CustomEmbedMain(mainConfig, embed, guild, discord);
+        embedMain = new CustomEmbedMain(embed, guild, discord);
         jda.addEventListener(embedMain);
         log.info("Bot Abuse Feature Added as Event Listener to its JDA instance");
     }

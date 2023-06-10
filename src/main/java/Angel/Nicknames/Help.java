@@ -1,17 +1,15 @@
 package Angel.Nicknames;
 
 import Angel.EmbedEngine;
-import Angel.MainConfiguration;
+import Angel.MainConfig;
 
-class Help {
+class Help implements MainConfig {
     private EmbedEngine embed;
     private NicknameMain nickMain;
-    private MainConfiguration mainConfig;
 
-    Help(EmbedEngine embed, NicknameMain nickMain, MainConfiguration mainConfig) {
+    Help(EmbedEngine embed, NicknameMain nickMain) {
         this.embed = embed;
         this.nickMain = nickMain;
-        this.mainConfig = mainConfig;
     }
     private String restrictedRoleMentions() {
         String result = "**Only Usable by players in:**\n";

@@ -27,7 +27,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
-public class NicknameMain extends ListenerAdapter {
+public class NicknameMain extends ListenerAdapter implements MainConfig {
     private final Logger log = LogManager.getLogger(NicknameMain.class);
     private final AngelExceptionHandler aue = new AngelExceptionHandler();
     private Guild guild;
@@ -35,7 +35,6 @@ public class NicknameMain extends ListenerAdapter {
     private FileHandler fileHandler;
     private NickConfiguration nickConfig;
     private EmbedEngine embed;
-    private MainConfiguration mainConfig;
     private NicknameCore nickCore;
     private Help help;
     private ArrayList<Long> tempDiscordID = new ArrayList<>();
@@ -54,8 +53,7 @@ public class NicknameMain extends ListenerAdapter {
     private ZonedDateTime c;
     private Timer timer = new Timer();
 
-    NicknameMain(boolean getCommandsSuspended, MainConfiguration importMainConfig, EmbedEngine importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException {
-        this.mainConfig = importMainConfig;
+    NicknameMain(boolean getCommandsSuspended, EmbedEngine importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException {
         this.embed = importEmbed;
         this.guild = importGuild;
         this.discord = importDiscordBot;
@@ -64,7 +62,7 @@ public class NicknameMain extends ListenerAdapter {
             this.nickCore = new NicknameCore(guild);
             this.fileHandler = new FileHandler(nickCore);
             nickConfig = new ModifyNickConfiguration(fileHandler.getConfig(), fileHandler.gson, importGuild);
-            help = new Help(embed, this, mainConfig);
+            help = new Help(embed, this);
             if (nickConfig.isEnabled()) {
                 nickConfig.setup();
                 nickCore.startup();
@@ -605,7 +603,7 @@ public class NicknameMain extends ListenerAdapter {
 
                                 if (!tempString.isEmpty()) pages.add(tempString);
 
-                                discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Name History", EmbedDesign.INFO, mainConfig, msg, TargetChannelSet.TEAM), "<@!" + targetDiscordID + ">'s Name History is as Follows:",
+                                discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Name History", EmbedDesign.INFO, msg, TargetChannelSet.TEAM), "<@!" + targetDiscordID + ">'s Name History is as Follows:",
                                         pages, "Total Old Names: **" + oldNickArray.size() + "**").invertButtonLabels().makeLabelsPlural());
                             }
                         }
@@ -623,7 +621,7 @@ public class NicknameMain extends ListenerAdapter {
                         try {
                             result = nickCore.getList();
                             splitString = result.split("\n\n");
-                            discord.addAsReactionListEmbed(new NickRequestListEmbed(new MessageEntry(defaultTitle, EmbedDesign.INFO, mainConfig, msg, TargetChannelSet.TEAM),
+                            discord.addAsReactionListEmbed(new NickRequestListEmbed(new MessageEntry(defaultTitle, EmbedDesign.INFO, msg, TargetChannelSet.TEAM),
                                     "**For Each of these requests please choose to accept or deny:**", Arrays.asList(splitString), null, this));
                         }
                         catch (NullPointerException ex) {

@@ -2,6 +2,7 @@ package Angel.BotAbuse;
 
 import Angel.DiscordBotMain;
 import Angel.EmbedEngine;
+import Angel.MainConfig;
 import Angel.MainConfiguration;
 import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
@@ -12,14 +13,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-class BotAbuseTimers {
+class BotAbuseTimers implements MainConfig {
     private final Logger log = LogManager.getLogger(BotAbuseTimers.class);
     private Guild guild;
     private ExpiryTimer expiryTimer;
     private RoleScanningTimer roleScanningTimer;
     private BotAbuseMain baFeature;
     private EmbedEngine embed;
-    private MainConfiguration mainConfig;
     private DiscordBotMain discord;
     private ScheduledExecutorService service = Executors.newScheduledThreadPool(2);
 
@@ -27,7 +27,6 @@ class BotAbuseTimers {
         this.guild = guild;
         this.baFeature = baFeature;
         this.embed = embed;
-        this.mainConfig = mainConfig;
         this.discord = discord;
 
         roleScanningTimer = new RoleScanningTimer(guild, baFeature, embed);

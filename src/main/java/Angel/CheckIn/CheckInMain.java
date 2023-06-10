@@ -26,13 +26,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
-public class CheckInMain extends ListenerAdapter {
+public class CheckInMain extends ListenerAdapter implements MainConfig {
     private final Logger log = LogManager.getLogger(CheckInMain.class);
     private final AngelExceptionHandler aue = new AngelExceptionHandler();
     private final DiscordBotMain discord;
     private FileHandler fileHandler;
     private final Guild guild;
-    private final MainConfiguration mainConfig;
     private final EmbedEngine embed;
     private CheckInCore ciCore;
     private CheckInConfiguration ciConfig;
@@ -67,10 +66,9 @@ public class CheckInMain extends ListenerAdapter {
     private CheckInQueueEmbed checkInQueueEmbed;
     private AFKCheckManagement afkCheck;
 
-    CheckInMain(DiscordBotMain discord, Guild guild, MainConfiguration mainConfig, EmbedEngine embed) {
+    CheckInMain(DiscordBotMain discord, Guild guild, EmbedEngine embed) {
         this.discord = discord;
         this.guild = guild;
-        this.mainConfig = mainConfig;
         this.embed = embed;
         String makeKeyCap = "\uFE0F\u20E3";
         emojiList = Arrays.asList("\u0031" + makeKeyCap, "\u0032" + makeKeyCap, "\u0033" + makeKeyCap,
@@ -103,8 +101,8 @@ public class CheckInMain extends ListenerAdapter {
                         log.fatal("The configured roles that can be checked-in are not usable");
                         break;
             }
-            ciTimer = new CheckInTimer(this, ciConfig, mainConfig);
-            afkCheck = new AFKCheckManagement(guild, event.getJDA(), discord, embed, mainConfig);
+            ciTimer = new CheckInTimer(this, ciConfig);
+            afkCheck = new AFKCheckManagement(guild, event.getJDA(), discord, embed);
             afkCheck.startTimer();
         }
         catch (IOException ex) {
@@ -240,7 +238,7 @@ public class CheckInMain extends ListenerAdapter {
                         "you'd place part of or all of a player's name. " +
                         "The bot will then search every member of this server, in their nickname if they have one and their usernames."
                 );
-        discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Check-In Pre-Start Controls", EmbedDesign.HELP, mainConfig, msg, TargetChannelSet.TEAM),
+        discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Check-In Pre-Start Controls", EmbedDesign.HELP, msg, TargetChannelSet.TEAM),
                 "Here is one of the controls. Remember that `" + mainConfig.commandPrefix + "ci` is a alias to `"
                         + mainConfig.commandPrefix + "checkin`.",
                 controlHelps, "As you use commands I'll be reacting to them with :white_check_mark: or :x: " +
@@ -260,7 +258,7 @@ public class CheckInMain extends ListenerAdapter {
         else if (msg.getChannel().asTextChannel().getIdLong() != ciConfig.getCheckInChannel().getIdLong()) {
             msg.getChannel().asTextChannel().sendMessageEmbeds(new MessageEntry("Wrong Channel",
                     ":x: **You used this command in the wrong channel. Use this command in the " + ciConfig.getCheckInChannel().getAsMention() + " channel**",
-                    EmbedDesign.ERROR, mainConfig).getEmbed()).submit().whenComplete(new BiConsumer<Message, Throwable>() {
+                    EmbedDesign.ERROR).getEmbed()).submit().whenComplete(new BiConsumer<Message, Throwable>() {
                 @Override
                 public void accept(Message message, Throwable throwable) {
                     msg.delete().queueAfter(10, TimeUnit.SECONDS);
@@ -330,7 +328,7 @@ public class CheckInMain extends ListenerAdapter {
                     checkinStartConfirmationEntry = new MessageEntry("Successful Check-In Startup",
                             "**Successfully started a check-in for " + sessionChannel.getAsMention() + "!**" +
                                     "\n\n**Please Wait While I go fetch the names from zoobot and match those names up to discord accounts...**",
-                            EmbedDesign.WARNING, mainConfig);
+                            EmbedDesign.WARNING);
                     getCheckInProgressionEmbedChannel().sendMessageEmbeds(checkinStartConfirmationEntry.getEmbed(false))
                             .submit().whenComplete(new BiConsumer<Message, Throwable>() {
                         @Override
@@ -386,7 +384,7 @@ public class CheckInMain extends ListenerAdapter {
                                     .setDesign(EmbedDesign.SUCCESS).getEmbed(false)).queue();
                     checkInProgressionEmbed.getMessageEntry().getResultEmbed().editMessageEmbeds(
                             checkInProgressionEntry.setTitle("Check-In Successfully Canceled").setMessage(":white_check_mark: **The Check-In was successfully canceled**").getEmbed()).queue();
-                    ciTimer = new CheckInTimer(this, ciConfig, mainConfig);
+                    ciTimer = new CheckInTimer(this, ciConfig);
                     result.getPlayers().forEach(p -> {
                         guild.retrieveMemberById(p.getPlayerDiscordId()).queue(member::set);
                         if (p.isQueuedToCheckIn() && !p.successfullyCheckedIn()) {
@@ -597,7 +595,7 @@ public class CheckInMain extends ListenerAdapter {
             } while (++index < players.size());
 
             if (!result.equals("")) pages.add(result);
-            discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Check-In Result", EmbedDesign.INFO, mainConfig, msg, TargetChannelSet.TEAM),
+            discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Check-In Result", EmbedDesign.INFO, msg, TargetChannelSet.TEAM),
                     prefix, pages, suffix).invertButtonLabels().makeLabelsPlural());
         }
         catch (NumberFormatException ex) {
@@ -675,7 +673,7 @@ public class CheckInMain extends ListenerAdapter {
 
             discord.addAsReactionListEmbed(new ListEmbed(
                     new MessageEntry(m.getEffectiveName() + "'s Check-In History",
-                            EmbedDesign.INFO, mainConfig, msg, TargetChannelSet.TEAM), prefix, strings, null));
+                            EmbedDesign.INFO, msg, TargetChannelSet.TEAM), prefix, strings, null));
         }
         else {
             embed.setAsError("Invalid Mentions", "**You've given me too many mentions. Please only use 1...**" +
@@ -725,7 +723,7 @@ public class CheckInMain extends ListenerAdapter {
         }
         else {
             checkInSessionChannelEntry = new MessageEntry(
-                    "Check-In In Progress", checkInWarningString, EmbedDesign.WARNING, mainConfig);
+                    "Check-In In Progress", checkInWarningString, EmbedDesign.WARNING);
             sessionChannel.sendMessageEmbeds(checkInSessionChannelEntry.getEmbed(false)).submit().whenComplete(new BiConsumer<Message, Throwable>() {
                 @Override
                 public void accept(Message message, Throwable throwable) {
@@ -946,7 +944,7 @@ public class CheckInMain extends ListenerAdapter {
             design = EmbedDesign.ERROR;
         }
 
-        embed.sendAsMessageEntryObj(new MessageEntry("Check-In " + ciResult.getId() + " Ended", result, design, mainConfig).setChannels(TargetChannelSet.LOG));
+        embed.sendAsMessageEntryObj(new MessageEntry("Check-In " + ciResult.getId() + " Ended", result, design).setChannels(TargetChannelSet.LOG));
     }
     private void sendCheckInStartupPrompts(Message originalCmd, boolean update) {
         String memberListPrefix = "These members were successfully queried from the discord server:" +
@@ -997,7 +995,7 @@ public class CheckInMain extends ListenerAdapter {
         if (!update) {
             if (!ciCore.getCheckInList().isEmpty()) {
                 checkInQueueEmbed = new CheckInQueueEmbed(new MessageEntry("Members To Be Checked-In",
-                        EmbedDesign.SUCCESS, mainConfig, originalCmd, ciConfig.getCheckInChannel()).setAsIsListEmbed(),
+                        EmbedDesign.SUCCESS, originalCmd, ciConfig.getCheckInChannel()).setAsIsListEmbed(),
                         memberListPrefix, memberList, null, emojiList, this);
 
                 discord.addAsReactionListEmbed(checkInQueueEmbed);
@@ -1069,8 +1067,8 @@ public class CheckInMain extends ListenerAdapter {
                     "it is advisible to check zoobot's screenshot and compare that to the member list.";
         }
         if (update) checkInStartupEntryObjects.clear();
-        if (thereIsDuplicates) checkInStartupEntryObjects.add(new MessageEntry("Duplicate Accounts", duplicateMatches, duplicateMatchesStatus, mainConfig));
-        checkInStartupEntryObjects.add(new MessageEntry("Members Not Found", unrecogizedPlayers, unrecognizedPlayerStatus, mainConfig));
+        if (thereIsDuplicates) checkInStartupEntryObjects.add(new MessageEntry("Duplicate Accounts", duplicateMatches, duplicateMatchesStatus));
+        checkInStartupEntryObjects.add(new MessageEntry("Members Not Found", unrecogizedPlayers, unrecognizedPlayerStatus));
 
         printStartupEmbeds(update);
     }
@@ -1134,7 +1132,7 @@ public class CheckInMain extends ListenerAdapter {
         }
         else {
             checkInProgressionEntry = new MessageEntry("Check-In In Progress", EmbedDesign.WARNING,
-                    mainConfig, msg, TargetChannelSet.TEAM);
+                    msg, TargetChannelSet.TEAM);
             checkInProgressionEmbed = new ListEmbed(checkInProgressionEntry, prefix, list, null);
             discord.addAsReactionListEmbed(checkInProgressionEmbed);
         }

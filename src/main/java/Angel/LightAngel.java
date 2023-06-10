@@ -17,7 +17,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 
-class LightAngel {
+class LightAngel implements MainConfig {
     private static final Logger log = LogManager.getLogger(LightAngel.class);
     private static FileHandler fileHandler;
     static DiscordBotMain discord;
@@ -121,10 +121,9 @@ class LightAngel {
             }
             return;
         }
-        MainConfiguration mainConfig = new ModifyMainConfiguration(fileHandler.getMainConfig());
         mainConfig.initialSetup();
-        EmbedEngine embed = new EmbedEngine(mainConfig);
-        discord = new DiscordBotMain(restartValue, mainConfig, embed, fileHandler);
+        EmbedEngine embed = new EmbedEngine();
+        discord = new DiscordBotMain(restartValue, embed, fileHandler);
         embed.setDiscordInstance(discord);
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
                 GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MESSAGE_REACTIONS, GatewayIntent.MESSAGE_CONTENT);

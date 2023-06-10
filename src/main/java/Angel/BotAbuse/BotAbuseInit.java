@@ -2,7 +2,7 @@ package Angel.BotAbuse;
 
 import Angel.DiscordBotMain;
 import Angel.EmbedEngine;
-import Angel.MainConfiguration;
+import Angel.MainConfig;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -17,11 +17,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.TimeoutException;
 
-public class BotAbuseInit implements Runnable {
+public class BotAbuseInit implements Runnable, MainConfig {
     private final Logger log = LogManager.getLogger(BotAbuseInit.class);
     private final boolean commandsSuspended;
     private final int restartValue;
-    private final MainConfiguration mainConfig;
     private final EmbedEngine embed;
     private final Guild guild;
     private final DiscordBotMain discord;
@@ -29,10 +28,9 @@ public class BotAbuseInit implements Runnable {
 
     private BotAbuseMain baFeature;
 
-    public BotAbuseInit(boolean commandsSuspended, int restartValue, MainConfiguration mainConfig, EmbedEngine embed, Guild guild, DiscordBotMain discord) {
+    public BotAbuseInit(boolean commandsSuspended, int restartValue, EmbedEngine embed, Guild guild, DiscordBotMain discord) {
         this.commandsSuspended = commandsSuspended;
         this.restartValue = restartValue;
-        this.mainConfig = mainConfig;
         this.embed = embed;
         this.guild = guild;
         this.discord = discord;
@@ -48,7 +46,7 @@ public class BotAbuseInit implements Runnable {
     @Override
     public void run() {
         try {
-            baFeature = new BotAbuseMain(commandsSuspended, restartValue, mainConfig, embed, guild, discord);
+            baFeature = new BotAbuseMain(commandsSuspended, restartValue, embed, guild, discord);
             jda.addEventListener(baFeature);
             log.info("Bot Abuse Feature Added as Event Listener to its JDA instance");
         }
