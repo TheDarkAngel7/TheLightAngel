@@ -1,25 +1,19 @@
 package Angel.BotAbuse;
 
-import Angel.MainConfig;
-import com.google.gson.JsonObject;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
-class ModifyBotAbuseConfiguration extends BotAbuseConfiguration implements MainConfig {
-    private final BotAbuseMain baMain;
-    private final Guild guild;
+class ModifyBotAbuseConfiguration extends BotAbuseConfiguration implements BotAbuseConfig {
+    private BotAbuseMain baMain;
     private final ArrayList<String> configs = new ArrayList<>(
             Arrays.asList("botabuserole", "rolescanint", "rolescannerinterval", "hotmonths", "hotoffensemonths",
                     "maxdaysundo", "maxdaysallowedforundo", "autoperm", "autopermanent"));
 
-    ModifyBotAbuseConfiguration(JsonObject configObj, BotAbuseMain baMain, Guild guild) {
-        super(configObj, guild);
-        this.baMain = baMain;
-        this.guild = guild;
+    ModifyBotAbuseConfiguration(FileHandler fileHandler) {
+        super(fileHandler.getConfig());
     }
 
     public void setConfig(String key, int value) {
@@ -41,8 +35,8 @@ class ModifyBotAbuseConfiguration extends BotAbuseConfiguration implements MainC
         }
     }
     public boolean setNewBotAbuseRole(long newRoleID) {
-        if (guild.getRoleById(newRoleID) != null) {
-            botAbuseRole = guild.getRoleById(newRoleID);
+        if (getGuild().getRoleById(newRoleID) != null) {
+            botAbuseRole = getGuild().getRoleById(newRoleID);
             return true;
         }
         else return false;

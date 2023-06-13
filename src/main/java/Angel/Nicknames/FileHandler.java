@@ -1,6 +1,5 @@
 package Angel.Nicknames;
 
-import Angel.FileDatabases;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -19,7 +18,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
 
-class FileHandler implements FileDatabases {
+class FileHandler {
     private final Logger log = LogManager.getLogger(FileHandler.class);
     private final NicknameCore nickCore;
     Gson gson = new Gson();

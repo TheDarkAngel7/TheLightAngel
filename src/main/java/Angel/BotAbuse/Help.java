@@ -47,7 +47,7 @@ class Help implements MainConfig {
     }
     void checkCommand(boolean isTeamMember) {
         String defaultTitle = mainConfig.commandPrefix + "check Command Help";
-        TextChannel outputChannel = null;
+        TextChannel outputChannel;
         if (mainConfig.forceToDedicatedChannel) outputChannel = mainConfig.dedicatedOutputChannel;
         else outputChannel = mainConfig.helpChannel;
         if (isTeamMember) {

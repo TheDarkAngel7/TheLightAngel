@@ -30,7 +30,8 @@ public class MessageEntry implements MainConfig {
         this.design = design;
     }
 
-    // Constructor Specifically For Custom Channels, We Don't Ask For a TargetChannelSet here and we ask for the MessageChannel objects
+    // Constructor Specifically For Sending the Same Embed to
+    // Multiple Channels, We Don't Ask For a TargetChannelSet here, and we ask for the TextChannel objects
 
     public MessageEntry(String title, EmbedDesign design, Message originalCmd, TextChannel... channels) {
         this.title = title;
@@ -90,13 +91,15 @@ public class MessageEntry implements MainConfig {
     }
 
     public MessageEntry setCustomChannels(TextChannel... messageChannels) {
-        customChannels = Arrays.asList(messageChannels);
+        if (!customChannels.isEmpty()) customChannels.clear();
+        customChannels.addAll(Arrays.asList(messageChannels));
         targetChannels.add(TargetChannelSet.CUSTOM);
         return this;
 
     }
 
     public MessageEntry setCustomChannels(List<TextChannel> messageChannels) {
+        if (!customChannels.isEmpty()) customChannels.clear();
         customChannels.addAll(messageChannels);
         targetChannels.add(TargetChannelSet.CUSTOM);
         return this;
@@ -132,7 +135,7 @@ public class MessageEntry implements MainConfig {
         return this;
     }
 
-    public MessageEntry dontUseFieldEmbed() {
+    public MessageEntry dontUseFieldHeader() {
         fieldOriginallyIncluded = false;
         return this;
     }
@@ -178,8 +181,9 @@ public class MessageEntry implements MainConfig {
         return isListEmbed;
     }
 
-    // Default Setting False as that is what this class is initalized with,
+    // Default Setting True (fieldOriginallyIncluded) as that is what this class is initalized with,
     // but using this method will just construct the MessageEmbed object with the setting that is current
+    // This is in case the dontUseFieldHeader method is used, the changed variable will be used
     public MessageEmbed getEmbed() {
         return getEmbed(fieldOriginallyIncluded);
     }

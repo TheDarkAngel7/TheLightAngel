@@ -1,8 +1,6 @@
 package Angel.BotAbuse;
 
-import Angel.MainConfig;
 import com.google.gson.JsonObject;
-import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -11,33 +9,28 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 
-class BotAbuseCore implements MainConfig { // This is where all the magic happens, where all the data is added and queried from the appropriate arrays to
+class BotAbuseCore implements BotAbuseConfig { // This is where all the magic happens, where all the data is added and queried from the appropriate arrays to
     // Display all the requested data.
     Angel.BotAbuse.FileHandler fileHandler;
     private final Logger log = LogManager.getLogger(BotAbuseCore.class);
-    private final Guild guild;
     private final BotAbuseMain baMain;
-    private BotAbuseConfiguration botConfig;
     private List<BotAbuseRecord> records = new ArrayList<>();
     Dictionary<String, String> reasonsDictionary = new Hashtable<>();
     private ZonedDateTime c;
 
-    BotAbuseCore(Guild guild, BotAbuseMain baMain) {
+    BotAbuseCore(BotAbuseMain baMain) {
         this.baMain = baMain;
-        this.fileHandler = new FileHandler(this);
-        this.guild = guild;
+        this.fileHandler = new FileHandler();
     }
     void startup() throws IOException {
         try {
             log.info("Bot Abuse Core Initiated...");
-            fileHandler.getDatabase();
+            records = fileHandler.getRecords();
+            reasonsDictionary = fileHandler.getReasonsDictionary();
         }
         catch (IllegalStateException ex) {
             log.warn("No Data Existed in the Bot Abuse Arrays - Data File is Empty");
         }
-    }
-    void setBotConfig(BotAbuseConfiguration botConfig) {
-        this.botConfig = botConfig;
     }
     JsonObject getConfig() throws IOException {
         return fileHandler.getConfig();
@@ -77,7 +70,7 @@ class BotAbuseCore implements MainConfig { // This is where all the magic happen
                 System.out.println(thisRecord.getDiscordID() + "\n" + thisRecord.getRepOffenses() +
                         "\n" + thisRecord.getExpiryDate().toString() + "\n" + thisRecord.getReason());
             }
-            fileHandler.saveDatabase();
+            saveDatabase();
             return ":white_check_mark: **Successfully Bot Abused <@!" + targetDiscordID + ">" +
                     "**\nBot Abuse ID: **" + thisRecord.getId() +
                     "**\nIssuing Team Member: <@!" + thisRecord.getIssuingTeamMember() + ">" +
@@ -99,7 +92,7 @@ class BotAbuseCore implements MainConfig { // This is where all the magic happen
                     System.out.println(thisRecord.getDiscordID() + "\n" + thisRecord.getRepOffenses() +
                             "\n" + thisRecord.getExpiryDate().toString() + "\n" + thisRecord.getReason());
                 }
-                fileHandler.saveDatabase();
+                saveDatabase();
                 return ":white_check_mark: **[System - Admin Override] Successfully Overrode Bot Abuse for <@!"
                         + targetDiscordID + "> and it is now "
                         + baMain.getDiscordFormat(thisRecord.getExpiryDate(), targetDiscordID)+ "**";
@@ -124,7 +117,7 @@ class BotAbuseCore implements MainConfig { // This is where all the magic happen
                 thisRecord = new BotAbuseRecord(getNextID(), targetDiscordID, teamMember, getLastRecord(targetDiscordID).getRepOffenses() + 1,
                         c, null, getReason, imageURL);
             }
-            fileHandler.saveDatabase();
+            saveDatabase();
             // Output to return from a perm Bot Abuse, we check to see if proofImages in the corresponding index is null, if so Violation image will say "None Provided"
             // If an image was provided then the else statement would run
             if (thisRecord.getProofImage() == null) {
@@ -230,19 +223,19 @@ class BotAbuseCore implements MainConfig { // This is where all the magic happen
             records.remove(thisRecord);
         }
         else if (!c.isBefore(cTooLate) && botAbuseIsCurrent(targetDiscordID)) {
-            log.error("Undo Failed for " + guild.getMemberById(targetDiscordID).getUser().getAsTag() +
+            log.error("Undo Failed for " + getGuild().getMemberById(targetDiscordID).getUser().getAsTag() +
                     " as this bot abuse is older than the configured "
                     + botConfig.getMaxDaysAllowedForUndo() + " days");
             return ":x: **Undo Failed for <@" + targetDiscordID + "> because Bot Abuses Older than " + botConfig.getMaxDaysAllowedForUndo()
                     + " Days Cannot Be Undone.**";
         }
         else {
-            log.error("Undo Failed for " + guild.getMemberById(targetDiscordID).getUser().getAsTag() +
+            log.error("Undo Failed for " + getGuild().getMemberById(targetDiscordID).getUser().getAsTag() +
                     " as this player's bot abuse is no longer current");
             return ":x: **Undo Failed Because This Bot Abuse Is No Longer Current!**";
         }
-        fileHandler.saveDatabase();
-        log.info("Undo Successful for " + guild.getMemberById(targetDiscordID).getUser().getAsTag());
+        saveDatabase();
+        log.info("Undo Successful for " + getGuild().getMemberById(targetDiscordID).getUser().getAsTag());
         return ":white_check_mark: **Successfully Undid Bot Abuse for <@" + thisRecord.getDiscordID() + ">**" +
                 "\nID: " + thisRecord.getId() +
                 "\n So... Whatever it was you were doing... Try Again...";
@@ -410,14 +403,14 @@ class BotAbuseCore implements MainConfig { // This is where all the magic happen
         // If we had records transferred and they weren't Bot Abused
         int numTransferred = getAllRecordsByID(newDiscordID).size();
         if (numTransferred > 0 && !wasBotAbused) {
-            fileHandler.saveDatabase();
+            saveDatabase();
             return ":white_check_mark: **Successfully Transferred " + numTransferred + " Records from " +
                     "<@" + oldDiscordID + "> to <@" + newDiscordID + ">" +
                     "\nThe Old Discord ID Was Not Bot Abused**";
         }
         // If we had records transferred and they were Bot Abused
         else if (numTransferred > 0) {
-            fileHandler.saveDatabase();
+            saveDatabase();
             return ":white_check_mark: **Successfully Transferred " + numTransferred + " Records from " +
                     "<@" + oldDiscordID + "> to <@" + newDiscordID + ">" +
                     "\nThe Old Discord ID Was Bot Abused at the Time and the Role was Transferred Over**";
@@ -435,7 +428,7 @@ class BotAbuseCore implements MainConfig { // This is where all the magic happen
             clearedRecords++;
         }
         log.info("Successfully Cleared Records for " + targetDiscordID);
-        fileHandler.saveDatabase();
+        saveDatabase();
         return clearedRecords;
     }
     String seeHistory(long targetDiscordID, double timeOffset, boolean isTeamMember) {
@@ -534,7 +527,7 @@ class BotAbuseCore implements MainConfig { // This is where all the magic happen
             returnValue = "**Successfully Mapped the reason *" + reasonsDictionary.get(keyReasonWild) +
                     "* to the reason key *" + newKey + "***";
         }
-        fileHandler.saveDatabase();
+        saveDatabase();
         return returnValue;
     }
     String deleteReason(String key) throws IOException {
@@ -544,7 +537,7 @@ class BotAbuseCore implements MainConfig { // This is where all the magic happen
             returnValue = "**:white_check_mark: Successfully Removed the reason *" + removedReason
                     + "* which was mapped to key *" + key + "***";
             log.info("Successfully Removed the Reason \"" + removedReason + "\" which was mapped to key \"" + key + "\"");
-            fileHandler.saveDatabase();
+            saveDatabase();
         }
         else {
             returnValue = "**:x: No Reason Existed under key *" + key + "***";
@@ -677,10 +670,10 @@ class BotAbuseCore implements MainConfig { // This is where all the magic happen
 
         return recordByTeamMember;
     }
-    void setRecords(List<BotAbuseRecord> records) {
-        this.records = records;
-    }
     List<BotAbuseRecord> getRecords() {
         return records;
+    }
+    void saveDatabase() {
+        fileHandler.saveDatabase(records, reasonsDictionary);
     }
 }

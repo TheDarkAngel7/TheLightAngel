@@ -17,19 +17,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class BotAbuseMain extends ListenerAdapter implements MainConfig {
+public class BotAbuseMain extends ListenerAdapter implements BotAbuseConfig {
     private final Logger log = LogManager.getLogger(BotAbuseMain.class);
     private final AngelExceptionHandler aue = new AngelExceptionHandler();
     private BotAbuseTimers baTimers;
     private Guild guild;
-    private BotAbuseConfiguration botConfig;
     private BotAbuseCore baCore;
     // embed calls the EmbedEngine class
     private EmbedEngine embed;
@@ -48,10 +46,8 @@ public class BotAbuseMain extends ListenerAdapter implements MainConfig {
 
     BotAbuseMain(boolean getCommandsSuspended, int restartValue, EmbedEngine importEmbed, Guild importGuild, DiscordBotMain importDiscordBot) throws IOException, TimeoutException {
         commandsSuspended = getCommandsSuspended;
-        baCore = new BotAbuseCore(importGuild, this);
-        botConfig = new ModifyBotAbuseConfiguration(baCore.getConfig(), this, importGuild);
+        baCore = new BotAbuseCore(this);
         botConfig.initialSetup();
-        baCore.setBotConfig(botConfig);
         discord = importDiscordBot;
         this.guild = importGuild;
 
@@ -60,7 +56,7 @@ public class BotAbuseMain extends ListenerAdapter implements MainConfig {
             this.restartValue = restartValue;
             this.embed = importEmbed;
             this.help = new Help(embed);
-            baTimers = new BotAbuseTimers(guild, this, embed, mainConfig, discord);
+            baTimers = new BotAbuseTimers(this, embed, discord);
             log.info("Bot Abuse Class Constructed");
             if (!botConfig.configsExist() && !commandsSuspended) {
                 commandsSuspended = true;
@@ -1502,26 +1498,16 @@ public class BotAbuseMain extends ListenerAdapter implements MainConfig {
     ///////////////////////////////////////////////////////////
 
     public void reload(Message msg) {
-        try {
-            JsonObject newConfig = baCore.fileHandler.getConfig();
-            if (botConfig.reload(newConfig)) {
-                stopTimers();
-                isReload = true;
-                startTimers();
-                log.info("Successfully Reloaded Bot Abuse Configuration");
-            }
-            else {
-                log.fatal("Bot Abuse Configuration Problem Found on Reload - One or More of the Configurations Don't Exist" +
-                        " in the discord server");
-            }
+        JsonObject newConfig = baCore.fileHandler.getConfig();
+        if (botConfig.reload(newConfig)) {
+            stopTimers();
+            isReload = true;
+            startTimers();
+            log.info("Successfully Reloaded Bot Abuse Configuration");
         }
-        catch (FileNotFoundException e) {
-            embed.setAsStop("Bot Abuse Config File Not Found", "**:x: Configuration File Not Found**");
-            log.error("Configuration File Not Found on Reload");
-            embed.sendToTeamOutput(msg, msg.getAuthor());
-        }
-        catch (IOException ex) {
-            log.error("Reload Method", ex);
+        else {
+            log.fatal("Bot Abuse Configuration Problem Found on Reload - One or More of the Configurations Don't Exist" +
+                    " in the discord server");
         }
     }
     BotAbuseMain getThis() {

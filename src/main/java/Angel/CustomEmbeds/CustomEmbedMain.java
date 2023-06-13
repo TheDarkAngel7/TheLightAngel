@@ -1,7 +1,6 @@
 package Angel.CustomEmbeds;
 
 import Angel.*;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -14,12 +13,10 @@ public class CustomEmbedMain extends ListenerAdapter implements MainConfig {
     private final AngelExceptionHandler aue = new AngelExceptionHandler();
     private final EmbedEngine embed;
     private final DiscordBotMain discord;
-    private final Guild guild;
 
-    CustomEmbedMain(EmbedEngine embed, Guild guild, DiscordBotMain discord) {
+    CustomEmbedMain(EmbedEngine embed, DiscordBotMain discord) {
         this.embed = embed;
         this.discord = discord;
-        this.guild = guild;
     }
 
     @Override
@@ -82,7 +79,7 @@ public class CustomEmbedMain extends ListenerAdapter implements MainConfig {
                 embed.sendAsMessageEntryObj(new MessageEntry("Sample Output", "**This is a Sample**" +
                         "\n\nIf you would like to use this design use the same command again followed by what you want displayed" +
                         "\n`" + msg.getContentRaw() + " <Message>` or `" + msg.getContentRaw() + " <Title | Message>`"
-                        , requestedDesign).setOriginalCmd(msg).setChannels(TargetChannelSet.SAME).dontUseFieldEmbed());
+                        , requestedDesign).setOriginalCmd(msg).setChannels(TargetChannelSet.SAME).dontUseFieldHeader());
                 log.info(msg.getMember().getEffectiveName() + " requested a sample output of Embed Design " + requestedDesign.name());
             }
             else {
@@ -130,7 +127,7 @@ public class CustomEmbedMain extends ListenerAdapter implements MainConfig {
                 } while (++index < args.length);
 
                 embed.sendAsMessageEntryObj(new MessageEntry(title, customMsg, requestedDesign)
-                        .setChannels(TargetChannelSet.SAME).setOriginalCmd(msg).dontUseFieldEmbed());
+                        .setChannels(TargetChannelSet.SAME).setOriginalCmd(msg).dontUseFieldHeader());
                 log.info(msg.getMember().getEffectiveName() + " successfully created an embed with character length of " + charSum +
                         " and was sent into the channel #" + msg.getChannel().getName());
             }

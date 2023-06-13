@@ -1,18 +1,17 @@
 package Angel.BotAbuse;
 
+import Angel.MainConfig;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 
 import java.util.List;
 
-public abstract class BotAbuseConfiguration {
+public abstract class BotAbuseConfiguration implements MainConfig {
     private JsonObject configObj;
     private final boolean enabled;
     private String botAbuseRoleID;
-    private final Guild guild;
     private final Gson gson = new Gson();
     Role botAbuseRole;
     int roleScannerInterval;
@@ -22,9 +21,8 @@ public abstract class BotAbuseConfiguration {
     boolean autoPermanent;
     List<Integer> botAbuseTimes;
 
-    BotAbuseConfiguration(JsonObject configObj, Guild guild) {
+    BotAbuseConfiguration(JsonObject configObj) {
         this.configObj = configObj;
-        this.guild = guild;
         this.enabled = configObj.get("enabled").getAsBoolean();
     }
 
@@ -43,7 +41,7 @@ public abstract class BotAbuseConfiguration {
     }
     void discordSetup() {
         // These are configuration settings that have to be set with a guild object
-        botAbuseRole = guild.getRoleById(botAbuseRoleID);
+        botAbuseRole = getGuild().getRoleById(botAbuseRoleID);
     }
     // The reload method accepts an JsonObject as an argument,
     // the new JsonObject was retrieved from the FileHandler.getConfig() method.
@@ -60,7 +58,7 @@ public abstract class BotAbuseConfiguration {
     }
     // Separate Method for checking each of the discord guild configurations - We're checking to see if they exist in the server
     boolean configsExist() {
-        return guild.getRoles().contains(guild.getRoleById(botAbuseRoleID));
+        return getGuild().getRoles().contains(getGuild().getRoleById(botAbuseRoleID));
     }
     public abstract void setConfig(String key, int value);
     public abstract void setConfig(String key, boolean value);

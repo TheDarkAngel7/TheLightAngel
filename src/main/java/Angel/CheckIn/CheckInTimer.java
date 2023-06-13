@@ -49,7 +49,7 @@ class CheckInTimer extends Timer implements MainConfig {
                             ":warning: **There is " + mentionOn + " minutes remaining on the Check-In!\n " +
                                     "Please respond with `"+ mainConfig.commandPrefix + "checkin` as soon as possible to prove you are paying attention to discord!**" +
                                     "\n\n**Once you check-in I will send you a receipt that proves you did.**",
-                            EmbedDesign.WARNING).dontUseFieldEmbed().getEmbed()).queue();
+                            EmbedDesign.WARNING).dontUseFieldHeader().getEmbed()).queue();
                 }
 
                 if (minutes == 0 && seconds == 0) {

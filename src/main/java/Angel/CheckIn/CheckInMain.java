@@ -562,26 +562,44 @@ public class CheckInMain extends ListenerAdapter implements MainConfig {
                     "Date Ended: **" + discord.getDiscordFormat(resultList.getEndDate()) + "**\n\n" +
                     ":white_check_mark: *Indicates The Player Did Check-In along with how much time was remaining when they did.*\n" +
                     ":warning: *Indicates The Player Failed to Check-In*\n" +
-                    ":x: *Indicates The Player Was Removed From the Check-In Queue* \n";
+                    ":x: *Indicates The Player Was Removed From the Check-In Queue* \n" +
+                    "\n**Please Note that if the Bot was unable to locate a discord account, only the discord ID will be displayed**\n";
 
             List<CheckInPlayer> players = resultList.getPlayers();
-            AtomicReference<Member> member = new AtomicReference<>();
-
+            AtomicReference<String> placeHolder = new AtomicReference<>("");
             if (resultList.isCanceled()) suffix = "\n\n :x: **This Check-In was Canceled before it was completed!** :x:";
 
             do {
                 CheckInPlayer p = players.get(index);
-                guild.retrieveMemberById(p.getPlayerDiscordId()).queue(member::set);
+                CountDownLatch latch = new CountDownLatch(1);
+
+                guild.retrieveMemberById(p.getPlayerDiscordId()).useCache(false).submit().whenComplete(new BiConsumer<Member, Throwable>() {
+                    @Override
+                    public void accept(Member member, Throwable throwable) {
+                        if (throwable != null) {
+                            log.error("Unable to Locate a Discord Account within the Guild with Player Discord ID "
+                                    + p.getPlayerDiscordId() + " for Check-In List Command: " + throwable.getMessage());
+                            placeHolder.set(String.valueOf(p.getPlayerDiscordId()));
+                        }
+                        else {
+                            placeHolder.set(member.getAsMention());
+                        }
+                        latch.countDown();
+                    }
+                });
+
+                latch.await(5, TimeUnit.SECONDS);
+
                 if (p.successfullyCheckedIn()) {
-                    result = result.concat(":white_check_mark: **" + member.get().getEffectiveName()  +
+                    result = result.concat(":white_check_mark: **" + placeHolder.get()  +
                             " @ " + p.getCheckInRemainingTime() + "**\n");
                 }
                 else {
                     if (!p.isQueuedToCheckIn()) {
-                        result = result.concat(":x: ~~" + member.get().getEffectiveName() + "~~\n");
+                        result = result.concat(":x: ~~" + placeHolder.get() + "~~\n");
                     }
                     else {
-                        result = result.concat(":warning: **" + member.get().getEffectiveName() + "**\n");
+                        result = result.concat(":warning: **" + placeHolder.get() + "**\n");
                     }
                 }
                 // Going Twice on the Enter Key at the end of each record, except the last record
@@ -612,6 +630,9 @@ public class CheckInMain extends ListenerAdapter implements MainConfig {
                         "\n\nYou can find the result IDs by looking at " + mainConfig.logChannel.getAsMention());
             }
             embed.sendToTeamOutput(msg, msg.getAuthor());
+        }
+        catch (InterruptedException e) {
+            aue.logCaughtException(Thread.currentThread(), e);
         }
     }
 

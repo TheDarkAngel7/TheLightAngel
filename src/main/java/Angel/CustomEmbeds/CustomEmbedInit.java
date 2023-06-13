@@ -38,7 +38,7 @@ public class CustomEmbedInit implements Runnable, MainConfig {
 
     @Override
     public void run() {
-        embedMain = new CustomEmbedMain(embed, guild, discord);
+        embedMain = new CustomEmbedMain(embed, discord);
         jda.addEventListener(embedMain);
         log.info("Bot Abuse Feature Added as Event Listener to its JDA instance");
     }

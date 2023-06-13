@@ -1,6 +1,5 @@
 package Angel.CheckIn;
 
-import Angel.FileDatabases;
 import Angel.ZoneIDInstanceCreator;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
@@ -19,7 +18,7 @@ import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.List;
 
-class FileHandler implements FileDatabases {
+class FileHandler {
     private final Gson gson;
     private CheckInCore ciCore;
     private final Logger log = LogManager.getLogger(FileHandler.class);
