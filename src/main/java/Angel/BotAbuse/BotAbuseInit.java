@@ -28,11 +28,11 @@ public class BotAbuseInit implements Runnable, MainConfig {
 
     private BotAbuseMain baFeature;
 
-    public BotAbuseInit(boolean commandsSuspended, int restartValue, EmbedEngine embed, Guild guild, DiscordBotMain discord) {
+    public BotAbuseInit(boolean commandsSuspended, int restartValue, EmbedEngine embed, DiscordBotMain discord) {
         this.commandsSuspended = commandsSuspended;
         this.restartValue = restartValue;
         this.embed = embed;
-        this.guild = guild;
+        this.guild = getGuild();
         this.discord = discord;
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
                 GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MESSAGE_REACTIONS, GatewayIntent.MESSAGE_CONTENT);

@@ -1,9 +1,8 @@
 package Angel.Nicknames;
 
 import Angel.EmbedEngine;
-import Angel.MainConfig;
 
-class Help implements MainConfig {
+class Help implements NickConfig {
     private EmbedEngine embed;
     private NicknameMain nickMain;
 

@@ -52,7 +52,7 @@ class NickRequestListEmbed extends CustomListEmbed {
                     break;
             }
 
-            log.info(event.getUser().getAsTag() + " just reacted with the " + reactionType);
+            log.info(event.getUser().getName() + " just reacted with the " + reactionType);
             nickMain.requestHandler(originalCmd, event.getMember(), requestStatus, targetDiscordID);
         }
         catch (IOException ex) {

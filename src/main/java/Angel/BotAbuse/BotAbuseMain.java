@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class BotAbuseMain extends ListenerAdapter implements BotAbuseConfig {
     private final Logger log = LogManager.getLogger(BotAbuseMain.class);
-    private final AngelExceptionHandler aue = new AngelExceptionHandler();
     private BotAbuseTimers baTimers;
     private Guild guild;
     private BotAbuseCore baCore;

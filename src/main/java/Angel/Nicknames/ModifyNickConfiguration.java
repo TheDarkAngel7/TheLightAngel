@@ -1,19 +1,17 @@
 package Angel.Nicknames;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-class ModifyNickConfiguration extends NickConfiguration {
+class ModifyNickConfiguration extends NickConfiguration implements NickConfig {
     private final ArrayList<String> configs = new ArrayList<>(Arrays.asList("useteamchannelonrequest", "rolesnotallowedtochangename",
             "requestcooldown", "requestcd", "reqcd", "pingstaffonline", "pingstaffonlineonrequest"));
 
-    ModifyNickConfiguration(JsonObject importConfigObj, Gson importGsonInstance, Guild importGuild) {
-        super(importConfigObj, importGsonInstance, importGuild);
+    ModifyNickConfiguration(JsonObject importConfigObj) {
+        super(importConfigObj);
     }
 
     public void setConfig(String key, int newValue) {
@@ -34,7 +32,7 @@ class ModifyNickConfiguration extends NickConfiguration {
     }
 
     public void addNewNameRestrictedRole(long newRoleID) throws NullPointerException {
-        addNewNameRestrictedRole(guild.getRoleById(newRoleID));
+        addNewNameRestrictedRole(getGuild().getRoleById(newRoleID));
     }
 
     public void addNewNameRestrictedRole(Role newRole) {
@@ -42,7 +40,7 @@ class ModifyNickConfiguration extends NickConfiguration {
     }
 
     public boolean removeNewNameRestrictedRole(long roleToDeleteID) throws NullPointerException {
-        return removeNewNameRestrictedRole(guild.getRoleById(roleToDeleteID));
+        return removeNewNameRestrictedRole(getGuild().getRoleById(roleToDeleteID));
     }
 
     public boolean removeNewNameRestrictedRole(Role roleToDelete) {

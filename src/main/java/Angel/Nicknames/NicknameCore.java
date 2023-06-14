@@ -9,36 +9,41 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-class NicknameCore {
+class NicknameCore implements NickConfig {
     private final Logger log = LogManager.getLogger(NicknameCore.class);
     Angel.Nicknames.FileHandler fileHandler;
     private Guild guild;
-    private NickConfiguration nickConfig;
-    ArrayList<Integer> requestID = new ArrayList<>();
-    ArrayList<Long> discordID = new ArrayList<>();
-    ArrayList<String> oldNickname = new ArrayList<>();
-    ArrayList<String> newNickname = new ArrayList<>();
-    Dictionary<Long, ArrayList<String>> oldNickDictionary = new Hashtable<>();
+    List<Integer> requestID = new ArrayList<>();
+    List<Long> discordID = new ArrayList<>();
+    List<String> oldNickname = new ArrayList<>();
+    List<String> newNickname = new ArrayList<>();
+    Dictionary<Long, List<String>> oldNickDictionary = new Hashtable<>();
 
-    NicknameCore(Guild importGuild) {
-        fileHandler = new FileHandler(this);
-        guild = importGuild;
+    NicknameCore() {
+        fileHandler = new FileHandler();
+        guild = getGuild();
     }
 
     void startup() throws IOException {
         log.info("Nickname Core Initiated...");
         try {
-            fileHandler.getDatabase();
+            requestID = fileHandler.getRequestID();
+            discordID = fileHandler.getRequestDiscordIDs();
+            oldNickname = fileHandler.getOldNicknamesRequests();
+            newNickname = fileHandler.getNewNicknamesRequests();
+            oldNickDictionary = fileHandler.getNameHistoryDictionary();
         }
         catch (IllegalStateException ex) {
             log.warn("No Data Existed in the Nickname Arrays - Data File is Empty");
-            fileHandler.fileReader.close();
+            // fileHandler.fileReader.close();
         }
     }
-    void setNickConfig(NickConfiguration importedNickConfig) {
-        nickConfig = importedNickConfig;
+
+    void reloadConfig() {
+        nickConfig.reload(fileHandler.getConfig());
     }
 
     String submitRequest(long targetDiscordID, String oldNick, String newNick) throws IOException {
@@ -87,7 +92,7 @@ class NicknameCore {
         // because that'd be considered a discord name change, nicknames would not be involved
 
         if (arraySizesEqual()) {
-            fileHandler.saveDatabase();
+            saveDatabase();
             return result;
         }
         else return ":x: FATAL ERROR: While submitting request, something didn't run correctly";
@@ -145,7 +150,7 @@ class NicknameCore {
                         "\nOld Nickname: **" + oldNickname.remove(index) +
                         "**\nNew Nickname: **" + newNickname.remove(index) + "**"));
         if (arraySizesEqual()) {
-            fileHandler.saveDatabase();
+            saveDatabase();
 
             if (!triggeredOnGuildLeave && !triggeredOnRoleRemove) return defaultReturn;
             else if (triggeredOnGuildLeave && !triggeredOnRoleRemove) {
@@ -204,17 +209,20 @@ class NicknameCore {
             return returnValue.split(",");
         }
     }
-    ArrayList<String> getHistory(long targetDiscordID) {
+    List<String> getHistory(long targetDiscordID) {
         return oldNickDictionary.get(targetDiscordID);
     }
     String clearNameHistory(long targetDiscordID) throws IOException {
         String defaultReturn = "**Successfully Cleared The Name History of <@" + targetDiscordID + ">**";
         oldNickDictionary.remove(targetDiscordID);
         log.info("Successfully Cleared the Name History for " + guild.getMemberById(targetDiscordID).getEffectiveName());
-        fileHandler.saveDatabase();
+        saveDatabase();
         return defaultReturn;
     }
     boolean arraySizesEqual() {
         return requestID.size() == discordID.size() && oldNickname.size() == newNickname.size();
+    }
+    void saveDatabase() {
+        fileHandler.saveDatabase(requestID, discordID, oldNickname, newNickname, oldNickDictionary);
     }
 }

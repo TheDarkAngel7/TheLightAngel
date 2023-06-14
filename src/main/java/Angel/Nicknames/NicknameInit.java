@@ -5,14 +5,12 @@ import Angel.EmbedEngine;
 import Angel.MainConfig;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -20,16 +18,14 @@ public class NicknameInit implements Runnable, MainConfig {
     private final Logger log = LogManager.getLogger(NicknameInit.class);
     private final boolean commandsSuspended;
     private final EmbedEngine embed;
-    private final Guild guild;
     private final DiscordBotMain discord;
     private final JDA jda;
 
     private NicknameMain nickFeature;
 
-    public NicknameInit(boolean commandsSuspended, EmbedEngine embed, Guild guild, DiscordBotMain discord) {
+    public NicknameInit(boolean commandsSuspended, EmbedEngine embed, DiscordBotMain discord) {
         this.commandsSuspended = commandsSuspended;
         this.embed = embed;
-        this.guild = guild;
         this.discord = discord;
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
                 GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT);
@@ -42,14 +38,9 @@ public class NicknameInit implements Runnable, MainConfig {
 
     @Override
     public void run() {
-        try {
-            nickFeature = new NicknameMain(commandsSuspended, embed, guild, discord);
-            jda.addEventListener(nickFeature);
-            log.info("Nickname Feature Added as Event Listener to its JDA instance");
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+        nickFeature = new NicknameMain(commandsSuspended, embed, discord);
+        jda.addEventListener(nickFeature);
+        log.info("Nickname Feature Added as Event Listener to its JDA instance");
     }
     public NicknameMain getNickFeature() {
         return nickFeature.getThis();

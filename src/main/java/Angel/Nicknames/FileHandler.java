@@ -14,66 +14,90 @@ import java.lang.reflect.Type;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Hashtable;
+import java.util.*;
 
 class FileHandler {
     private final Logger log = LogManager.getLogger(FileHandler.class);
-    private final NicknameCore nickCore;
-    Gson gson = new Gson();
+    private final Gson gson = new Gson();
     private final File jsonNickDataFile = new File("data/nickdata.json");
     private final File jsonTempNickDataFile = new File("data/nicktempdata.json");
     private final Type longType = new TypeToken<ArrayList<Long>>(){}.getType();
     private final Type integerType = new TypeToken<ArrayList<Integer>>(){}.getType();
     private final Type stringType = new TypeToken<ArrayList<String>>(){}.getType();
     private final Type oldNickDictionaryType = new TypeToken<Hashtable<Long, ArrayList<String>>>(){}.getType();
-    FileReader fileReader;
+    private FileReader fileReader;
+    private JsonObject database;
 
-    FileHandler(NicknameCore nickCore) {
-        this.nickCore = nickCore;
+    FileHandler() {
+        try {
+            database = JsonParser.parseReader(new FileReader(jsonNickDataFile)).getAsJsonObject();
+        }
+        catch (FileNotFoundException e) {
+            log.fatal("Nickname FileHandler Constructor: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
     }
 
-    public JsonObject getConfig() throws IOException {
-        fileReader = new FileReader("configs/nickconfig.json");
-        JsonElement element = JsonParser.parseReader(fileReader);
-        fileReader.close();
-        return element.getAsJsonObject();
+    public JsonObject getConfig() {
+        try {
+            fileReader = new FileReader("configs/nickconfig.json");
+            JsonElement element = JsonParser.parseReader(fileReader);
+            fileReader.close();
+            return element.getAsJsonObject();
+        }
+        catch (IOException e) {
+            log.fatal("Nickname Configuration Read: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
     }
 
-    public void getDatabase() throws IOException {
-        // This is to ensure the fileReader closes at the end of this method
-        fileReader = new FileReader(jsonNickDataFile);
-        JsonObject database = JsonParser.parseReader(fileReader).getAsJsonObject();
-        nickCore.requestID = gson.fromJson(database.get("RequestID").getAsString(), integerType);
-        nickCore.discordID = gson.fromJson(database.get("DiscordID").getAsString(), longType);
-        nickCore.oldNickname = gson.fromJson(database.get("OldNickname").getAsString(), stringType);
-        nickCore.newNickname = gson.fromJson(database.get("NewNickname").getAsString(), stringType);
-        nickCore.oldNickDictionary = gson.fromJson(database.get("OldNameDictionary").getAsString(), oldNickDictionaryType);
-        log.info("Nickname Database Successfully Setup");
-        fileReader.close();
+    List<Integer> getRequestID() {
+        return gson.fromJson(database.get("RequestID").getAsString(), integerType);
+
     }
-    public void saveDatabase() throws IOException {
-        JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(new FileOutputStream(jsonTempNickDataFile)));
-        jsonWriter.beginObject();
-        jsonWriter.name("RequestID").value(gson.toJson(nickCore.requestID));
-        jsonWriter.name("DiscordID").value(gson.toJson(nickCore.discordID));
-        jsonWriter.name("OldNickname").value(gson.toJson(nickCore.oldNickname));
-        jsonWriter.name("NewNickname").value(gson.toJson(nickCore.newNickname));
-        jsonWriter.name("OldNameDictionary").value(gson.toJson(nickCore.oldNickDictionary));
-        jsonWriter.endObject();
-        jsonWriter.close();
-        log.info("JSONWriter Successfully Ran to Nickname Database Temp File");
-        while (true) {
-            try {
-                File backupFile = new File("db-backups/Nicknames/Nickdata - " +
-                        Calendar.getInstance().getTime().toString().replace(':', ' ') + ".json");
-                Files.move(Paths.get(jsonNickDataFile.getAbsolutePath()), Paths.get(backupFile.getAbsolutePath()));
-                break;
+
+    List<Long> getRequestDiscordIDs() {
+        return gson.fromJson(database.get("DiscordID").getAsString(), longType);
+    }
+
+    List<String> getOldNicknamesRequests() {
+        return gson.fromJson(database.get("OldNickname").getAsString(), stringType);
+    }
+
+    List<String> getNewNicknamesRequests() {
+        return gson.fromJson(database.get("NewNickname").getAsString(), stringType);
+    }
+
+    Dictionary<Long, List<String>> getNameHistoryDictionary() {
+        return gson.fromJson(database.get("OldNameDictionary").getAsString(), oldNickDictionaryType);
+    }
+    public void saveDatabase(List<Integer> requestID, List<Long> discordID, List<String> oldNickname, List<String> newNickname, Dictionary<Long, List<String>> oldNickDictionary) {
+        try {
+            JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(new FileOutputStream(jsonTempNickDataFile)));
+            jsonWriter.beginObject();
+            jsonWriter.name("RequestID").value(gson.toJson(requestID));
+            jsonWriter.name("DiscordID").value(gson.toJson(discordID));
+            jsonWriter.name("OldNickname").value(gson.toJson(oldNickname));
+            jsonWriter.name("NewNickname").value(gson.toJson(newNickname));
+            jsonWriter.name("OldNameDictionary").value(gson.toJson(oldNickDictionary));
+            jsonWriter.endObject();
+            jsonWriter.close();
+            log.info("JSONWriter Successfully Ran to Nickname Database Temp File");
+            while (true) {
+                try {
+                    File backupFile = new File("db-backups/Nicknames/Nickdata - " +
+                            Calendar.getInstance().getTime().toString().replace(':', ' ') + ".json");
+                    Files.move(Paths.get(jsonNickDataFile.getAbsolutePath()), Paths.get(backupFile.getAbsolutePath()));
+                    break;
+                }
+                catch (FileSystemException ex) {
+                    // Take No Action
+                }
             }
-            catch (FileSystemException ex) {
-                // Take No Action
-            }
+        }
+        catch (IOException e) {
+            log.fatal("Unable to Save Nickname Database: " + e.getMessage());
+            throw new RuntimeException(e);
         }
         // Rename the file
         if (jsonTempNickDataFile.renameTo(jsonNickDataFile)) {

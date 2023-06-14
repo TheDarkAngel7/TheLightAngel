@@ -39,7 +39,6 @@ import java.util.function.BiConsumer;
 
 public class DiscordBotMain extends ListenerAdapter implements MainConfig {
     private final Logger log = LogManager.getLogger(DiscordBotMain.class);
-    private final AngelExceptionHandler aue = new AngelExceptionHandler();
     private EmbedEngine embed;
     private FileHandler fileHandler;
     private Guild guild;
@@ -81,8 +80,8 @@ public class DiscordBotMain extends ListenerAdapter implements MainConfig {
             log.info("Setting Up Main Config's Discord Settings");
             mainConfig.discordSetup();
         }
-        nickInit = new NicknameInit(commandsSuspended, embed, guild, this);
-        baInit = new BotAbuseInit(commandsSuspended, restartValue, embed, guild, this);
+        nickInit = new NicknameInit(commandsSuspended, embed, this);
+        baInit = new BotAbuseInit(commandsSuspended, restartValue, embed, this);
         ciInit = new CheckInInit(embed, this, guild);
         customEmbedInit = new CustomEmbedInit(embed, guild, this);
         Thread tNickFeature = new Thread(nickInit);

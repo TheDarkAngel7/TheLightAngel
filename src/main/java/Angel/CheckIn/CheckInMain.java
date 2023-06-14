@@ -1,7 +1,7 @@
 package Angel.CheckIn;
 
-import Angel.*;
 import Angel.CheckIn.AFKTool.AFKCheckManagement;
+import Angel.*;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -28,7 +28,6 @@ import java.util.function.BiConsumer;
 
 public class CheckInMain extends ListenerAdapter implements MainConfig {
     private final Logger log = LogManager.getLogger(CheckInMain.class);
-    private final AngelExceptionHandler aue = new AngelExceptionHandler();
     private final DiscordBotMain discord;
     private FileHandler fileHandler;
     private final Guild guild;

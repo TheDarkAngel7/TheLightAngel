@@ -3,7 +3,6 @@ package Angel.Nicknames;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 
 import java.lang.reflect.Type;
@@ -12,7 +11,6 @@ import java.util.List;
 
 public abstract class NickConfiguration {
     private final Gson gson;
-    Guild guild;
     private JsonObject configObj;
     private final boolean enabled;
     List<Role> restrictedRoles = new ArrayList<>();
@@ -22,10 +20,9 @@ public abstract class NickConfiguration {
     boolean pingOnlineStaff;
     private final Type longType = new TypeToken<ArrayList<Long>>(){}.getType();
 
-    NickConfiguration(JsonObject importConfigObj, Gson importGsonInstance, Guild importGuild) {
+    NickConfiguration(JsonObject importConfigObj) {
         configObj = importConfigObj;
-        gson = importGsonInstance;
-        guild = importGuild;
+        gson = new Gson();
         enabled = configObj.get("enabled").getAsBoolean();
     }
     void setup() {

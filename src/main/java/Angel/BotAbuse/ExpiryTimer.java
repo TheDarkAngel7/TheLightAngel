@@ -1,6 +1,5 @@
 package Angel.BotAbuse;
 
-import Angel.AngelExceptionHandler;
 import Angel.EmbedEngine;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -12,9 +11,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.BiConsumer;
 
-class ExpiryTimer implements Runnable {
+class ExpiryTimer implements Runnable, BotAbuseConfig {
     private final Logger log = LogManager.getLogger(ExpiryTimer.class);
-    private final AngelExceptionHandler aue = new AngelExceptionHandler();
     private final BotAbuseMain baFeature;
     private final BotAbuseCore baCore;
     private final EmbedEngine embed;
