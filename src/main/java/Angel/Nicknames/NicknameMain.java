@@ -137,8 +137,8 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                             addNameHistory(event.getUser().getIdLong(), event.getOldName(), null);
                         }
                         else {
-                            defaultDiscordMessage = defaultMessage.concat("\n\nTheir effective name *did not change because they do have a global display name of **"
-                                    + event.getUser().getGlobalName() + "**");
+                            defaultDiscordMessage = defaultDiscordMessage.concat("\n\nTheir effective name *did not change because they do have a global display name of **"
+                                    + event.getUser().getGlobalName() + "***");
                         }
 
                         log.info(defaultMessage);
