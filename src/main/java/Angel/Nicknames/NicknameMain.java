@@ -108,7 +108,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                         m.modifyNickname(event.getOldName()).reason(
                                 "Automatically Added because this player was previously using their discord username as their social club name").queue();
                         embed.setAsInfo("Automatic Nickname Addition",
-                                "**Your name on this discord server was automatically set back to your old discord username**" +
+                                "**Your name on the SAFE Crew discord server was automatically set back to your old discord username**" +
                                         " \n\nThis is due to the fact that you're in a role that prohibits name changes, your name in the SAFE Crew discord server" +
                                         " must match your social club profile name. Don't worry or panic, " +
                                         "this was just a message to say that a nickname was applied in our server so that your " +
@@ -174,7 +174,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                         member.modifyNickname(event.getUser().getName())
                                 .reason("Automatically Added because this player was previously using their discord username as their social club name").queue();
                         entry = new MessageEntry("Automatic Nickname Addition",
-                                "**Your name on this discord server was automatically set back to your old discord username**" +
+                                "**Your name on the SAFE Crew discord server was automatically set back to your old discord username**" +
                                         " \n\nThis is due to the fact that you're in a role that prohibits name changes, your name in the SAFE Crew discord server" +
                                         " must match your social club profile name. Don't worry or panic, " +
                                         "this was just a message to say that a nickname was applied in our server so that your " +
@@ -197,7 +197,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                         member.modifyNickname(event.getOldGlobalName())
                                 .reason("Automatically Added because this player was previously using their global display name as thier social club name").queue();
                         entry = new MessageEntry("Automatic Nickname Addition",
-                                "**Your name on this discord server was automatically rolled back to your old global name**" +
+                                "**Your name on the SAFE Crew discord server was automatically rolled back to your old global name**" +
                                         "\n\nThis is due to the fact that you're in a role that prohibits name changes, your name in the SAFE Crew discord server " +
                                         "must match your social club profile name. Don't worry or panic, " +
                                         "this was just a message to say that a nickname was applied in our server so that your " +
@@ -220,10 +220,20 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                         String newName = "";
                         if (event.getOldGlobalName() == null) {
                             oldName = event.getUser().getName();
+
+                            if (event.getOldGlobalName() == null && event.getUser().getName().equalsIgnoreCase(event.getNewGlobalName())) {
+                                oldName = "null";
+                            }
+                            else {
+                                addNameHistory(event.getUser().getIdLong(), oldName, null);
+                            }
                         }
                         else {
                             oldName = event.getOldGlobalName();
+                            addNameHistory(event.getUser().getIdLong(), oldName, null);
                         }
+
+
 
                         if (event.getNewGlobalName() == null) {
                             newName = event.getUser().getName();
@@ -231,7 +241,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                         else {
                             newName = event.getNewGlobalName();
                         }
-                        addNameHistory(event.getUser().getIdLong(), oldName, null);
+
 
                         String defaultMessage = event.getUser().getAsMention() + " has updated their global display name from **" +
                                 oldName + "** to **" + newName + "** and they had no nickname to prevent the effective name change";
@@ -239,7 +249,8 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                         entry = new MessageEntry("Global Display Name Changed", defaultMessage, EmbedDesign.INFO).setChannels(TargetChannelSet.LOG);
                         embed.sendAsMessageEntryObj(entry);
                         log.info(defaultMessage.replace(event.getUser().getAsMention(),
-                                event.getUser().getName() + "(ID: " + event.getUser().getIdLong() + ")"));
+                                event.getUser().getName() + " (ID: " + event.getUser().getIdLong() + ")")
+                                .replace("**" + oldName + "**", oldName).replace("**" + newName + "**", newName));
                     }
                 }
                 else {
