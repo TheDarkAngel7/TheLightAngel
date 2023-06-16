@@ -12,6 +12,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.events.session.SessionDisconnectEvent;
 import net.dv8tion.jda.api.events.session.SessionResumeEvent;
+import net.dv8tion.jda.api.events.user.update.UserUpdateGlobalNameEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdateNameEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -102,7 +103,8 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
             @Override
             public void accept(Member m, Throwable throwable) {
                 if (throwable == null) {
-                    if (m.getNickname() == null && inNickRestrictedRole(event.getUser().getIdLong())) {
+                    // The Player Has No Nickname and No Global Name and changes username and is not allowed to change effective name
+                    if (m.getNickname() == null && event.getUser().getGlobalName() == null && inNickRestrictedRole(m)) {
                         m.modifyNickname(event.getOldName()).reason(
                                 "Automatically Added because this player was previously using their discord username as their social club name").queue();
                         embed.setAsInfo("Automatic Nickname Addition",
@@ -115,20 +117,30 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                                         "(or `" + mainConfig.commandPrefix + "nn req reset` for short) to request the nickname that was just applied to be removed**");
                         embed.sendDM(null, event.getUser());
                         String logMessage = event.getUser().getAsMention() + " was previously using their discord username " +
-                                "as their social club name. They are in a role that prevents effective name changes so a nickname of **" + event.getOldName() + "** was set on them.";
+                                "as their social club name, they just changed it. They are in a role that prevents effective name changes so a nickname of **" + event.getOldName() + "** was set on them.";
                         log.info(logMessage.replace(event.getUser().getAsMention(), event.getUser().getName() + " (ID:" + event.getUser().getIdLong() + ")")
                                 .replace("**" + event.getOldName() + "**", event.getOldName()));
                         embed.setAsInfo("Automatic Nickname Applied",
                                 logMessage.replace("null", event.getUser().getName() + " (Their Discord Username)"));
                         embed.sendToLogChannel();
                     }
-                    else if (m.getNickname() == null && !inNickRestrictedRole(event.getUser().getIdLong())) {
-                        addNameHistory(event.getUser().getIdLong(), event.getOldName(), null);
+                    // The Player Has No Nickname and No Global Name and changes to username and is not allowed to change effective name
+                    else if (m.getNickname() == null && !inNickRestrictedRole(m)) {
+
                         String defaultMessage = event.getUser().getName() + " updated their discord username from "
                                 + event.getOldName() + " to " + event.getNewName() + " and they had no nickname to prevent the effective name change";
                         String defaultDiscordMessage = event.getUser().getAsMention() + " updated their discord username from **"
-                                + event.getOldName() + "** to **" + event.getNewName() + "**." +
-                                "\n\nThis got logged by me as *they had no nickname, so their effective name changed as a result of this action*";
+                                + event.getOldName() + "** to **" + event.getNewName() + "**.";
+
+                        if (event.getUser().getGlobalName() == null) {
+                            defaultDiscordMessage = defaultDiscordMessage.concat("\n\nThis got logged by me as *they had no nickname, so their effective name changed as a result of this action*");
+                            addNameHistory(event.getUser().getIdLong(), event.getOldName(), null);
+                        }
+                        else {
+                            defaultDiscordMessage = defaultMessage.concat("\n\nTheir effective name *did not change because they do have a global display name of **"
+                                    + event.getUser().getGlobalName() + "**");
+                        }
+
                         log.info(defaultMessage);
                         embed.setAsInfo("Discord Username Changed",
                                 defaultDiscordMessage.replace("null",
@@ -144,6 +156,98 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
             }
         });
         isBusy = false;
+    }
+
+    @Override
+    public void onUserUpdateGlobalName(UserUpdateGlobalNameEvent event) {
+        Thread.currentThread().setUncaughtExceptionHandler(aue);
+        if (!nickConfig.isEnabled()) return;
+        isBusy = true;
+
+        guild.retrieveMemberById(event.getUser().getIdLong()).useCache(false).submit().whenComplete(new BiConsumer<Member, Throwable>() {
+            @Override
+            public void accept(Member member, Throwable throwable) {
+                MessageEntry entry;
+                if (throwable == null) {
+                    // The player did not previously have a global name and now does.
+                    if (event.getOldGlobalName() == null && event.getNewGlobalName() != null && member.getNickname() == null && inNickRestrictedRole(member)) {
+                        member.modifyNickname(event.getUser().getName())
+                                .reason("Automatically Added because this player was previously using their discord username as their social club name").queue();
+                        entry = new MessageEntry("Automatic Nickname Addition",
+                                "**Your name on this discord server was automatically set back to your old discord username**" +
+                                        " \n\nThis is due to the fact that you're in a role that prohibits name changes, your name in the SAFE Crew discord server" +
+                                        " must match your social club profile name. Don't worry or panic, " +
+                                        "this was just a message to say that a nickname was applied in our server so that your " +
+                                        "displayed name continues to match your social club name. No action is required." +
+                                        "\n\n**If you believe this is in error, you may reply with `" + mainConfig.commandPrefix + "nickname request reset` " +
+                                        "(or `" + mainConfig.commandPrefix + "nn req reset` for short) to request the nickname that was just applied to be removed**",
+                                EmbedDesign.INFO).setTargetUser(event.getUser()).setChannels(TargetChannelSet.DM);
+                        embed.sendAsMessageEntryObj(entry);
+
+                        String logMessage = event.getUser().getAsMention() + " was previously using their discord username " +
+                                "as their social club name, they just changed it. They are in a role that prevents effective name changes so a nickname of **" + event.getUser().getName() + "** was set on them.";
+                        log.info(logMessage.replace(event.getUser().getAsMention(), event.getUser().getName() + " (ID:" + event.getUser().getIdLong() + ")")
+                                .replace("**" + event.getUser().getName() + "**", event.getUser().getName()));
+                        embed.setAsInfo("Automatic Nickname Applied",
+                                logMessage.replace("null", event.getUser().getName() + " (Their Discord Username)"));
+                        embed.sendToLogChannel();
+                    }
+                    // The player does have a global nickname and is using it as their social club name
+                    else if (event.getOldGlobalName() != null && member.getNickname() == null && inNickRestrictedRole(member)) {
+                        member.modifyNickname(event.getOldGlobalName())
+                                .reason("Automatically Added because this player was previously using their global display name as thier social club name").queue();
+                        entry = new MessageEntry("Automatic Nickname Addition",
+                                "**Your name on this discord server was automatically rolled back to your old global name**" +
+                                        "\n\nThis is due to the fact that you're in a role that prohibits name changes, your name in the SAFE Crew discord server " +
+                                        "must match your social club profile name. Don't worry or panic, " +
+                                        "this was just a message to say that a nickname was applied in our server so that your " +
+                                        "displayed name continues to match your social club name. No action is requred." +
+                                        "\n\n**If you believe this is in error, you may reply with `" + mainConfig.commandPrefix + "nickname request reset` " +
+                                        "(or `" + mainConfig.commandPrefix + "nn req reset` for short) to request the nickname that was just applied to be removed**",
+                                EmbedDesign.INFO).setTargetUser(event.getUser()).setChannels(TargetChannelSet.DM);
+                        embed.sendAsMessageEntryObj(entry);
+
+                        String logMessage = event.getUser().getAsMention() + " was previously using their global display name " +
+                                "as their social club name, they just changed it. They are in a role that prevents effective name changes so a nickname of **" + event.getOldGlobalName() + "** was set on them.";
+                        log.info(logMessage.replace(event.getUser().getAsMention(), event.getUser().getName() + " (ID:" + event.getUser().getIdLong() + ")")
+                                .replace("**" + event.getOldGlobalName() + "**", event.getOldGlobalName()));
+                        embed.setAsInfo("Automatic Nickname Applied",
+                                logMessage.replace("null", event.getUser().getName() + " (Their Discord Username)"));
+                        embed.sendToLogChannel();
+                    }
+                    else if (member.getNickname() == null && !inNickRestrictedRole(member)) {
+                        String oldName = "";
+                        String newName = "";
+                        if (event.getOldGlobalName() == null) {
+                            oldName = event.getUser().getName();
+                        }
+                        else {
+                            oldName = event.getOldGlobalName();
+                        }
+
+                        if (event.getNewGlobalName() == null) {
+                            newName = event.getUser().getName();
+                        }
+                        else {
+                            newName = event.getNewGlobalName();
+                        }
+                        addNameHistory(event.getUser().getIdLong(), oldName, null);
+
+                        String defaultMessage = event.getUser().getAsMention() + " has updated their global display name from **" +
+                                oldName + "** to **" + newName + "** and they had no nickname to prevent the effective name change";
+
+                        entry = new MessageEntry("Global Display Name Changed", defaultMessage, EmbedDesign.INFO).setChannels(TargetChannelSet.LOG);
+                        embed.sendAsMessageEntryObj(entry);
+                        log.info(defaultMessage.replace(event.getUser().getAsMention(),
+                                event.getUser().getName() + "(ID: " + event.getUser().getIdLong() + ")"));
+                    }
+                }
+                else {
+                    log.warn("Whoops... something went wrong in the UserUpdateGlobalNameEvent handler: " + throwable.getMessage());
+                    aue.logCaughtException(Thread.currentThread(), throwable);
+                }
+            }
+        });
     }
 
     @Override
@@ -182,7 +286,12 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                     guild.retrieveMember(entry.getUser()).queue(m -> memberResponsible.set(m));
                     guild.retrieveMember(event.getUser()).queue(m -> member.set(m));
                     if (newNickname == null) {
-                        newNickname = member.get().getEffectiveName() + " (Their Discord Username)";
+                        if (member.get().getUser().getGlobalName() == null) {
+                            newNickname = member.get().getEffectiveName() + " (Their Discord Username)";
+                        }
+                        else {
+                            newNickname = member.get().getUser().getGlobalName() + " (Their Global Name)";
+                        }
                     }
                     addNameHistory(event.getUser().getIdLong(), event.getOldNickname(), null);
                     embed.setAsInfo("Staff Updated Nickname", "**" + entry.getUser().getAsMention() + " successfully changed a nickname via the discord GUI:**" +
@@ -1039,6 +1148,13 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
             throw new RuntimeException(e);
         }
 
+        return containsRestrictedRoles(hasRoles, targetDiscordID);
+    }
+    private boolean inNickRestrictedRole(Member m) {
+        return containsRestrictedRoles(m.getRoles(), m.getIdLong());
+    }
+
+    private boolean containsRestrictedRoles(List<Role> hasRoles, long targetDiscordID) {
         if (hasRoles.isEmpty() || discord.isTeamMember(targetDiscordID)) return false;
         else {
             int index = 0;
