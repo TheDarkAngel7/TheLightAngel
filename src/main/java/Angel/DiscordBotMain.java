@@ -249,32 +249,33 @@ public class DiscordBotMain extends ListenerAdapter implements MainConfig {
             return;
         }
         if (event.getMessage().getContentRaw().charAt(0) == mainConfig.commandPrefix && isValidCommand(msg)) {
-            if (guild.isMember(event.getAuthor())) {
-                guild.retrieveMemberById(event.getAuthor().getIdLong()).useCache(false).submit().whenComplete(new BiConsumer<Member, Throwable>() {
-                    @Override
-                    public void accept(Member member, Throwable throwable) {
-                        if (throwable == null) {
-                            if (event.getMessage().getChannelType().equals(ChannelType.PRIVATE)) {
-                                log.debug(member.getEffectiveName() + "@DM: " + event.getMessage().getContentRaw());
-                            }
-                            else {
-                                log.debug(member.getEffectiveName() + "@" + event.getMessage().getChannel().getName() + ": " +
-                                        event.getMessage().getContentRaw());
-                            }
+            guild.retrieveMemberById(event.getAuthor().getIdLong()).useCache(false).submit().whenComplete(new BiConsumer<Member, Throwable>() {
+                @Override
+                public void accept(Member member, Throwable throwable) {
+                    if (throwable == null) {
+                        if (event.getMessage().getChannelType().equals(ChannelType.PRIVATE)) {
+                            log.debug(member.getEffectiveName() + "@DM: " + event.getMessage().getContentRaw());
+                        }
+                        else {
+                            log.debug(member.getEffectiveName() + "@" + event.getMessage().getChannel().getName() + ": " +
+                                    event.getMessage().getContentRaw());
+                        }
+                    }
+                    else {
+                        log.debug(throwable.getMessage());
+                        if (throwable.getMessage().contains("UNKNOWN_MEMBER")) {
+                            MessageEntry entry = new MessageEntry("No Permissions to Use Me!", "You Do Not Have Permissions to use me at all because you're not a member of the SAFE Crew discord server!",
+                                    EmbedDesign.STOP);
+
+                            event.getMessage().replyEmbeds(entry.getEmbed()).queue();
+                            return;
                         }
                         else {
                             log.warn("Unable to Retrieve Member Data for Command: " + event.getMessage().getContentRaw() + " - " + throwable.getMessage());
                         }
                     }
-                });
-            }
-            else {
-                MessageEntry entry = new MessageEntry("No Permissions to Use Me!", "You Do Not Have Permissions to use me at all because you're not a member of the SAFE Crew discord server!",
-                        EmbedDesign.STOP);
-
-                event.getMessage().replyEmbeds(entry.getEmbed()).queue();
-                return;
-            }
+                }
+            });
         }
 
         if ((msg.getChannel().getType() != ChannelType.PRIVATE && (msg.getChannel().asTextChannel().equals(mainConfig.managementChannel) || msg.getChannel().asTextChannel().equals(mainConfig.dedicatedOutputChannel)))

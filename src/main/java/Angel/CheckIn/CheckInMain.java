@@ -576,12 +576,12 @@ public class CheckInMain extends ListenerAdapter implements MainConfig {
                     @Override
                     public void accept(Member member, Throwable throwable) {
                         if (throwable != null) {
-                            log.error("Unable to Locate a Discord Account within the Guild with Player Discord ID "
+                            log.warn("Unable to Locate a Discord Account within the Guild with Player Discord ID "
                                     + p.getPlayerDiscordId() + " for Check-In List Command: " + throwable.getMessage());
                             placeHolder.set(String.valueOf(p.getPlayerDiscordId()));
                         }
                         else {
-                            placeHolder.set(member.getAsMention());
+                            placeHolder.set(member.getEffectiveName());
                         }
                         latch.countDown();
                     }
@@ -613,7 +613,7 @@ public class CheckInMain extends ListenerAdapter implements MainConfig {
 
             if (!result.equals("")) pages.add(result);
             discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Check-In Result", EmbedDesign.INFO, msg, TargetChannelSet.TEAM),
-                    prefix, pages, suffix).invertButtonLabels().makeLabelsPlural());
+                    prefix, pages, suffix).makeLabelsPlural());
         }
         catch (NumberFormatException ex) {
             if (msg.getMentions().getMembers().size() == 1) {

@@ -66,6 +66,7 @@ public class ListEmbed {
         nextPageIcon = nextPageIcon.replace("d*", "ds*");
         lastPageIcon = lastPageIcon.replace("d*", "ds*");
         pluralLabelsEnabled = true;
+        reloadButtonLabels();
         return this;
     }
     private ListEmbed invertButtonLabels(boolean pluralLabels) {
@@ -75,6 +76,15 @@ public class ListEmbed {
         lastPageIcon = "\u23ED\uFE0F *Go To Oldest Record*";
 
         if (pluralLabels) makeLabelsPlural();
+        reloadButtonLabels();
+        return this;
+    }
+
+    private ListEmbed reloadButtonLabels() {
+        buttonLabels = "\n\n **Use The Arrows to Navigate:**" +
+                "\n" + firstPageIcon + "\t" + lastPageIcon +
+                "\n" + previousPageIcon + "\t" + nextPageIcon +
+                "\n" + stopIcon;
         return this;
     }
     ListEmbed setNewPages(List<String> newPages) {
