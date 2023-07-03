@@ -722,8 +722,10 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
 
                                 if (!tempString.isEmpty()) pages.add(tempString);
 
-                                discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Name History", EmbedDesign.INFO, msg, TargetChannelSet.TEAM), "<@!" + targetDiscordID + ">'s Name History is as Follows:",
-                                        pages, "Total Old Names: **" + oldNickArray.size() + "**").invertButtonLabels().makeLabelsPlural());
+                                ListEmbed resultEmbed = new ListEmbed(new MessageEntry("Name History", EmbedDesign.INFO, msg, TargetChannelSet.TEAM), "<@!" + targetDiscordID + ">'s Name History is as Follows:",
+                                        pages, "Total Old Names: **" + oldNickArray.size() + "**").invertButtonLabels().makeLabelsPlural();
+
+                                discord.addAsReactionListEmbed(resultEmbed);
                             }
                         }
                         else {

@@ -612,8 +612,10 @@ public class CheckInMain extends ListenerAdapter implements MainConfig {
             } while (++index < players.size());
 
             if (!result.equals("")) pages.add(result);
-            discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Check-In Result", EmbedDesign.INFO, msg, TargetChannelSet.TEAM),
-                    prefix, pages, suffix).makeLabelsPlural());
+
+            ListEmbed ciResult = new ListEmbed(new MessageEntry("Check-In Result", EmbedDesign.INFO, msg, TargetChannelSet.TEAM),
+                    prefix, pages, suffix).makeLabelsPlural();
+            discord.addAsReactionListEmbed(ciResult);
         }
         catch (NumberFormatException ex) {
             if (msg.getMentions().getMembers().size() == 1) {
