@@ -19,21 +19,19 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
-public class CheckInMain extends ListenerAdapter implements MainConfig {
+public class CheckInMain extends ListenerAdapter implements CheckInConfig {
     private final Logger log = LogManager.getLogger(CheckInMain.class);
     private final DiscordBotMain discord;
     private FileHandler fileHandler;
     private final Guild guild;
     private final EmbedEngine embed;
     private CheckInCore ciCore;
-    private CheckInConfiguration ciConfig;
     private CheckInTimer ciTimer;
     // Embed in the session channel while the check-in is in progress
     private MessageEntry checkInSessionChannelEntry = null;
@@ -65,9 +63,9 @@ public class CheckInMain extends ListenerAdapter implements MainConfig {
     private CheckInQueueEmbed checkInQueueEmbed;
     private AFKCheckManagement afkCheck;
 
-    CheckInMain(DiscordBotMain discord, Guild guild, EmbedEngine embed) {
+    CheckInMain(DiscordBotMain discord, EmbedEngine embed) {
         this.discord = discord;
-        this.guild = guild;
+        this.guild = getGuild();
         this.embed = embed;
         String makeKeyCap = "\uFE0F\u20E3";
         emojiList = Arrays.asList("\u0031" + makeKeyCap, "\u0032" + makeKeyCap, "\u0033" + makeKeyCap,
@@ -77,36 +75,29 @@ public class CheckInMain extends ListenerAdapter implements MainConfig {
 
     @Override
     public void onReady(@NotNull ReadyEvent event) {
+        isConnected = true;
+        fileHandler = new FileHandler();
+        ciCore = new CheckInCore();
         try {
-            isConnected = true;
-            fileHandler = new FileHandler();
-            ciConfig = new ModifyCheckInConfiguration(guild, fileHandler.getConfig());
-            ciCore = new CheckInCore(ciConfig, guild);
-            fileHandler.setCiCore(ciCore);
-            try {
-                fileHandler.getDatabase();
-            }
-            catch (IllegalStateException ex) {
-                log.warn("No Data Existed in the Check-In Database - No Data File");
-            }
-            ciConfig.setup();
+            fileHandler.getDatabase();
+        }
+        catch (IllegalStateException ex) {
+            log.warn("No Data Existed in the Check-In Database - No Data File");
+        }
+        ciConfig.setup();
 
-            switch (ciConfig.setupRoles()) {
-                case 0: log.info("Check-In Roles Configured Successfully");
-                        break;
-                case 1: log.warn("One or More of the role IDs that can be checked-in in the config file were not found");
-                        break;
-                case 2: commandsSuspended = true;
-                        log.fatal("The configured roles that can be checked-in are not usable");
-                        break;
-            }
-            ciTimer = new CheckInTimer(this, ciConfig);
-            afkCheck = new AFKCheckManagement(guild, event.getJDA(), discord, embed);
-            afkCheck.startTimer();
+        switch (ciConfig.setupRoles()) {
+            case 0: log.info("Check-In Roles Configured Successfully");
+                    break;
+            case 1: log.warn("One or More of the role IDs that can be checked-in in the config file were not found");
+                    break;
+            case 2: commandsSuspended = true;
+                    log.fatal("The configured roles that can be checked-in are not usable");
+                    break;
         }
-        catch (IOException ex) {
-            log.error("IOException Caught while initalizing Check-In Config and Core: \n" + ex.getMessage());
-        }
+        ciTimer = new CheckInTimer(this, ciConfig);
+        afkCheck = new AFKCheckManagement(event.getJDA(), discord, embed);
+        afkCheck.startTimer();
     }
 
     @Override
@@ -408,11 +399,7 @@ public class CheckInMain extends ListenerAdapter implements MainConfig {
                             }
                         }
                     });
-                    try {
-                        fileHandler.saveDatabase();
-                    } catch (IOException e) {
-                        log.error("Unhandled IOException Occured While Saving Cancelled Check-In Results");
-                    }
+                    ciCore.saveDatabase();
                     logCheckInResults(result);
                 }
                 else {
@@ -916,12 +903,7 @@ public class CheckInMain extends ListenerAdapter implements MainConfig {
 
         checkInSessionChannelEntry.setTitle("Check-In Ended").setDesign(EmbedDesign.SUCCESS).setMessage("**The Check-In Has Ended for This Session**\n\nYou may resume normal chatter and bot commands.");
         checkInSessionChannelEmbed.editMessageEmbeds(checkInSessionChannelEntry.getEmbed(false)).queue();
-        try {
-            fileHandler.saveDatabase();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+        ciCore.saveDatabase();
         logCheckInResults(ciResult);
     }
     private void logCheckInResults(CheckInResult ciResult) {

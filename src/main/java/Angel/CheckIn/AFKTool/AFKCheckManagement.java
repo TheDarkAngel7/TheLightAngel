@@ -30,8 +30,8 @@ public class AFKCheckManagement extends Timer implements MainConfig {
     private AFKCheckListEmbed afkCheckListEmbed;
     private final int maxNumberOfAFKChecksPerSession = 3;
 
-    public AFKCheckManagement(Guild guild, JDA jda, DiscordBotMain discord, EmbedEngine embed) {
-        this.guild = guild;
+    public AFKCheckManagement(JDA jda, DiscordBotMain discord, EmbedEngine embed) {
+        this.guild = getGuild();
         this.jda = jda;
         this.embed = embed;
         this.discord = discord;
@@ -133,10 +133,13 @@ public class AFKCheckManagement extends Timer implements MainConfig {
         this.schedule(new TimerTask() {
             @Override
             public void run() {
-                while (true) {
+                do {
                     try {
                         afkChecks.forEach(afk -> {
-                            try {Thread.sleep(100);} catch (InterruptedException e) {}
+                            try {
+                                Thread.sleep(100);
+                            } catch (InterruptedException e) {
+                            }
                             MessageEntry entry;
                             if (afk.hasPlayerSuccessfullyCheckedIn()) {
                                 entry = new MessageEntry(afk.getMemberName() + " AFK Check Status",
@@ -155,14 +158,13 @@ public class AFKCheckManagement extends Timer implements MainConfig {
 
                                 embed.sendAsMessageEntryObj(new MessageEntry("AFK Check Completed",
                                         ":white_check_mark: **You have successfully completed an AFK check!** :white_check_mark:" +
-                                        "\n\n***Please bear in mind that you must be attentive to discord " +
-                                        "while in our official sessions as per GTA Rule #5.***" +
-                                        "\n\n**So, if you would like to idle in GTA Online in order to let your businesses run," +
+                                                "\n\n***Please bear in mind that you must be attentive to discord " +
+                                                "while in our official sessions as per GTA Rule #5.***" +
+                                                "\n\n**So, if you would like to idle in GTA Online in order to let your businesses run," +
                                                 " then our advice would be to do so in a solo GTA Online Session**",
                                         EmbedDesign.SUCCESS,
                                         afk.getCheckInMessage(), afk.getSessionChannel()));
-                            }
-                            else if (afk.hasPlayerFailedCheckIn()) {
+                            } else if (afk.hasPlayerFailedCheckIn()) {
                                 entry = new MessageEntry(afk.getMemberName() + " AFK Check Status",
                                         "**" + afk.getMemberMention() + " has failed to respond to your posted AFK check... I sense a suspension coming on...**",
                                         EmbedDesign.ERROR);
@@ -171,17 +173,15 @@ public class AFKCheckManagement extends Timer implements MainConfig {
                                 // Remove Event Listener and Delete from afkCheck List
                                 scheduledFutures.remove(afkChecks.indexOf(afk)).cancel(true);
                                 jda.removeEventListener(afkChecks.remove(afkChecks.indexOf(afk)));
-                            }
-                            else if (afk.isCancelled()) {
+                            } else if (afk.isCancelled()) {
                                 // Remove Event Listener and Delete from afkCheck List
                                 scheduledFutures.remove(afkChecks.indexOf(afk)).cancel(true);
                                 jda.removeEventListener(afkChecks.remove(afkChecks.indexOf(afk)));
                             }
                         });
+                    } catch (ConcurrentModificationException ex) {
                     }
-                    catch (ConcurrentModificationException ex) {}
-                    if (afkChecks.isEmpty()) break;
-                }
+                } while (!afkChecks.isEmpty());
 
                 afkCheckQueue.forEach(queue -> {
                     services.scheduleAtFixedRate(queue, 0, 1, TimeUnit.SECONDS);

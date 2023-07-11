@@ -1,17 +1,16 @@
 package Angel.CheckIn;
 
+import Angel.MainConfig;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class CheckInConfiguration {
-    Guild guild;
+public abstract class CheckInConfiguration implements MainConfig  {
     private final Gson gson = new Gson();
     private JsonObject configObj;
     private final boolean enabled;
@@ -25,17 +24,16 @@ public abstract class CheckInConfiguration {
 
     String checkInChannelID;
 
-    CheckInConfiguration(Guild guild, JsonObject configObj) {
-        this.guild = guild;
+    CheckInConfiguration(JsonObject configObj) {
         this.configObj = configObj;
         this.enabled = configObj.get("enabled").getAsBoolean();
     }
 
     void setup() {
         checkInChannelID = configObj.get("checkInChannelID").getAsString();
-        checkInRole = guild.getRoleById(configObj.get("checkInRoleID").getAsLong());
+        checkInRole = getGuild().getRoleById(configObj.get("checkInRoleID").getAsLong());
         if (!checkInChannelID.equalsIgnoreCase("None")) {
-            checkInChannel = guild.getTextChannelById(checkInChannelID);
+            checkInChannel = getGuild().getTextChannelById(checkInChannelID);
         }
         checkInDuration = configObj.get("checkInDuration").getAsInt();
         checkInUpdate = configObj.get("checkInProgressionUpdateInSeconds").getAsInt();

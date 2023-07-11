@@ -1,14 +1,13 @@
 package Angel.CheckIn;
 
 import com.google.gson.JsonObject;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
-class ModifyCheckInConfiguration extends CheckInConfiguration {
+class ModifyCheckInConfiguration extends CheckInConfiguration implements CheckInConfig {
 
-    ModifyCheckInConfiguration(Guild guild, JsonObject json) {
-        super(guild, json);
+    ModifyCheckInConfiguration(JsonObject json) {
+        super(json);
     }
 
     // Return 0 if no errors were found
@@ -20,7 +19,7 @@ class ModifyCheckInConfiguration extends CheckInConfiguration {
         boolean error = false;
 
         while (index < rolesThatCanBeCheckedInLong.size()) {
-            Role role = guild.getRoleById(rolesThatCanBeCheckedInLong.get(index));
+            Role role = getGuild().getRoleById(rolesThatCanBeCheckedInLong.get(index));
             if (role != null) {
                 rolesThatCanBeCheckedIn.add(role);
             }
@@ -36,7 +35,7 @@ class ModifyCheckInConfiguration extends CheckInConfiguration {
 
     @Override
     public void setCheckInChannel(long channelID) {
-        checkInChannel = guild.getTextChannelById(channelID);
+        checkInChannel = getGuild().getTextChannelById(channelID);
     }
 
     @Override

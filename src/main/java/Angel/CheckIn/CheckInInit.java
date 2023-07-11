@@ -41,7 +41,7 @@ public class CheckInInit implements Runnable, MainConfig {
 
     @Override
     public void run() {
-        checkIn = new CheckInMain(discord, guild, embed);
+        checkIn = new CheckInMain(discord, embed);
         jda.addEventListener(checkIn);
         log.info("Check-In Feature Added as Event Listener to its JDA instance");
     }

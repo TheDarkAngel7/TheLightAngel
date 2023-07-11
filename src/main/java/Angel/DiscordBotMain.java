@@ -20,7 +20,6 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionRemoveAllEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
-import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,10 +30,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 public class DiscordBotMain extends ListenerAdapter implements MainConfig {
@@ -1255,48 +1252,7 @@ public class DiscordBotMain extends ListenerAdapter implements MainConfig {
         new ProcessBuilder("cmd", "/c", "start", "/MIN", "java", "-jar", "-Dlog4j.configurationFile=./log4j2.properties", "TheLightAngel.jar", suffix).start();
         System.exit(1);
     }
-    // Permission Checkers that this class and the other features use:
-    public boolean isTeamMember(long targetDiscordID) {
-        AtomicReference<Member> member = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            guild.retrieveMemberById(targetDiscordID).useCache(false).queue(m -> {
-                member.set(m);
-                latch.countDown();
-            });
-            latch.await();
-            return isStaffMember(targetDiscordID) ||
-                    member.get().getRoles().contains(mainConfig.teamRole);
-        }
-        catch (ErrorResponseException | NullPointerException ex) {
-            return false;
-        }
-        catch (InterruptedException e) {
-            aue.logCaughtException(Thread.currentThread(), e);
-            return false;
-        }
-    }
-    public boolean isStaffMember(long targetDiscordID) {
-        AtomicReference<Member> member = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            guild.retrieveMemberById(targetDiscordID).useCache(false).queue(m -> {
-                member.set(m);
-                latch.countDown();
-            });
-            latch.await();
-            return member.get().getRoles().contains(mainConfig.staffRole) ||
-                    member.get().getRoles().contains(mainConfig.adminRole) ||
-                    member.get().equals(mainConfig.owner);
-        }
-        catch (ErrorResponseException | NullPointerException ex) {
-            return false;
-        }
-        catch (InterruptedException e) {
-            aue.logCaughtException(Thread.currentThread(), e);
-            return false;
-        }
-    }
+
     // Is the command array provided a valid command anywhere in the program?
     private boolean isValidCommand(Message msg) {
         if (msg.getContentRaw().charAt(0) != mainConfig.commandPrefix) return false;

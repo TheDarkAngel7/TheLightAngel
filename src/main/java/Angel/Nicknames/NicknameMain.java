@@ -290,7 +290,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                 } while (++index < l.size());
 
                 if (entry.getUser().isBot() || index == l.size()) return;
-                else if (discord.isTeamMember(entry.getUser().getIdLong())) {
+                else if (isTeamMember(entry.getUser().getIdLong())) {
                     String newNickname = event.getNewNickname();
                     AtomicReference<Member> member = new AtomicReference<>();
                     AtomicReference<Member> memberResponsible = new AtomicReference<>();
@@ -372,7 +372,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                         embed.sendToLogChannel();
                     }
                 }
-                else if (!discord.isTeamMember(entry.getUser().getIdLong()) && !inNickRestrictedRole(event.getUser().getIdLong())) {
+                else if (!isTeamMember(entry.getUser().getIdLong()) && !inNickRestrictedRole(event.getUser().getIdLong())) {
                     String defaultMessage = event.getUser().getName() + " updated their nickname from "
                             + event.getOldNickname() + " to " + event.getNewNickname()
                             + " as they did not have a role that prohibits it";
@@ -467,7 +467,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
             }
             else if (commandsSuspended) {
                 String defaultTitle = "Commands Suspended";
-                if (!discord.isTeamMember(event.getAuthor().getIdLong())) {
+                if (!isTeamMember(event.getAuthor().getIdLong())) {
                     embed.setAsStop(defaultTitle, "**Commands are Temporarily Suspended on the Nickname Feature side...**" +
                             "\n**Sorry for the inconvience...**");
                     embed.sendToMemberOutput(msg, msg.getAuthor());
@@ -503,7 +503,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                 try {
                     String result = "";
                     if (args[1].equalsIgnoreCase("request") || args[1].equalsIgnoreCase("req")) {
-                        if (discord.isTeamMember(msg.getAuthor().getIdLong())) {
+                        if (isTeamMember(msg.getAuthor().getIdLong())) {
                             embed.setAsError("No Permissions",
                                     ":x: **You should not need to request a new nickname... you can just change it yourself**");
                             embed.sendToTeamOutput(msg, msg.getAuthor());
@@ -671,19 +671,19 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                     }
                     else if ((args[1].equalsIgnoreCase("accept")
                             || args[1].equalsIgnoreCase("acc") || args[1].equalsIgnoreCase("a"))
-                            && discord.isTeamMember(msg.getAuthor().getIdLong())) {
+                            && isTeamMember(msg.getAuthor().getIdLong())) {
                         if (args.length == 3) {
                             requestHandler(msg, null,true, -1);
                         }
                     }
                     else if ((args[1].equalsIgnoreCase("deny") || args[1].equalsIgnoreCase("d")
-                            && discord.isTeamMember(msg.getAuthor().getIdLong()))) {
+                            && isTeamMember(msg.getAuthor().getIdLong()))) {
                         if (args.length == 3) {
                             requestHandler(msg, null,false, -1);
                         }
                     }
                     else if ((args[1].equalsIgnoreCase("history") || args[1].equalsIgnoreCase("h"))
-                            && discord.isTeamMember(msg.getAuthor().getIdLong())) {
+                            && isTeamMember(msg.getAuthor().getIdLong())) {
                         if (args.length == 3) {
                             long targetDiscordID = 0;
                             List<String> oldNickArray = null;
@@ -735,7 +735,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                             embed.sendToTeamOutput(msg, null);
                         }
                     }
-                    else if (args[1].equalsIgnoreCase("list") && discord.isTeamMember(msg.getAuthor().getIdLong())) {
+                    else if (args[1].equalsIgnoreCase("list") && isTeamMember(msg.getAuthor().getIdLong())) {
                         String[] splitString = new String[0];
                         String defaultTitle = "Nickname Request List";
                         log.info("Team Member " + member.getEffectiveName() + " just requested a list of nicknames");
@@ -758,7 +758,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                                 "**\nMember: **<Member>" +
                                 "**\nOld Nickname: **<oldNick>" +
                                 "**\nNew Nickname: **<newNick>**";
-                        if (discord.isTeamMember(msg.getAuthor().getIdLong()) && args.length == 4) {
+                        if (isTeamMember(msg.getAuthor().getIdLong()) && args.length == 4) {
                             String oldNickname = "";
                             String newNickname = "";
                             if (oldNickname == null) oldNickname = "None";
@@ -854,7 +854,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                                 embed.sendToLogChannel();
                             }
                         }
-                        else if (discord.isTeamMember(msg.getAuthor().getIdLong()) && args.length != 4) {
+                        else if (isTeamMember(msg.getAuthor().getIdLong()) && args.length != 4) {
                             embed.setAsError("Incorrect Arguments", "**You did not use the correct number of arguments**" +
                                     "\nSyntax Reminder: `" + mainConfig.commandPrefix + "nickname forcechange <Mention or Discord ID> <New Nickname>`");
                             embed.sendToTeamOutput(msg, null);
@@ -887,7 +887,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                             embed.sendToTeamOutput(msg, null);
                         }
                     }
-                    else if (isCommand(args[0], args[1]) && !discord.isTeamMember(msg.getAuthor().getIdLong())) {
+                    else if (isCommand(args[0], args[1]) && !isTeamMember(msg.getAuthor().getIdLong())) {
                         embed.setAsError("No Permissions", "**You Lack Permissions To Perform `" + mainConfig.commandPrefix + "nickname "
                                 + args[1] + "`**");
                         embed.sendDM(msg, msg.getAuthor());
@@ -1168,7 +1168,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
     }
 
     private boolean containsRestrictedRoles(List<Role> hasRoles, long targetDiscordID) {
-        if (hasRoles.isEmpty() || discord.isTeamMember(targetDiscordID)) return false;
+        if (hasRoles.isEmpty() || isTeamMember(targetDiscordID)) return false;
         else {
             int index = 0;
             while (index < nickConfig.restrictedRoles.size()) {

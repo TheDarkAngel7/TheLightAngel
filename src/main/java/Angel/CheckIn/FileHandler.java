@@ -7,10 +7,7 @@ import com.google.gson.stream.JsonWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -20,7 +17,6 @@ import java.util.List;
 
 class FileHandler {
     private final Gson gson;
-    private CheckInCore ciCore;
     private final Logger log = LogManager.getLogger(FileHandler.class);
     private final File jsonCheckInDataFile = new File("data/checkIndata.json");
     private final File jsonCheckInDataTempFile = new File("data/checkInTemp.json");
@@ -29,27 +25,35 @@ class FileHandler {
         gson = new GsonBuilder().registerTypeAdapter(ZoneId.class, new ZoneIDInstanceCreator()).create();
     }
 
-    void setCiCore(CheckInCore ciCore) {
-        this.ciCore = ciCore;
-    }
-
-    public JsonObject getConfig() throws IOException {
-        JsonElement element = JsonParser.parseReader(new FileReader("configs/checkinconfig.json"));
+    public JsonObject getConfig()  {
+        JsonElement element;
+        try {
+            element = JsonParser.parseReader(new FileReader("configs/checkinconfig.json"));
+        }
+        catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
         log.info("Check-In Configuration was read");
         return element.getAsJsonObject();
     }
 
-    public void getDatabase() throws IOException {
-        FileReader fileReader = new FileReader(jsonCheckInDataFile);
-        JsonObject database = JsonParser.parseReader(fileReader).getAsJsonObject();
-        ciCore.setResults(gson.fromJson(database.get("ciResults").getAsString(), new TypeToken<List<CheckInResult>>(){}.getType()));
-        fileReader.close();
+    public List<CheckInResult> getDatabase() {
+        try {
+            FileReader fileReader = new FileReader(jsonCheckInDataFile);
+            JsonObject database = JsonParser.parseReader(fileReader).getAsJsonObject();
+            fileReader.close();
+
+            return gson.fromJson(database.get("ciResults").getAsString(), new TypeToken<List<CheckInResult>>(){}.getType());
+        }
+        catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
-    public void saveDatabase() throws IOException {
+    public void saveDatabase(List<CheckInResult> ciResults) throws IOException {
         JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(Files.newOutputStream(jsonCheckInDataTempFile.toPath())));
         jsonWriter.beginObject()
-                .name("ciResults").value(gson.toJson(ciCore.getAllResults()))
+                .name("ciResults").value(gson.toJson(ciResults))
                 .endObject();
         jsonWriter.close();
         log.info("JSONWriter Successfully Ran to Check In Database Temp File");

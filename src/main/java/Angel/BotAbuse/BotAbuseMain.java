@@ -140,8 +140,8 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseConfig {
                 !isCommand(args[0])) return;
         isBusy(msg);
 
-        boolean isTeamMember = discord.isTeamMember(event.getAuthor().getIdLong());
-        boolean isStaffMember = discord.isStaffMember(event.getAuthor().getIdLong());
+        boolean isTeamMember = isTeamMember(event.getAuthor().getIdLong());
+        boolean isStaffMember = isStaffMember(event.getAuthor().getIdLong());
 
         if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && !commandsSuspended && botConfig.isEnabled())  {
             switch (args[0].toLowerCase()) {
@@ -1270,7 +1270,7 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseConfig {
         String[] splitString = stringToSplit.split("\n\n");
         TargetChannelSet requestedSet = TargetChannelSet.TEAM;
 
-        if (!discord.isTeamMember(msg.getAuthor().getIdLong())) {
+        if (!isTeamMember(msg.getAuthor().getIdLong())) {
             requestedSet = TargetChannelSet.MEMBER;
         }
 
@@ -1304,10 +1304,10 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseConfig {
                 case "botabuse":
                 case "ba": help.botAbuseCommand(isTeamMember); break;
                 case "permbotabuse":
-                case "pba" : help.permBotAbuseCommand(discord.isStaffMember(msg.getAuthor().getIdLong())); break;
+                case "pba" : help.permBotAbuseCommand(isStaffMember(msg.getAuthor().getIdLong())); break;
                 case "undo": help.undoCommand(isTeamMember); break;
-                case "transfer": help.transferCommand(discord.isStaffMember(msg.getAuthor().getIdLong())); break;
-                case "clear": help.clearCommand(discord.isStaffMember(msg.getAuthor().getIdLong())); break;
+                case "transfer": help.transferCommand(isStaffMember(msg.getAuthor().getIdLong())); break;
+                case "clear": help.clearCommand(isStaffMember(msg.getAuthor().getIdLong())); break;
                 case "check": help.checkCommand(isTeamMember); break;
                 case "checkhistory": help.checkHistoryCommand(); break;
                 case "reasonsmanager":
