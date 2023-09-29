@@ -51,11 +51,9 @@ class Help implements MainConfig {
         if (mainConfig.forceToDedicatedChannel) outputChannel = mainConfig.dedicatedOutputChannel;
         else outputChannel = mainConfig.helpChannel;
         if (isTeamMember) {
-            embed.setAsHelp(defaultTitle,"**Full Syntax:\n `" + mainConfig.commandPrefix + "check [TimeZone Offset] <Mention or Discord ID>`**\n" +
+            embed.setAsHelp(defaultTitle,"**Full Syntax:\n `" + mainConfig.commandPrefix + "check <Mention or Discord ID>`**\n" +
                     "\n" +
-                    "This command allows you to check on someone’s Bot abuse status. " +
-                    "You can put a number in between -12 and 14 in the TimeZone offset argument to convert the times to another time zone, " +
-                    "it can accept numbers that are full hour, or a full hour and a half ahead or behind UTC, so 5.5 would be equal to GMT+5:30.)");
+                    "This command allows you to check on someone’s Bot abuse status.");
         }
         else {
             embed.setAsHelp(defaultTitle,"**Full Syntax:\n `" + mainConfig.commandPrefix + "check [dm] [TimeZone]`**\n" +
@@ -64,10 +62,7 @@ class Help implements MainConfig {
                     "instead of the staff having to guess when your bot abuse will expire, you can just have the bot tell you.\n\n" +
                     "About `[dm]`: If you would like to opt for TheLightAngel to send you the information via a DM " +
                     "instead of the default location in " + outputChannel.getAsMention() + ", you can place a \"dm\" right after the " +
-                    "\"" + mainConfig.commandPrefix + "check\".\n\n" +
-                    "About `[TimeZone]`: Because I record the times in my own time zone, *what if someone used this command " +
-                    "and wanted to see the times in their time zone?* **That's where this argument comes into play!**  " +
-                    "Right now the bot is compatible with Time Zones that are a full hour, or a full hour and a half ahead or behind UTC.");
+                    "\"" + mainConfig.commandPrefix + "check\".");
         }
     }
     void checkHistoryCommand() {

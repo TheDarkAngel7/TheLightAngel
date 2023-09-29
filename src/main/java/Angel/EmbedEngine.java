@@ -12,14 +12,9 @@ import java.util.*;
 
 public class EmbedEngine implements MainConfig {
     private final Logger log = LogManager.getLogger(EmbedEngine.class);
-    private DiscordBotMain discord;
     private List<MessageEntry> messageQueue = new ArrayList<>();
     // Dictionary<Command Message Object, Resulting MessageEntry Object>
     private Dictionary<Message, MessageEntry> commandMessageMap = new Hashtable();
-
-    void setDiscordInstance(DiscordBotMain discordInstance) {
-        discord = discordInstance;
-    }
 
     ///////////////////////////////////////////////////////////////
     // EmbedBuilder handlers
@@ -160,7 +155,7 @@ public class EmbedEngine implements MainConfig {
                                         entry.getTargetChannels().size() > 1 && entry.getTargetChannels().contains(TargetChannelSet.TEAM))) {
                                     if (entry.getTargetUser() != null && (entry.getOriginalCmd().getChannel().getIdLong() != mainConfig.discussionChannel.getIdLong() &&
                                             entry.getOriginalCmd().getChannel().getIdLong() != mainConfig.managementChannel.getIdLong())
-                                            && discord.isTeamMember(entry.getTargetUser().getIdLong())) {
+                                            && isTeamMember(entry.getTargetUser().getIdLong())) {
                                         mainConfig.discussionChannel.sendMessage(entry.getTargetUser().getAsMention()).queue();
                                     }
                                     mainConfig.discussionChannel.sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
@@ -242,7 +237,7 @@ public class EmbedEngine implements MainConfig {
                                             entry.getOriginalCmd().getChannel().sendMessageEmbeds(messageQueue.get(0).getEmbed()).queue(m -> {
                                                 placeInCmdMap(entry.setResultEmbed(m).setChannels(TargetChannelSet.SAME));
                                             }, error -> {
-                                                log.error("sendAllMessages Same Channel - Set By Bot07 Spam None Handler");
+                                                log.error("sendAllMessages Same Channel - Set By Bot Spam None Handler");
                                             });
                                         }
                                         else {

@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public interface MainConfig {
     MainConfiguration mainConfig = new ModifyMainConfiguration(new FileHandler().getMainConfig());
     AngelExceptionHandler aue = new AngelExceptionHandler();
+    EmbedEngine embed = new EmbedEngine();
 
     default Guild getGuild() {
         return mainConfig.guild;

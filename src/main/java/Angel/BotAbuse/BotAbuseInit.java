@@ -1,11 +1,9 @@
 package Angel.BotAbuse;
 
 import Angel.DiscordBotMain;
-import Angel.EmbedEngine;
 import Angel.MainConfig;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
@@ -21,18 +19,14 @@ public class BotAbuseInit implements Runnable, MainConfig {
     private final Logger log = LogManager.getLogger(BotAbuseInit.class);
     private final boolean commandsSuspended;
     private final int restartValue;
-    private final EmbedEngine embed;
-    private final Guild guild;
     private final DiscordBotMain discord;
     private final JDA jda;
 
     private BotAbuseMain baFeature;
 
-    public BotAbuseInit(boolean commandsSuspended, int restartValue, EmbedEngine embed, DiscordBotMain discord) {
+    public BotAbuseInit(boolean commandsSuspended, int restartValue, DiscordBotMain discord) {
         this.commandsSuspended = commandsSuspended;
         this.restartValue = restartValue;
-        this.embed = embed;
-        this.guild = getGuild();
         this.discord = discord;
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
                 GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MESSAGE_REACTIONS, GatewayIntent.MESSAGE_CONTENT);
@@ -46,7 +40,7 @@ public class BotAbuseInit implements Runnable, MainConfig {
     @Override
     public void run() {
         try {
-            baFeature = new BotAbuseMain(commandsSuspended, restartValue, embed, guild, discord);
+            baFeature = new BotAbuseMain(commandsSuspended, restartValue, discord);
             jda.addEventListener(baFeature);
             log.info("Bot Abuse Feature Added as Event Listener to its JDA instance");
         }

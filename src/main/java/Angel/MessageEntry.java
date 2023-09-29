@@ -37,7 +37,7 @@ public class MessageEntry implements MainConfig {
         this.title = title;
         this.design = design;
         this.originalCmd.set(originalCmd);
-        this.customChannels = Arrays.asList(channels);
+        this.customChannels.addAll(Arrays.asList(channels));
         this.targetChannels.add(TargetChannelSet.CUSTOM);
     }
     // Constructor Exactly Like the one above except an initial message is included
@@ -46,7 +46,7 @@ public class MessageEntry implements MainConfig {
         this.msg = msg;
         this.design = design;
         this.originalCmd.set(originalCmd);
-        this.customChannels = Arrays.asList(channels);
+        this.customChannels.addAll(Arrays.asList(channels));
         this.targetChannels.add(TargetChannelSet.CUSTOM);
     }
 
@@ -57,7 +57,7 @@ public class MessageEntry implements MainConfig {
         this.title = title;
         this.design = design;
         this.originalCmd.set(originalCmd);
-        this.targetChannels = Arrays.asList(sets);
+        this.targetChannels.addAll( Arrays.asList(sets));
         isListEmbed = true;
     }
 
@@ -66,7 +66,7 @@ public class MessageEntry implements MainConfig {
         this.msg = msg;
         this.design = design;
         this.originalCmd.set(originalCmd);
-        this.targetChannels = Arrays.asList(sets);
+        this.targetChannels.addAll( Arrays.asList(sets));
         isListEmbed = true;
     }
 
@@ -86,7 +86,8 @@ public class MessageEntry implements MainConfig {
     }
 
     public MessageEntry setChannels(TargetChannelSet... channels) {
-        this.targetChannels = Arrays.asList(channels);
+        if (!targetChannels.isEmpty()) targetChannels.clear();
+        this.targetChannels.addAll(Arrays.asList(channels));
         return this;
     }
 

@@ -38,7 +38,7 @@ public class NicknameInit implements Runnable, MainConfig {
 
     @Override
     public void run() {
-        nickFeature = new NicknameMain(commandsSuspended, embed, discord);
+        nickFeature = new NicknameMain(commandsSuspended, discord);
         jda.addEventListener(nickFeature);
         log.info("Nickname Feature Added as Event Listener to its JDA instance");
     }

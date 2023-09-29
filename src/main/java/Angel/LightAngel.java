@@ -122,9 +122,7 @@ class LightAngel implements MainConfig {
             return;
         }
         mainConfig.initialSetup();
-        EmbedEngine embed = new EmbedEngine();
-        discord = new DiscordBotMain(restartValue, embed, fileHandler);
-        embed.setDiscordInstance(discord);
+        discord = new DiscordBotMain(restartValue, fileHandler);
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
                 GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MESSAGE_REACTIONS, GatewayIntent.MESSAGE_CONTENT);
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOJI,

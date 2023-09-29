@@ -27,8 +27,8 @@ class BotAbuseTimers implements BotAbuseConfig {
         this.embed = embed;
         this.discord = discord;
 
-        roleScanningTimer = new RoleScanningTimer(guild, baFeature, embed);
-        expiryTimer = new ExpiryTimer(guild, baFeature, embed);
+        roleScanningTimer = new RoleScanningTimer(baFeature);
+        expiryTimer = new ExpiryTimer(baFeature);
     }
 
     void startTimers() {

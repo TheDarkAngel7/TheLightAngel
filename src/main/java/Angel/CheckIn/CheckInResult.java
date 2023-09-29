@@ -1,5 +1,7 @@
 package Angel.CheckIn;
 
+import net.dv8tion.jda.api.entities.Member;
+
 import java.time.ZonedDateTime;
 import java.util.List;
 
@@ -27,6 +29,36 @@ class CheckInResult {
 
     List<CheckInPlayer> getPlayers() {
         return players;
+    }
+
+    boolean pardonPlayer(Member m) {
+        return pardonPlayer(m.getIdLong());
+    }
+
+    boolean pardonPlayer(long excusedDiscordID) {
+        int index = 0;
+        CheckInPlayer playerInQuestion = null;
+
+        do {
+            if (players.get(index).getPlayerDiscordId() == excusedDiscordID) {
+                playerInQuestion = players.remove(index);
+                break;
+            }
+            index++;
+
+        } while (index < players.size());
+        try {
+            if (playerInQuestion.successfullyCheckedIn()) return false;
+            else if (!playerInQuestion.isQueuedToCheckIn()) return false;
+            else {
+                playerInQuestion.removeFromCheckInQueue();
+                players.add(index, playerInQuestion);
+                return true;
+            }
+        }
+        catch (NullPointerException ex) {
+            return false;
+        }
     }
 
     boolean isCanceled() {

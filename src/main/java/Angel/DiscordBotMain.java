@@ -36,7 +36,6 @@ import java.util.function.BiConsumer;
 
 public class DiscordBotMain extends ListenerAdapter implements MainConfig {
     private final Logger log = LogManager.getLogger(DiscordBotMain.class);
-    private EmbedEngine embed;
     private FileHandler fileHandler;
     private Guild guild;
     private CustomEmbedInit customEmbedInit;
@@ -57,9 +56,8 @@ public class DiscordBotMain extends ListenerAdapter implements MainConfig {
     private List<ListEmbed> listEmbeds = new ArrayList<>();
     private Dictionary<Message, ScheduledFuture<?>> reactionClearTimers = new Hashtable<>();
 
-    DiscordBotMain(int restartValue, EmbedEngine embed, FileHandler fileHandler) {
+    DiscordBotMain(int restartValue, FileHandler fileHandler) {
         this.fileHandler = fileHandler;
-        this.embed = embed;
         this.restartValue = restartValue;
     }
 
@@ -78,9 +76,9 @@ public class DiscordBotMain extends ListenerAdapter implements MainConfig {
             mainConfig.discordSetup();
         }
         nickInit = new NicknameInit(commandsSuspended, embed, this);
-        baInit = new BotAbuseInit(commandsSuspended, restartValue, embed, this);
-        ciInit = new CheckInInit(embed, this, guild);
-        customEmbedInit = new CustomEmbedInit(embed, guild, this);
+        baInit = new BotAbuseInit(commandsSuspended, restartValue, this);
+        ciInit = new CheckInInit(this);
+        customEmbedInit = new CustomEmbedInit(this);
         Thread tNickFeature = new Thread(nickInit);
         Thread tBotAbuseFeature = new Thread(baInit);
         Thread tCustomEmbedFeature = new Thread(customEmbedInit);

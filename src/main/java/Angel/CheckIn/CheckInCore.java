@@ -21,6 +21,7 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 class CheckInCore implements CheckInConfig {
@@ -71,8 +72,9 @@ class CheckInCore implements CheckInConfig {
             }
         } while (++index < sessions.size());
     }
-    void loadSessionLists(String sessionName, boolean refresh) {
+    boolean loadSessionLists(String sessionName, boolean refresh) {
         log.info("Attempting to Load Session List for " + sessionName);
+        AtomicReference<Boolean> encounteredErrors = new AtomicReference<>(false);
         runReader();
         if (refresh) {
             checkInList.clear();
@@ -81,7 +83,7 @@ class CheckInCore implements CheckInConfig {
             sessionName = currentSession.getSessionName();
         }
         setupCheckIn(sessionName);
-        if (currentSession == null || currentSession.getPlayerCount() == 0) return;
+        if (currentSession == null || currentSession.getPlayerCount() == 0) return true;
         int index = 0;
         List<Session.Players> players = currentSession.getPlayerList();
 
@@ -139,7 +141,12 @@ class CheckInCore implements CheckInConfig {
                 }
                 latch.countDown();
                 log.info("Count Down Latch Remaining Count: " + latch.getCount());
-            });
+            }).onError(error -> {
+                log.error("Unable to Add Player to Check-In List with Query: " + playerName + " - " + error.getCause().getMessage() + " - " + error.getMessage());
+                unrecognizedPlayer.add(playerName);
+                encounteredErrors.set(true);
+                latch.countDown();
+            }).setTimeout(1, TimeUnit.MINUTES);
         } while (++index < players.size());
 
         try {
@@ -150,6 +157,7 @@ class CheckInCore implements CheckInConfig {
         catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        return encounteredErrors.get();
     }
     boolean playerCanBeCheckedIn(Member m) {
         if (isTeamMember(m)) return false;
@@ -276,6 +284,26 @@ class CheckInCore implements CheckInConfig {
         sessions.clear();
         return ciResult;
     }
+
+    // This is when we record players that we excused from Check-In by removing them from the queue post check-in
+    boolean replaceCheckInResult(CheckInResult newResult) {
+
+        CheckInResult oldResult = getResultByID(newResult.getId());
+
+        if (oldResult == null) {
+            return false;
+        }
+
+        else {
+            int insertAt = results.indexOf(oldResult);
+            results.remove(oldResult);
+            results.add(insertAt, newResult);
+            saveDatabase();
+            log.info("Successfully Updated Check-In Result with the ID " + newResult.getId());
+            return true;
+        }
+    }
+
     private int getNextID() {
         int newID;
         List<Integer> usedIDs = new ArrayList<>();

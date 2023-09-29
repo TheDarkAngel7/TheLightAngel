@@ -26,14 +26,12 @@ public class AFKCheckManagement extends Timer implements MainConfig {
     private final Guild guild;
     private final DiscordBotMain discord;
     private final JDA jda;
-    private final EmbedEngine embed;
     private AFKCheckListEmbed afkCheckListEmbed;
     private final int maxNumberOfAFKChecksPerSession = 3;
 
-    public AFKCheckManagement(JDA jda, DiscordBotMain discord, EmbedEngine embed) {
+    public AFKCheckManagement(JDA jda, DiscordBotMain discord) {
         this.guild = getGuild();
         this.jda = jda;
-        this.embed = embed;
         this.discord = discord;
         services.setRemoveOnCancelPolicy(true);
     }
@@ -41,7 +39,6 @@ public class AFKCheckManagement extends Timer implements MainConfig {
     // /afkcheck <Mentions (up to 3)> <Session Channel>
     //////////////////////////////////////////////////////
     public void startNewAfkCheck(Message msg, int length, int mentionOn) {
-        String[] args = msg.getContentRaw().substring(1).split(" ");
 
         if (discord.isTeamMember(msg.getAuthor().getIdLong())) {
             if (msg.getMentions().getMembers().size() >= 4) {
@@ -138,8 +135,7 @@ public class AFKCheckManagement extends Timer implements MainConfig {
                         afkChecks.forEach(afk -> {
                             try {
                                 Thread.sleep(100);
-                            } catch (InterruptedException e) {
-                            }
+                            } catch (InterruptedException e) {}
                             MessageEntry entry;
                             if (afk.hasPlayerSuccessfullyCheckedIn()) {
                                 entry = new MessageEntry(afk.getMemberName() + " AFK Check Status",

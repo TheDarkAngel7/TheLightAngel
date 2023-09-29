@@ -1,6 +1,5 @@
 package Angel.BotAbuse;
 
-import Angel.EmbedEngine;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
@@ -15,15 +14,13 @@ class ExpiryTimer implements Runnable, BotAbuseConfig {
     private final Logger log = LogManager.getLogger(ExpiryTimer.class);
     private final BotAbuseMain baFeature;
     private final BotAbuseCore baCore;
-    private final EmbedEngine embed;
     private final Guild guild;
     private boolean timerRunning = false;
 
-    ExpiryTimer(Guild guild, BotAbuseMain baFeature, EmbedEngine embed) {
-        this.guild = guild;
+    ExpiryTimer(BotAbuseMain baFeature) {
+        this.guild = getGuild();
         this.baFeature = baFeature;
         this.baCore = baFeature.getCore();
-        this.embed = embed;
     }
 
     @Override

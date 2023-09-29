@@ -33,7 +33,6 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
     private final Logger log = LogManager.getLogger(NicknameMain.class);
     private Guild guild;
     private DiscordBotMain discord;
-    private EmbedEngine embed;
     private NicknameCore nickCore;
     private Help help;
     private ArrayList<Long> tempDiscordID = new ArrayList<>();
@@ -52,8 +51,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
     private ZonedDateTime c;
     private Timer timer = new Timer();
 
-    NicknameMain(boolean getCommandsSuspended, EmbedEngine importEmbed, DiscordBotMain importDiscordBot) {
-        this.embed = importEmbed;
+    NicknameMain(boolean getCommandsSuspended, DiscordBotMain importDiscordBot) {
         this.guild = getGuild();
         this.discord = importDiscordBot;
         commandsSuspended = getCommandsSuspended;

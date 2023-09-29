@@ -1,11 +1,9 @@
 package Angel.CustomEmbeds;
 
 import Angel.DiscordBotMain;
-import Angel.EmbedEngine;
 import Angel.MainConfig;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
@@ -17,16 +15,12 @@ import java.util.Collection;
 
 public class CustomEmbedInit implements Runnable, MainConfig {
     private final Logger log = LogManager.getLogger(CustomEmbedInit.class);
-    private final EmbedEngine embed;
-    private final Guild guild;
     private final DiscordBotMain discord;
     private final JDA jda;
 
     private CustomEmbedMain embedMain;
 
-    public CustomEmbedInit(EmbedEngine embed, Guild guild, DiscordBotMain discord) {
-        this.embed = embed;
-        this.guild = guild;
+    public CustomEmbedInit(DiscordBotMain discord) {
         this.discord = discord;
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT);
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOJI,
@@ -38,7 +32,7 @@ public class CustomEmbedInit implements Runnable, MainConfig {
 
     @Override
     public void run() {
-        embedMain = new CustomEmbedMain(embed, discord);
+        embedMain = new CustomEmbedMain(discord);
         jda.addEventListener(embedMain);
         log.info("Bot Abuse Feature Added as Event Listener to its JDA instance");
     }
