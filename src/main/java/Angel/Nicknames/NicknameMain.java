@@ -35,9 +35,9 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
     private DiscordBotMain discord;
     private NicknameCore nickCore;
     private Help help;
-    private ArrayList<Long> tempDiscordID = new ArrayList<>();
-    private ArrayList<String> tempOldNick = new ArrayList<>();
-    private ArrayList<String> tempNewNick = new ArrayList<>();
+    private List<Long> tempDiscordID = new ArrayList<>();
+    private List<String> tempOldNick = new ArrayList<>();
+    private List<String> tempNewNick = new ArrayList<>();
     public final List<String> commands = new ArrayList<>(Arrays.asList("nickname", "nn"));
     private final List<String> nickArgs = new ArrayList<>(
             Arrays.asList("request", "req", "withdraw", "wd", "accept", "acc", "a", "deny", "d",
@@ -346,10 +346,19 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                             );
                         }
                         else if (event.getOldNickname() != null && event.getNewNickname() == null) {
-                            results = results.concat(
-                                    "\n\nOld Nickname: **" + event.getOldNickname() +
-                                            "**\nNew Nickname: ** " + event.getUser().getName() + "** (Reset to Discord Username)"
-                            );
+
+                            if (event.getUser().getGlobalName() != null) {
+                                results = results.concat(
+                                        "\n\nOld Nickname: **" + event.getOldNickname() +
+                                                "**\nNew Nickname: ** " + event.getUser().getGlobalName() + "** (Reset to Global Display Name)"
+                                );
+                            }
+                            else {
+                                results = results.concat(
+                                        "\n\nOld Nickname: **" + event.getOldNickname() +
+                                                "**\nNew Nickname: ** " + event.getUser().getName() + "** (Reset to Discord Username)"
+                                );
+                            }
                         }
                         tempOldNick.add(event.getOldNickname());
                         tempNewNick.add(event.getNewNickname());
@@ -365,8 +374,18 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                         String logMessage = event.getMember().getAsMention() + " was not allowed to change their nickname to **"
                                 + event.getNewNickname() + "** as they are in a role that prohibits their effective name " +
                                 "from changing. So it got reverted back to **" + event.getOldNickname() + "**";
-                        embed.setAsSuccess("Nickname Change Prevented",
-                                logMessage.replace("null", event.getUser().getName() + " (Their Discord Username)"));
+
+
+                        if (event.getUser().getGlobalName() != null) {
+                            embed.setAsSuccess("Nickname Change Prevented",
+                                    logMessage.replace("null", event.getUser().getName() + " (Their Global Display Name)"));
+                        }
+                        else {
+                            embed.setAsSuccess("Nickname Change Prevented",
+                                    logMessage.replace("null", event.getUser().getName() + " (Their Discord Username)"));
+                        }
+
+
                         embed.sendToLogChannel();
                     }
                 }
@@ -561,7 +580,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                                 startRequestCooldown(cmdUserID);
                                 int index = tempDiscordID.indexOf(cmdUserID);
                                 if (index != -1 && msg.getChannelType() == ChannelType.PRIVATE) {
-                                    result = nickCore.submitRequest(cmdUserID, tempOldNick.get(index), tempNewNick.get(index));
+                                    result = nickCore.submitRequest(member, tempNewNick.get(index));
                                     tempDiscordID.remove(index);
                                     tempOldNick.remove(index);
                                     tempNewNick.remove(index);
@@ -591,6 +610,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                                     embed.sendDM(msg, msg.getAuthor());
                                 }
                             }
+                            // This is when the user uses the command in a direct message or in the discord server and assuming have requested a name
                             else if (args.length == 3) {
                                 if (member.getEffectiveName().equals(args[2])) {
                                     embed.setAsError("Nickname Request Error",
@@ -598,10 +618,18 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                                     embed.sendToMemberOutput(msg, msg.getAuthor());
                                     return;
                                 }
-                                if (args[2].equalsIgnoreCase("reset") || args[2].equals(msg.getAuthor().getName())) {
-                                    result = nickCore.submitRequest(cmdUserID, member.getNickname(), null);
+                                if (args[2].equalsIgnoreCase("reset") || args[2].equals(msg.getAuthor().getName()) || args[2].equals(msg.getAuthor().getGlobalName())) {
+
+                                    if (msg.getAuthor().getGlobalName() != null && member.getNickname() == null && args[2].equals(msg.getAuthor().getName())) {
+                                        nickCore.submitRequest(member, msg.getAuthor().getName());
+                                    }
+
+                                    result = nickCore.submitRequest(member, null);
                                 }
-                                else result = nickCore.submitRequest(cmdUserID, member.getNickname(), args[2]);
+                                else result = nickCore.submitRequest(member, args[2]);
+
+                                // Message Handling
+
                                 if (result.equals("None")) {
                                     embed.setAsError("Nickname Request Error",
                                             "**No Need to request for a nickname reset because you don't have a nickname**");

@@ -1,6 +1,7 @@
 package Angel.Nicknames;
 
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,38 +47,61 @@ class NicknameCore implements NickConfig {
         nickConfig.reload(fileHandler.getConfig());
     }
 
-    String submitRequest(long targetDiscordID, String oldNick, String newNick) throws IOException {
+    String submitRequest(Member targetMember, String newNick) throws IOException {
+
         int id;
         do {
             id = (int) (Math.random() * 1000);
         } while (requestID.contains(id) || id < 100);
 
         requestID.add(id);
-        discordID.add(targetDiscordID);
-        oldNickname.add(oldNick);
+        discordID.add(targetMember.getIdLong());
+        oldNickname.add(targetMember.getEffectiveName());
         newNickname.add(newNick);
 
         String result =
                 "**:white_check_mark: New Nickname Change Request Received**" +
                 "\n\nID: **" + id +
-                "**\nDiscord: <@!" + targetDiscordID + ">";
+                "**\nDiscord: <@!" + targetMember + ">";
 
-        if (oldNick != null && newNick != null) {
+        if (targetMember.getNickname() != null && newNick != null) {
             result = result.concat(
-                    "\nOld Nickname: **" + oldNick +
+                    "\nOld Nickname: **" + targetMember.getNickname() +
                             "**\nNew Nickname: **" + newNick + "**"
             );
         }
-        else if (oldNick == null && newNick != null) {
-            result = result.concat(
-                    "\nOld Nickname: **" + guild.getMemberById(targetDiscordID).getEffectiveName() + " (No Previous Nickname)**" +
-                            "\nNew Nickname: **" + newNick + "**"
-            );
+        else if (targetMember.getNickname() == null && newNick != null) {
+
+            if (targetMember.getUser().getGlobalName() != null) {
+                result = result.concat(
+                        "\nOld Nickname: **" + targetMember.getEffectiveName() + " (Global Display Name)**" +
+                                "\nNew Nickname: **" + newNick + "**"
+                );
+
+                if (newNick == targetMember.getUser().getName()) {
+                    result = result.replace("**" + newNick + "**", "**" + newNick + " (Discord Username)");
+                }
+            }
+
+            else {
+                result = result.concat(
+                        "\nOld Nickname: **" + targetMember.getEffectiveName() + " (Discord Username)**" +
+                                "\nNew Nickname: **" + newNick + "**"
+                );
+            }
         }
-        else if (oldNick != null && newNick == null) {
+        else if (targetMember.getNickname() != null && newNick == null) {
+
+            if (targetMember.getUser().getGlobalName() != null) {
+                result = result.concat(
+                        "\nOld Nickname: **" + targetMember.getNickname() +
+                                "**\nNew Nickname: **" + targetMember.getUser().getGlobalName() + " (Reset to Global Display Name)**"
+                );
+            }
+
             result = result.concat(
-                    "\nOld Nickname: **" + oldNick +
-                            "**\nNew Nickname: **" + guild.getMemberById(targetDiscordID).getUser().getName() + " (Reset to Discord Username)**"
+                    "\nOld Nickname: **" + targetMember.getNickname() +
+                            "**\nNew Nickname: **" + targetMember.getUser().getName() + " (Reset to Discord Username)**"
             );
         }
         else {

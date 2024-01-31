@@ -34,6 +34,7 @@ public class CustomEmbedMain extends ListenerAdapter implements MainConfig {
         if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix) {
 
             switch (args[0].toLowerCase()) {
+                case "e":
                 case "embed":
                     newCustomEmbed(msg);
                     break;
