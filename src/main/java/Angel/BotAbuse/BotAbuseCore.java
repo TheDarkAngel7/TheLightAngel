@@ -314,10 +314,22 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
         }
         // They're Not Bot Abused
         else {
-            return ":white_check_mark: Lucky for you... you're not Bot Abused Currently" +
+
+            if (this.getHotOffenses(targetDiscordID) > 0) {
+                return ":white_check_mark: Lucky for you... you're not Bot Abused Currently" +
+                        "\n" +
+                        "\nNumber of Lifetime Bot Abuses: **" + this.getLifetimeOffenses(targetDiscordID) + "**" +
+                        "\nNumber of Hot Bot Abuses: **" + this.getHotOffenses(targetDiscordID) + "**" +
+                        "\nYour Bot Abuses will be cooled: **" +
+                        baMain.getDiscordFormat(getLastRecord(targetDiscordID).getExpiryDate().plusMonths(botConfig.getHotOffenseMonths()), targetDiscordID) + "**" +
+                        "\n\n*Hot Bot Abuses are offenses that took place less than **" + botConfig.getHotOffenseMonths() + "** months ago*" +
+                        "\n*Psst... They're also called \"Hot\" because they haven't cooled down*";
+            }
+
+            else return ":white_check_mark: Lucky for you... you're not Bot Abused Currently" +
                     "\n" +
                     "\nNumber of Lifetime Bot Abuses: **" + this.getLifetimeOffenses(targetDiscordID) + "**" +
-                    "\nNumber of Hot Bot Abuses: **" + this.getHotOffenses(targetDiscordID) + "**" +
+                    "\nNumber of Hot Bot Abuses: **0**" +
                     "\n\n*Hot Bot Abuses are offenses that took place less than **" + botConfig.getHotOffenseMonths() + "** months ago*" +
                     "\n*Psst... They're also called \"Hot\" because they haven't cooled down*";
         }
