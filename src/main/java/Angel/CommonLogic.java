@@ -4,10 +4,11 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 
+import java.time.ZonedDateTime;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
-public interface MainConfig {
+public interface CommonLogic {
     MainConfiguration mainConfig = new ModifyMainConfiguration(new FileHandler().getMainConfig());
     AngelExceptionHandler aue = new AngelExceptionHandler();
     EmbedEngine embed = new EmbedEngine();
@@ -18,12 +19,12 @@ public interface MainConfig {
 
     default boolean isTeamMember(Member m) {
         return isStaffMember(m) ||
-                m.getRoles().contains(mainConfig.teamRole);
+                m.getRoles().contains(mainConfig.getTeamRole());
     }
 
     default boolean isStaffMember(Member m) {
-        return m.getRoles().contains(mainConfig.staffRole) ||
-                m.getRoles().contains(mainConfig.adminRole) ||
+        return m.getRoles().contains(mainConfig.getStaffRole()) ||
+                m.getRoles().contains(mainConfig.getAdminRole()) ||
                 m.getIdLong() == mainConfig.owner.getIdLong();
     }
 
@@ -59,5 +60,8 @@ public interface MainConfig {
             aue.logCaughtException(Thread.currentThread(), ex);
             return false;
         }
+    }
+    default String getDiscordTimeFormat(ZonedDateTime time) {
+        return "<t:" + time.toEpochSecond() + ":f>";
     }
 }

@@ -1522,7 +1522,7 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseConfig {
         }
         // They're Not Perm Bot Abused
         else {
-            return discord.getDiscordFormat(time);
+            return getDiscordTimeFormat(time);
         }
     }
 }

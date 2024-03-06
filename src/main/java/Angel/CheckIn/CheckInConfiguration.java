@@ -1,6 +1,6 @@
 package Angel.CheckIn;
 
-import Angel.MainConfig;
+import Angel.CommonLogic;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
@@ -10,7 +10,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class CheckInConfiguration implements MainConfig  {
+public abstract class CheckInConfiguration implements CommonLogic {
     private final Gson gson = new Gson();
     private JsonObject configObj;
     private final boolean enabled;

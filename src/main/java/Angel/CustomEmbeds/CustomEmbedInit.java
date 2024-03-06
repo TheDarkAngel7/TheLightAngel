@@ -1,7 +1,7 @@
 package Angel.CustomEmbeds;
 
+import Angel.CommonLogic;
 import Angel.DiscordBotMain;
-import Angel.MainConfig;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -13,7 +13,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.Collection;
 
-public class CustomEmbedInit implements Runnable, MainConfig {
+public class CustomEmbedInit implements Runnable, CommonLogic {
     private final Logger log = LogManager.getLogger(CustomEmbedInit.class);
     private final DiscordBotMain discord;
     private final JDA jda;

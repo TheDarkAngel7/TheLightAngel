@@ -34,9 +34,9 @@ public abstract class MainConfiguration {
     public TextChannel managementChannel;
     public TextChannel logChannel;
     public TextChannel dedicatedOutputChannel;
-    public Role adminRole;
-    public Role staffRole;
-    public Role teamRole;
+    private Role adminRole;
+    private Role staffRole;
+    private Role teamRole;
 
     String checkIconURL;
     String warningIconURL;
@@ -126,6 +126,31 @@ public abstract class MainConfiguration {
         }
         else return false;
     }
+
+    public Role getAdminRole() {
+        return adminRole;
+    }
+
+    public Role getStaffRole() {
+        return staffRole;
+    }
+
+    public Role getTeamRole() {
+        return teamRole;
+    }
+
+    protected void setAdminRole(Role adminRole) {
+        this.adminRole = adminRole;
+    }
+
+    protected void setStaffRole(Role staffRole) {
+        this.staffRole = staffRole;
+    }
+
+    protected void setTeamRole(Role teamRole) {
+        this.teamRole = teamRole;
+    }
+
     abstract void setConfig(String key, String value);
     abstract void setConfig(String key, boolean value);
     abstract void setConfig(String key, int value);

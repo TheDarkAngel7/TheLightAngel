@@ -97,7 +97,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
         if (!nickConfig.isEnabled()) return;
         isBusy = true;
 
-        guild.retrieveMemberById(event.getUser().getIdLong()).submit().whenComplete(new BiConsumer<Member, Throwable>() {
+        guild.retrieveMemberById(event.getUser().getIdLong()).useCache(false).submit().whenComplete(new BiConsumer<Member, Throwable>() {
             @Override
             public void accept(Member m, Throwable throwable) {
                 if (throwable == null) {

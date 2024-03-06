@@ -1,7 +1,7 @@
 package Angel.Nicknames;
 
-import Angel.MainConfig;
+import Angel.CommonLogic;
 
-interface NickConfig extends MainConfig {
+interface NickConfig extends CommonLogic {
     NickConfiguration nickConfig = new ModifyNickConfiguration(new FileHandler().getConfig());
 }

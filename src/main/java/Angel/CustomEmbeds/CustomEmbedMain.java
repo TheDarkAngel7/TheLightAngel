@@ -8,7 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-public class CustomEmbedMain extends ListenerAdapter implements MainConfig {
+public class CustomEmbedMain extends ListenerAdapter implements CommonLogic {
     private final Logger log = LogManager.getLogger(CustomEmbedMain.class);
     private final DiscordBotMain discord;
 

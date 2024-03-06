@@ -1,7 +1,7 @@
 package Angel.CheckIn;
 
+import Angel.CommonLogic;
 import Angel.EmbedDesign;
-import Angel.MainConfig;
 import Angel.MessageEntry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -9,7 +9,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Timer;
 import java.util.TimerTask;
 
-class CheckInTimer extends Timer implements MainConfig {
+class CheckInTimer extends Timer implements CommonLogic {
     private final Logger log = LogManager.getLogger(CheckInTimer.class);
     private final CheckInMain ciMain;
     private final CheckInConfiguration ciConfig;

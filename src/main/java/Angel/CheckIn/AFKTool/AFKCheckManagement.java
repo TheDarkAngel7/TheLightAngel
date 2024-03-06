@@ -15,7 +15,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class AFKCheckManagement extends Timer implements MainConfig {
+public class AFKCheckManagement extends Timer implements CommonLogic {
     // AFK Check Variables
     private final Logger log = LogManager.getLogger(AFKCheckManagement.class);
     private final List<AFKCheck> afkChecks = new ArrayList<>();

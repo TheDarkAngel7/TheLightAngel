@@ -62,7 +62,7 @@ class NicknameCore implements NickConfig {
         String result =
                 "**:white_check_mark: New Nickname Change Request Received**" +
                 "\n\nID: **" + id +
-                "**\nDiscord: <@!" + targetMember + ">";
+                "**\nDiscord: " + targetMember.getAsMention();
 
         if (targetMember.getNickname() != null && newNick != null) {
             result = result.concat(

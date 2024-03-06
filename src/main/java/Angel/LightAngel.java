@@ -17,7 +17,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 
-class LightAngel implements MainConfig {
+class LightAngel implements CommonLogic {
     private static final Logger log = LogManager.getLogger(LightAngel.class);
     private static FileHandler fileHandler;
     static DiscordBotMain discord;

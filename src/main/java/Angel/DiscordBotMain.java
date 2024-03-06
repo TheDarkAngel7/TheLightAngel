@@ -28,13 +28,12 @@ import org.jetbrains.annotations.NotNull;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
-public class DiscordBotMain extends ListenerAdapter implements MainConfig {
+public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
     private final Logger log = LogManager.getLogger(DiscordBotMain.class);
     private FileHandler fileHandler;
     private Guild guild;
@@ -1326,8 +1325,5 @@ public class DiscordBotMain extends ListenerAdapter implements MainConfig {
         }
         else commandsSuspended = true;
         return;
-    }
-    public String getDiscordFormat(ZonedDateTime time) {
-        return "<t:" + time.toEpochSecond() + ":f>";
     }
 }

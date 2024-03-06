@@ -57,9 +57,9 @@ class ModifyMainConfiguration extends MainConfiguration {
     }
     void setRoleConfig(String key, Role newRole) {
         switch (key.toLowerCase()) {
-            case "adminrole": adminRole = newRole; break;
-            case "staffrole": staffRole = newRole; break;
-            case "teamrole": teamRole = newRole; break;
+            case "adminrole": setAdminRole(newRole); break;
+            case "staffrole": setStaffRole(newRole); break;
+            case "teamrole": setTeamRole(newRole); break;
         }
     }
     void setRoleConfig(String key, long newRoleID) throws NullPointerException {

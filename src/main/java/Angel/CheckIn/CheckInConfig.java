@@ -1,7 +1,7 @@
 package Angel.CheckIn;
 
-import Angel.MainConfig;
+import Angel.CommonLogic;
 
-public interface CheckInConfig extends MainConfig {
+public interface CheckInConfig extends CommonLogic {
     CheckInConfiguration ciConfig = new ModifyCheckInConfiguration(new FileHandler().getConfig());
 }

@@ -1,8 +1,8 @@
 package Angel.Nicknames;
 
+import Angel.CommonLogic;
 import Angel.DiscordBotMain;
 import Angel.EmbedEngine;
-import Angel.MainConfig;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -14,7 +14,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.Collection;
 
-public class NicknameInit implements Runnable, MainConfig {
+public class NicknameInit implements Runnable, CommonLogic {
     private final Logger log = LogManager.getLogger(NicknameInit.class);
     private final boolean commandsSuspended;
     private final EmbedEngine embed;

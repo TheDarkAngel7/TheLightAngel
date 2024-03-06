@@ -1,6 +1,6 @@
 package Angel.BotAbuse;
 
-import Angel.MainConfig;
+import Angel.CommonLogic;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
@@ -8,7 +8,7 @@ import net.dv8tion.jda.api.entities.Role;
 
 import java.util.List;
 
-public abstract class BotAbuseConfiguration implements MainConfig {
+public abstract class BotAbuseConfiguration implements CommonLogic {
     private JsonObject configObj;
     private final boolean enabled;
     private String botAbuseRoleID;
@@ -93,7 +93,7 @@ public abstract class BotAbuseConfiguration implements MainConfig {
         return hotOffenseWarning;
     }
 
-    boolean isAutoPermanent() {
+    boolean autoPermanentEnabled() {
         return autoPermanent;
     }
 

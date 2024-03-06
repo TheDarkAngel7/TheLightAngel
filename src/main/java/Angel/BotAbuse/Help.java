@@ -1,10 +1,10 @@
 package Angel.BotAbuse;
 
+import Angel.CommonLogic;
 import Angel.EmbedEngine;
-import Angel.MainConfig;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
-class Help implements MainConfig {
+class Help implements CommonLogic {
     private final EmbedEngine embed;
 
     public Help(EmbedEngine embed) {

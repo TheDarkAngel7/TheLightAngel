@@ -1,7 +1,7 @@
 package Angel.BotAbuse;
 
-import Angel.MainConfig;
+import Angel.CommonLogic;
 
-interface BotAbuseConfig extends MainConfig {
+interface BotAbuseConfig extends CommonLogic {
     BotAbuseConfiguration botConfig = new ModifyBotAbuseConfiguration(new FileHandler());
 }

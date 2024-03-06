@@ -167,7 +167,7 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                 cExp = cExp.plusMinutes(botConfig.getBotAbuseTimes().get(prevOffenses));
             }
             catch (IndexOutOfBoundsException ex) {
-                if (!botConfig.isAutoPermanent()) cExp = cExp.plusMinutes(botConfig.getBotAbuseTimes().get(botConfig.getBotAbuseTimes().size() - 1));
+                if (!botConfig.autoPermanentEnabled()) cExp = cExp.plusMinutes(botConfig.getBotAbuseTimes().get(botConfig.getBotAbuseTimes().size() - 1));
                 else return null;
             }
         }
@@ -178,7 +178,7 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                 cExp = cExp.plusDays(botConfig.getBotAbuseTimes().get(prevOffenses));
             }
             catch (IndexOutOfBoundsException ex) {
-                if (!botConfig.isAutoPermanent()) cExp = cExp.plusDays(botConfig.getBotAbuseTimes().get(botConfig.getBotAbuseTimes().size() - 1));
+                if (!botConfig.autoPermanentEnabled()) cExp = cExp.plusDays(botConfig.getBotAbuseTimes().get(botConfig.getBotAbuseTimes().size() - 1));
                 else return null;
             }
         }

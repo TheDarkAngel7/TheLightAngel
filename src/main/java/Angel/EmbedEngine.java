@@ -10,7 +10,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
-public class EmbedEngine implements MainConfig {
+public class EmbedEngine implements CommonLogic {
     private final Logger log = LogManager.getLogger(EmbedEngine.class);
     private List<MessageEntry> messageQueue = new ArrayList<>();
     // Dictionary<Command Message Object, Resulting MessageEntry Object>

@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class MessageEntry implements MainConfig {
+public class MessageEntry implements CommonLogic {
     private String title;
     private String msg;
     private EmbedDesign design;

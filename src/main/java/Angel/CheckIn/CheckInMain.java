@@ -589,7 +589,7 @@ public class CheckInMain extends ListenerAdapter implements CheckInConfig {
             }
 
             prefix = "Check-In ID: **" + resultList.getId() + "**\n" +
-                    "Date Ended: **" + discord.getDiscordFormat(resultList.getEndDate()) + "**\n\n" +
+                    "Date Ended: **" + getDiscordTimeFormat(resultList.getEndDate()) + "**\n\n" +
                     ":white_check_mark: *Indicates The Player Did Check-In along with how much time was remaining when they did.*\n" +
                     ":warning: *Indicates The Player Failed to Check-In*\n" +
                     ":x: *Indicates The Player Was Removed From the Check-In Queue or they were excused due to another circumstance* \n" +
