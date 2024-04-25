@@ -24,6 +24,11 @@ public class MessageEntry implements CommonLogic {
     private List<TextChannel> customChannels = new ArrayList<>();
     private User targetUser;
 
+    public MessageEntry() {
+        this.title = "System Message";
+        this.msg = "";
+        this.design = EmbedDesign.INFO;
+    }
     public MessageEntry(String title, String msg, EmbedDesign design) {
         this.title = title;
         this.msg = msg;
@@ -57,7 +62,7 @@ public class MessageEntry implements CommonLogic {
         this.title = title;
         this.design = design;
         this.originalCmd.set(originalCmd);
-        this.targetChannels.addAll( Arrays.asList(sets));
+        this.targetChannels.addAll(Arrays.asList(sets));
         isListEmbed = true;
     }
 
@@ -66,7 +71,7 @@ public class MessageEntry implements CommonLogic {
         this.msg = msg;
         this.design = design;
         this.originalCmd.set(originalCmd);
-        this.targetChannels.addAll( Arrays.asList(sets));
+        this.targetChannels.addAll(Arrays.asList(sets));
         isListEmbed = true;
     }
 

@@ -140,7 +140,7 @@ public class EmbedEngine implements CommonLogic {
                                         placeInCmdMap(entry.setResultEmbed(m));
                                     }
                                 }, error -> {
-                                    log.warn("Whoops... apparently I cannot send a DM to " + entry.getTargetUser().getAsTag() + " - " + error.getMessage());
+                                    log.warn("Whoops... apparently I cannot send a DM to " + entry.getTargetUser().getEffectiveName() + " - " + error.getMessage());
                                 });
                                 break;
                             case LOG:

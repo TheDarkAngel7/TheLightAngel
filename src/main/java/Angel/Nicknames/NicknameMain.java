@@ -26,6 +26,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
@@ -50,6 +51,9 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
     private List<ZonedDateTime> requestCooldownDates = new ArrayList<>();
     private ZonedDateTime c;
     private Timer timer = new Timer();
+    // Latch The UserName and GlobalName Events so UserName event goes first
+    private CountDownLatch latch;
+    String oldUserNameFormattedName = "";
 
     NicknameMain(boolean getCommandsSuspended, DiscordBotMain importDiscordBot) {
         this.guild = getGuild();
@@ -96,6 +100,34 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
         Thread.currentThread().setUncaughtExceptionHandler(aue);
         if (!nickConfig.isEnabled()) return;
         isBusy = true;
+        try {
+            if (latch.getCount() == 0) {
+                latch = new CountDownLatch(1);
+            }
+        }
+        catch (NullPointerException ex) {
+            latch = new CountDownLatch(1);
+        }
+
+        int index = 0;
+        char[] array = event.getOldName().toCharArray();
+        if (inNickRestrictedRole(event.getUser().getIdLong())) {
+            oldUserNameFormattedName = "";
+            while (index < array.length) {
+                char thisChar = array[index++];
+
+                if (Character.isUpperCase(thisChar)) {
+                    log.warn(event.getNewName() + " apparently had older discord username formatting in place at the time of this update! Storing for the nickname...");
+                    oldUserNameFormattedName = event.getOldName();
+                    break;
+                }
+            }
+
+            if (!event.getUser().getAsTag().contains("#0000") && oldUserNameFormattedName.isEmpty()) {
+                oldUserNameFormattedName = event.getOldName();
+                log.warn(event.getNewName() + " apparently had older discord username formatting in place at the time of this update! Storing for the nickname...");
+            }
+        }
 
         guild.retrieveMemberById(event.getUser().getIdLong()).useCache(false).submit().whenComplete(new BiConsumer<Member, Throwable>() {
             @Override
@@ -153,6 +185,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                 }
             }
         });
+        latch.countDown();
         isBusy = false;
     }
 
@@ -162,6 +195,22 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
         if (!nickConfig.isEnabled()) return;
         isBusy = true;
 
+        try {
+            latch.await(10, TimeUnit.SECONDS);
+        }
+        catch (InterruptedException e) {
+            aue.logCaughtException(Thread.currentThread(), e);
+        }
+        catch (NullPointerException ex) {
+            log.warn("Global Name Countdown Latch Did Not Exist - Creating and Stopping...");
+            try {
+                latch.await(10, TimeUnit.SECONDS);
+            }
+            catch (InterruptedException e) {
+                aue.logCaughtException(Thread.currentThread(), e);
+            }
+        }
+
         guild.retrieveMemberById(event.getUser().getIdLong()).useCache(false).submit().whenComplete(new BiConsumer<Member, Throwable>() {
             @Override
             public void accept(Member member, Throwable throwable) {
@@ -169,8 +218,20 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                 if (throwable == null) {
                     // The player did not previously have a global name and now does.
                     if (event.getOldGlobalName() == null && event.getNewGlobalName() != null && member.getNickname() == null && inNickRestrictedRole(member)) {
-                        member.modifyNickname(event.getUser().getName())
-                                .reason("Automatically Added because this player was previously using their discord username as their social club name").queue();
+                        String result = "";
+                        // Is It the Old Username Format?
+                        if (oldUserNameFormattedName.length() > 0) {
+                            member.modifyNickname(oldUserNameFormattedName)
+                                    .reason("Automatically Added as this User was using their discord username - Due to Discord's New Username Format this will be no longer allowed - A New Nickname For That Old Discord Username Was Successfully Set").queue();
+                            log.info(oldUserNameFormattedName + " was converted from a the old discord username format to the new format");
+                            result = oldUserNameFormattedName;
+                            oldUserNameFormattedName = "";
+                        }
+                        else {
+                            member.modifyNickname(event.getUser().getName())
+                                    .reason("Automatically Added because this player was previously using their discord username as their social club name").queue();
+                            result = event.getUser().getName();
+                        }
                         entry = new MessageEntry("Automatic Nickname Addition",
                                 "**Your name on the SAFE Crew discord server was automatically set back to your old discord username**" +
                                         " \n\nThis is due to the fact that you're in a role that prohibits name changes, your name in the SAFE Crew discord server" +
@@ -183,11 +244,11 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                         embed.sendAsMessageEntryObj(entry);
 
                         String logMessage = event.getUser().getAsMention() + " was previously using their discord username " +
-                                "as their social club name, they just changed it. They are in a role that prevents effective name changes so a nickname of **" + event.getUser().getName() + "** was set on them.";
-                        log.info(logMessage.replace(event.getUser().getAsMention(), event.getUser().getName() + " (ID:" + event.getUser().getIdLong() + ")")
-                                .replace("**" + event.getUser().getName() + "**", event.getUser().getName()));
+                                "as their social club name, they just changed it. They are in a role that prevents effective name changes so a nickname of **" + result + "** was set on them.";
+                        log.info(logMessage.replace(event.getUser().getAsMention(), result + " (ID:" + event.getUser().getIdLong() + ")")
+                                .replace("**" + result + "**", result));
                         embed.setAsInfo("Automatic Nickname Applied",
-                                logMessage.replace("null", event.getUser().getName() + " (Their Discord Username)"));
+                                logMessage.replace("null", result + " (Their Discord Username)"));
                         embed.sendToLogChannel();
                     }
                     // The player does have a global nickname and is using it as their social club name

@@ -88,6 +88,7 @@ class LightAngel implements CommonLogic {
                 restartValue = 2;
             }
             else if (args[0].equalsIgnoreCase("-min") || args[0].equalsIgnoreCase("minimized")) {
+                log.warn("-min arguement found! I will terminate this instance and create a new window minimized with TheLightAngel Running!");
                 new ProcessBuilder("cmd", "/c", "start", "/MIN", "java", "-jar", "-Dlog4j.configurationFile=./log4j2.properties", "TheLightAngel.jar", "false").start();
                 System.exit(1);
             }
