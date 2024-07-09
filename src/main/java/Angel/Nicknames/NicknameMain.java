@@ -473,15 +473,10 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
         Thread.currentThread().setUncaughtExceptionHandler(aue);
         if (!nickConfig.isEnabled()) return;
         isBusy = true;
-        try {
-            String result = nickCore.withdrawRequest(event.getUser().getIdLong(), true, false);
-            if (result != null) {
-                embed.setAsWarning("Automatic Nickname Request Withdraw", result);
-                embed.sendToLogChannel();
-            }
-        }
-        catch (IOException e) {
-            log.error("Member Left Event", e);
+        String result = nickCore.withdrawRequest(event.getUser().getIdLong(), true, false);
+        if (result != null) {
+            embed.setAsWarning("Automatic Nickname Request Withdraw", result);
+            embed.sendToLogChannel();
         }
         // Writing what their name was when they left the server
         if (event.getMember() != null) {
@@ -497,17 +492,12 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
         if (inNickRestrictedRole(event.getUser().getIdLong()) || !nickConfig.isEnabled()) return;
         else {
             isBusy = true;
-            try {
-                String defaultOutput = nickCore.withdrawRequest(event.getUser().getIdLong(), false, true);
-                if (defaultOutput != null) {
-                    defaultOutput = defaultOutput.replace("?", event.getUser().getAsMention());
-                    log.info(defaultOutput.replace(event.getUser().getAsMention(), event.getUser().getName()).split("\n\n")[0]);
-                    embed.setAsInfo("Automatic Nickname Request Withdraw", defaultOutput);
-                    embed.sendToLogChannel();
-                }
-            }
-            catch (IOException ex) {
-                log.error("Member Role Removed Event", ex);
+            String defaultOutput = nickCore.withdrawRequest(event.getUser().getIdLong(), false, true);
+            if (defaultOutput != null) {
+                defaultOutput = defaultOutput.replace("?", event.getUser().getAsMention());
+                log.info(defaultOutput.replace(event.getUser().getAsMention(), event.getUser().getName()).split("\n\n")[0]);
+                embed.setAsInfo("Automatic Nickname Request Withdraw", defaultOutput);
+                embed.sendToLogChannel();
             }
             isBusy = false;
         }
@@ -993,18 +983,36 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
             embed.sendDM(msg, msg.getAuthor());
         }
     }
+    void requestHandler(Message msg, Member handler, boolean requestedAccepted, long targetDiscordID) {
+        String[] args = msg.getContentRaw().substring(1).split(" ");
+        if (args.length == 4 && !requestedAccepted) {
+            switch (args[2].toLowerCase()) {
+                case "s":
+                case "silent":
+                case "silently":
+                    requestHandler(msg, handler, requestedAccepted, targetDiscordID, true);
+                default:
+                    embed.setAsError("Invalid Syntax", "**It appears you may have meant the silent deny command? " +
+                            "If so the correct syntax is:**\n`" + mainConfig.commandPrefix + "nn d silent <request ID or Discord Mention>`");
+                    embed.sendToTeamOutput(msg, msg.getAuthor());
+            }
+        }
+     }
+
     // targetDiscordID argument is for accepting or denying the request via a reaction, it's -1 when it's via command
-    void requestHandler(Message msg, Member handler, boolean requestAccepted, long targetDiscordID) throws IOException {
+    void requestHandler(Message msg, Member handler, boolean requestAccepted, long targetDiscordID, boolean rejectSilently) {
         String[] args = msg.getContentRaw().substring(1).split(" ");
         String result = "";
         if (handler == null) {
             handler = msg.getMember();
         }
+        // This handler is for using the `!nn list` embed
         if (targetDiscordID != -1) {
             args = new String[3];
             args[0] = "nn";
             if (requestAccepted) args[1] = "a";
             else args[1] = "d";
+            if (rejectSilently)
             args[2] = String.valueOf(targetDiscordID);
         }
         else {
@@ -1023,7 +1031,12 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                     newNickname = nickCore.newNickname.get(nickCore.discordID.indexOf(targetDiscordID));
                 }
                 else {
-                    targetRequestID = Integer.parseInt(args[2]);
+                    if (rejectSilently) {
+                        targetRequestID = Integer.parseInt(args[3]);
+                    }
+                    else {
+                        targetRequestID = Integer.parseInt(args[2]);
+                    }
                     targetDiscordID = nickCore.discordID.get(nickCore.requestID.indexOf(targetRequestID));
                     oldNickname = nickCore.oldNickname.get(nickCore.requestID.indexOf(targetRequestID));
                     newNickname = nickCore.newNickname.get(nickCore.requestID.indexOf(targetRequestID));
@@ -1034,7 +1047,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                     addNameHistory(targetDiscordID, oldNickname, msg);
                 }
                 else {
-                    result = nickCore.denyRequest(-1, targetRequestID);
+                    result = nickCore.denyRequest(-1, targetRequestID, false);
                 }
             }
             catch (IndexOutOfBoundsException ex) {
@@ -1054,7 +1067,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                     addNameHistory(targetDiscordID, oldNickname, msg);
                 }
                 else {
-                    result = handler.getAsMention() + " " + nickCore.denyRequest(targetDiscordID, -1);
+                    result = handler.getAsMention() + " " + nickCore.denyRequest(targetDiscordID, -1, rejectSilently);
                 }
             }
             if (isMention) {
@@ -1097,13 +1110,15 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                         String defaultTitle = "Successful Nickname Request Rejection";
                         embed.setAsSuccess(defaultTitle, msg.getAuthor().getAsMention() + " " + result);
                         embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
-                        String messageToPlayer = "**Your Nickname Request was Denied** \n" +
-                                "*This was most likely because you haven't changed your " +
-                                "Social Club name to match your requested nickname*"
-                                + "\nIf you are sure it wasn't for that reason, you can ask a SAFE Team Member and they will tell you why" +
-                                " your request was denied.";
-                        embed.setAsError("Nickname Request Denied", messageToPlayer);
-                        embed.sendDM(msg, guild.getMemberById(targetDiscordID).getUser());
+                        if (!rejectSilently) {
+                            String messageToPlayer = "**Your Nickname Request was Denied** \n" +
+                                    "*This was most likely because you haven't changed your " +
+                                    "Social Club name to match your requested nickname*"
+                                    + "\nIf you are sure it wasn't for that reason, you can ask a SAFE Team Member and they will tell you why" +
+                                    " your request was denied.";
+                            embed.setAsError("Nickname Request Denied", messageToPlayer);
+                            embed.sendDM(msg, guild.getMemberById(targetDiscordID).getUser());
+                        }
                         log.info("Team Member " + handler.getEffectiveName() + " successfully rejected the nickname request of player " +
                                 guild.getMemberById(targetDiscordID).getUser().getName() + "," +
                                 " their nickname remains " + oldNickname);
@@ -1155,14 +1170,15 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                         log.info("Team Member " + handler.getEffectiveName() + " successfully rejected the nickname request of player " +
                                 guild.getMemberById(targetDiscordID).getUser().getName() + "," +
                                 " their nickname remains " + oldNickname);
-                        String messageToPlayer = "**Your Nickname Request was Denied** \n" +
-                                "*This was most likely because you haven't changed your " +
-                                "Social Club name to match your requested nickname*"
-                                + "\nIf you are sure it wasn't for that reason, you can ask a SAFE Team Member and they will tell you why" +
-                                " your request was denied.";
-                        embed.setAsError("Nickname Request Denied", messageToPlayer);
-                        embed.sendDM(msg, guild.getMemberById(targetDiscordID).getUser());
-
+                        if (!rejectSilently) {
+                            String messageToPlayer = "**Your Nickname Request was Denied** \n" +
+                                    "*This was most likely because you haven't changed your " +
+                                    "Social Club name to match your requested nickname*"
+                                    + "\nIf you are sure it wasn't for that reason, you can ask a SAFE Team Member and they will tell you why" +
+                                    " your request was denied.";
+                            embed.setAsError("Nickname Request Denied", messageToPlayer);
+                            embed.sendDM(msg, guild.getMemberById(targetDiscordID).getUser());
+                        }
                     }
                 }
             }

@@ -8,7 +8,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -41,22 +40,17 @@ class NickRequestListEmbed extends CustomListEmbed {
         boolean requestStatus = true;
         String reactionType = "";
 
-        try {
-            switch (event.getReaction().getEmoji().getAsReactionCode()) {
-                case checkMarkUnicode:
-                    reactionType = "Check Mark";
-                    break;
-                case crossMarkUnicode:
-                    reactionType = "The Red X";
-                    requestStatus = false;
-                    break;
-            }
+        switch (event.getReaction().getEmoji().getAsReactionCode()) {
+            case checkMarkUnicode:
+                reactionType = "Check Mark";
+                break;
+            case crossMarkUnicode:
+                reactionType = "The Red X";
+                requestStatus = false;
+                break;
+        }
 
-            log.info(event.getUser().getName() + " just reacted with the " + reactionType);
-            nickMain.requestHandler(originalCmd, event.getMember(), requestStatus, targetDiscordID);
-        }
-        catch (IOException ex) {
-            log.error("Caught Exception by the Nickname Request Handler", ex);
-        }
+        log.info(event.getUser().getName() + " just reacted with the " + reactionType);
+        nickMain.requestHandler(originalCmd, event.getMember(), requestStatus, targetDiscordID);
     }
 }

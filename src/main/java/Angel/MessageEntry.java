@@ -1,5 +1,6 @@
 package Angel;
 
+import Angel.Exceptions.TitleEmptyException;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -13,8 +14,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class MessageEntry implements CommonLogic {
-    private String title;
-    private String msg;
+    private String title = "";
+    private String msg = "";
+    private String footer = "";
     private EmbedDesign design;
     private AtomicReference<Message> originalCmd = new AtomicReference<>();
     private AtomicReference<Message> resultEmbed = new AtomicReference<>();
@@ -82,6 +84,11 @@ public class MessageEntry implements CommonLogic {
 
     public MessageEntry setMessage(String msg) {
         this.msg = msg;
+        return this;
+    }
+
+    public MessageEntry setFooter(String footer) {
+        this.footer = footer;
         return this;
     }
 
@@ -217,6 +224,16 @@ public class MessageEntry implements CommonLogic {
                 embed.setColor(Color.decode("#2F3136").brighter()).setThumbnail(mainConfig.helpIconURL);
                 break;
         }
+
+        if (title.isEmpty()) {
+            aue.logCaughtException(Thread.currentThread(), new TitleEmptyException());
+            title = "Message From System";
+        }
+
+        if (!footer.isEmpty()) {
+            embed.setFooter(footer);
+        }
+
         if (includeFieldHeader) return embed.setTitle(title).addField(mainConfig.fieldHeader, msg, true).build();
         else {
             fieldOriginallyIncluded = false;

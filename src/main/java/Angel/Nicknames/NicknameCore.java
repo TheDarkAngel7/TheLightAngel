@@ -99,10 +99,12 @@ class NicknameCore implements NickConfig {
                 );
             }
 
-            result = result.concat(
-                    "\nOld Nickname: **" + targetMember.getNickname() +
-                            "**\nNew Nickname: **" + targetMember.getUser().getName() + " (Reset to Discord Username)**"
-            );
+            else {
+                result = result.concat(
+                        "\nOld Nickname: **" + targetMember.getNickname() +
+                                "**\nNew Nickname: **" + targetMember.getUser().getName() + " (Reset to Discord Username)**"
+                );
+            }
         }
         else {
             int index = requestID.indexOf(id);
@@ -122,7 +124,7 @@ class NicknameCore implements NickConfig {
         else return ":x: FATAL ERROR: While submitting request, something didn't run correctly";
     }
 
-    String acceptRequest(long targetDiscordID, int targetRequestID) throws IOException {
+    String acceptRequest(long targetDiscordID, int targetRequestID) {
         String[] nicknames = null;
         try {
             if (targetDiscordID == -1) {
@@ -155,14 +157,16 @@ class NicknameCore implements NickConfig {
         }
     }
 
-    String denyRequest(long targetDiscordID, int targetRequestID) throws IOException {
+    String denyRequest(long targetDiscordID, int targetRequestID, boolean denySilent) {
         // We're using the same execution as accepting the request did but we're going to replace "Accepted" with "Rejected"
         String result = acceptRequest(targetDiscordID, targetRequestID);
         if (result == null) return null;
-        result = result.replace("Accepted", "Rejected");
+
+        if (!denySilent) result = result.replace("Accepted", "Rejected");
+        else result.replace("Accepted", "Rejected Silently");
         return result;
     }
-    String withdrawRequest(long targetDiscordID, boolean triggeredOnGuildLeave, boolean triggeredOnRoleRemove) throws IOException {
+    String withdrawRequest(long targetDiscordID, boolean triggeredOnGuildLeave, boolean triggeredOnRoleRemove) {
         int index = discordID.indexOf(targetDiscordID);
         if (index == -1) return null;
         String result = "";
@@ -221,7 +225,7 @@ class NicknameCore implements NickConfig {
         }
         return result;
     }
-    private String[] getDataAtIndexAndRemove(int index) throws IOException, IndexOutOfBoundsException {
+    private String[] getDataAtIndexAndRemove(int index) throws IndexOutOfBoundsException {
         String returnValue = requestID.remove(index) + "," + discordID.remove(index) + ","
                 + oldNickname.remove(index) + "," + newNickname.remove(index);
         if (!arraySizesEqual()) {

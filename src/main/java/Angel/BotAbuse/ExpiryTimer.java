@@ -39,6 +39,25 @@ class ExpiryTimer implements Runnable, BotAbuseConfig {
                 if (baCore.botAbuseIsPermanent(targetDiscordID)) {
                     // Take No Action
                 }
+                // If the player with the bot abuse has no record of a bot abuse, the role may've gotten accidently added
+                else if (r == null && m.getRoles().contains(baFeature.getConfig().getBotAbuseRole())) {
+                    guild.removeRoleFromMember(m, baFeature.getConfig().getBotAbuseRole())
+                            .reason("Automatically Removed as Records Indicate They're Not Supposed to Have the Role").submit().whenComplete(new BiConsumer<Void, Throwable>() {
+                                @Override
+                                public void accept(Void unused, Throwable throwable) {
+                                    if (throwable == null) {
+                                        log.warn("Bot Abuse Role Successfully Removed from " + m.getEffectiveName() + " (Discord ID: " + m.getUser().getIdLong() + ") " +
+                                                "because they had the role and they never should have had it");
+                                        embed.setAsWarning("Old Bot Abuse Role Removed", "**:warning: Removed Bot Abuse Role for "
+                                                + m.getAsMention() + " because they should never have had the role.**");
+                                        embed.sendToLogChannel();
+                                    }
+                                    else {
+                                        aue.logCaughtException(Thread.currentThread(), throwable);
+                                    }
+                                }
+                            });
+                }
                 // If the current time is after the target date then remove the bot abuse for that discord ID
                 else if (baCore.getCurrentTime().isAfter(r.getExpiryDate())) {
                     // If the role got accidently readded then we log what may've happened and remove it now instead of the generic expiry message
@@ -76,7 +95,13 @@ class ExpiryTimer implements Runnable, BotAbuseConfig {
                                                 log.info("Bot Abuse Role Successfully Removed from " + m.getEffectiveName() + " (Discord ID: " + m.getUser().getIdLong() + ") because it has expired");
 
                                                 embed.setAsSuccess("Successfully Removed Expired Bot Abuse", "**:white_check_mark: Removed Expired Bot Abuse for "
-                                                        + m.getAsMention() + "**");
+                                                        + m.getAsMention() + "**\n\n" +
+                                                        "**Original Bot Abuse Info:**\n" +
+                                                        "ID: **" + r.getId() + "**\n" +
+                                                        "Issued By: **<@" + r.getIssuingTeamMember() + ">**\n" +
+                                                        "Issued: **" + getDiscordTimeFormat(r.getIssuedDate()) + "**\n" +
+                                                        "Expired: **" + getDiscordTimeFormat(r.getExpiryDate()) + "**\n" +
+                                                        "Reason: **" + r.getReason() + "**");
                                                 embed.sendToLogChannel();
                                             }
                                             else {
