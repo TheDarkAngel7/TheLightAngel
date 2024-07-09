@@ -755,7 +755,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                     }
                     else if ((args[1].equalsIgnoreCase("deny") || args[1].equalsIgnoreCase("d")
                             && isTeamMember(msg.getAuthor().getIdLong()))) {
-                        if (args.length == 3) {
+                        if (args.length == 3 || args.length == 4) {
                             requestHandler(msg, null,false, -1);
                         }
                     }
@@ -991,11 +991,15 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                 case "silent":
                 case "silently":
                     requestHandler(msg, handler, requestedAccepted, targetDiscordID, true);
+                    break;
                 default:
                     embed.setAsError("Invalid Syntax", "**It appears you may have meant the silent deny command? " +
                             "If so the correct syntax is:**\n`" + mainConfig.commandPrefix + "nn d silent <request ID or Discord Mention>`");
                     embed.sendToTeamOutput(msg, msg.getAuthor());
             }
+        }
+        else {
+            requestHandler(msg, handler, requestedAccepted, targetDiscordID, false);
         }
      }
 
@@ -1012,7 +1016,6 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
             args[0] = "nn";
             if (requestAccepted) args[1] = "a";
             else args[1] = "d";
-            if (rejectSilently)
             args[2] = String.valueOf(targetDiscordID);
         }
         else {
@@ -1022,7 +1025,7 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
         String oldNickname = "";
         String newNickname = "";
         AtomicReference<Member> memberInQuestion = new AtomicReference<>();
-        if (args.length == 3) {
+        if (args.length == 3 || args.length == 4) {
             boolean isMention = false;
             try {
                 if (targetDiscordID != 0) {
