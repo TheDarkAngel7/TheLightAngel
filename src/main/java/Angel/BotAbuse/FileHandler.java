@@ -1,5 +1,6 @@
 package Angel.BotAbuse;
 
+import Angel.FileGarbageTruck;
 import Angel.ZoneIDInstanceCreator;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
@@ -21,6 +22,7 @@ import java.util.List;
 class FileHandler {
     Gson gson;
     private final Logger log = LogManager.getLogger(FileHandler.class);
+    private final FileGarbageTruck garbageTruck = new FileGarbageTruck("Bot Abuse", "db-backups/BotAbuse", 9);
     private File jsonBADataFile = new File("data/BAdata.json");
     private File jsonTempBADataFile = new File("data/BAdatatemp.json");
     private Type recordsType = new TypeToken<List<BotAbuseRecord>>(){}.getType();
@@ -99,5 +101,7 @@ class FileHandler {
         else {
             log.error("Could Not Rename Bot Abuse Temp File");
         }
+
+        garbageTruck.dumpOldFiles();
     }
 }

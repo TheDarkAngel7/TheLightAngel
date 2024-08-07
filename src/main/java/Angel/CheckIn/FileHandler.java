@@ -1,5 +1,6 @@
 package Angel.CheckIn;
 
+import Angel.FileGarbageTruck;
 import Angel.ZoneIDInstanceCreator;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
@@ -20,6 +21,7 @@ class FileHandler {
     private final Logger log = LogManager.getLogger(FileHandler.class);
     private final File jsonCheckInDataFile = new File("data/checkIndata.json");
     private final File jsonCheckInDataTempFile = new File("data/checkInTemp.json");
+    private final FileGarbageTruck garbageTruck = new FileGarbageTruck("Check-In", "db-backups/CheckIn", 14);
 
     FileHandler() {
         gson = new GsonBuilder().registerTypeAdapter(ZoneId.class, new ZoneIDInstanceCreator()).create();
@@ -75,5 +77,7 @@ class FileHandler {
         else {
             log.error("Could Not Rename Check In Temp File");
         }
+
+        garbageTruck.dumpOldFiles();
     }
 }

@@ -1,5 +1,6 @@
 package Angel.Nicknames;
 
+import Angel.FileGarbageTruck;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -25,6 +26,7 @@ class FileHandler {
     private final Type integerType = new TypeToken<ArrayList<Integer>>(){}.getType();
     private final Type stringType = new TypeToken<ArrayList<String>>(){}.getType();
     private final Type oldNickDictionaryType = new TypeToken<Hashtable<Long, ArrayList<String>>>(){}.getType();
+    private FileGarbageTruck garbageTruck = new FileGarbageTruck("Nicknames", "db-backups/Nicknames", 11);
     private FileReader fileReader;
     private JsonObject database;
 
@@ -106,5 +108,7 @@ class FileHandler {
         else {
             log.error("Could Not Rename Nickname Temp File");
         }
+
+        garbageTruck.dumpOldFiles();
     }
 }
