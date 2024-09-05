@@ -78,6 +78,6 @@ class FileHandler {
             log.error("Could Not Rename Check In Temp File");
         }
 
-        garbageTruck.dumpOldFiles();
+        garbageTruck.dumpFiles();
     }
 }

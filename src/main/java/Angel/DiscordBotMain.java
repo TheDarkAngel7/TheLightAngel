@@ -55,6 +55,9 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
     private List<ListEmbed> listEmbeds = new ArrayList<>();
     private Dictionary<Message, ScheduledFuture<?>> reactionClearTimers = new Hashtable<>();
 
+    // File Garbage Truck Class for the Log Files
+    private FileGarbageTruck logFileGarbageTruck;
+
     DiscordBotMain(int restartValue, FileHandler fileHandler) {
         this.fileHandler = fileHandler;
         this.restartValue = restartValue;
@@ -74,6 +77,10 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
             log.info("Setting Up Main Config's Discord Settings");
             mainConfig.discordSetup();
         }
+
+        logFileGarbageTruck = new FileGarbageTruck("Log", "logs/Previous", 11)
+                .setFileNamingPattern("MM-dd-yy-HH-mm-ss-1").setDaysToStoreFilesBeforeDeletion(180).filesDoNotIncludeTimeZones();
+
         nickInit = new NicknameInit(commandsSuspended, embed, this);
         baInit = new BotAbuseInit(commandsSuspended, restartValue, this);
         ciInit = new CheckInInit(this);
@@ -233,6 +240,11 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
         Thread.currentThread().setUncaughtExceptionHandler(aue);
         if (event.getAuthor().isBot()) return;
         Message msg = event.getMessage();
+
+        if (isTeamMember(msg.getAuthor().getIdLong())) {
+            logFileGarbageTruck.dumpFiles();
+        }
+
         String[] args = null;
         try {
             args = msg.getContentRaw().substring(1).split(" ");

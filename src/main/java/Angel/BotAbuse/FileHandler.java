@@ -102,6 +102,6 @@ class FileHandler {
             log.error("Could Not Rename Bot Abuse Temp File");
         }
 
-        garbageTruck.dumpOldFiles();
+        garbageTruck.dumpFiles();
     }
 }

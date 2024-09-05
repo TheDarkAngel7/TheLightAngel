@@ -109,6 +109,6 @@ class FileHandler {
             log.error("Could Not Rename Nickname Temp File");
         }
 
-        garbageTruck.dumpOldFiles();
+        garbageTruck.dumpFiles();
     }
 }
