@@ -56,7 +56,7 @@ class Help implements CommonLogic {
                     "This command allows you to check on someone’s Bot abuse status.");
         }
         else {
-            embed.setAsHelp(defaultTitle,"**Full Syntax:\n `" + mainConfig.commandPrefix + "check [dm] [TimeZone]`**\n" +
+            embed.setAsHelp(defaultTitle,"**Full Syntax:\n `" + mainConfig.commandPrefix + "check [dm]`**\n" +
                     "\n" +
                     mainConfig.commandPrefix + "check allows you to check your own bot abuse status, " +
                     "instead of the staff having to guess when your bot abuse will expire, you can just have the bot tell you.\n\n" +

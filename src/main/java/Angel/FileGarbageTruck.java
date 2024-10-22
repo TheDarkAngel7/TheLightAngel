@@ -31,6 +31,7 @@ public class FileGarbageTruck implements CommonLogic {
     // Initiatal Variables
     private final String sectionName;
     private final String backupLocation;
+    // Beginning Substring should be where the substring index where the date begins.
     private final int beginningSubstring;
 
     public FileGarbageTruck(String sectionName, String backupLocation, int beginningSubstring) {
@@ -113,6 +114,9 @@ public class FileGarbageTruck implements CommonLogic {
                     log.info(result);
                 }
             }
+            else {
+                log.info( sectionName + " File Dump Successfully Completed but No Files were deleted");
+            }
         }
     }
 
@@ -124,7 +128,7 @@ public class FileGarbageTruck implements CommonLogic {
 
     public FileGarbageTruck setDaysToStoreFilesBeforeDeletion(int days) {
         daysToStoreBeforeDeletion = days;
-        log.debug(sectionName + "File Will Not Be Thrown in the Garbage Truck unless they are more than " + days + " days old!") ;
+        log.debug(sectionName + " Files Will Not Be Thrown in the Garbage Truck unless they are more than " + days + " days old!") ;
         return this;
     }
 

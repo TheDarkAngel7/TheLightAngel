@@ -892,6 +892,7 @@ public class CheckInMain extends ListenerAdapter implements CheckInConfig {
         });
     }
     void endCheckIn() {
+        ciTimer.stopTimer();
         checkInRunning = false;
         checkInConfirmed = false;
         CheckInResult ciResult = ciCore.endCheckIn(false);

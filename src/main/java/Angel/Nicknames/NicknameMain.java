@@ -1083,17 +1083,23 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                     if (requestAccepted) {
                         String defaultTitle = "Successful Nickname Request Acceptance";
                         if (newNickname == null) {
+                            // Setting a Nickname to Null could either revert their name to their global display name or discord username. Slightly different wording for both
+                            String revertedName = "discord username";
+
+                            if (memberInQuestion.get().getUser().getGlobalName() != null) {
+                                revertedName = "global display name";
+                            }
                             memberInQuestion.get().modifyNickname(null)
                                     .reason("Staff Member "  + handler.getUser().getName() + " accepted their nickname request").queue();
                             embed.setAsSuccess(defaultTitle, result);
                             embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
-                                    "Your new name on the Discord Server now matches your discord username";
+                                    "Your new name on the Discord Server now matches your " + revertedName + ".";
                             embed.setAsSuccess(defaultTitle, messageToPlayer);
                             embed.sendDM(msg, guild.getMemberById(targetDiscordID).getUser());
                             log.info("Team Member " + handler.getEffectiveName() + " successfully accepted the nickname request of player " +
                                     guild.getMemberById(targetDiscordID).getUser().getName() + "," +
-                                    " their nickname was erased and now it matches their discord name.");
+                                    " their nickname was erased and now it matches their " + revertedName + ".");
                         }
                         else {
                             memberInQuestion.get().modifyNickname(getNewNickname)
@@ -1137,18 +1143,23 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
                     String getNewNickname = getNewNicknameArray[1].substring(2, getNewNicknameArray[1].lastIndexOf('*') - 1);
                     if (requestAccepted) {
                         if (newNickname == null) {
+                            String revertedName = "discord username";
+
+                            if (memberInQuestion.get().getUser().getGlobalName() != null) {
+                                revertedName = "global display name";
+                            }
                             memberInQuestion.get().modifyNickname(null).reason("Staff Member " + handler.getEffectiveName() +
                                     " accepted the nickname request of " + memberInQuestion.get().getUser().getName() +
-                                    ", their display name now matches their discord username").queue();
+                                    ", their display name now matches their " + revertedName).queue();
                             embed.setAsSuccess("Successful Nickname Request Acceptance", result);
                             embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
-                                    "Your nickname was removed on the Discord Server and now matches your discord username";
+                                    "Your nickname was removed on the Discord Server and now matches your " + revertedName;
                             embed.setAsSuccess("Successful Nickname Request Acceptance", messageToPlayer);
                             embed.sendDM(msg, memberInQuestion.get().getUser());
                             log.info("Team Member " + handler.getEffectiveName() + " successfully accepted the nickname request of player " +
                                     guild.getMemberById(targetDiscordID).getUser().getName() + "," +
-                                    " their nickname was erased and now it matches their discord name.");
+                                    " their nickname was erased and now it matches their " + revertedName);
                         }
                         else {
                             memberInQuestion.get().modifyNickname(getNewNickname).reason("Staff Member " + handler.getEffectiveName() +

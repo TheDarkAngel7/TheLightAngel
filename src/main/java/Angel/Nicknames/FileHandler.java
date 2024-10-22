@@ -76,14 +76,13 @@ class FileHandler {
     public void saveDatabase(List<Integer> requestID, List<Long> discordID, List<String> oldNickname, List<String> newNickname, Dictionary<Long, List<String>> oldNickDictionary) {
         try {
             JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(new FileOutputStream(jsonTempNickDataFile)));
-            jsonWriter.beginObject();
-            jsonWriter.name("RequestID").value(gson.toJson(requestID));
-            jsonWriter.name("DiscordID").value(gson.toJson(discordID));
-            jsonWriter.name("OldNickname").value(gson.toJson(oldNickname));
-            jsonWriter.name("NewNickname").value(gson.toJson(newNickname));
-            jsonWriter.name("OldNameDictionary").value(gson.toJson(oldNickDictionary));
-            jsonWriter.endObject();
-            jsonWriter.close();
+            jsonWriter.beginObject()
+                    .name("RequestID").value(gson.toJson(requestID))
+                    .name("DiscordID").value(gson.toJson(discordID))
+                    .name("OldNickname").value(gson.toJson(oldNickname))
+                    .name("NewNickname").value(gson.toJson(newNickname))
+                    .name("OldNameDictionary").value(gson.toJson(oldNickDictionary))
+                    .endObject().close();
             log.info("JSONWriter Successfully Ran to Nickname Database Temp File");
             while (true) {
                 try {
