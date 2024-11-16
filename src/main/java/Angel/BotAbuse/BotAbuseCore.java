@@ -9,17 +9,16 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 
-class BotAbuseCore implements BotAbuseConfig { // This is where all the magic happens, where all the data is added and queried from the appropriate arrays to
+class BotAbuseCore implements BotAbuseConfig {
+    // This is where all the magic happens, where all the data is added and queried from the appropriate arrays to
     // Display all the requested data.
     Angel.BotAbuse.FileHandler fileHandler;
     private final Logger log = LogManager.getLogger(BotAbuseCore.class);
-    private final BotAbuseMain baMain;
     private List<BotAbuseRecord> records = new ArrayList<>();
     Dictionary<String, String> reasonsDictionary = new Hashtable<>();
     private ZonedDateTime c;
 
-    BotAbuseCore(BotAbuseMain baMain) {
-        this.baMain = baMain;
+    BotAbuseCore() {
         this.fileHandler = new FileHandler();
     }
     void startup() throws IOException {
@@ -75,8 +74,8 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                     "**\nBot Abuse ID: **" + thisRecord.getId() +
                     "**\nIssuing Team Member: <@!" + thisRecord.getIssuingTeamMember() + ">" +
                     "\nOffense Number: **" + thisRecord.getRepOffenses() +
-                    "**\nDate Issued: **" + baMain.getDiscordFormat(thisRecord.getIssuedDate(), targetDiscordID) +
-                    "**\nExpiry Date: **" + baMain.getDiscordFormat(thisRecord.getExpiryDate(), targetDiscordID) +
+                    "**\nDate Issued: **" + getDiscordFormat(thisRecord.getIssuedDate(), targetDiscordID) +
+                    "**\nExpiry Date: **" + getDiscordFormat(thisRecord.getExpiryDate(), targetDiscordID) +
                     "**\nReason: **" + thisRecord.getReason()+
                     "**\nViolation Image: **" + thisRecord.getProofImage() + "**";
         } // If a /permbotabuse was run and the Bot Abuse is still current.
@@ -95,7 +94,7 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                 saveDatabase();
                 return ":white_check_mark: **[System - Admin Override] Successfully Overrode Bot Abuse for <@!"
                         + targetDiscordID + "> and it is now "
-                        + baMain.getDiscordFormat(thisRecord.getExpiryDate(), targetDiscordID)+ "**";
+                        + getDiscordFormat(thisRecord.getExpiryDate(), targetDiscordID)+ "**";
             }
             // Here we're saying player is already Permanently Bot Abused
             else {
@@ -125,8 +124,8 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                         "**\nBot Abuse ID: **" + thisRecord.getId() +
                         "**\nIssuing Team Member: <!@" + thisRecord.getIssuingTeamMember() + ">" +
                         "**\nOffense Number: **" + thisRecord.getRepOffenses() +
-                        "**\nDate Issued: **" + baMain.getDiscordFormat(thisRecord.getIssuedDate(), targetDiscordID) +
-                        "**\nExpiry Date: **" + baMain.getDiscordFormat(thisRecord.getExpiryDate(), targetDiscordID) +
+                        "**\nDate Issued: **" + getDiscordFormat(thisRecord.getIssuedDate(), targetDiscordID) +
+                        "**\nExpiry Date: **" + getDiscordFormat(thisRecord.getExpiryDate(), targetDiscordID) +
                         "**\nReason: **" + thisRecord.getReason() +
                         "**\nViolation Image: **None Provided**";
             }
@@ -135,8 +134,8 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                         "**\nBot Abuse ID: **" + thisRecord.getId() +
                         "**\nIssuing Team Member: <!@" + thisRecord.getIssuingTeamMember() + ">" +
                         "**\nOffense Number: **" + thisRecord.getRepOffenses() +
-                        "**\nDate Issued: **" + baMain.getDiscordFormat(thisRecord.getIssuedDate(), targetDiscordID) +
-                        "**\nExpiry Date: **" + baMain.getDiscordFormat(thisRecord.getExpiryDate(), targetDiscordID) +
+                        "**\nDate Issued: **" + getDiscordFormat(thisRecord.getIssuedDate(), targetDiscordID) +
+                        "**\nExpiry Date: **" + getDiscordFormat(thisRecord.getExpiryDate(), targetDiscordID) +
                         "**\nReason: **" + thisRecord.getReason() +
                         "**\nViolation Image: **" + thisRecord.getProofImage() + "**";
             }
@@ -149,7 +148,7 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                 return ":x: **This Player is Already Bot Abused!**\nDiscord Account: <@!" + targetDiscordID + ">" +
                         "**\nBot Abuse ID: **" + thisRecord.getId() +
                         "\nOffense Number: **" + thisRecord.getRepOffenses() +
-                        "**\nExpiry Date: **" + baMain.getDiscordFormat(thisRecord.getExpiryDate(), targetDiscordID) + "**";
+                        "**\nExpiry Date: **" + getDiscordFormat(thisRecord.getExpiryDate(), targetDiscordID) + "**";
             }
             else {
                 return ":x: **This Player is Already Bot Abused!**\nDiscord Account: <@!" + targetDiscordID + ">" +
@@ -183,6 +182,16 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
             }
         }
         return cExp;
+    }
+
+    private String getDiscordFormat(ZonedDateTime time, long targetDiscordID) {
+        // If Bot Abuse is Permanent this we just return the word, otherwise we convert the time to discord format and return that
+
+        if (botAbuseIsPermanent(targetDiscordID)) {
+            return "Permanent";
+        }
+
+        else return getDiscordTimeFormat(time);
     }
     private int getNextID() {
         int newID;
@@ -258,8 +267,8 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                     return result.concat(
                             "\nBot Abuse ID: **" + thisRecord.getId() +
                             "**\nOffense Number: **" + thisRecord.getRepOffenses() +
-                            "**\nDate Issued: **" + baMain.getDiscordFormat(dateIssued, targetDiscordID) +
-                            "**\nExpiry Date: **" + baMain.getDiscordFormat(dateToExpire, targetDiscordID) +
+                            "**\nDate Issued: **" + getDiscordFormat(dateIssued, targetDiscordID) +
+                            "**\nExpiry Date: **" + getDiscordFormat(dateToExpire, targetDiscordID) +
                             "**\nReason: **" + thisRecord.getReason() +
                             "**\nViolation Image: **None Provided**" +
                             "\n\nYou have had " + prevOffenses + " Previous Offenses**");
@@ -268,7 +277,7 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                     return result.concat(
                             "\nBot Abuse ID: **" + thisRecord.getId() +
                             "**\nOffense Number: **" + thisRecord.getRepOffenses() +
-                            "**\nDate Issued: **" + baMain.getDiscordFormat(dateIssued, targetDiscordID) +
+                            "**\nDate Issued: **" + getDiscordFormat(dateIssued, targetDiscordID) +
                             "**\nExpiry Date: **Never" +
                             "**\nReason: **" + thisRecord.getReason() +
                             "**\nViolation Image: **" + thisRecord.getProofImage() +
@@ -279,7 +288,7 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                             "\nBot Abuse ID: **" + thisRecord.getId() +
                             "**\nIssuing Team Member: <@!" + thisRecord.getIssuingTeamMember() + ">" +
                             "\nOffense Number: **" + thisRecord.getRepOffenses() +
-                            "**\nDate Issued: **" + baMain.getDiscordFormat(dateIssued, targetDiscordID) +
+                            "**\nDate Issued: **" + getDiscordFormat(dateIssued, targetDiscordID) +
                             "**\nExpiry Date: **Never" +
                             "**\nReason: **" + thisRecord.getReason() +
                             "**\nViolation Image: **" + thisRecord.getProofImage() +
@@ -291,8 +300,8 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                     return result.concat(
                             "\nBot Abuse ID: **" + thisRecord.getId() +
                             "**\nOffense Number: **" + thisRecord.getRepOffenses() +
-                            "**\nDate Issued: **" + baMain.getDiscordFormat(dateIssued, targetDiscordID) +
-                            "**\nExpiry Date: **" + baMain.getDiscordFormat(dateToExpire, targetDiscordID) +
+                            "**\nDate Issued: **" + getDiscordFormat(dateIssued, targetDiscordID) +
+                            "**\nExpiry Date: **" + getDiscordFormat(dateToExpire, targetDiscordID) +
                             "**\nReason: **" + thisRecord.getReason() +
                             "**\nViolation Image: **" + thisRecord.getProofImage() +
                             "\n\nYou have had " + prevOffenses + " Previous Offenses" +
@@ -303,8 +312,8 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                             "\nBot Abuse ID: **" + thisRecord.getId() +
                             "**\nIssuing Team Member: <@!" + thisRecord.getIssuingTeamMember() + ">" +
                             "\nOffense Number: **" + thisRecord.getRepOffenses() +
-                            "**\nDate Issued: **" + baMain.getDiscordFormat(dateIssued, targetDiscordID) +
-                            "**\nExpiry Date: **" + baMain.getDiscordFormat(dateToExpire, targetDiscordID) +
+                            "**\nDate Issued: **" + getDiscordFormat(dateIssued, targetDiscordID) +
+                            "**\nExpiry Date: **" + getDiscordFormat(dateToExpire, targetDiscordID) +
                             "**\nReason: **" + thisRecord.getReason() +
                             "**\nViolation Image: **" + thisRecord.getProofImage() +
                             "\n\nThey have had " + prevOffenses + " Previous Offenses" +
@@ -321,7 +330,7 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                         "\nNumber of Lifetime Bot Abuses: **" + this.getLifetimeOffenses(targetDiscordID) + "**" +
                         "\nNumber of Hot Bot Abuses: **" + this.getHotOffenses(targetDiscordID) + "**" +
                         "\nYour Bot Abuses will be cooled: **" +
-                        baMain.getDiscordFormat(getLastRecord(targetDiscordID).getExpiryDate().plusMonths(botConfig.getHotOffenseMonths()), targetDiscordID) + "**" +
+                        getDiscordFormat(getLastRecord(targetDiscordID).getExpiryDate().plusMonths(botConfig.getHotOffenseMonths()), targetDiscordID) + "**" +
                         "\n\n*Hot Bot Abuses are offenses that took place less than **" + botConfig.getHotOffenseMonths() + "** months ago*" +
                         "\n*Psst... They're also called \"Hot\" because they haven't cooled down*";
             }
@@ -472,8 +481,8 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                 output = output.concat(
                         "\n\nBot Abuse ID: **" + records.get(index).getId()
                                 + "**\nOffense Number: **" + records.get(index).getRepOffenses()
-                                + "**\nDate Issued: **" + baMain.getDiscordFormat(dateIssued, targetDiscordID)
-                                + "**\nDate Expired: **" + baMain.getDiscordFormat(dateToExpire, targetDiscordID)
+                                + "**\nDate Issued: **" + getDiscordFormat(dateIssued, targetDiscordID)
+                                + "**\nDate Expired: **" + getDiscordFormat(dateToExpire, targetDiscordID)
                                 + "**\nReason: **" + records.get(index).getReason()
                                 + "**\nProof Image: **" + records.get(index).getProofImage() + "**");
             }
@@ -482,8 +491,8 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                         "\n\nBot Abuse ID: **" + records.get(index).getId()
                                 + "**\nOffense Number: **" + records.get(index).getRepOffenses()
                                 + "**\nIssuing Team Member: <@" + records.get(index).getIssuingTeamMember() + ">"
-                                + "\nDate Issued: **" + baMain.getDiscordFormat(dateIssued, targetDiscordID)
-                                + "**\nDate Expired: **" + baMain.getDiscordFormat(dateToExpire, targetDiscordID)
+                                + "\nDate Issued: **" + getDiscordFormat(dateIssued, targetDiscordID)
+                                + "**\nDate Expired: **" + getDiscordFormat(dateToExpire, targetDiscordID)
                                 + "**\nReason: **" + records.get(index).getReason()
                                 + "**\nProof Image: **" + records.get(index).getProofImage() + "**");
             }
@@ -491,7 +500,7 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                 output = output.concat(
                         "\n\nBot Abuse ID: **" + records.get(index).getId()
                                 + "**\nOffense Number: **" + records.get(index).getRepOffenses()
-                                + "**\nDate Issued: **" + baMain.getDiscordFormat(dateIssued, targetDiscordID)
+                                + "**\nDate Issued: **" + getDiscordFormat(dateIssued, targetDiscordID)
                                 + "**\nExpiry Date: **Never"
                                 + "**\nReason: **" + records.get(index).getReason()
                                 + "**\nProof Image: **" + records.get(index).getProofImage() + "**");
@@ -501,7 +510,7 @@ class BotAbuseCore implements BotAbuseConfig { // This is where all the magic ha
                         "\n\nBot Abuse ID: **" + records.get(index).getId()
                                 + "**\nOffense Number: **" + records.get(index).getRepOffenses()
                                 + "**\nIssuing Team Member: <@" + records.get(index).getIssuingTeamMember() + ">"
-                                + "\nDate Issued: **" + baMain.getDiscordFormat(dateIssued, targetDiscordID)
+                                + "\nDate Issued: **" + getDiscordFormat(dateIssued, targetDiscordID)
                                 + "**\nExpiry Date: **Never"
                                 + "**\nReason: **" + records.get(index).getReason()
                                 + "**\nProof Image: **" + records.get(index).getProofImage() + "**");

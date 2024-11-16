@@ -18,7 +18,7 @@ public class FileGarbageTruck implements CommonLogic {
 
     private ZonedDateTime fileDumpLastRan = ZonedDateTime.of(2000, 1, 1, 0, 0, 0, 0, ZoneId.systemDefault());
 
-    // Use Default Date Time Pattern Unless Different Constructor is Invoked
+    // Use Default Date Time Pattern Unless Changed by setFileNamingPattern(String) method
     private String dateTimePattern = "EEE MMM dd H m s z yyyy";
 
     // Default Storage Days Before Deletion

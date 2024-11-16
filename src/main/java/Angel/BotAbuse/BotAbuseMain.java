@@ -18,7 +18,6 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,7 +43,7 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseConfig {
 
     BotAbuseMain(boolean getCommandsSuspended, int restartValue, DiscordBotMain importDiscordBot) throws IOException, TimeoutException {
         commandsSuspended = getCommandsSuspended;
-        baCore = new BotAbuseCore(this);
+        baCore = new BotAbuseCore();
         botConfig.initialSetup();
         discord = importDiscordBot;
         this.guild = getGuild();
@@ -1515,14 +1514,5 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseConfig {
     }
     public BotAbuseConfiguration getConfig() {
         return botConfig;
-    }
-    String getDiscordFormat(ZonedDateTime time, long targetDiscordID) {
-        if (baCore.botAbuseIsPermanent(targetDiscordID)) {
-            return "Permanent";
-        }
-        // They're Not Perm Bot Abused
-        else {
-            return getDiscordTimeFormat(time);
-        }
     }
 }
