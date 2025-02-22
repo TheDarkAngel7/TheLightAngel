@@ -1,6 +1,9 @@
 package Angel.BotAbuse;
 
-import Angel.*;
+import Angel.EmbedDesign;
+import Angel.ListEmbed;
+import Angel.MessageEntry;
+import Angel.TargetChannelSet;
 import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -19,16 +22,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class BotAbuseMain extends ListenerAdapter implements BotAbuseConfig {
+public class BotAbuseMain extends ListenerAdapter implements BotAbuseLogic {
     private final Logger log = LogManager.getLogger(BotAbuseMain.class);
     private BotAbuseTimers baTimers;
-    private Guild guild;
-    private BotAbuseCore baCore;
+    private Guild guild = getGuild();
     // embed calls the EmbedEngine class from MainConfig
-    private DiscordBotMain discord;
     private Help help;
     public boolean commandsSuspended = false;
     public boolean timersSuspended = false;
@@ -41,20 +41,16 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseConfig {
     public final List<String> commands = new ArrayList<>(Arrays.asList("botAbuse", "ba", "permBotAbuse", "pba", "undo", "check",
             "checkHistory", "clear", "transfer", "reasonsmanager", "rmgr", "reasons", "r"));
 
-    BotAbuseMain(boolean getCommandsSuspended, int restartValue, DiscordBotMain importDiscordBot) throws IOException, TimeoutException {
-        commandsSuspended = getCommandsSuspended;
-        baCore = new BotAbuseCore();
+    BotAbuseMain()  {
         botConfig.initialSetup();
-        discord = importDiscordBot;
-        this.guild = getGuild();
 
         if (botConfig.isEnabled()) {
             baCore.startup();
-            this.restartValue = restartValue;
-            this.help = new Help(embed);
-            baTimers = new BotAbuseTimers(this, embed, discord);
+            this.restartValue = discord.getRestartValue();
+            this.help = new Help();
+            baTimers = new BotAbuseTimers();
             log.info("Bot Abuse Class Constructed");
-            if (!botConfig.configsExist() && !commandsSuspended) {
+            if (!botConfig.configsExist()) {
                 commandsSuspended = true;
                 timersSuspended = true;
                 log.fatal("Not All of the Configuration Settings were found in the discord server! Please verify the IDs of" +
@@ -63,6 +59,13 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseConfig {
                         "you may use \"" + mainConfig.commandPrefix + "reload\" to reload the file or \""
                         + mainConfig.commandPrefix + "restart\" to restart the bot");
             }
+
+            if (!mainConfig.discordGuildConfigurationsExist()) {
+                commandsSuspended = true;
+                timersSuspended = true;
+                // Logging is Already Handled
+            }
+
             if (!commandsSuspended) {
                 botConfig.discordSetup();
                 startTimers();
@@ -1508,9 +1511,6 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseConfig {
     }
     BotAbuseMain getThis() {
         return this;
-    }
-    public BotAbuseCore getCore() {
-        return baCore;
     }
     public BotAbuseConfiguration getConfig() {
         return botConfig;

@@ -6,7 +6,7 @@ import net.dv8tion.jda.api.entities.Role;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-class ModifyNickConfiguration extends NickConfiguration implements NickConfig {
+class ModifyNickConfiguration extends NickConfiguration implements NickLogic {
     private final ArrayList<String> configs = new ArrayList<>(Arrays.asList("useteamchannelonrequest", "rolesnotallowedtochangename",
             "requestcooldown", "requestcd", "reqcd", "pingstaffonline", "pingstaffonlineonrequest"));
 

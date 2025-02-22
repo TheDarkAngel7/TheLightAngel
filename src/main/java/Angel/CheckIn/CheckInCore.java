@@ -24,7 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-class CheckInCore implements CheckInConfig {
+class CheckInCore implements CheckInLogic {
     private final Logger log = LogManager.getLogger(CheckInCore.class);
     private final Guild guild;
     private final FileHandler fileHandler = new FileHandler();

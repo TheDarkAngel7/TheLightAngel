@@ -58,11 +58,17 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
     // File Garbage Truck Class for the Log Files
     private FileGarbageTruck logFileGarbageTruck;
 
-    DiscordBotMain(int restartValue, FileHandler fileHandler) {
-        this.fileHandler = fileHandler;
-        this.restartValue = restartValue;
+    DiscordBotMain() {
+        this.fileHandler = new FileHandler();
     }
 
+    void setRestartValue(int value) {
+        restartValue = value;
+    }
+
+    public int getRestartValue() {
+        return restartValue;
+    }
     @Override
     public void onReady(ReadyEvent event) {
         Thread.currentThread().setUncaughtExceptionHandler(aue);
@@ -81,10 +87,10 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
         logFileGarbageTruck = new FileGarbageTruck("Log", "logs/Previous", 11)
                 .setFileNamingPattern("MM-dd-yy-HH-mm-ss-1").setDaysToStoreFilesBeforeDeletion(180).filesDoNotIncludeTimeZones();
 
-        nickInit = new NicknameInit(commandsSuspended, embed, this);
-        baInit = new BotAbuseInit(commandsSuspended, restartValue, this);
-        ciInit = new CheckInInit(this);
-        customEmbedInit = new CustomEmbedInit(this);
+        nickInit = new NicknameInit(commandsSuspended);
+        baInit = new BotAbuseInit();
+        ciInit = new CheckInInit();
+        customEmbedInit = new CustomEmbedInit();
         Thread tNickFeature = new Thread(nickInit);
         Thread tBotAbuseFeature = new Thread(baInit);
         Thread tCustomEmbedFeature = new Thread(customEmbedInit);
@@ -286,24 +292,35 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
 
         if ((msg.getChannel().getType() != ChannelType.PRIVATE && (msg.getChannel().asTextChannel().equals(mainConfig.managementChannel) || msg.getChannel().asTextChannel().equals(mainConfig.dedicatedOutputChannel)))
                 && !isValidCommand(msg)) {
+            MessageEntry entry = new MessageEntry();
+
             if (msg.getContentRaw().charAt(0) != mainConfig.commandPrefix && isTeamMember(msg.getAuthor().getIdLong())) {
-                embed.setAsWarning("No Messages Here",
-                        "You Cannot send messages in this channel, *hence the name*... \n**You can only send commands!**" +
-                                "\n\nTake discussion to " +
-                                mainConfig.discussionChannel.getAsMention());
+                entry = entry.setDesign(EmbedDesign.WARNING).setTitle("No Messages Here").dontUseFieldHeader()
+                        .setMessage("You Cannot send messages in this channel, *hence the name*... \n**You can only send commands!**" +
+                        "\n\nTake discussion to " +
+                        mainConfig.discussionChannel.getAsMention());
             }
             else if (msg.getContentRaw().charAt(0) != mainConfig.commandPrefix && !isTeamMember(msg.getAuthor().getIdLong())) {
-                embed.setAsWarning("No Messages Here",
-                        "You Cannot send messages in this channel, *hence the name*... \n**You can only send commands!**" +
-                                "\n\nIf you need help, take that to " +
-                                mainConfig.helpChannel.getAsMention());
+                entry = entry = entry.setDesign(EmbedDesign.WARNING).setTitle("No Messages Here").dontUseFieldHeader()
+                        .setMessage("You Cannot send messages in this channel, *hence the name*... \n**You can only send commands!**" +
+                        "\n\nIf you need help, take that to " +
+                        mainConfig.helpChannel.getAsMention());
             }
             else {
-                embed.setAsStop("No Messages Here",
-                        "*I know what you're trying to do*... what did you think I only base this filter on the first character?");
+                entry = entry.setDesign(EmbedDesign.STOP).setTitle("No Messages Here").dontUseFieldHeader()
+                        .setMessage("*I know what you're trying to do*... what did you think I only base this filter on the first character?");
             }
-            embed.sendToChannel(msg, msg.getChannel().asTextChannel());
-            msg.delete().queue();
+            msg.getChannel().asTextChannel().sendMessageEmbeds(entry.getEmbed()).submit().whenComplete(new BiConsumer<Message, Throwable>() {
+                @Override
+                public void accept(Message message, Throwable throwable) {
+                    if (throwable == null) {
+                        msg.delete().queueAfter(30, TimeUnit.SECONDS);
+                    }
+                    else {
+                        aue.logCaughtException(Thread.currentThread(), throwable);
+                    }
+                }
+            });
             log.warn("Message Deleted - Management or Dedicated Output Channel - Not Valid Command");
             return;
         }

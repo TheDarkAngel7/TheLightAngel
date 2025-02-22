@@ -10,18 +10,10 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.BiConsumer;
 
-class ExpiryTimer implements Runnable, BotAbuseConfig {
+class ExpiryTimer implements Runnable, BotAbuseLogic {
     private final Logger log = LogManager.getLogger(ExpiryTimer.class);
-    private final BotAbuseMain baFeature;
-    private final BotAbuseCore baCore;
-    private final Guild guild;
+    private final Guild guild = getGuild();
     private boolean timerRunning = false;
-
-    ExpiryTimer(BotAbuseMain baFeature) {
-        this.guild = getGuild();
-        this.baFeature = baFeature;
-        this.baCore = baFeature.getCore();
-    }
 
     @Override
     public void run() {

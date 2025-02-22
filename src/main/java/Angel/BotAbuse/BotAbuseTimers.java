@@ -1,7 +1,5 @@
 package Angel.BotAbuse;
 
-import Angel.DiscordBotMain;
-import Angel.EmbedEngine;
 import net.dv8tion.jda.api.entities.Guild;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,41 +9,33 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-class BotAbuseTimers implements BotAbuseConfig {
+class BotAbuseTimers implements BotAbuseLogic {
     private final Logger log = LogManager.getLogger(BotAbuseTimers.class);
-    private Guild guild;
+    private Guild guild = getGuild();
     private ExpiryTimer expiryTimer;
     private RoleScanningTimer roleScanningTimer;
-    private BotAbuseMain baFeature;
-    private EmbedEngine embed;
-    private DiscordBotMain discord;
     private ScheduledExecutorService service = Executors.newScheduledThreadPool(2);
 
-    BotAbuseTimers(BotAbuseMain baFeature, EmbedEngine embed, DiscordBotMain discord) {
-        this.guild = getGuild();
-        this.baFeature = baFeature;
-        this.embed = embed;
-        this.discord = discord;
-
-        roleScanningTimer = new RoleScanningTimer(baFeature);
-        expiryTimer = new ExpiryTimer(baFeature);
+    BotAbuseTimers() {
+        roleScanningTimer = new RoleScanningTimer();
+        expiryTimer = new ExpiryTimer();
     }
 
     void startTimers() {
         // Here we're running an integrity check on the data that was loaded, if the data loaded is no good...
         // then we suspend all commands and we don't start the timers.
         // Here we're running a check on the configuration file, if the timings loaded are no good
-        if (!baFeature.getCore().timingsAreValid() && !baFeature.commandsSuspended) {
+        if (baCore.timingsAreValid() && !baFeature.commandsSuspended) {
             baFeature.commandsSuspended = true;
             log.error("Configuration File Timings Are Not Valid");
             log.warn("Commands are now Suspended");
         }
-        else if (baFeature.getCore().timingsAreValid() && baFeature.commandsSuspended && baFeature.isReload) {
+        else if (baCore.timingsAreValid() && baFeature.commandsSuspended && baFeature.isReload) {
             baFeature.commandsSuspended = false;
             log.info("Configuration File Timings are now valid again - Restarting Timers...");
         }
         // If the init method was initiated from a restart then this'll run.
-        if (baFeature.restartValue == 1 && baFeature.commandsSuspended) {
+        if (discord.getRestartValue() == 1 && baFeature.commandsSuspended) {
             embed.setAsStop("Restart Error","**Restart Complete but the Data File is Still Not Usable**");
             embed.sendToChannel(null, mainConfig.discussionChannel);
         }

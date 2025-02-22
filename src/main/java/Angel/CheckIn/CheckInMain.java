@@ -1,7 +1,10 @@
 package Angel.CheckIn;
 
 import Angel.CheckIn.AFKTool.AFKCheckManagement;
-import Angel.*;
+import Angel.EmbedDesign;
+import Angel.ListEmbed;
+import Angel.MessageEntry;
+import Angel.TargetChannelSet;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -25,12 +28,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
-public class CheckInMain extends ListenerAdapter implements CheckInConfig {
+public class CheckInMain extends ListenerAdapter implements CheckInLogic {
     private final Logger log = LogManager.getLogger(CheckInMain.class);
-    private final DiscordBotMain discord;
     private FileHandler fileHandler;
     private final Guild guild;
-    private CheckInCore ciCore;
     private CheckInTimer ciTimer;
     // Embed in the session channel while the check-in is in progress
     private MessageEntry checkInSessionChannelEntry = null;
@@ -62,8 +63,7 @@ public class CheckInMain extends ListenerAdapter implements CheckInConfig {
     private CheckInQueueEmbed checkInQueueEmbed;
     private AFKCheckManagement afkCheck;
 
-    CheckInMain(DiscordBotMain discord) {
-        this.discord = discord;
+    CheckInMain() {
         this.guild = getGuild();
         String makeKeyCap = "\uFE0F\u20E3";
         emojiList = Arrays.asList("\u0031" + makeKeyCap, "\u0032" + makeKeyCap, "\u0033" + makeKeyCap,
@@ -75,7 +75,6 @@ public class CheckInMain extends ListenerAdapter implements CheckInConfig {
     public void onReady(@NotNull ReadyEvent event) {
         isConnected = true;
         fileHandler = new FileHandler();
-        ciCore = new CheckInCore();
         try {
             fileHandler.getDatabase();
         }
@@ -94,7 +93,7 @@ public class CheckInMain extends ListenerAdapter implements CheckInConfig {
                     break;
         }
         ciTimer = new CheckInTimer(this, ciConfig);
-        afkCheck = new AFKCheckManagement(event.getJDA(), discord);
+        afkCheck = new AFKCheckManagement(event.getJDA());
         afkCheck.startTimer();
     }
 

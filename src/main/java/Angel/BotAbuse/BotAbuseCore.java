@@ -9,7 +9,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 
-class BotAbuseCore implements BotAbuseConfig {
+class BotAbuseCore implements BotAbuseLogic {
     // This is where all the magic happens, where all the data is added and queried from the appropriate arrays to
     // Display all the requested data.
     Angel.BotAbuse.FileHandler fileHandler;
@@ -21,7 +21,7 @@ class BotAbuseCore implements BotAbuseConfig {
     BotAbuseCore() {
         this.fileHandler = new FileHandler();
     }
-    void startup() throws IOException {
+    void startup() {
         try {
             log.info("Bot Abuse Core Initiated...");
             records = fileHandler.getRecords();
@@ -653,7 +653,9 @@ class BotAbuseCore implements BotAbuseConfig {
 
         while (index >= 0) {
             try {
-                if (records.get(index).getDiscordID() == targetDiscordID) return records.get(index);
+                if (records.get(index).getDiscordID() == targetDiscordID) {
+                    return records.get(index);
+                }
                 index--;
             }
             catch (ArrayIndexOutOfBoundsException ex) {
@@ -667,7 +669,9 @@ class BotAbuseCore implements BotAbuseConfig {
         List<BotAbuseRecord> recordByID = new ArrayList<>();
 
         records.forEach(r -> {
-            if (r.getDiscordID() == targetDiscordID) recordByID.add(r);
+            if (r.getDiscordID() == targetDiscordID) {
+                recordByID.add(r);
+            }
         });
 
         return recordByID;
@@ -676,7 +680,9 @@ class BotAbuseCore implements BotAbuseConfig {
         int index = records.size() - 1;
 
         do {
-            if (records.get(index).getIssuingTeamMember() == teamMemberID) return records.get(index);
+            if (records.get(index).getIssuingTeamMember() == teamMemberID) {
+                return records.get(index);
+            }
             index--;
         } while (index >= 0);
 
@@ -686,7 +692,9 @@ class BotAbuseCore implements BotAbuseConfig {
         List<BotAbuseRecord> recordByTeamMember = new ArrayList<>();
 
         records.forEach(r -> {
-            if (r.getIssuingTeamMember() == teamMemberId) recordByTeamMember.add(r);
+            if (r.getIssuingTeamMember() == teamMemberId) {
+                recordByTeamMember.add(r);
+            }
         });
 
         return recordByTeamMember;

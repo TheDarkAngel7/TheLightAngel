@@ -1,6 +1,9 @@
 package Angel.Nicknames;
 
-import Angel.*;
+import Angel.EmbedDesign;
+import Angel.ListEmbed;
+import Angel.MessageEntry;
+import Angel.TargetChannelSet;
 import net.dv8tion.jda.api.audit.AuditLogEntry;
 import net.dv8tion.jda.api.audit.TargetType;
 import net.dv8tion.jda.api.entities.*;
@@ -30,11 +33,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
-public class NicknameMain extends ListenerAdapter implements NickConfig {
+public class NicknameMain extends ListenerAdapter implements NickLogic {
     private final Logger log = LogManager.getLogger(NicknameMain.class);
     private Guild guild;
-    private DiscordBotMain discord;
-    private NicknameCore nickCore;
     private Help help;
     private List<Long> tempDiscordID = new ArrayList<>();
     private List<String> tempOldNick = new ArrayList<>();
@@ -55,13 +56,10 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
     private CountDownLatch latch;
     String oldUserNameFormattedName = "";
 
-    NicknameMain(boolean getCommandsSuspended, DiscordBotMain importDiscordBot) {
+    NicknameMain() {
         this.guild = getGuild();
-        this.discord = importDiscordBot;
-        commandsSuspended = getCommandsSuspended;
         try {
-            this.nickCore = new NicknameCore();
-            help = new Help(embed, this);
+            help = new Help();
             if (nickConfig.isEnabled()) {
                 nickConfig.setup();
                 nickCore.startup();
@@ -81,6 +79,11 @@ public class NicknameMain extends ListenerAdapter implements NickConfig {
             init();
         }
     }
+
+    void setCommandsSuspended(boolean suspended) {
+        this.commandsSuspended = suspended;
+    }
+
     @Override
     public void onSessionDisconnect(SessionDisconnectEvent event) {
         isConnected = false;

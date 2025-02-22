@@ -96,7 +96,8 @@ public class FileGarbageTruck implements CommonLogic {
                     }
                 }
 
-                if (currentTime.toEpochSecond() >= epochTimeBegin + 10) {
+                // If the process is taking longer than expected then we take start logging debug messages
+                if (currentTime.toEpochSecond() >= epochTimeBegin + 5) {
                     log.debug(sectionName + " Files are Being Processed... Currently Processing File " + (index + 1) + " of " + fileArray.size());
                     epochTimeBegin = currentTime.toEpochSecond();
                 }

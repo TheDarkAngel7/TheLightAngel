@@ -13,10 +13,10 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-class NicknameCore implements NickConfig {
+class NicknameCore implements NickLogic {
     private final Logger log = LogManager.getLogger(NicknameCore.class);
     Angel.Nicknames.FileHandler fileHandler;
-    private Guild guild;
+    private Guild guild = getGuild();
     List<Integer> requestID = new ArrayList<>();
     List<Long> discordID = new ArrayList<>();
     List<String> oldNickname = new ArrayList<>();
@@ -25,7 +25,6 @@ class NicknameCore implements NickConfig {
 
     NicknameCore() {
         fileHandler = new FileHandler();
-        guild = getGuild();
     }
 
     void startup() throws IOException {
@@ -39,7 +38,6 @@ class NicknameCore implements NickConfig {
         }
         catch (IllegalStateException ex) {
             log.warn("No Data Existed in the Nickname Arrays - Data File is Empty");
-            // fileHandler.fileReader.close();
         }
     }
 

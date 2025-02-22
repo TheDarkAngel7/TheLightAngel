@@ -1,7 +1,5 @@
 package Angel.CheckIn;
 
-import Angel.CommonLogic;
-import Angel.DiscordBotMain;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -13,16 +11,11 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.Collection;
 
-public class CheckInInit implements Runnable, CommonLogic {
+public class CheckInInit implements Runnable, CheckInLogic {
     private final Logger log = LogManager.getLogger(CheckInInit.class);
-    private final DiscordBotMain discord;
     private final JDA jda;
 
-    private CheckInMain checkIn;
-
-    public CheckInInit(DiscordBotMain discord) {
-        this.discord = discord;
-
+    public CheckInInit() {
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
                 GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MESSAGE_REACTIONS, GatewayIntent.MESSAGE_CONTENT);
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOJI,
@@ -35,13 +28,12 @@ public class CheckInInit implements Runnable, CommonLogic {
 
     @Override
     public void run() {
-        checkIn = new CheckInMain(discord);
-        jda.addEventListener(checkIn);
+        jda.addEventListener(ciFeature);
         log.info("Check-In Feature Added as Event Listener to its JDA instance");
     }
 
     public CheckInMain getThis() {
-        return checkIn;
+        return ciFeature;
     }
 
     public long getPing() {

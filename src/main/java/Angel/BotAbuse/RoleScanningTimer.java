@@ -7,18 +7,10 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.BiConsumer;
 
-class RoleScanningTimer implements Runnable, BotAbuseConfig {
+class RoleScanningTimer implements Runnable, BotAbuseLogic {
     private final Logger log = LogManager.getLogger(RoleScanningTimer.class);
-    private final BotAbuseMain baFeature;
-    private final BotAbuseCore baCore;
-    private final Guild guild;
+    private final Guild guild = getGuild();
     private boolean timerRunning = false;
-
-    RoleScanningTimer(BotAbuseMain baFeature) {
-        this.baFeature = baFeature;
-        this.baCore = baFeature.getCore();
-        this.guild = getGuild();
-    }
 
     @Override
     public void run() {
@@ -41,6 +33,9 @@ class RoleScanningTimer implements Runnable, BotAbuseConfig {
                             log.info("Added Bot Abuse to " + m.getEffectiveName()
                                     + " because they didn't have the role... and they're supposed to have it.");
                         }
+                    }
+                    else {
+                        aue.logCaughtException(Thread.currentThread(), throwable);
                     }
                 }
             });

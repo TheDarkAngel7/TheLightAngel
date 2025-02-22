@@ -12,6 +12,7 @@ public interface CommonLogic {
     MainConfiguration mainConfig = new ModifyMainConfiguration(new FileHandler().getMainConfig());
     AngelExceptionHandler aue = new AngelExceptionHandler();
     EmbedEngine embed = new EmbedEngine();
+    DiscordBotMain discord = new DiscordBotMain();
 
     default Guild getGuild() {
         return mainConfig.guild;

@@ -1,21 +1,13 @@
 package Angel.Nicknames;
 
-import Angel.EmbedEngine;
+class Help implements NickLogic {
 
-class Help implements NickConfig {
-    private EmbedEngine embed;
-    private NicknameMain nickMain;
-
-    Help(EmbedEngine embed, NicknameMain nickMain) {
-        this.embed = embed;
-        this.nickMain = nickMain;
-    }
     private String restrictedRoleMentions() {
         String result = "**Only Usable by players in:**\n";
         int index = 0;
 
-        while (index < nickMain.getConfig().restrictedRoles.size()) {
-            result = result.concat("\n**-" + nickMain.getConfig().restrictedRoles.get(index++).getAsMention());
+        while (index < nickFeature.getConfig().restrictedRoles.size()) {
+            result = result.concat("\n**-" + nickFeature.getConfig().restrictedRoles.get(index++).getAsMention());
         }
         return result;
     }

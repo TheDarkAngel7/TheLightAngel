@@ -1,15 +1,9 @@
 package Angel.BotAbuse;
 
 import Angel.CommonLogic;
-import Angel.EmbedEngine;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
 class Help implements CommonLogic {
-    private final EmbedEngine embed;
-
-    public Help(EmbedEngine embed) {
-        this.embed = embed;
-    }
 
     void botAbuseCommand(boolean isTeamMember) {
         embed.setAsHelp(mainConfig.commandPrefix + "botabuse Command Help",

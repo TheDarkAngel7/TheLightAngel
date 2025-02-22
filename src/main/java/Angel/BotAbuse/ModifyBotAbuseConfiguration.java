@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
-class ModifyBotAbuseConfiguration extends BotAbuseConfiguration implements BotAbuseConfig {
+class ModifyBotAbuseConfiguration extends BotAbuseConfiguration implements BotAbuseLogic {
     private BotAbuseMain baMain;
     private final ArrayList<String> configs = new ArrayList<>(
             Arrays.asList("botabuserole", "rolescanint", "rolescannerinterval", "hotmonths", "hotoffensemonths",
@@ -49,7 +49,7 @@ class ModifyBotAbuseConfiguration extends BotAbuseConfiguration implements BotAb
     public String addExpiryTime(int newTime) {
         botAbuseTimes.add(newTime);
         botAbuseTimes.sort(Comparator.naturalOrder());
-        if (baMain.getCore().timingsAreValid()) return "**Successfully Added " + newTime + " Days**\n\n" + getExpiryTimeArray();
+        if (baCore.timingsAreValid()) return "**Successfully Added " + newTime + " Days**\n\n" + getExpiryTimeArray();
         else {
             removeExpiryTime(newTime, true);
             return ":x: **Cannot Add " + newTime + " Days**" +

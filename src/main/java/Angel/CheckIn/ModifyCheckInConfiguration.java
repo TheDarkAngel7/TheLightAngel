@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
-class ModifyCheckInConfiguration extends CheckInConfiguration implements CheckInConfig {
+class ModifyCheckInConfiguration extends CheckInConfiguration implements CheckInLogic {
 
     ModifyCheckInConfiguration(JsonObject json) {
         super(json);

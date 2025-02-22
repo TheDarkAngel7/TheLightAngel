@@ -1,8 +1,5 @@
 package Angel.Nicknames;
 
-import Angel.CommonLogic;
-import Angel.DiscordBotMain;
-import Angel.EmbedEngine;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -14,19 +11,13 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.Collection;
 
-public class NicknameInit implements Runnable, CommonLogic {
+public class NicknameInit implements Runnable, NickLogic {
     private final Logger log = LogManager.getLogger(NicknameInit.class);
     private final boolean commandsSuspended;
-    private final EmbedEngine embed;
-    private final DiscordBotMain discord;
     private final JDA jda;
 
-    private NicknameMain nickFeature;
-
-    public NicknameInit(boolean commandsSuspended, EmbedEngine embed, DiscordBotMain discord) {
+    public NicknameInit(boolean commandsSuspended) {
         this.commandsSuspended = commandsSuspended;
-        this.embed = embed;
-        this.discord = discord;
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
                 GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT);
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOJI,
@@ -38,7 +29,7 @@ public class NicknameInit implements Runnable, CommonLogic {
 
     @Override
     public void run() {
-        nickFeature = new NicknameMain(commandsSuspended, discord);
+        nickFeature.setCommandsSuspended(commandsSuspended);
         jda.addEventListener(nickFeature);
         log.info("Nickname Feature Added as Event Listener to its JDA instance");
     }

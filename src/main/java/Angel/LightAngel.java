@@ -20,7 +20,6 @@ import java.util.Collection;
 class LightAngel implements CommonLogic {
     private static final Logger log = LogManager.getLogger(LightAngel.class);
     private static FileHandler fileHandler;
-    static DiscordBotMain discord;
     static File BADataFile = new File("data/BAdata.json");
     static File nickDataFile = new File("data/nickdata.json");
     static File checkInDataFile = new File("data/checkIndata.json");
@@ -123,7 +122,7 @@ class LightAngel implements CommonLogic {
             return;
         }
         mainConfig.initialSetup();
-        discord = new DiscordBotMain(restartValue, fileHandler);
+        discord.setRestartValue(restartValue);
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
                 GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MESSAGE_REACTIONS, GatewayIntent.MESSAGE_CONTENT);
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOJI,

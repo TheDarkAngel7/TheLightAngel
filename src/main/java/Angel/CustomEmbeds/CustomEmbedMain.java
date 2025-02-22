@@ -1,6 +1,9 @@
 package Angel.CustomEmbeds;
 
-import Angel.*;
+import Angel.CommonLogic;
+import Angel.EmbedDesign;
+import Angel.MessageEntry;
+import Angel.TargetChannelSet;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -10,11 +13,6 @@ import org.jetbrains.annotations.NotNull;
 
 public class CustomEmbedMain extends ListenerAdapter implements CommonLogic {
     private final Logger log = LogManager.getLogger(CustomEmbedMain.class);
-    private final DiscordBotMain discord;
-
-    CustomEmbedMain(DiscordBotMain discord) {
-        this.discord = discord;
-    }
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {

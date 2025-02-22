@@ -1,6 +1,9 @@
 package Angel.CheckIn.AFKTool;
 
-import Angel.*;
+import Angel.CommonLogic;
+import Angel.EmbedDesign;
+import Angel.MessageEntry;
+import Angel.TargetChannelSet;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -24,15 +27,13 @@ public class AFKCheckManagement extends Timer implements CommonLogic {
     private final List<ScheduledFuture<?>> scheduledFutures = new ArrayList<>();
     private final ScheduledThreadPoolExecutor services = new ScheduledThreadPoolExecutor(20);
     private final Guild guild;
-    private final DiscordBotMain discord;
     private final JDA jda;
     private AFKCheckListEmbed afkCheckListEmbed;
     private final int maxNumberOfAFKChecksPerSession = 3;
 
-    public AFKCheckManagement(JDA jda, DiscordBotMain discord) {
+    public AFKCheckManagement(JDA jda) {
         this.guild = getGuild();
         this.jda = jda;
-        this.discord = discord;
         services.setRemoveOnCancelPolicy(true);
     }
     //////////////////////////////////////////////////////

@@ -1,7 +1,6 @@
 package Angel.CustomEmbeds;
 
 import Angel.CommonLogic;
-import Angel.DiscordBotMain;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -15,13 +14,11 @@ import java.util.Collection;
 
 public class CustomEmbedInit implements Runnable, CommonLogic {
     private final Logger log = LogManager.getLogger(CustomEmbedInit.class);
-    private final DiscordBotMain discord;
     private final JDA jda;
 
     private CustomEmbedMain embedMain;
 
-    public CustomEmbedInit(DiscordBotMain discord) {
-        this.discord = discord;
+    public CustomEmbedInit() {
         Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.GUILD_MEMBERS, GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT);
         Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOJI,
                 CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE, CacheFlag.ONLINE_STATUS, CacheFlag.STICKER, CacheFlag.SCHEDULED_EVENTS);
@@ -32,7 +29,7 @@ public class CustomEmbedInit implements Runnable, CommonLogic {
 
     @Override
     public void run() {
-        embedMain = new CustomEmbedMain(discord);
+        embedMain = new CustomEmbedMain();
         jda.addEventListener(embedMain);
         log.info("Bot Abuse Feature Added as Event Listener to its JDA instance");
     }

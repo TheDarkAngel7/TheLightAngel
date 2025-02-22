@@ -107,7 +107,7 @@ public abstract class MainConfiguration {
         staffRole = guild.getRoleById(staffRoleID);
         teamRole = guild.getRoleById(teamRoleID);
     }
-    boolean discordGuildConfigurationsExist() {
+    public boolean discordGuildConfigurationsExist() {
         return guild.getMembers().contains(guild.getMemberById(ownerDiscordID))
                 && guild.getTextChannels().contains(guild.getTextChannelById(teamChannelID))
                 && guild.getTextChannels().contains(guild.getTextChannelById(logChannelID))
