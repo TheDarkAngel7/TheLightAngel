@@ -57,6 +57,27 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
     String oldUserNameFormattedName = "";
 
     NicknameMain() {
+
+    }
+
+    void setCommandsSuspended(boolean suspended) {
+        this.commandsSuspended = suspended;
+    }
+
+    @Override
+    public void onSessionDisconnect(SessionDisconnectEvent event) {
+        isConnected = false;
+    }
+
+    @Override
+    public void onSessionResume(SessionResumeEvent event) {
+        isConnected = true;
+    }
+
+    @Override
+    public void onReady(ReadyEvent event) {
+        isConnected = true;
+
         this.guild = getGuild();
         try {
             help = new Help();
@@ -78,25 +99,6 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
             setupRestrictedRoles(false);
             init();
         }
-    }
-
-    void setCommandsSuspended(boolean suspended) {
-        this.commandsSuspended = suspended;
-    }
-
-    @Override
-    public void onSessionDisconnect(SessionDisconnectEvent event) {
-        isConnected = false;
-    }
-
-    @Override
-    public void onSessionResume(SessionResumeEvent event) {
-        isConnected = true;
-    }
-
-    @Override
-    public void onReady(ReadyEvent event) {
-        isConnected = true;
     }
     @Override
     public void onUserUpdateName(UserUpdateNameEvent event) {

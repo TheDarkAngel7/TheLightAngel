@@ -34,7 +34,7 @@ public class NicknameInit implements Runnable, NickLogic {
         log.info("Nickname Feature Added as Event Listener to its JDA instance");
     }
     public NicknameMain getNickFeature() {
-        return nickFeature.getThis();
+        return nickFeature;
     }
     public long getPing() {
         return jda.getGatewayPing();

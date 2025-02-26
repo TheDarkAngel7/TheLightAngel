@@ -32,7 +32,7 @@ public class BotAbuseInit implements Runnable, BotAbuseLogic {
         log.info("Bot Abuse Feature Added as Event Listener to its JDA instance");
     }
     public BotAbuseMain getBaFeature() {
-        return baFeature.getThis();
+        return baFeature;
     }
     public long getPing() {
         return jda.getGatewayPing();

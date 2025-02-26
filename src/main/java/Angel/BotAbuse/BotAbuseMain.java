@@ -43,6 +43,21 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseLogic {
 
     BotAbuseMain()  {
         botConfig.initialSetup();
+    }
+
+    @Override
+    public void onSessionDisconnect(SessionDisconnectEvent event) {
+        isConnected = false;
+    }
+
+    @Override
+    public void onSessionResume(SessionResumeEvent event) {
+        isConnected = true;
+    }
+
+    @Override
+    public void onReady(ReadyEvent event) {
+        isConnected = true;
 
         if (botConfig.isEnabled()) {
             baCore.startup();
@@ -75,21 +90,6 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseLogic {
         else {
             log.warn("Bot Abuse side of the bot is Disabled");
         }
-    }
-
-    @Override
-    public void onSessionDisconnect(SessionDisconnectEvent event) {
-        isConnected = false;
-    }
-
-    @Override
-    public void onSessionResume(SessionResumeEvent event) {
-        isConnected = true;
-    }
-
-    @Override
-    public void onReady(ReadyEvent event) {
-        isConnected = true;
     }
 
     public void onGuildMemberJoin(GuildMemberJoinEvent event) {
