@@ -588,7 +588,7 @@ public class CheckInMain extends ListenerAdapter implements CheckInLogic {
             }
 
             prefix = "Check-In ID: **" + resultList.getId() + "**\n" +
-                    "Date Ended: **" + getDiscordTimeFormat(resultList.getEndDate()) + "**\n\n" +
+                    "Date Ended: **" + getDiscordTimeTag(resultList.getEndDate()) + "**\n\n" +
                     ":white_check_mark: *Indicates The Player Did Check-In along with how much time was remaining when they did.*\n" +
                     ":warning: *Indicates The Player Failed to Check-In*\n" +
                     ":x: *Indicates The Player Was Removed From the Check-In Queue or they were excused due to another circumstance* \n" +
@@ -1353,7 +1353,8 @@ public class CheckInMain extends ListenerAdapter implements CheckInLogic {
                     defaultOutput = defaultOutput.replace("!", "Queued To Start");
                 }
                 else {
-                    defaultOutput = defaultOutput.replace("!", "Idle");
+                    defaultOutput = defaultOutput.replace("!", "Idle")
+                            .concat("\nLast Run: **" + getDiscordRelativeTimeTag(ciCore.getLatestResult().getEndDate().minusMinutes(ciConfig.getCheckInDuration())) + "**");
                 }
             }
             else {

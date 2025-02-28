@@ -191,7 +191,7 @@ class BotAbuseCore implements BotAbuseLogic {
             return "Permanent";
         }
 
-        else return getDiscordTimeFormat(time);
+        else return getDiscordTimeTag(time);
     }
     private int getNextID() {
         int newID;
@@ -329,8 +329,18 @@ class BotAbuseCore implements BotAbuseLogic {
                         "\n" +
                         "\nNumber of Lifetime Bot Abuses: **" + this.getLifetimeOffenses(targetDiscordID) + "**" +
                         "\nNumber of Hot Bot Abuses: **" + this.getHotOffenses(targetDiscordID) + "**" +
-                        "\nYour Bot Abuses will be cooled: **" +
-                        getDiscordFormat(getLastRecord(targetDiscordID).getExpiryDate().plusMonths(botConfig.getHotOffenseMonths()), targetDiscordID) + "**" +
+                        "\nAll of your Bot Abuses will be cooled **" +
+                        getDiscordRelativeTimeTag(getLastRecord(targetDiscordID).getExpiryDate().plusMonths(botConfig.getHotOffenseMonths())) + "**" +
+                        "\n\n*Hot Bot Abuses are offenses that took place less than **" + botConfig.getHotOffenseMonths() + "** months ago*" +
+                        "\n*Psst... They're also called \"Hot\" because they haven't cooled down*";
+            }
+
+            else if (this.getLifetimeOffenses(targetDiscordID) > 0) {
+                return ":white_check_mark: Lucky for you... you're not Bot Abused Currently" +
+                        "\n" +
+                        "\nNumber of Lifetime Bot Abuses: **" + this.getLifetimeOffenses(targetDiscordID) + "**" +
+                        "\nNumber of Hot Bot Abuses: **0**" +
+                        "\nYour last Bot Abuse was **" + getDiscordRelativeTimeTag(getLastRecord(targetDiscordID).getIssuedDate()) + "**" +
                         "\n\n*Hot Bot Abuses are offenses that took place less than **" + botConfig.getHotOffenseMonths() + "** months ago*" +
                         "\n*Psst... They're also called \"Hot\" because they haven't cooled down*";
             }

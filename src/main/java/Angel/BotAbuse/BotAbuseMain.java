@@ -431,12 +431,12 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseLogic {
             embed.setAsError("Target ID Error", ":x: Too many Target IDs");
             embed.sendToTeamOutput(msg, msg.getAuthor());
         }
-        if (!wasAlreadyBotAbused && targetUser != null && baCore.getHotOffenses(targetUser.getIdLong()) <= getConfig().getBotAbuseTimes().size()
-                && getConfig().getHotOffenseWarning() > 0) {
+        if (!wasAlreadyBotAbused && targetUser != null && baCore.getHotOffenses(targetUser.getIdLong()) <= botConfig.getBotAbuseTimes().size()
+                && botConfig.getHotOffenseWarning() > 0) {
             String helpStatement = "\n\nIf you have any questions reguarding this message or how to avoid a permanent bot abuse: " +
                     "Please contact the SAFE Team in the #" + mainConfig.helpChannel.getName() + " channel.";
             int hotOffenses = baCore.getHotOffenses(targetUser.getIdLong());
-            if (hotOffenses >= getConfig().getHotOffenseWarning()) {
+            if (hotOffenses >= botConfig.getHotOffenseWarning()) {
                 embed.setAsStop("Permanent Bot Abuse Ahead",
                         ":x: **You now have " + hotOffenses + " Hot Bot Abuses!**" +
                                 "\n\n*If you continue to use commands in session channels when you are not supposed to: " +

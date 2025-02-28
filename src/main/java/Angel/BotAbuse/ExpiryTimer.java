@@ -22,18 +22,19 @@ class ExpiryTimer implements Runnable, BotAbuseLogic {
         baCore.calendarAdvance();
 
         // This section is for specifically for going through the records of the players with the role. We don't
-        guild.findMembersWithRoles(baFeature.getConfig().getBotAbuseRole()).onSuccess(botAbusers -> {
+        guild.findMembersWithRoles(botConfig.getBotAbuseRole()).onSuccess(botAbusers -> {
             botAbusers.forEach(m -> {
                 BotAbuseRecord r = baCore.getLastRecord(m.getIdLong());
-                long targetDiscordID = r.getDiscordID();
-
-                // This Catches the program from trying to remove a permanent Bot Abuse
-                if (baCore.botAbuseIsPermanent(targetDiscordID)) {
-                    // Take No Action
+                long targetDiscordID = 0;
+                
+                try {
+                    targetDiscordID = r.getDiscordID();
                 }
-                // If the player with the bot abuse has no record of a bot abuse, the role may've gotten accidently added
-                else if (r == null && m.getRoles().contains(baFeature.getConfig().getBotAbuseRole())) {
-                    guild.removeRoleFromMember(m, baFeature.getConfig().getBotAbuseRole())
+                catch (NullPointerException ex) {
+                    // If the player with the bot abuse has no record of a bot abuse, the role may've gotten accidently added
+                    // r.getDiscordID() would throw a NullPointerException if this is the case
+                
+                    guild.removeRoleFromMember(m, botConfig.getBotAbuseRole())
                             .reason("Automatically Removed as Records Indicate They're Not Supposed to Have the Role").submit().whenComplete(new BiConsumer<Void, Throwable>() {
                                 @Override
                                 public void accept(Void unused, Throwable throwable) {
@@ -50,11 +51,16 @@ class ExpiryTimer implements Runnable, BotAbuseLogic {
                                 }
                             });
                 }
+
+                // This Catches the program from trying to remove a permanent Bot Abuse
+                if (baCore.botAbuseIsPermanent(targetDiscordID)) {
+                    // Take No Action
+                }
                 // If the current time is after the target date then remove the bot abuse for that discord ID
                 else if (baCore.getCurrentTime().isAfter(r.getExpiryDate())) {
                     // If the role got accidently readded then we log what may've happened and remove it now instead of the generic expiry message
-                    if (baCore.getCurrentTime().isAfter(r.getExpiryDate().plusHours(1)) && m.getRoles().contains(baFeature.getConfig().getBotAbuseRole())) {
-                        guild.removeRoleFromMember(m, baFeature.getConfig().getBotAbuseRole()).reason("Automatically Removed as Records Indicate They're Not Supposed to Have the Bot Abuse Role")
+                    if (baCore.getCurrentTime().isAfter(r.getExpiryDate().plusHours(1)) && m.getRoles().contains(botConfig.getBotAbuseRole())) {
+                        guild.removeRoleFromMember(m, botConfig.getBotAbuseRole()).reason("Automatically Removed as Records Indicate They're Not Supposed to Have the Bot Abuse Role")
                                 .submit().whenComplete(new BiConsumer<Void, Throwable>() {
                                     @Override
                                     public void accept(Void unused, Throwable throwable) {
@@ -79,7 +85,7 @@ class ExpiryTimer implements Runnable, BotAbuseLogic {
                                 @Override
                                 public void accept(Member m, Throwable throwable) {
                                     guild.removeRoleFromMember(User.fromId(m.getIdLong()),
-                                            baFeature.getConfig().getBotAbuseRole()).reason("Bot Abuse Expired Normally").submit().whenComplete(new BiConsumer<Void, Throwable>() {
+                                            botConfig.getBotAbuseRole()).reason("Bot Abuse Expired Normally").submit().whenComplete(new BiConsumer<Void, Throwable>() {
                                         @Override
                                         public void accept(Void unused, Throwable throwable) {
                                             if (throwable == null) {
@@ -91,8 +97,8 @@ class ExpiryTimer implements Runnable, BotAbuseLogic {
                                                         "**Original Bot Abuse Info:**\n" +
                                                         "ID: **" + r.getId() + "**\n" +
                                                         "Issued By: **<@" + r.getIssuingTeamMember() + ">**\n" +
-                                                        "Issued: **" + getDiscordTimeFormat(r.getIssuedDate()) + "**\n" +
-                                                        "Expired: **" + getDiscordTimeFormat(r.getExpiryDate()) + "**\n" +
+                                                        "Issued: **" + getDiscordTimeTag(r.getIssuedDate()) + "**\n" +
+                                                        "Expired: **" + getDiscordTimeTag(r.getExpiryDate()) + "**\n" +
                                                         "Reason: **" + r.getReason() + "**");
                                                 embed.sendToLogChannel();
                                             }

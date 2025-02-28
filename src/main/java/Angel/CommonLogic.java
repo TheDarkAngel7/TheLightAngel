@@ -62,7 +62,11 @@ public interface CommonLogic {
             return false;
         }
     }
-    default String getDiscordTimeFormat(ZonedDateTime time) {
+    default String getDiscordTimeTag(ZonedDateTime time) {
         return "<t:" + time.toEpochSecond() + ":f>";
+    }
+
+    default String getDiscordRelativeTimeTag(ZonedDateTime time) {
+        return "<t:" + time.toEpochSecond() + ":R>";
     }
 }

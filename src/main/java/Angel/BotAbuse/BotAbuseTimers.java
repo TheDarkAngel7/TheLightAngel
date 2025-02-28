@@ -25,7 +25,7 @@ class BotAbuseTimers implements BotAbuseLogic {
         // Here we're running an integrity check on the data that was loaded, if the data loaded is no good...
         // then we suspend all commands and we don't start the timers.
         // Here we're running a check on the configuration file, if the timings loaded are no good
-        if (baCore.timingsAreValid() && !baFeature.commandsSuspended) {
+        if (!baCore.timingsAreValid() && !baFeature.commandsSuspended) {
             baFeature.commandsSuspended = true;
             log.error("Configuration File Timings Are Not Valid");
             log.warn("Commands are now Suspended");
@@ -62,7 +62,7 @@ class BotAbuseTimers implements BotAbuseLogic {
             baFeature.timersSuspended = false;
 
             service.scheduleAtFixedRate(expiryTimer, 0, 1, TimeUnit.SECONDS);
-            service.scheduleAtFixedRate(roleScanningTimer, 1, baFeature.getConfig().getRoleScannerInterval(), TimeUnit.MINUTES);
+            service.scheduleAtFixedRate(roleScanningTimer, 1, botConfig.getRoleScannerInterval(), TimeUnit.MINUTES);
             log.info("Timers are Running");
         }
         else if (baFeature.commandsSuspended) {
