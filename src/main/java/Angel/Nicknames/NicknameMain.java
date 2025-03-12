@@ -57,7 +57,8 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
     String oldUserNameFormattedName = "";
 
     NicknameMain() {
-
+        this.guild = getGuild();
+        nickConfig.setup();
     }
 
     void setCommandsSuspended(boolean suspended) {
@@ -65,24 +66,15 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
     }
 
     @Override
-    public void onSessionDisconnect(SessionDisconnectEvent event) {
-        isConnected = false;
-    }
-
-    @Override
-    public void onSessionResume(SessionResumeEvent event) {
-        isConnected = true;
-    }
-
-    @Override
-    public void onReady(ReadyEvent event) {
+    public void onReady(@NotNull ReadyEvent event) {
+        log.info("Nickname onReady event thrown");
         isConnected = true;
 
-        this.guild = getGuild();
+
         try {
             help = new Help();
             if (nickConfig.isEnabled()) {
-                nickConfig.setup();
+
                 nickCore.startup();
             }
             else {
@@ -99,6 +91,16 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
             setupRestrictedRoles(false);
             init();
         }
+    }
+
+    @Override
+    public void onSessionDisconnect(SessionDisconnectEvent event) {
+        isConnected = false;
+    }
+
+    @Override
+    public void onSessionResume(SessionResumeEvent event) {
+        isConnected = true;
     }
     @Override
     public void onUserUpdateName(UserUpdateNameEvent event) {
@@ -209,6 +211,7 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
         catch (NullPointerException ex) {
             log.warn("Global Name Countdown Latch Did Not Exist - Creating and Stopping...");
             try {
+                latch = new CountDownLatch(1);
                 latch.await(10, TimeUnit.SECONDS);
             }
             catch (InterruptedException e) {
@@ -1265,25 +1268,28 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
     private boolean inNickRestrictedRole(long targetDiscordID) {
         List<Role> hasRoles = new ArrayList<>();
         CountDownLatch latch = new CountDownLatch(1);
-        guild.retrieveMemberById(targetDiscordID).useCache(false).submit().whenComplete(new BiConsumer<Member, Throwable>() {
-            @Override
-            public void accept(Member member, Throwable throwable) {
-                if (throwable == null) {
-                    member.getRoles().forEach(role -> hasRoles.add(role));
+        if (guild.isMember(UserSnowflake.fromId(targetDiscordID))) {
+            guild.retrieveMemberById(targetDiscordID).useCache(false).submit().whenComplete(new BiConsumer<Member, Throwable>() {
+                @Override
+                public void accept(Member member, Throwable throwable) {
+                    if (throwable == null) {
+                        member.getRoles().forEach(role -> hasRoles.add(role));
+                    }
+                    else {
+                        log.error("Unable to Retrieve Member Object from Discord Gateway with Discord ID " + targetDiscordID + ": " + throwable.getMessage());
+                    }
+                    latch.countDown();
                 }
-                else {
-                    log.error("Unable to Retrieve Member Object from Discord Gateway with Discord ID " + targetDiscordID + ": " + throwable.getMessage());
-                }
-                latch.countDown();
+            });
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-        });
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
 
-        return containsRestrictedRoles(hasRoles, targetDiscordID);
+            return containsRestrictedRoles(hasRoles, targetDiscordID);
+        }
+        else return false;
     }
     private boolean inNickRestrictedRole(Member m) {
         return containsRestrictedRoles(m.getRoles(), m.getIdLong());
@@ -1368,11 +1374,12 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
         }
     }
     private void addNameHistory(long targetDiscordID, String oldName, Message msg) {
-        List<String> oldNickArray = nickCore.oldNickDictionary.get(targetDiscordID);
-        if (oldNickArray == null) oldNickArray = new ArrayList<>();
-        if (!oldNickArray.isEmpty() && oldNickArray.get(oldNickArray.size() - 1).equals(oldName)) return;
+        PlayerNameHistory oldNickArray = nickCore.getPlayerNameHistoryObject(targetDiscordID);
+
+        if (oldNickArray == null) oldNickArray = new PlayerNameHistory(targetDiscordID);
+        if (!oldNickArray.getNameHistoryList().isEmpty() && oldNickArray.getNameHistoryList().get(oldNickArray.getNameHistoryList().size() - 1).equals(oldName)) return;
         if (oldName == null) {
-            List<String> finalOldNickArray = oldNickArray;
+            PlayerNameHistory finalOldNickArray = oldNickArray;
             guild.retrieveMember(UserSnowflake.fromId(targetDiscordID)).useCache(false).submit().whenComplete(new BiConsumer<Member, Throwable>() {
                 @Override
                 public void accept(Member member, Throwable throwable) {
@@ -1380,23 +1387,35 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                         log.fatal(throwable.getMessage());
                     }
                     else {
-                        finalOldNickArray.add(member.getUser().getName());
-                        nickCore.oldNickDictionary.put(targetDiscordID, finalOldNickArray);
-                        if (nickCore.arraySizesEqual()) {
-                            nickCore.saveDatabase();
+
+                        if (member.getUser().getGlobalName() != null) {
+                            nickCore.sendNewPlayerHistory(finalOldNickArray.addNameToList(member.getUser().getGlobalName()));
                         }
-                        else discord.failedIntegrityCheck(this.getClass().getName(), msg, "Name History");
+                        else {
+                            nickCore.sendNewPlayerHistory(finalOldNickArray.addNameToList(member.getUser().getName()));
+                        }
+
+                        if (!nickCore.arraySizesEqual()) {
+                            discord.failedIntegrityCheck(this.getClass().getName(), msg, "Name History");
+                        }
                     }
                 }
             });
         }
         else {
-            oldNickArray.add(oldName);
-            nickCore.oldNickDictionary.put(targetDiscordID, oldNickArray);
-            if (nickCore.arraySizesEqual()) {
-                nickCore.saveDatabase();
+            PlayerNameHistory oldHistory = nickCore.getPlayerNameHistoryObject(targetDiscordID);
+            try {
+                oldHistory.addNameToList(oldName);
             }
-            else discord.failedIntegrityCheck(this.getClass().getName(), msg, "Name History");
+            catch (NullPointerException ex) {
+                oldHistory = new PlayerNameHistory(targetDiscordID).addNameToList(oldName);
+            }
+
+            nickCore.sendNewPlayerHistory(oldHistory);
+
+            if (!nickCore.arraySizesEqual()) {
+                discord.failedIntegrityCheck(this.getClass().getName(), msg, "Name History");
+            }
         }
 
 

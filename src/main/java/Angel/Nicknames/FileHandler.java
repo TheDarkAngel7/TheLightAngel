@@ -15,7 +15,9 @@ import java.lang.reflect.Type;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
 
 class FileHandler {
     private final Logger log = LogManager.getLogger(FileHandler.class);
@@ -25,7 +27,7 @@ class FileHandler {
     private final Type longType = new TypeToken<ArrayList<Long>>(){}.getType();
     private final Type integerType = new TypeToken<ArrayList<Integer>>(){}.getType();
     private final Type stringType = new TypeToken<ArrayList<String>>(){}.getType();
-    private final Type oldNickDictionaryType = new TypeToken<Hashtable<Long, ArrayList<String>>>(){}.getType();
+    private final Type oldNickDictionaryType = new TypeToken<ArrayList<PlayerNameHistory>>(){}.getType();
     private FileGarbageTruck garbageTruck = new FileGarbageTruck("Nicknames", "db-backups/Nicknames", 11);
     private FileReader fileReader;
     private JsonObject database;
@@ -70,10 +72,10 @@ class FileHandler {
         return gson.fromJson(database.get("NewNickname").getAsString(), stringType);
     }
 
-    Dictionary<Long, List<String>> getNameHistoryDictionary() {
+    List<PlayerNameHistory> getNameHistory() {
         return gson.fromJson(database.get("OldNameDictionary").getAsString(), oldNickDictionaryType);
     }
-    public void saveDatabase(List<Integer> requestID, List<Long> discordID, List<String> oldNickname, List<String> newNickname, Dictionary<Long, List<String>> oldNickDictionary) {
+    public void saveDatabase(List<Integer> requestID, List<Long> discordID, List<String> oldNickname, List<String> newNickname, List<PlayerNameHistory> oldNickDictionary) {
         try {
             JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(new FileOutputStream(jsonTempNickDataFile)));
             jsonWriter.beginObject()

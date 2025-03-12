@@ -6,7 +6,7 @@
 
     <groupId>com.angeliccoding</groupId>
     <artifactId>TheLightAngel</artifactId>
-    <version>1.4.3</version>
+    <version>1.4.4</version>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>

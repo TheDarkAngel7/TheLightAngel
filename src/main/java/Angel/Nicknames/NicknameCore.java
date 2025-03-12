@@ -8,8 +8,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Dictionary;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -21,10 +19,12 @@ class NicknameCore implements NickLogic {
     List<Long> discordID = new ArrayList<>();
     List<String> oldNickname = new ArrayList<>();
     List<String> newNickname = new ArrayList<>();
-    Dictionary<Long, List<String>> oldNickDictionary = new Hashtable<>();
+    List<PlayerNameHistory> oldNickDictionary = new ArrayList<>();
 
     NicknameCore() {
         fileHandler = new FileHandler();
+
+
     }
 
     void startup() throws IOException {
@@ -34,7 +34,7 @@ class NicknameCore implements NickLogic {
             discordID = fileHandler.getRequestDiscordIDs();
             oldNickname = fileHandler.getOldNicknamesRequests();
             newNickname = fileHandler.getNewNicknamesRequests();
-            oldNickDictionary = fileHandler.getNameHistoryDictionary();
+            oldNickDictionary = fileHandler.getNameHistory();
         }
         catch (IllegalStateException ex) {
             log.warn("No Data Existed in the Nickname Arrays - Data File is Empty");
@@ -236,11 +236,49 @@ class NicknameCore implements NickLogic {
         }
     }
     List<String> getHistory(long targetDiscordID) {
-        return oldNickDictionary.get(targetDiscordID);
+        int index = 0;
+        do {
+            PlayerNameHistory currentRecord = oldNickDictionary.get(index++);
+            if (targetDiscordID == currentRecord.getDiscordID()) {
+                return currentRecord.getNameHistoryList();
+            }
+        } while (index < oldNickDictionary.size());
+
+        return null;
     }
+    int getIndexInHistoryDatabase(long targetDiscordID) {
+        int index = 0;
+        do {
+            PlayerNameHistory currentRecord = oldNickDictionary.get(index);
+            if (targetDiscordID == currentRecord.getDiscordID()) {
+                return index;
+            }
+            index++;
+        } while (index < oldNickDictionary.size());
+
+        return -1;
+    }
+
+    PlayerNameHistory getPlayerNameHistoryObject(long targetDiscordID) {
+        int index = 0;
+        do {
+            PlayerNameHistory currentRecord = oldNickDictionary.get(index++);
+            if (targetDiscordID == currentRecord.getDiscordID()) {
+                return currentRecord;
+            }
+        } while (index < oldNickDictionary.size());
+
+        return null;
+    }
+
+    void sendNewPlayerHistory(PlayerNameHistory history) {
+        oldNickDictionary.set(getIndexInHistoryDatabase(history.getDiscordID()), history);
+        saveDatabase();
+    }
+
     String clearNameHistory(long targetDiscordID) throws IOException {
         String defaultReturn = "**Successfully Cleared The Name History of <@" + targetDiscordID + ">**";
-        oldNickDictionary.remove(targetDiscordID);
+        oldNickDictionary.remove(getIndexInHistoryDatabase(targetDiscordID));
         log.info("Successfully Cleared the Name History for " + guild.getMemberById(targetDiscordID).getEffectiveName());
         saveDatabase();
         return defaultReturn;
