@@ -245,6 +245,7 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
     public void onMessageReceived(MessageReceivedEvent event) {
         Thread.currentThread().setUncaughtExceptionHandler(aue);
         if (event.getAuthor().isBot()) return;
+        if (event.getChannelType().equals(ChannelType.GUILD_PRIVATE_THREAD) || event.getChannelType().equals(ChannelType.GUILD_PUBLIC_THREAD)) return;
         Message msg = event.getMessage();
 
         if (isTeamMember(msg.getAuthor().getIdLong())) {

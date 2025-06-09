@@ -23,8 +23,6 @@ class NicknameCore implements NickLogic {
 
     NicknameCore() {
         fileHandler = new FileHandler();
-
-
     }
 
     void startup() throws IOException {
@@ -246,7 +244,7 @@ class NicknameCore implements NickLogic {
 
         return null;
     }
-    int getIndexInHistoryDatabase(long targetDiscordID) {
+    private int getIndexInHistoryDatabase(long targetDiscordID) {
         int index = 0;
         do {
             PlayerNameHistory currentRecord = oldNickDictionary.get(index);
@@ -272,7 +270,12 @@ class NicknameCore implements NickLogic {
     }
 
     void sendNewPlayerHistory(PlayerNameHistory history) {
-        oldNickDictionary.set(getIndexInHistoryDatabase(history.getDiscordID()), history);
+        try {
+            oldNickDictionary.set(getIndexInHistoryDatabase(history.getDiscordID()), history);
+        }
+        catch (IndexOutOfBoundsException ex) {
+            oldNickDictionary.add(history);
+        }
         saveDatabase();
     }
 

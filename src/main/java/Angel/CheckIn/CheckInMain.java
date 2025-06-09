@@ -111,7 +111,8 @@ public class CheckInMain extends ListenerAdapter implements CheckInLogic {
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         Thread.currentThread().setUncaughtExceptionHandler(aue);
         isConnected = true;
-        if (event.getAuthor().isBot() || event.getMessage().getChannel().getType() == ChannelType.PRIVATE) return;
+        if (event.getAuthor().isBot() || event.getMessage().getChannel().getType() == ChannelType.PRIVATE ||
+                event.getChannelType().equals(ChannelType.GUILD_PUBLIC_THREAD) || event.getChannelType().equals(ChannelType.GUILD_PRIVATE_THREAD)) return;
         isBusy = true;
         Message msg = event.getMessage();
         String[] args;
