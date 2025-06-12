@@ -16,7 +16,6 @@ class BotAbuseCore implements BotAbuseLogic {
     private final Logger log = LogManager.getLogger(BotAbuseCore.class);
     private List<BotAbuseRecord> records = new ArrayList<>();
     Dictionary<String, String> reasonsDictionary = new Hashtable<>();
-    private ZonedDateTime c;
 
     BotAbuseCore() {
         this.fileHandler = new FileHandler();
@@ -56,13 +55,13 @@ class BotAbuseCore implements BotAbuseLogic {
             // If they've been previously Bot Abused before then we need the index value of it
             if (getLastRecord(targetDiscordID) == null) { // This is their first offense
                 thisRecord = new BotAbuseRecord(
-                        getNextID(), targetDiscordID, teamMember, 1, c, getExpiryDate(targetDiscordID), getReason, imageURL);
+                        getNextID(), targetDiscordID, teamMember, 1, getCurrentTime(), getExpiryDate(targetDiscordID), getReason, imageURL);
                 records.add(thisRecord);
             }
             else {
                 // The Bot Abuse Time gets progressively longer - This isn't their first offense
                 thisRecord = new BotAbuseRecord(getNextID(), targetDiscordID, teamMember, getLastRecord(targetDiscordID).getRepOffenses() + 1,
-                        c, getExpiryDate(targetDiscordID), getReason, imageURL);
+                        getCurrentTime(), getExpiryDate(targetDiscordID), getReason, imageURL);
                 records.add(thisRecord);
             }
             if (this.mainConfig.testModeEnabled) {
@@ -104,17 +103,17 @@ class BotAbuseCore implements BotAbuseLogic {
         else if (!botAbuseIsCurrent(targetDiscordID) && isPermanent) {
             if (getLastRecord(targetDiscordID) == null) {
                 thisRecord = new BotAbuseRecord(getNextID(), targetDiscordID, teamMember, getLastRecord(targetDiscordID).getRepOffenses() + 1,
-                        c, null, getReason, imageURL);
+                        getCurrentTime(), null, getReason, imageURL);
 
             }
             else {
                 // If we Try to Perm Bot Abuse someone that's never had a Bot Abuse offense before.
                 thisRecord = new BotAbuseRecord(getNextID(), targetDiscordID, teamMember, 1,
-                        c, null, getReason, imageURL);
+                        getCurrentTime(), null, getReason, imageURL);
             }
             if (this.mainConfig.testModeEnabled) {
                 thisRecord = new BotAbuseRecord(getNextID(), targetDiscordID, teamMember, getLastRecord(targetDiscordID).getRepOffenses() + 1,
-                        c, null, getReason, imageURL);
+                        getCurrentTime(), null, getReason, imageURL);
             }
             saveDatabase();
             // Output to return from a perm Bot Abuse, we check to see if proofImages in the corresponding index is null, if so Violation image will say "None Provided"
@@ -228,10 +227,10 @@ class BotAbuseCore implements BotAbuseLogic {
         else {
             cTooLate = cTooLate.plusDays(botConfig.getMaxDaysAllowedForUndo());
         }
-        if (c.isBefore(cTooLate) && botAbuseIsCurrent(targetDiscordID)) {
+        if (getCurrentTime().isBefore(cTooLate) && botAbuseIsCurrent(targetDiscordID)) {
             records.remove(thisRecord);
         }
-        else if (!c.isBefore(cTooLate) && botAbuseIsCurrent(targetDiscordID)) {
+        else if (!getCurrentTime().isBefore(cTooLate) && botAbuseIsCurrent(targetDiscordID)) {
             log.error("Undo Failed for " + getGuild().getMemberById(targetDiscordID).getUser().getAsTag() +
                     " as this bot abuse is older than the configured "
                     + botConfig.getMaxDaysAllowedForUndo() + " days");
@@ -407,7 +406,7 @@ class BotAbuseCore implements BotAbuseLogic {
             // Otherwise return true or false if the date in the expiryDates array is after current time,
             // return true if the Bot Abuse is still current
             // return false if the Bot Abuse is not current
-            return c.isBefore(getLastRecord(targetDiscordID).getExpiryDate());
+            return getCurrentTime().isBefore(getLastRecord(targetDiscordID).getExpiryDate());
         }
     }
     boolean botAbuseIsPermanent(long targetDiscordID) {
@@ -416,14 +415,9 @@ class BotAbuseCore implements BotAbuseLogic {
         }
         else return false;
     }
-    void calendarAdvance() {
-        // This is the method that gets run each second by the timer in Angel.DiscordBotMain
-        // Because this method gets run every second, we advance the calendar object too.
-        c = ZonedDateTime.now(ZoneId.of("UTC"));
-    }
 
     ZonedDateTime getCurrentTime() {
-        return c;
+        return ZonedDateTime.now(ZoneId.of("UTC"));
     }
     String transferRecords(long oldDiscordID, long newDiscordID) throws IOException {
         // We scan over the entire discordID array and if the oldDiscordID matches we set the value to the newDiscordID

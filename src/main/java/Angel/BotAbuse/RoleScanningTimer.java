@@ -28,7 +28,7 @@ class RoleScanningTimer implements Runnable, BotAbuseLogic {
                     @Override
                     public void accept(Member m, Throwable throwable) {
                         if (throwable == null) {
-                            if (baCore.botAbuseIsCurrent(record.getDiscordID()) && !m.getRoles().contains(botConfig.getBotAbuseRole())) {
+                            if (!m.getRoles().contains(botConfig.getBotAbuseRole())) {
                                 guild.addRoleToMember(m, botConfig.getBotAbuseRole()).reason("Integrity Check Re-Added the Role").queue();
                                 embed.setAsWarning(defaultTitle, "**My Role Scanning Utility has Added Bot Abuse Role to "
                                         + m.getAsMention() +

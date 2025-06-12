@@ -30,8 +30,7 @@ class FileHandler {
 
     FileHandler() {
 
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(ZoneId.class, new ZoneIDInstanceCreator());
+        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter(ZoneId.class, new ZoneIDInstanceCreator());
         gson = gsonBuilder.create();
     }
 

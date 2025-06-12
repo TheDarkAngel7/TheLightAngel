@@ -19,7 +19,6 @@ class ExpiryTimer implements Runnable, BotAbuseLogic {
     public void run() {
         Thread.currentThread().setName("Expiry Timer");
         timerRunning = true;
-        baCore.calendarAdvance();
 
         // This section is for specifically for going through the records of the players with the role. We don't
         guild.findMembersWithRoles(botConfig.getBotAbuseRole()).onSuccess(botAbusers -> {
