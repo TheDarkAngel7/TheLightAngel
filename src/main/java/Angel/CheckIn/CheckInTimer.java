@@ -1,6 +1,5 @@
 package Angel.CheckIn;
 
-import Angel.CommonLogic;
 import Angel.EmbedDesign;
 import Angel.MessageEntry;
 import org.apache.logging.log4j.LogManager;
@@ -9,19 +8,15 @@ import org.apache.logging.log4j.Logger;
 import java.util.Timer;
 import java.util.TimerTask;
 
-class CheckInTimer extends Timer implements CommonLogic {
+class CheckInTimer extends Timer implements CheckInLogic {
     private final Logger log = LogManager.getLogger(CheckInTimer.class);
-    private final CheckInMain ciMain;
-    private final CheckInConfiguration ciConfig;
     private int minutes = 0;
     private int seconds = 0;
     private int mentionOn;
     private boolean mentionEnabled;
     private int updateTicker;
 
-    CheckInTimer(CheckInMain ciMain, CheckInConfiguration ciConfig) {
-        this.ciMain = ciMain;
-        this.ciConfig = ciConfig;
+    CheckInTimer() {
         mentionOn = ciConfig.getWhenMentionCheckInRole();
         mentionEnabled = mentionOn > 0;
     }
@@ -35,8 +30,8 @@ class CheckInTimer extends Timer implements CommonLogic {
             public void run() {
                 if (updateTicker++ == ciConfig.getCheckInUpdate()) {
                     try {
-                        ciMain.sendCheckInProgressEmbed(null, true);
-                        ciMain.sendSessionChannelMessage(true);
+                        ciFeature.sendCheckInProgressEmbed(null, true);
+                        ciFeature.sendSessionChannelMessage(true);
                         updateTicker = 1;
                     }
                     catch (NullPointerException ex) {}
@@ -54,7 +49,7 @@ class CheckInTimer extends Timer implements CommonLogic {
 
                 if (minutes == 0 && seconds == 0) {
                     log.info("Time is Up on the Check-In! Ending...");
-                    ciMain.endCheckIn();
+                    ciFeature.endCheckIn();
                     this.cancel();
                 }
                 else if (seconds == 0) {

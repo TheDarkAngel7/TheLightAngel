@@ -92,7 +92,7 @@ public class CheckInMain extends ListenerAdapter implements CheckInLogic {
                     log.fatal("The configured roles that can be checked-in are not usable");
                     break;
         }
-        ciTimer = new CheckInTimer(this, ciConfig);
+        ciTimer = new CheckInTimer();
         afkCheck = new AFKCheckManagement(event.getJDA());
         afkCheck.startTimer();
     }
@@ -375,7 +375,7 @@ public class CheckInMain extends ListenerAdapter implements CheckInLogic {
                                     .setDesign(EmbedDesign.SUCCESS).getEmbed(false)).queue();
                     checkInProgressionEmbed.getMessageEntry().getResultEmbed().editMessageEmbeds(
                             checkInProgressionEntry.setTitle("Check-In Successfully Canceled").setMessage(":white_check_mark: **The Check-In was successfully canceled**").getEmbed()).queue();
-                    ciTimer = new CheckInTimer(this, ciConfig);
+                    ciTimer = new CheckInTimer();
                     result.getPlayers().forEach(p -> {
                         guild.retrieveMemberById(p.getPlayerDiscordId()).queue(member::set);
                         if (p.isQueuedToCheckIn() && !p.successfullyCheckedIn()) {
