@@ -382,7 +382,7 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                 }
 
                 else if (inNickRestrictedRole(event.getUser().getIdLong())) {
-                    if (tempDiscordID.contains(event.getUser().getIdLong()) || nickCore.discordID.contains(event.getUser().getIdLong())) {
+                    if (tempDiscordID.contains(event.getUser().getIdLong()) || nickCore.getNicknameRequestIndexByDiscordID(event.getUser().getIdLong()) != -1) {
                         if (tempDiscordID.contains(event.getUser().getIdLong())) {
                             embed.setAsWarning("Instructions Warning",
                                     ":warning: **Please Re-Read the Instructions I just gave you above this message**");
@@ -391,7 +391,7 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                                     .reason(event.getMember().getEffectiveName() + " has tried to change their nickname on their own already...").queue();
 
                         }
-                        else if (nickCore.discordID.contains(event.getUser().getIdLong())) {
+                        else if (nickCore.getNicknameRequestIndexByDiscordID(event.getUser().getIdLong()) != -1) {
                             embed.setAsError("Pending Request Info",
                                     "You already have a pending nickname request");
                             embed.sendDM(null, event.getUser());
@@ -596,11 +596,12 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                                 else member.modifyNickname(args[2]).reason(reasonString).queue();
                                 embed.sendToMemberOutput(msg, msg.getAuthor());
                             }
-                            else if (nickCore.discordID.contains(cmdUserID)) {
+                            else if (nickCore.getNicknameRequestIndexByDiscordID(cmdUserID) != -1) {
                                 try {
-                                    if (!nickCore.newNickname.get(nickCore.discordID.indexOf(cmdUserID)).equals(args[2])) {
+                                    // !nickCore.newNickname.get(nickCore.discordID.indexOf(cmdUserID)).equals(args[2])
+                                    if (!nickCore.getNicknameRequests().get(nickCore.getNicknameRequestIndexByDiscordID(cmdUserID)).equals(args[2])) {
                                         embed.setAsError("Nickname Request Pending", "**You Already have a pending nickname change request**" +
-                                                "\n\nThe New Nickname you have requested is: **" + nickCore.newNickname.get(nickCore.discordID.indexOf(cmdUserID)) +
+                                                "\n\nThe New Nickname you have requested is: **" + nickCore.getNicknameRequests().get(nickCore.getNicknameRequestIndexByDiscordID(cmdUserID)) +
                                                 "**\n\n*If this new nickname is not correct, please use `" + mainConfig.commandPrefix + "nickname withdraw`" +
                                                 " (or `" + mainConfig.commandPrefix + "nn wd` for short) to withdraw this pending request, then you can run this command again.*");
                                     }
@@ -612,7 +613,8 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                                 }
                                 catch (NullPointerException ex) {
                                     String newNickname = "";
-                                    if (nickCore.newNickname.get(nickCore.discordID.indexOf(cmdUserID)) == null) {
+                                    // nickCore.newNickname.get(nickCore.discordID.indexOf(cmdUserID)) == null
+                                    if (nickCore.getNicknameRequestIndexByDiscordID(cmdUserID) == -1) {
                                         embed.setAsError("Nickname Request Pending", "**You Already have a pending nickname change request**" +
                                                 "\n\nThe New Nickname you have requested is: **" + msg.getAuthor().getName() + " (Reset To Your Discord Username)" +
                                                 "**\n\n*If this new nickname is not correct, please use `" + mainConfig.commandPrefix + "nickname withdraw`" +
@@ -647,19 +649,29 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                                         discord.failedIntegrityCheck(this.getClass().getName(), msg, "Nickname: Request Submission with No Nickname Provided");
                                     }
                                     else {
-                                        embed.setAsSuccess("Nickname Request Submitted", DMResponse.concat(SocialClubInfo));
-                                        embed.sendDM(msg, msg.getAuthor());
-                                        embed.setAsInfo("Nickname Request Received", result);
-                                        List<TargetChannelSet> channels = new ArrayList<>();
-                                        channels.add(TargetChannelSet.LOG);
+
+                                        MessageEntry entry = new MessageEntry("Nickname Request Submitted", DMResponse.concat(SocialClubInfo), EmbedDesign.SUCCESS)
+                                                .setOriginalCmd(msg).setChannels(TargetChannelSet.DM).setTargetUser(msg.getAuthor());
+                                        embed.sendAsMessageEntryObj(entry);
+
+                                        entry = new MessageEntry("Nickname Request Received", result, EmbedDesign.INFO)
+                                                .setChannels(TargetChannelSet.LOG).setOriginalCmd(msg);
                                         if (nickConfig.useTeamChannel) {
                                             if (nickConfig.pingOnlineStaff) {
                                                 mainConfig.discussionChannel.sendMessage("@here Whenever one of you get a chance, please review the following nickname request:").queue();
                                             }
-                                            channels.add(TargetChannelSet.TEAM);
+                                            entry = entry.addChannel(TargetChannelSet.TEAM);
                                         }
                                         log.info("New Nickname Request Received from " + msg.getAuthor().getName());
-                                        embed.sendToChannels(msg, channels);
+                                        embed.sendAsMessageEntryObj(entry);
+
+                                        entry = embed.getMessageEntryObj(msg);
+
+                                        NicknameRequest request = nickCore.getNicknameRequestByDiscordID(cmdUserID);
+
+                                        request = request.setTeamNotification(entry.getResultEmbed().getChannel().getIdLong(), entry.getResultEmbed().getIdLong());
+
+                                        nickCore.replaceRequest(cmdUserID, request);
                                     }
                                 }
                                 else {
@@ -680,10 +692,12 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                                 if (args[2].equalsIgnoreCase("reset") || args[2].equals(msg.getAuthor().getName()) || args[2].equals(msg.getAuthor().getGlobalName())) {
 
                                     if (msg.getAuthor().getGlobalName() != null && member.getNickname() == null && args[2].equals(msg.getAuthor().getName())) {
-                                        nickCore.submitRequest(member, msg.getAuthor().getName());
+                                        result = nickCore.submitRequest(member, msg.getAuthor().getName());
                                     }
 
-                                    result = nickCore.submitRequest(member, null);
+                                    else {
+                                        result = nickCore.submitRequest(member, null);
+                                    }
                                 }
                                 else result = nickCore.submitRequest(member, args[2]);
 
@@ -699,35 +713,66 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                                 }
                                 else {
                                     startRequestCooldown(cmdUserID);
-                                    embed.setAsSuccess("Nickname Request Submitted", result.concat(SocialClubInfo));
-                                    if (msg.getChannelType() == ChannelType.PRIVATE) embed.sendDM(msg, msg.getAuthor());
-                                    else embed.sendToMemberOutput(msg, msg.getAuthor());
-                                    embed.setAsInfo("Nickname Request Received", result);
-                                    List<TargetChannelSet> channels = new ArrayList<>();
-                                    channels.add(TargetChannelSet.LOG);
+
+                                    MessageEntry entry = new MessageEntry("Nickname Request Submitted", result.concat(SocialClubInfo), EmbedDesign.SUCCESS);
+
+                                    if (msg.getChannelType() == ChannelType.PRIVATE) {
+                                        entry = entry.setOriginalCmd(msg).setTargetUser(msg.getAuthor()).setChannels(TargetChannelSet.DM);
+                                    }
+                                    else {
+                                        entry = entry.setOriginalCmd(msg).setTargetUser(msg.getAuthor()).setChannels(TargetChannelSet.MEMBER);
+                                    }
+                                    embed.sendAsMessageEntryObj(entry);
+
+                                    entry = new MessageEntry("Nickname Request Received", result, EmbedDesign.INFO).setChannels(TargetChannelSet.LOG);
+
                                     if (nickConfig.useTeamChannel) {
                                         if (nickConfig.pingOnlineStaff) {
                                             mainConfig.discussionChannel.sendMessage("@here Whenever one of you get a chance, please review the following nickname request:").queue();
                                         }
-                                        channels.add(TargetChannelSet.TEAM);
+                                        entry = entry.addChannel(TargetChannelSet.TEAM);
                                     }
                                     log.info("New Nickname Request Received from " + msg.getAuthor().getName());
-                                    embed.sendToChannels(msg, channels);
+
+                                    embed.sendAsMessageEntryObj(entry);
+
+                                    entry = embed.getMessageEntryObj(msg);
+
+                                    NicknameRequest request = nickCore.getNicknameRequestByDiscordID(cmdUserID);
+
+                                    request = request.setTeamNotification(entry.getResultEmbed().getChannel().getIdLong(), entry.getResultEmbed().getIdLong());
+
+                                    nickCore.replaceRequest(cmdUserID, request);
                                 }
                             }
                         }
                     }
                     else if (args[1].equalsIgnoreCase("withdraw") || args[1].equalsIgnoreCase("wd")) {
                         if (args.length == 2 && inNickRestrictedRole(cmdUserID)) {
-                            if (nickCore.discordID.indexOf(cmdUserID) == -1) {
+                            // nickCore.discordID.indexOf(cmdUserID) == -1
+                            if (nickCore.getNicknameRequestIndexByDiscordID(cmdUserID) == -1) {
                                 embed.setAsError("Nothing to Withdraw",
                                         "**:x: No Nickname Request was found for your discord ID**");
                                 embed.sendDM(msg, member.getUser());
                                 return;
                             }
-                            int id = nickCore.requestID.get(nickCore.discordID.indexOf(cmdUserID));
-                            String oldNickname = nickCore.oldNickname.get(nickCore.discordID.indexOf(cmdUserID));
-                            String newNickname = nickCore.newNickname.get(nickCore.discordID.indexOf(cmdUserID));
+                            NicknameRequest request = nickCore.getNicknameRequestByDiscordID(cmdUserID);
+                            guild.getTextChannelById(request.getTeamNotificationChannelID()).getHistory().getMessageById(request.getTeamNotification()).delete().submit().whenComplete(new BiConsumer<Void, Throwable>() {
+                                @Override
+                                public void accept(Void unused, Throwable throwable) {
+                                    if (throwable != null) {
+                                        log.warn("The Nickname Received Notification Could Not Be Found for ");
+                                    }
+                                    else {
+                                        log.info(fetchMember(cmdUserID).getEffectiveName() + " withdrew their nickname request. " +
+                                                "The request received message was successfully deleted.");
+                                    }
+                                }
+                            });
+
+                            int id = request.getRequestID();
+                            String oldNickname = request.getOldName();
+                            String newNickname = request.getNewName();
                             if (oldNickname == null)
                                 oldNickname = msg.getAuthor().getName() + " (No Previous Nickname)";
                             result = nickCore.withdrawRequest(msg.getAuthor().getIdLong(), false, false);
@@ -746,6 +791,8 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
 
                             embed.setAsInfo("Nickname Withdraw", result.replace("Successfully ", ""));
                             embed.sendToLogChannel();
+
+
                         }
                         else {
                             embed.setAsError("No Permissions",
@@ -825,7 +872,7 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                         String defaultTitle = "Nickname Request List";
                         log.info("Team Member " + member.getEffectiveName() + " just requested a list of nicknames");
                         try {
-                            result = nickCore.getList();
+                            result = nickCore.getRequestListAsString();
                             splitString = result.split("\n\n");
                             discord.addAsReactionListEmbed(new NickRequestListEmbed(new MessageEntry(defaultTitle, EmbedDesign.INFO, msg, TargetChannelSet.TEAM),
                                     "**For Each of these requests please choose to accept or deny:**", Arrays.asList(splitString), null, this));
@@ -1037,9 +1084,9 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
             boolean isMention = false;
             try {
                 if (targetDiscordID != 0) {
-                    targetRequestID = nickCore.requestID.get(nickCore.discordID.indexOf(targetDiscordID));
-                    oldNickname = nickCore.oldNickname.get(nickCore.discordID.indexOf(targetDiscordID));
-                    newNickname = nickCore.newNickname.get(nickCore.discordID.indexOf(targetDiscordID));
+                    targetRequestID = nickCore.getNicknameRequestByDiscordID(targetDiscordID).getRequestID();
+                    oldNickname = nickCore.getNicknameRequestByDiscordID(targetDiscordID).getOldName();
+                    newNickname = nickCore.getNicknameRequestByDiscordID(targetDiscordID).getNewName();
                 }
                 else {
                     if (rejectSilently) {
@@ -1048,9 +1095,9 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                     else {
                         targetRequestID = Integer.parseInt(args[2]);
                     }
-                    targetDiscordID = nickCore.discordID.get(nickCore.requestID.indexOf(targetRequestID));
-                    oldNickname = nickCore.oldNickname.get(nickCore.requestID.indexOf(targetRequestID));
-                    newNickname = nickCore.newNickname.get(nickCore.requestID.indexOf(targetRequestID));
+                    targetDiscordID = nickCore.getNicknameRequestByID(targetRequestID).getDiscordID();
+                    oldNickname = nickCore.getNicknameRequestByID(targetRequestID).getOldName();
+                    newNickname = nickCore.getNicknameRequestByID(targetRequestID).getNewName();
                 }
                 guild.retrieveMemberById(targetDiscordID).queue(m -> memberInQuestion.set(m));
                 if (requestAccepted) {
@@ -1070,8 +1117,8 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
             catch (NumberFormatException ex) {
                 isMention = true;
                 targetDiscordID = msg.getMentions().getMembers().get(0).getIdLong();
-                oldNickname = nickCore.oldNickname.get(nickCore.discordID.indexOf(targetDiscordID));
-                newNickname = nickCore.newNickname.get(nickCore.discordID.indexOf(targetDiscordID));
+                oldNickname = nickCore.getNicknameRequestByDiscordID(targetDiscordID).getOldName();
+                newNickname = nickCore.getNicknameRequestByDiscordID(targetDiscordID).getNewName();
                 guild.retrieveMemberById(targetDiscordID).queue(m -> memberInQuestion.set(m));
                 if (requestAccepted) {
                     result = handler.getAsMention() + " " + nickCore.acceptRequest(targetDiscordID, -1);
@@ -1204,12 +1251,7 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                     }
                 }
             }
-            if (nickCore.arraySizesEqual()) {
-                nickCore.saveDatabase();
-            }
-            else {
-                discord.failedIntegrityCheck(this.getClass().getName(), msg, "Request Handler - Final Integrity Check");
-            }
+            nickCore.saveDatabase();
         }
         else {
             embed.setAsError("Invaid Number of Arguements",
@@ -1394,10 +1436,6 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                         else {
                             nickCore.sendNewPlayerHistory(finalOldNickArray.addNameToList(member.getUser().getName()));
                         }
-
-                        if (!nickCore.arraySizesEqual()) {
-                            discord.failedIntegrityCheck(this.getClass().getName(), msg, "Name History");
-                        }
                     }
                 }
             });
@@ -1412,13 +1450,7 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
             }
 
             nickCore.sendNewPlayerHistory(oldHistory);
-
-            if (!nickCore.arraySizesEqual()) {
-                discord.failedIntegrityCheck(this.getClass().getName(), msg, "Name History");
-            }
         }
-
-
     }
     public boolean isCommand(String cmd, String arg) {
         int index = 0;

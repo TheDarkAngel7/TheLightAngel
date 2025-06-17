@@ -18,6 +18,24 @@ public interface CommonLogic {
         return mainConfig.guild;
     }
 
+    default Member fetchMember(long targetDiscordID) {
+        AtomicReference<Member> member = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+
+        try {
+            getGuild().retrieveMemberById(targetDiscordID).useCache(false).queue(m -> {
+                member.set(m);
+                latch.countDown();
+            });
+            latch.await();
+            return member.get();
+        }
+        catch (InterruptedException | ErrorResponseException e) {
+            aue.logCaughtException(Thread.currentThread(), e);
+            return null;
+        }
+    }
+
     default boolean isTeamMember(Member m) {
         return isStaffMember(m) ||
                 m.getRoles().contains(mainConfig.getTeamRole());
@@ -31,36 +49,20 @@ public interface CommonLogic {
 
     // Permission Checkers that this class and the other features use:
     default boolean isTeamMember(long targetDiscordID) {
-        AtomicReference<Member> member = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            getGuild().retrieveMemberById(targetDiscordID).useCache(false).queue(m -> {
-                member.set(m);
-                latch.countDown();
-            });
-            latch.await();
-            return isTeamMember(member.get());
+        Member m = fetchMember(targetDiscordID);
+
+        if (m != null) {
+            return isTeamMember(m);
         }
-        catch (ErrorResponseException | NullPointerException | InterruptedException ex) {
-            aue.logCaughtException(Thread.currentThread(), ex);
-            return false;
-        }
+        else return false;
     }
     default boolean isStaffMember(long targetDiscordID) {
-        AtomicReference<Member> member = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            getGuild().retrieveMemberById(targetDiscordID).useCache(false).queue(m -> {
-                member.set(m);
-                latch.countDown();
-            });
-            latch.await();
-            return isStaffMember(member.get());
+        Member m = fetchMember(targetDiscordID);
+
+        if (m != null) {
+            return isStaffMember(m);
         }
-        catch (ErrorResponseException | NullPointerException | InterruptedException ex) {
-            aue.logCaughtException(Thread.currentThread(), ex);
-            return false;
-        }
+        else return false;
     }
     default String getDiscordTimeTag(ZonedDateTime time) {
         return "<t:" + time.toEpochSecond() + ":f>";

@@ -127,7 +127,7 @@ public class MessageEntry implements CommonLogic {
         this.targetChannels.addAll(channels);
         return this;
     }
-
+    // Target User is the one to receive the Direct Message if TargetChannelSet.DM is among the target channels.
     public MessageEntry setTargetUser(User targetUser) {
         this.targetUser = targetUser;
         return this;

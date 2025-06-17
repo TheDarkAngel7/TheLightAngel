@@ -1,10 +1,8 @@
 package Angel.Nicknames;
 
 import Angel.FileGarbageTruck;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import Angel.ZoneIDInstanceCreator;
+import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonWriter;
 import org.apache.logging.log4j.LogManager;
@@ -15,24 +13,27 @@ import java.lang.reflect.Type;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
 class FileHandler {
     private final Logger log = LogManager.getLogger(FileHandler.class);
-    private final Gson gson = new Gson();
+    private final Gson gson;
     private final File jsonNickDataFile = new File("data/nickdata.json");
     private final File jsonTempNickDataFile = new File("data/nicktempdata.json");
     private final Type longType = new TypeToken<ArrayList<Long>>(){}.getType();
     private final Type integerType = new TypeToken<ArrayList<Integer>>(){}.getType();
     private final Type stringType = new TypeToken<ArrayList<String>>(){}.getType();
-    private final Type oldNickDictionaryType = new TypeToken<ArrayList<PlayerNameHistory>>(){}.getType();
     private FileGarbageTruck garbageTruck = new FileGarbageTruck("Nicknames", "db-backups/Nicknames", 11);
     private FileReader fileReader;
     private JsonObject database;
 
     FileHandler() {
+        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter(ZoneId.class, new ZoneIDInstanceCreator());
+        gson = gsonBuilder.create();
+
         try {
             database = JsonParser.parseReader(new FileReader(jsonNickDataFile)).getAsJsonObject();
         }
@@ -55,34 +56,18 @@ class FileHandler {
         }
     }
 
-    List<Integer> getRequestID() {
-        return gson.fromJson(database.get("RequestID").getAsString(), integerType);
-
-    }
-
-    List<Long> getRequestDiscordIDs() {
-        return gson.fromJson(database.get("DiscordID").getAsString(), longType);
-    }
-
-    List<String> getOldNicknamesRequests() {
-        return gson.fromJson(database.get("OldNickname").getAsString(), stringType);
-    }
-
-    List<String> getNewNicknamesRequests() {
-        return gson.fromJson(database.get("NewNickname").getAsString(), stringType);
+    List<NicknameRequest> getNameRequests() {
+        return gson.fromJson(database.get("NicknameRequests").getAsString(), new TypeToken<ArrayList<NicknameRequest>>(){}.getType());
     }
 
     List<PlayerNameHistory> getNameHistory() {
-        return gson.fromJson(database.get("OldNameDictionary").getAsString(), oldNickDictionaryType);
+        return gson.fromJson(database.get("OldNameDictionary").getAsString(), new TypeToken<ArrayList<PlayerNameHistory>>(){}.getType());
     }
-    public void saveDatabase(List<Integer> requestID, List<Long> discordID, List<String> oldNickname, List<String> newNickname, List<PlayerNameHistory> oldNickDictionary) {
+    public void saveDatabase(List<NicknameRequest> requests, List<PlayerNameHistory> oldNickDictionary) {
         try {
             JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(new FileOutputStream(jsonTempNickDataFile)));
             jsonWriter.beginObject()
-                    .name("RequestID").value(gson.toJson(requestID))
-                    .name("DiscordID").value(gson.toJson(discordID))
-                    .name("OldNickname").value(gson.toJson(oldNickname))
-                    .name("NewNickname").value(gson.toJson(newNickname))
+                    .name("NicknameRequests").value(gson.toJson(requests))
                     .name("OldNameDictionary").value(gson.toJson(oldNickDictionary))
                     .endObject().close();
             log.info("JSONWriter Successfully Ran to Nickname Database Temp File");

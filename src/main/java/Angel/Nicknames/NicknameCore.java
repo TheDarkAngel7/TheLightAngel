@@ -13,13 +13,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 class NicknameCore implements NickLogic {
     private final Logger log = LogManager.getLogger(NicknameCore.class);
-    Angel.Nicknames.FileHandler fileHandler;
+    private final FileHandler fileHandler;
     private Guild guild = getGuild();
-    List<Integer> requestID = new ArrayList<>();
-    List<Long> discordID = new ArrayList<>();
-    List<String> oldNickname = new ArrayList<>();
-    List<String> newNickname = new ArrayList<>();
-    List<PlayerNameHistory> oldNickDictionary = new ArrayList<>();
+    private List<NicknameRequest> nicknameRequests = new ArrayList<>();
+    private List<PlayerNameHistory> oldNickDictionary = new ArrayList<>();
 
     NicknameCore() {
         fileHandler = new FileHandler();
@@ -28,10 +25,7 @@ class NicknameCore implements NickLogic {
     void startup() throws IOException {
         log.info("Nickname Core Initiated...");
         try {
-            requestID = fileHandler.getRequestID();
-            discordID = fileHandler.getRequestDiscordIDs();
-            oldNickname = fileHandler.getOldNicknamesRequests();
-            newNickname = fileHandler.getNewNicknamesRequests();
+            nicknameRequests = fileHandler.getNameRequests();
             oldNickDictionary = fileHandler.getNameHistory();
         }
         catch (IllegalStateException ex) {
@@ -44,16 +38,17 @@ class NicknameCore implements NickLogic {
     }
 
     String submitRequest(Member targetMember, String newNick) throws IOException {
+        List<Integer> requestIDs = new ArrayList<>();
+        nicknameRequests.forEach(request -> {
+            requestIDs.add(request.getRequestID());
+        });
 
         int id;
         do {
             id = (int) (Math.random() * 1000);
-        } while (requestID.contains(id) || id < 100);
+        } while (requestIDs.contains(id) || id < 100);
 
-        requestID.add(id);
-        discordID.add(targetMember.getIdLong());
-        oldNickname.add(targetMember.getEffectiveName());
-        newNickname.add(newNick);
+        nicknameRequests.add(new NicknameRequest(id, targetMember.getIdLong(),  targetMember.getEffectiveName(), newNick));
 
         String result =
                 "**:white_check_mark: New Nickname Change Request Received**" +
@@ -103,31 +98,24 @@ class NicknameCore implements NickLogic {
             }
         }
         else {
-            int index = requestID.indexOf(id);
-            requestID.remove(index);
-            discordID.remove(index);
-            oldNickname.remove(index);
-            newNickname.remove(index);
+            nicknameRequests.remove(getNicknameRequestIndexByID(id));
             return "None";
         }
         // oldNick and newNick is impossible to be both null,
         // because that'd be considered a discord name change, nicknames would not be involved
 
-        if (arraySizesEqual()) {
-            saveDatabase();
-            return result;
-        }
-        else return ":x: FATAL ERROR: While submitting request, something didn't run correctly";
+        saveDatabase();
+        return result;
     }
 
     String acceptRequest(long targetDiscordID, int targetRequestID) {
         String[] nicknames = null;
         try {
             if (targetDiscordID == -1) {
-                nicknames = getDataAtIndexAndRemove(requestID.indexOf(targetRequestID));
+                nicknames = getDataAtIndexAndRemove(getNicknameRequestIndexByID(targetRequestID));
             }
             else {
-                nicknames = getDataAtIndexAndRemove(discordID.indexOf(targetDiscordID));
+                nicknames = getDataAtIndexAndRemove(getNicknameRequestIndexByDiscordID(targetDiscordID));
             }
         }
         catch (IndexOutOfBoundsException ex) {
@@ -163,47 +151,111 @@ class NicknameCore implements NickLogic {
         return result;
     }
     String withdrawRequest(long targetDiscordID, boolean triggeredOnGuildLeave, boolean triggeredOnRoleRemove) {
-        int index = discordID.indexOf(targetDiscordID);
+        int index = getNicknameRequestIndexByDiscordID(targetDiscordID);
+        NicknameRequest request = getNicknameRequestByDiscordID(targetDiscordID);
         if (index == -1) return null;
+
+        nicknameRequests.remove(index);
+
         String result = "";
         String defaultReturn = "Successfully Withdrew Nickname Request for ?";
-        defaultReturn = defaultReturn.concat(replaceNulls(discordID.get(index),
+        defaultReturn = defaultReturn.concat(replaceNulls(request.getDiscordID(),
                         "\n\n**Request Details:**" +
-                        "\nRequest ID: **" + requestID.remove(index) +
-                        "**\nDiscord: <@!" + discordID.remove(index) + ">" +
-                        "\nOld Nickname: **" + oldNickname.remove(index) +
-                        "**\nNew Nickname: **" + newNickname.remove(index) + "**"));
-        if (arraySizesEqual()) {
-            saveDatabase();
+                        "\nRequest ID: **" + request.getRequestID() +
+                        "**\nDiscord: <@!" + request.getDiscordID() + ">" +
+                        "\nOld Nickname: **" + request.getOldName() +
+                        "**\nNew Nickname: **" + request.getNewName() + "**"));
+        saveDatabase();
 
-            if (!triggeredOnGuildLeave && !triggeredOnRoleRemove) return defaultReturn;
-            else if (triggeredOnGuildLeave && !triggeredOnRoleRemove) {
-                String returnValue = defaultReturn.replace("?", String.valueOf(targetDiscordID).concat(" who left the Discord Server"));
-                return returnValue;
-            }
-            else if (!triggeredOnGuildLeave && triggeredOnRoleRemove) {
-                String returnValue = defaultReturn.replace("?", "? who had all nickname restricted roles removed.");
-
-                return returnValue;
-            }
-            else {
-                log.fatal("Boolean Values in withdrawing requests were both unexpectedly true");
-                return "FATAL ERROR: Boolean values were messed up";
-            }
+        if (!triggeredOnGuildLeave && !triggeredOnRoleRemove) return defaultReturn;
+        else if (triggeredOnGuildLeave && !triggeredOnRoleRemove) {
+            String returnValue = defaultReturn.replace("?", String.valueOf(targetDiscordID).concat(" who left the Discord Server"));
+            return returnValue;
         }
-        else return "FATAL ERROR";
+        else if (!triggeredOnGuildLeave && triggeredOnRoleRemove) {
+            String returnValue = defaultReturn.replace("?", "? who had all nickname restricted roles removed.");
+
+            return returnValue;
+        }
+        else {
+            log.fatal("Boolean Values in withdrawing requests were both unexpectedly true");
+            return "FATAL ERROR: Boolean values were messed up";
+        }
     }
-    String getList() {
+
+    void replaceRequest(long targetDiscordID, NicknameRequest request) {
+        nicknameRequests.set(getNicknameRequestIndexByDiscordID(targetDiscordID), request);
+    }
+
+    // Get the Nickname Request by Request ID
+    NicknameRequest getNicknameRequestByID(int id) {
+        int index = 0;
+
+        do {
+            NicknameRequest request = nicknameRequests.get(index++);
+            if (request.getRequestID() == id) {
+                return request;
+            }
+        } while (index < nicknameRequests.size());
+
+        return null;
+    }
+
+    NicknameRequest getNicknameRequestByDiscordID(long targetDiscordID) {
+        int index = 0;
+
+        do {
+            NicknameRequest request = nicknameRequests.get(index++);
+            if (request.getDiscordID() == targetDiscordID) {
+                return request;
+            }
+        } while (index < nicknameRequests.size());
+
+        return null;
+    }
+
+    int getNicknameRequestIndexByID(int id) {
+        int index = 0;
+
+        do {
+            NicknameRequest request = nicknameRequests.get(index++);
+            if (request.getRequestID() == id) {
+                return index - 1;
+            }
+        } while (index < nicknameRequests.size());
+
+        return -1;
+    }
+
+    int getNicknameRequestIndexByDiscordID(long id) {
+        int index = 0;
+
+        do {
+            NicknameRequest request = nicknameRequests.get(index++);
+            if (request.getDiscordID() == id) {
+                return index - 1;
+            }
+        } while (index < nicknameRequests.size());
+
+        return -1;
+    }
+
+    List<NicknameRequest> getNicknameRequests() {
+        return nicknameRequests;
+    }
+
+    String getRequestListAsString() {
         int index = 0;
         String result = "";
-        if (discordID.isEmpty()) return null;
-        while (index < discordID.size()) {
-            result = result.concat(replaceNulls(discordID.get(index),
-                    "Request ID: **" + requestID.get(index) +
-                    "**\nDiscord Account: <@!" + discordID.get(index) + ">" +
-                    "\nOld Nickname: **" + oldNickname.get(index) +
-                    "**\nNew Nickname: **" + newNickname.get(index++) + "**"));
-            if (index <= discordID.size() - 1) result = result.concat("\n\n");
+        if (nicknameRequests.isEmpty()) return null;
+        while (index < nicknameRequests.size()) {
+            result = result.concat(replaceNulls(nicknameRequests.get(index).getDiscordID(),
+                    "Request ID: **" + nicknameRequests.get(index).getRequestID() +
+                            "**\nRequest Time: **" + getDiscordTimeTag(nicknameRequests.get(index).getRequestTime()) +
+                            "**\nDiscord Account: <@!" + nicknameRequests.get(index).getDiscordID() + ">" +
+                            "\nOld Nickname: **" + nicknameRequests.get(index).getOldName() +
+                            "**\nNew Nickname: **" + nicknameRequests.get(index).getNewName() + "**"));
+            if (index <= nicknameRequests.size() - 1) result = result.concat("\n\n");
         }
         return result;
     }
@@ -222,16 +274,10 @@ class NicknameCore implements NickLogic {
         return result;
     }
     private String[] getDataAtIndexAndRemove(int index) throws IndexOutOfBoundsException {
-        String returnValue = requestID.remove(index) + "," + discordID.remove(index) + ","
-                + oldNickname.remove(index) + "," + newNickname.remove(index);
-        if (!arraySizesEqual()) {
-            String[] value = new String[1];
-            value[0] = "FATAL ERROR";
-            return value;
-        }
-        else {
-            return returnValue.split(",");
-        }
+        NicknameRequest request = nicknameRequests.remove(index);
+        String returnValue = request.getRequestID() + "," + request.getDiscordID() + ","
+                + request.getOldName() + "," + request.getNewName();
+        return returnValue.split(",");
     }
     List<String> getHistory(long targetDiscordID) {
         int index = 0;
@@ -286,10 +332,7 @@ class NicknameCore implements NickLogic {
         saveDatabase();
         return defaultReturn;
     }
-    boolean arraySizesEqual() {
-        return requestID.size() == discordID.size() && oldNickname.size() == newNickname.size();
-    }
     void saveDatabase() {
-        fileHandler.saveDatabase(requestID, discordID, oldNickname, newNickname, oldNickDictionary);
+        fileHandler.saveDatabase(nicknameRequests, oldNickDictionary);
     }
 }
