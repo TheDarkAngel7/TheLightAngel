@@ -37,7 +37,7 @@ class NicknameCore implements NickLogic {
         nickConfig.reload(fileHandler.getConfig());
     }
 
-    String submitRequest(Member targetMember, String newNick) throws IOException {
+    String submitRequest(Member targetMember, String newNick) {
         List<Integer> requestIDs = new ArrayList<>();
         nicknameRequests.forEach(request -> {
             requestIDs.add(request.getRequestID());
@@ -191,6 +191,8 @@ class NicknameCore implements NickLogic {
     NicknameRequest getNicknameRequestByID(int id) {
         int index = 0;
 
+        if (nicknameRequests.isEmpty()) return null;
+
         do {
             NicknameRequest request = nicknameRequests.get(index++);
             if (request.getRequestID() == id) {
@@ -203,6 +205,8 @@ class NicknameCore implements NickLogic {
 
     NicknameRequest getNicknameRequestByDiscordID(long targetDiscordID) {
         int index = 0;
+
+        if (nicknameRequests.isEmpty()) return null;
 
         do {
             NicknameRequest request = nicknameRequests.get(index++);
@@ -217,6 +221,8 @@ class NicknameCore implements NickLogic {
     int getNicknameRequestIndexByID(int id) {
         int index = 0;
 
+        if (nicknameRequests.isEmpty()) return -1;
+
         do {
             NicknameRequest request = nicknameRequests.get(index++);
             if (request.getRequestID() == id) {
@@ -229,6 +235,8 @@ class NicknameCore implements NickLogic {
 
     int getNicknameRequestIndexByDiscordID(long id) {
         int index = 0;
+
+        if (nicknameRequests.isEmpty()) return -1;
 
         do {
             NicknameRequest request = nicknameRequests.get(index++);
