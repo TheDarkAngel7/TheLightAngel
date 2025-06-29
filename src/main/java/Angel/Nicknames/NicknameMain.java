@@ -724,7 +724,7 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                                     }
                                     embed.sendAsMessageEntryObj(entry);
 
-                                    entry = new MessageEntry("Nickname Request Received", result, EmbedDesign.INFO).setChannels(TargetChannelSet.LOG);
+                                    entry = new MessageEntry("Nickname Request Received", result, EmbedDesign.INFO).setChannels(TargetChannelSet.LOG).setOriginalCmd(msg);
 
                                     if (nickConfig.useTeamChannel) {
                                         if (nickConfig.pingOnlineStaff) {
