@@ -263,7 +263,7 @@ class NicknameCore implements NickLogic {
                             "**\nDiscord Account: <@!" + nicknameRequests.get(index).getDiscordID() + ">" +
                             "\nOld Nickname: **" + nicknameRequests.get(index).getOldName() +
                             "**\nNew Nickname: **" + nicknameRequests.get(index).getNewName() + "**"));
-            if (index <= nicknameRequests.size() - 1) result = result.concat("\n\n");
+            if (++index <= nicknameRequests.size() - 1) result = result.concat("\n\n");
         }
         return result;
     }
