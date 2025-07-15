@@ -1073,7 +1073,7 @@ public class CheckInMain extends ListenerAdapter implements CheckInLogic {
             if (!ciCore.getCheckInList().isEmpty()) {
                 checkInQueueEmbed = new CheckInQueueEmbed(new MessageEntry("Members To Be Checked-In",
                         EmbedDesign.SUCCESS, originalCmd, ciConfig.getCheckInChannel()).setAsIsListEmbed(),
-                        memberListPrefix, memberList, suffixString, emojiList, this);
+                        memberListPrefix, memberList, suffixString, emojiList);
 
                 discord.addAsReactionListEmbed(checkInQueueEmbed);
                 toPurge.add(embed.getMessageEntryObj(originalCmd).getResultEmbed());
