@@ -1285,7 +1285,7 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseLogic {
         String suffix = pages.remove(pages.size() - 1);
 
         discord.addAsReactionListEmbed(new ListEmbed(new MessageEntry("Bot Abuse History", EmbedDesign.INFO, msg, requestedSet),
-                prefix, pages, suffix).invertButtonLabels());
+                prefix, pages, suffix));
     }
     public boolean isCommand(String cmd) {
         int index = 0;
