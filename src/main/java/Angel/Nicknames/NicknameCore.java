@@ -16,6 +16,15 @@ class NicknameCore implements NickLogic {
     private final FileHandler fileHandler;
     private Guild guild = getGuild();
     private List<NicknameRequest> nicknameRequests = new ArrayList<>();
+
+    /* Temporary Nickname Requests are lost with power,
+     these nickname requests are created strictly from temporary data
+     Such as if a player tries to change their own nickname with the Discord GUI,
+     LA captures the name they used and saves it.
+
+     */
+    private List<NicknameRequest> tempNicknameRequests = new ArrayList<>();
+    // This is the History of the Names for each discord account
     private List<PlayerNameHistory> oldNickDictionary = new ArrayList<>();
 
     NicknameCore() {
@@ -37,7 +46,7 @@ class NicknameCore implements NickLogic {
         nickConfig.reload(fileHandler.getConfig());
     }
 
-    String submitRequest(Member targetMember, String newNick) {
+    private int getUniqueRequestID() {
         List<Integer> requestIDs = new ArrayList<>();
         nicknameRequests.forEach(request -> {
             requestIDs.add(request.getRequestID());
@@ -48,64 +57,76 @@ class NicknameCore implements NickLogic {
             id = (int) (Math.random() * 1000);
         } while (requestIDs.contains(id) || id < 100);
 
-        nicknameRequests.add(new NicknameRequest(id, targetMember.getIdLong(),  targetMember.getEffectiveName(), newNick));
+        return id;
+    }
 
-        String result =
-                "**:white_check_mark: New Nickname Change Request Received**" +
-                "\n\nID: **" + id +
-                "**\nDiscord: " + targetMember.getAsMention();
+    // Temporary Nickname Request Methods
 
-        if (targetMember.getNickname() != null && newNick != null) {
-            result = result.concat(
-                    "\nOld Nickname: **" + targetMember.getNickname() +
-                            "**\nNew Nickname: **" + newNick + "**"
-            );
-        }
-        else if (targetMember.getNickname() == null && newNick != null) {
+    void createNewTemporaryRequest(Member targetMember, String oldName, String newName) {
+        createNewTemporaryRequest(targetMember.getIdLong(), oldName, newName);
+    }
 
-            if (targetMember.getUser().getGlobalName() != null) {
-                result = result.concat(
-                        "\nOld Nickname: **" + targetMember.getEffectiveName() + " (Global Display Name)**" +
-                                "\nNew Nickname: **" + newNick + "**"
-                );
+    void createNewTemporaryRequest(long targetDiscordID, String oldName, String newName) {
+        tempNicknameRequests.add(new NicknameRequest(getUniqueRequestID(), targetDiscordID, oldName, newName));
+    }
 
-                if (newNick == targetMember.getUser().getName()) {
-                    result = result.replace("**" + newNick + "**", "**" + newNick + " (Discord Username)");
-                }
+    boolean hasTemporaryRequest(Member targetMember) {
+        return hasTemporaryRequest(targetMember.getIdLong());
+    }
+
+    boolean hasTemporaryRequest(long targetDiscordID) {
+        int index = 0;
+
+        if (tempNicknameRequests.isEmpty()) return false;
+
+        do {
+            NicknameRequest nicknameRequest = tempNicknameRequests.get(index++);
+
+            if (nicknameRequest.getDiscordID() == targetDiscordID) {
+                return true;
             }
+        } while (index < tempNicknameRequests.size());
 
-            else {
-                result = result.concat(
-                        "\nOld Nickname: **" + targetMember.getEffectiveName() + " (Discord Username)**" +
-                                "\nNew Nickname: **" + newNick + "**"
-                );
-            }
-        }
-        else if (targetMember.getNickname() != null && newNick == null) {
+        return false;
+    }
 
-            if (targetMember.getUser().getGlobalName() != null) {
-                result = result.concat(
-                        "\nOld Nickname: **" + targetMember.getNickname() +
-                                "**\nNew Nickname: **" + targetMember.getUser().getGlobalName() + " (Reset to Global Display Name)**"
-                );
-            }
+    int getIndexOfTemporaryNicknameRequest(long targetDiscordID) {
+        int index = 0;
 
-            else {
-                result = result.concat(
-                        "\nOld Nickname: **" + targetMember.getNickname() +
-                                "**\nNew Nickname: **" + targetMember.getUser().getName() + " (Reset to Discord Username)**"
-                );
+        if (tempNicknameRequests.isEmpty()) return -1;
+
+        do {
+            if (tempNicknameRequests.get(index).getDiscordID() == targetDiscordID) {
+                return index;
             }
-        }
-        else {
-            nicknameRequests.remove(getNicknameRequestIndexByID(id));
-            return "None";
-        }
-        // oldNick and newNick is impossible to be both null,
-        // because that'd be considered a discord name change, nicknames would not be involved
+            index++;
+        } while (index < tempNicknameRequests.size());
+
+        return -1;
+    }
+
+    // Permanent Nickname Request Methods
+
+    String submitRequestFromTemporary(Member targetMember) {
+        NicknameRequest request = tempNicknameRequests.remove(getIndexOfTemporaryNicknameRequest(targetMember.getIdLong()));
+
+        nicknameRequests.add(request);
 
         saveDatabase();
-        return result;
+
+        return getSubmissionMessage(request);
+    }
+
+    String submitRequest(Member targetMember, String newNick) {
+        int id = getUniqueRequestID();
+
+        NicknameRequest request = new NicknameRequest(id, targetMember.getIdLong(),  targetMember.getEffectiveName(), newNick);
+
+        nicknameRequests.add(request);
+
+        saveDatabase();
+
+        return getSubmissionMessage(request);
     }
 
     String acceptRequest(long targetDiscordID, int targetRequestID) {
@@ -331,6 +352,68 @@ class NicknameCore implements NickLogic {
             oldNickDictionary.add(history);
         }
         saveDatabase();
+    }
+
+    private String getSubmissionMessage(NicknameRequest request) {
+
+        Member targetMember = fetchMember(request.getDiscordID());
+
+        int id = request.getRequestID();
+
+        String newNick = request.getNewName();
+
+        String result =
+                "**:white_check_mark: New Nickname Change Request Received**" +
+                        "\n\nID: **" + id +
+                        "**\nDiscord: " + targetMember.getAsMention();
+
+        if (targetMember.getNickname() != null && newNick != null) {
+            return result.concat(
+                    "\nOld Nickname: **" + targetMember.getNickname() +
+                            "**\nNew Nickname: **" + newNick + "**"
+            );
+        }
+        else if (targetMember.getNickname() == null && newNick != null) {
+
+            if (targetMember.getUser().getGlobalName() != null) {
+                result = result.concat(
+                        "\nOld Nickname: **" + targetMember.getEffectiveName() + " (Global Display Name)**" +
+                                "\nNew Nickname: **" + newNick + "**"
+                );
+
+                if (newNick == targetMember.getUser().getName()) {
+                    return result.replace("**" + newNick + "**", "**" + newNick + " (Discord Username)");
+                }
+                else return result;
+            }
+
+            else {
+                return result.concat(
+                        "\nOld Nickname: **" + targetMember.getEffectiveName() + " (Discord Username)**" +
+                                "\nNew Nickname: **" + newNick + "**"
+                );
+            }
+        }
+        else if (targetMember.getNickname() != null && newNick == null) {
+
+            if (targetMember.getUser().getGlobalName() != null) {
+                return result.concat(
+                        "\nOld Nickname: **" + targetMember.getNickname() +
+                                "**\nNew Nickname: **" + targetMember.getUser().getGlobalName() + " (Reset to Global Display Name)**"
+                );
+            }
+
+            else {
+                return result.concat(
+                        "\nOld Nickname: **" + targetMember.getNickname() +
+                                "**\nNew Nickname: **" + targetMember.getUser().getName() + " (Reset to Discord Username)**"
+                );
+            }
+        }
+        else {
+            nicknameRequests.remove(getNicknameRequestIndexByID(id));
+            return "None";
+        }
     }
 
     String clearNameHistory(long targetDiscordID) throws IOException {
