@@ -46,11 +46,17 @@ public class FileGarbageTruck implements CommonLogic {
         if (fileDumpLastRan.getDayOfYear() < currentTime.getDayOfYear() || fileDumpLastRan.getYear() < currentTime.getYear()) {
             fileDumpLastRan = currentTime;
 
-
+            List<File> fileArray;
             // Cast Directory To Array
-            File[] files = new File(backupLocation).listFiles();
-            List<File> fileArray = Arrays.asList(files);
-            log.debug(sectionName + " Files Successfully Accessed - There are " + fileArray.size() + " files");
+            try {
+                File[] files = new File(backupLocation).listFiles();
+                fileArray = Arrays.asList(files);
+                log.debug(sectionName + " Files Successfully Accessed - There are " + fileArray.size() + " files");
+            }
+            catch (NullPointerException ex) {
+                log.info("Unable to Access Files to Dump");
+                return;
+            }
 
 
             // Read off the names and delete those older than 30 days

@@ -112,14 +112,14 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         }
 
         // List of Staff Members
-        List<Players> staffMembers = new ArrayList<>();
+        List<Player> staffMembers = new ArrayList<>();
 
         // List of "Supporters"
         // Supporters are VIPs, Nitro Boosters, or Patrons
-        List<Players> supporters = new ArrayList<>();
+        List<Player> supporters = new ArrayList<>();
 
         // List of Members who are Not Supporters
-        List<Players> members = new ArrayList<>();
+        List<Player> members = new ArrayList<>();
 
         // Atomic Boolean for Unrecognized Player Detection
         // If a Player Cannot be found in the discord, the footer then comes in and says that a Kickvote may be needed
@@ -216,7 +216,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         return builder.build();
     }
 
-    private String convertListToRegexString(List<Players> players,  boolean useMentions) {
+    private String convertListToRegexString(List<Player> players, boolean useMentions) {
         int index = 0;
         String result = "";
 

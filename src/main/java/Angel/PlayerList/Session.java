@@ -1,6 +1,5 @@
 package Angel.PlayerList;
 
-import Angel.CommonLogic;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
 import java.time.Duration;
@@ -8,29 +7,29 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Session implements CommonLogic {
+public class Session {
     private final String sessionName;
     private final TextChannel sessionChannel;
     private ZonedDateTime date;
 
-    private List<Players> players;
+    private List<Player> players;
     // Player List Trouble means LA received an empty player list and this session may be experiencing trouble,
     // If this happens 5 times then we'll put the session into the trouble status
     private int missedScreenshots = 0;
     private boolean isExperiencingScreenshotTrouble = false;
     private SessionStatus status;
 
-    public Session(String name, List<Players> players) {
+    public Session(String name, TextChannel sessionChannel, List<Player> players) {
         this.sessionName = name;
 
-        this.sessionChannel = getGuild().getTextChannelsByName(name,true).get(0);
+        this.sessionChannel = sessionChannel;
 
         this.date = ZonedDateTime.now();
         this.players = new ArrayList<>(players);
         this.status = SessionStatus.ONLINE;
     }
 
-    public Session setNewPlayers(List<Players> players) {
+    public Session setNewPlayers(List<Player> players) {
         this.players = players;
         this.date = ZonedDateTime.now();
         resetListFilter();
@@ -70,7 +69,7 @@ public class Session implements CommonLogic {
     public int getPlayerCount() {
         return players.size();
     }
-    public List<Players> getPlayerList() {
+    public List<Player> getPlayerList() {
         return players;
     }
 

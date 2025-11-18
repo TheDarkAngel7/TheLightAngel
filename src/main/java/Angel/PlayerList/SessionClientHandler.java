@@ -3,6 +3,7 @@ package Angel.PlayerList;
 import Angel.CommonLogic;
 import Angel.Exceptions.InvalidSessionException;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
@@ -12,6 +13,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.text.Normalizer;
 import java.util.List;
 
 public class SessionClientHandler implements Runnable, CommonLogic {
@@ -27,9 +29,17 @@ public class SessionClientHandler implements Runnable, CommonLogic {
     @Override
     public void run() {
         try {
-            JsonObject jsonObject = JsonParser.parseReader(new InputStreamReader(clientSocket.getInputStream())).getAsJsonObject();
-            String hostName = jsonObject.get("hostName").getAsString();
+            JsonElement jsonElement = JsonParser.parseReader(new InputStreamReader(clientSocket.getInputStream())).getAsJsonObject();
+            JsonObject jsonObject = jsonElement.getAsJsonObject();
+
+            String hostName = formatCleaner(jsonObject.get("hostName").getAsString());
             List<String> playerList = gson.fromJson(jsonObject.get("players").getAsString(), new TypeToken<List<String>>(){}.getType());
+
+            int index = 0;
+
+            do {
+                playerList.set(index, formatCleaner(playerList.get(index++)));
+            } while (index < playerList.size());
 
             log.info("Received a Player List for {} with {} players on it!", hostName, playerList.size() - 1);
 
@@ -49,5 +59,10 @@ public class SessionClientHandler implements Runnable, CommonLogic {
         } catch (InvalidSessionException | IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private String formatCleaner(String input) {
+        return Normalizer.normalize(input.replaceAll("[^a-zA-Z0-9 ]", "")
+                .replaceAll("\\s+", " ").replaceAll("[^\\p{ASCII}]", ""), Normalizer.Form.NFD);
     }
 }

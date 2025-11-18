@@ -3,10 +3,12 @@ package Angel.PlayerList;
 import Angel.CommonLogic;
 import Angel.Exceptions.InvalidSessionException;
 import net.dv8tion.jda.api.Permission;
-import org.apache.commons.text.similarity.JaroWinklerDistance;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -25,7 +27,7 @@ public class SessionManager implements CommonLogic {
         int index = 0;
         while (index < sessions.size()) {
             if (sessions.get(index).getSessionName().equalsIgnoreCase(name)) return sessions.get(index);
-            else if (sessions.get(index).getSessionName().toLowerCase().contains(name.toLowerCase())) return sessions.get(index);
+            else if (sessions.get(index).getSessionName().toLowerCase().contains(name)) return sessions.get(index);
             index++;
         }
         throw new InvalidSessionException(name);
@@ -33,15 +35,15 @@ public class SessionManager implements CommonLogic {
 
     public void setSessionPlayers(String sessionName, List<String> players) throws InvalidSessionException {
 
-        List<Players> playersList = new ArrayList<>();
-        JaroWinklerDistance jaroWinkler = new JaroWinklerDistance();
+        List<Player> playerList = new ArrayList<>();
+        LevenshteinDistance levenshtein = new LevenshteinDistance();
 
         players.forEach(player -> {
             // This is the filter for filtering out the host name from the list.
-            // If the player's name scores lower than 0.9 match then it's allowed in.
-            double score = jaroWinkler.apply(sessionName, player);
+            // If the player's name scores greater than 4 compared to the host name, then it's allowed in.
+            int score = levenshtein.apply(sessionName, player);
 
-            if (score < 0.9) playersList.add(new Players(player));
+            if (score > 4) playerList.add(new Player(player));
         });
 
         try  {
@@ -51,16 +53,42 @@ public class SessionManager implements CommonLogic {
             // If the player list is 0 or very low, these are some formulas here that any of them could come up true
             // and it'll flag that the session likely missed a screenshot
 
-            if (sessionInQuestion.getPlayerList().size() - 5 > playersList.size()) {
+            if (sessionInQuestion.getPlayerList().size() - 5 > playerList.size()) {
                 sessionInQuestion = sessionInQuestion.missedScreenshot();
             }
             else {
-                sessionInQuestion = sessionInQuestion.setNewPlayers(playersList);
+                sessionInQuestion = sessionInQuestion.setNewPlayers(playerList);
             }
             sessions.set(sessionIndexPosition, sessionInQuestion);
         }
         catch (InvalidSessionException e) {
-            sessions.add(new Session(sessionName, playersList));
+            System.out.println(getGuild().getTextChannels().size());
+            int index = 0;
+            List<TextChannel> textChannels = getGuild().getTextChannels();
+
+            System.out.println("SessionName: " + sessionName + " Len: " + sessionName.length());
+
+            while (index < textChannels.size()) {
+
+                String channelName = Normalizer.normalize(textChannels.get(index).getName(), Normalizer.Form.NFD);
+
+                System.out.println("Channel Name: " + channelName + " Len: " + channelName.length());
+
+                log.debug(textChannels.get(index).getName() + " with ID " + textChannels.get(index).getIdLong() + " Have permission "
+                        + getGuild().getSelfMember().hasPermission(textChannels.get(index), Permission.VIEW_CHANNEL));
+
+                int channelScore = levenshtein.apply(textChannels.get(index).getName(), sessionName);
+                boolean iHavePermission = getGuild().getSelfMember().hasPermission(textChannels.get(index), Permission.VIEW_CHANNEL);
+
+                log.debug("Match Score " + channelScore + " iHavePermission: " + iHavePermission);
+
+                if (channelScore <= 4 && iHavePermission) {
+                    log.info("Session Channel Successfully Determined with ID " + textChannels.get(index).getIdLong());
+                    sessions.add(new Session(sessionName, textChannels.get(index), playerList));
+                    break;
+                }
+                index++;
+            }
         }
     }
 
