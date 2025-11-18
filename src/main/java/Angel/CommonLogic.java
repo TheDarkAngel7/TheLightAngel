@@ -1,5 +1,6 @@
 package Angel;
 
+import Angel.PlayerList.SessionManager;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
@@ -13,6 +14,7 @@ public interface CommonLogic {
     AngelExceptionHandler aue = new AngelExceptionHandler();
     EmbedEngine embed = new EmbedEngine();
     DiscordBotMain discord = new DiscordBotMain();
+    SessionManager sessionManager = new SessionManager();
 
     default Guild getGuild() {
         return mainConfig.guild;
@@ -47,6 +49,22 @@ public interface CommonLogic {
                 m.getIdLong() == mainConfig.owner.getIdLong();
     }
 
+    default boolean isSupporter(Member m) {
+        int index = 0;
+
+        while (index < mainConfig.getSupporterRoles().size()) {
+            if (m.getRoles().contains(mainConfig.getSupporterRoles().get(index))) {
+                return true;
+            }
+            index++;
+        }
+        return false;
+    }
+
+    default boolean isCrewMember(Member m) {
+        return m.getRoles().contains(mainConfig.getMemberRole());
+    }
+
     // Permission Checkers that this class and the other features use:
     default boolean isTeamMember(long targetDiscordID) {
         Member m = fetchMember(targetDiscordID);
@@ -61,6 +79,23 @@ public interface CommonLogic {
 
         if (m != null) {
             return isStaffMember(m);
+        }
+        else return false;
+    }
+    default boolean isSupporter(long targetDiscordID) {
+        Member m = fetchMember(targetDiscordID);
+
+        if (m != null) {
+            return isSupporter(m);
+        }
+        else return false;
+    }
+
+    default boolean isCrewMember(long targetDiscordID) {
+        Member m = fetchMember(targetDiscordID);
+
+        if (m != null) {
+            return isCrewMember(m);
         }
         else return false;
     }

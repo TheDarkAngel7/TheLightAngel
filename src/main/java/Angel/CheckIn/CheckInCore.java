@@ -1,34 +1,27 @@
 package Angel.CheckIn;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import Angel.Exceptions.InvalidSessionException;
+import Angel.PlayerList.Players;
+import Angel.PlayerList.Session;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 class CheckInCore implements CheckInLogic {
     private final Logger log = LogManager.getLogger(CheckInCore.class);
     private final Guild guild;
     private final FileHandler fileHandler = new FileHandler();
-    private List<Session> sessions;
     private Session currentSession;
     private int currentCheckInID;
     // Temporary Lists Where Check-In Data is Stored
@@ -51,20 +44,17 @@ class CheckInCore implements CheckInLogic {
     }
 
     boolean isValidSessionName(String name) {
-        runReader();
-        int index = 0;
-
-        while (index < sessions.size()) {
-            if (sessions.get(index).getSessionName().equalsIgnoreCase(name)) return true;
-            else if (sessions.get(index).getSessionName().toLowerCase().contains(name.toLowerCase())) return true;
-            index++;
+        try {
+            Session session = sessionManager.getSession(name);
+            return true;
+        } catch (InvalidSessionException e) {
+            return false;
         }
-        return false;
     }
     private void setupCheckIn(String name) {
         int index = 0;
         currentCheckInID = getNextID();
-
+        List<Session> sessions = sessionManager.getSessions();
         do {
             if (sessions.get(index).getSessionName().equalsIgnoreCase(name)) {
                 currentSession = sessions.get(index);
@@ -72,10 +62,10 @@ class CheckInCore implements CheckInLogic {
             }
         } while (++index < sessions.size());
     }
-    boolean loadSessionLists(String sessionName, boolean refresh) {
+    void loadSessionLists(String sessionName, boolean refresh) {
         log.info("Attempting to Load Session List for " + sessionName);
         AtomicReference<Boolean> encounteredErrors = new AtomicReference<>(false);
-        runReader();
+        // runReader();
         if (refresh) {
             checkInList.clear();
             unrecognizedPlayer.clear();
@@ -83,81 +73,31 @@ class CheckInCore implements CheckInLogic {
             sessionName = currentSession.getSessionName();
         }
         setupCheckIn(sessionName);
-        if (currentSession == null || currentSession.getPlayerCount() == 0) return true;
+        if (currentSession == null || currentSession.getPlayerCount() == 0) return;
         int index = 0;
-        List<Session.Players> players = currentSession.getPlayerList();
-
-        CountDownLatch latch = new CountDownLatch(players.size());
-        log.info("Count Down Latch Engaged! Starting Count From " + latch.getCount());
+        List<Players> players = currentSession.getPlayerList();
 
         do {
-            Session.Players player = players.get(index);
+            Players player = players.get(index);
             String playerName = player.getPlayerName();
-            guild.retrieveMembersByPrefix(playerName, 10).onSuccess(ms -> {
-                if (ms.size() == 1) {
-                    Member m = ms.get(0);
-                    CheckInPlayer p = new CheckInPlayer(checkInList.size() + 1, m.getIdLong());
-                    if (player.isStaff() || isTeamMember(m)) {
-                        p.removeFromCheckInQueue();
-                        log.info(m.getEffectiveName() + " was found to be a staff member and was removed from the Check-In Queue prior to start");
-                    }
-                    else if (!playerCanBeCheckedIn(m)) {
-                        p.removeFromCheckInQueue();
-                        log.info(m.getEffectiveName() + "(ID: " + m.getIdLong() + ") was found in the discord server but does not posses the roles required" +
-                                " in order to be checked-in.");
-                    }
-                    checkInList.add(p);
-                    log.info(m.getEffectiveName() + " was successfully added to the Check-In List");
-                }
-                else if (ms.size() > 1) {
-                    List<Member> membersFoundByRole = new ArrayList<>();
-                    int searchIndex = 0;
-                    while (searchIndex < ms.size()) {
-                        Member m = ms.get(searchIndex);
-                        if (playerCanBeCheckedIn(m)) {
-                            membersFoundByRole.add(m);
-                        }
-                        searchIndex++;
-                    }
-                    if (membersFoundByRole.size() == 1) {
-                        Member m = membersFoundByRole.get(0);
-                        log.info("Member Successfully Found By Role From Duplicate Account Nicknames: " +
-                                m.getEffectiveName() + " - ID: " + m.getIdLong());
-                        checkInList.add(new CheckInPlayer(checkInList.size() + 1, m.getIdLong()));
-                        log.info(m.getEffectiveName() + " was successfully added to the Check-In List");
-                    }
-                    else if (membersFoundByRole.isEmpty()) {
-                        log.warn("Member Has Not Been Found By Duplicate Accounts: " + playerName);
-                        unrecognizedPlayer.add(playerName);
-                    }
-                    else {
-                        log.warn(playerName + " returned more than one account with Check-In roles!");
-                        duplicateMatches.put(playerName, ms);
-                    }
-                }
-                else {
-                    log.warn("No Players Found with the query " + playerName);
-                    unrecognizedPlayer.add(playerName);
-                }
-                latch.countDown();
-                log.info("Count Down Latch Remaining Count: " + latch.getCount());
-            }).onError(error -> {
-                log.error("Unable to Add Player to Check-In List with Query: " + playerName + " - " + error.getCause().getMessage() + " - " + error.getMessage());
-                unrecognizedPlayer.add(playerName);
-                encounteredErrors.set(true);
-                latch.countDown();
-            }).setTimeout(1, TimeUnit.MINUTES);
-        } while (++index < players.size());
+            Member m = player.getDiscordAccount();
 
-        try {
-            log.info("Main Thread Latched! Waiting for Release...");
-            latch.await();
-            log.info("Session List Load Complete!");
-        }
-        catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        return encounteredErrors.get();
+            CheckInPlayer p = new CheckInPlayer(checkInList.size() + 1, m.getIdLong());
+
+            if (isTeamMember(player.getDiscordAccount())) {
+                p.removeFromCheckInQueue();
+                log.info(m.getEffectiveName() + " was found to be a staff member and was removed from the Check-In Queue prior to start");
+            }
+
+            if (playerCanBeCheckedIn(m)) {
+                p.removeFromCheckInQueue();
+                log.info(m.getEffectiveName() + "(ID: " + m.getIdLong() + ") was found in the discord server but does not posses the roles required" +
+                        " in order to be checked-in.");
+            }
+
+            checkInList.add(p);
+
+        } while (++index < players.size());
     }
     boolean playerCanBeCheckedIn(Member m) {
         if (isTeamMember(m)) return false;
@@ -281,7 +221,6 @@ class CheckInCore implements CheckInLogic {
         unrecognizedPlayer.clear();
         checkInList.clear();
         duplicateMatches = new Hashtable<>();
-        sessions.clear();
         return ciResult;
     }
 
@@ -330,55 +269,6 @@ class CheckInCore implements CheckInLogic {
         return currentCheckInID;
     }
 
-    private void runReader() {
-        sessions = new ArrayList<>();
-        StringBuilder response = new StringBuilder();
-        try {
-            URL url = new URL("https://fingers.wtf/zoo/rsrc/sessions.json");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0");
-            connection.connect();
-
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-
-            String inputLine;
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
-            }
-            in.close();
-            connection.disconnect();
-        }
-        catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        int index = 0;
-        JsonArray array = JsonParser.parseString(response.toString()).getAsJsonArray();
-        while (index < array.size()) {
-            JsonObject sessionObj = array.get(index++).getAsJsonObject();
-            JsonArray playersArray = sessionObj.get("players").getAsJsonArray();
-            List<Session.Players> players = new ArrayList<>();
-            int playerIndex = 0;
-
-            do {
-                if (playersArray.size() == 0) break;
-                JsonObject playersObj = playersArray.get(playerIndex).getAsJsonObject();
-
-                JsonArray crewsObj = playersObj.get("crews").getAsJsonArray();
-                List<String> crews = new ArrayList<>();
-                crewsObj.forEach(e -> crews.add(e.getAsString()));
-
-                players.add(new Session.Players(playersObj.get("name").getAsString(), crews));
-            } while (++playerIndex < playersArray.size());
-
-            sessions.add(new Session(
-                    sessionObj.get("date").getAsString(),
-                    sessionObj.get("pc").getAsString(),
-                    players,
-                    sessionObj.get("session").getAsString()
-            ));
-        }
-    }
     List<CheckInResult> getAllResults() {
         return results;
     }

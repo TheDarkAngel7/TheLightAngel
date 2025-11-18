@@ -8,6 +8,8 @@ import Angel.CustomEmbeds.CustomEmbedInit;
 import Angel.CustomEmbeds.CustomEmbedMain;
 import Angel.Nicknames.NicknameInit;
 import Angel.Nicknames.NicknameMain;
+import Angel.PlayerList.PlayerListInit;
+import Angel.PlayerList.PlayerListMain;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -45,6 +47,8 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
     private BotAbuseInit baInit;
     private CheckInInit ciInit;
     private CheckInMain ciFeature = null;
+    private PlayerListInit playerListInit;
+    private PlayerListMain playerListMain = null;
     private int restartValue;
     private boolean commandsSuspended = false;
     public boolean isStarting = true;
@@ -91,10 +95,13 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
         baInit = new BotAbuseInit();
         ciInit = new CheckInInit();
         customEmbedInit = new CustomEmbedInit();
+        playerListInit = new PlayerListInit();
+
         Thread tNickFeature = new Thread(nickInit);
         Thread tBotAbuseFeature = new Thread(baInit);
         Thread tCustomEmbedFeature = new Thread(customEmbedInit);
         Thread tCheckInFeature = new Thread(ciInit);
+        Thread tPlayerListFeature = new Thread(playerListInit);
 
         tNickFeature.setUncaughtExceptionHandler(aue);
         tNickFeature.setName("Nickname Thread");
@@ -112,13 +119,18 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
         tCustomEmbedFeature.setName("Custom Embed Thread");
         tCustomEmbedFeature.start();
 
-        while (baFeature == null || nickFeature == null || customEmbedFeature == null || ciFeature == null) {
+        tPlayerListFeature.setUncaughtExceptionHandler(aue);
+        tPlayerListFeature.setName("Player List Thread");
+        tPlayerListFeature.start();
+
+        while (baFeature == null || nickFeature == null || customEmbedFeature == null || ciFeature == null || playerListMain == null) {
             try { Thread.sleep(1000); } catch (InterruptedException e) {}
             try {
                 baFeature = baInit.getBaFeature();
                 nickFeature = nickInit.getNickFeature();
                 ciFeature = ciInit.getThis();
                 customEmbedFeature = customEmbedInit.getFeature();
+                playerListMain = playerListInit.getPlayerListFeature();
             }
             catch (NullPointerException ex) {}
         }
@@ -1285,6 +1297,7 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
         if (msg.getContentRaw().charAt(0) != mainConfig.commandPrefix) return false;
         String[] cmd = msg.getContentRaw().substring(1).split(" ");
         if (baFeature.isCommand(cmd[0])) return true;
+        if (playerListMain.isValidCommand(cmd[0])) return true;
         if (cmd.length > 1 ) {
             if (nickFeature.isCommand(cmd[0], cmd[1])) return true;
             if (ciFeature.isCommand(cmd[0], cmd[1])) return true;

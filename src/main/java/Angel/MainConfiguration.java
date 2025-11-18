@@ -1,10 +1,15 @@
 package Angel;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class MainConfiguration {
     private JsonObject configObj;
@@ -22,6 +27,7 @@ public abstract class MainConfiguration {
     String adminRoleID;
     String staffRoleID;
     String teamRoleID;
+    String memberRoleID;
     String teamChannelID;
     String helpChannelID;
     String botSpamChannelID;
@@ -37,6 +43,8 @@ public abstract class MainConfiguration {
     private Role adminRole;
     private Role staffRole;
     private Role teamRole;
+    private List<Role> supporterRoles = new ArrayList<>();
+    private Role memberRole;
 
     String checkIconURL;
     String warningIconURL;
@@ -64,6 +72,7 @@ public abstract class MainConfiguration {
         adminRoleID = configObj.get("adminRole").getAsString();
         staffRoleID = configObj.get("staffRole").getAsString();
         teamRoleID = configObj.get("teamRole").getAsString();
+        memberRoleID = configObj.get("memberRole").getAsString();
         teamChannelID = configObj.get("teamDiscussionChannel").getAsString();
         helpChannelID = configObj.get("helpChannel").getAsString();
         managementChannelID = configObj.get("managementChannel").getAsString();
@@ -106,6 +115,15 @@ public abstract class MainConfiguration {
         adminRole = guild.getRoleById(adminRoleID);
         staffRole = guild.getRoleById(staffRoleID);
         teamRole = guild.getRoleById(teamRoleID);
+
+        List<Long> supporterRoleIDs = new Gson().fromJson(configObj.get("supporterRoles").getAsString(), new TypeToken<ArrayList<Long>>(){}.getType());
+
+        supporterRoleIDs.forEach(roleID -> {
+            supporterRoles.add(guild.getRoleById(roleID));
+        });
+
+        memberRole = guild.getRoleById(memberRoleID);
+
     }
     public boolean discordGuildConfigurationsExist() {
         return guild.getMembers().contains(guild.getMemberById(ownerDiscordID))
@@ -137,6 +155,14 @@ public abstract class MainConfiguration {
 
     public Role getTeamRole() {
         return teamRole;
+    }
+
+    public List<Role> getSupporterRoles() {
+        return supporterRoles;
+    }
+
+    public Role getMemberRole() {
+        return memberRole;
     }
 
     protected void setAdminRole(Role adminRole) {

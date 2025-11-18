@@ -335,8 +335,8 @@ public class CheckInMain extends ListenerAdapter implements CheckInLogic {
                             }
                         }
                     });
-
-                    sendCheckInStartupPrompts(msg, false, ciCore.loadSessionLists(sessionName, false));
+                    ciCore.loadSessionLists(sessionName, false);
+                    sendCheckInStartupPrompts(msg, false);
 
                     return;
                 }
@@ -508,7 +508,8 @@ public class CheckInMain extends ListenerAdapter implements CheckInLogic {
                 purgeAllCommands();
                 checkInStartupMessages.clear();
                 checkInStartupEntryObjects.clear();
-                sendCheckInStartupPrompts(msg, false, ciCore.loadSessionLists(null, true));
+                ciCore.loadSessionLists(null, true);
+                sendCheckInStartupPrompts(msg, false);
             }
             else {
                 embed.setAsError("Unable To Refresh", "Uhhh... I cannot process that command because I need to " +
@@ -996,17 +997,9 @@ public class CheckInMain extends ListenerAdapter implements CheckInLogic {
         embed.sendAsMessageEntryObj(new MessageEntry("Check-In " + ciResult.getId() + " Ended", result, design).setChannels(TargetChannelSet.LOG));
     }
 
-    // In the case of false, false - then load session player list returned witout errors.
-    // In the case of false, true - then load session player list encountered errors.
-
-    private void sendCheckInStartupPrompts(Message originalCmd, boolean... booleans) {
-        if (!booleans[0]) {
-            if (booleans[1]) {
-                sendCheckInStartupPrompts(originalCmd, 2);
-            }
-            else {
-                sendCheckInStartupPrompts(originalCmd, 0);
-            }
+    private void sendCheckInStartupPrompts(Message originalCmd, boolean update) {
+        if (!update) {
+            sendCheckInStartupPrompts(originalCmd, 0);
         }
         else {
             sendCheckInStartupPrompts(originalCmd, 1);

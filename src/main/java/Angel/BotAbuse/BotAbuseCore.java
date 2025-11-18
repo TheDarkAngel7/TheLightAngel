@@ -9,7 +9,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 
-class BotAbuseCore implements BotAbuseLogic {
+public class BotAbuseCore implements BotAbuseLogic {
     // This is where all the magic happens, where all the data is added and queried from the appropriate arrays to
     // Display all the requested data.
     Angel.BotAbuse.FileHandler fileHandler;
@@ -248,7 +248,7 @@ class BotAbuseCore implements BotAbuseLogic {
                 "\nID: " + thisRecord.getId() +
                 "\n So... Whatever it was you were doing... Try Again...";
     }
-    String getInfo(long targetDiscordID, boolean isTeamMember) { // This method is for queries
+    public String getInfo(long targetDiscordID, boolean isTeamMember) { // This method is for queries
         // Lifetime Offenses Count the Current Offense
         // we subtract one to get how many previous offenses they've had before this one
         int prevOffenses = this.getLifetimeOffenses(targetDiscordID) - 1;
@@ -394,7 +394,7 @@ class BotAbuseCore implements BotAbuseLogic {
         }
         return prevOffenses;
     }
-    boolean botAbuseIsCurrent(long targetDiscordID) { // Returns True if the targetDiscordID is Bot Abused
+    public boolean botAbuseIsCurrent(long targetDiscordID) { // Returns True if the targetDiscordID is Bot Abused
         // The ExpiryDates array will have a null value for the targetDiscordID if it's a Permanent Bot Abuse - Return true
         if (getLastRecord(targetDiscordID) == null) {
             return false;
