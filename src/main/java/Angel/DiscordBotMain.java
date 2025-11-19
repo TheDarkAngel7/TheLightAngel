@@ -601,7 +601,7 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
         if (!msg.getChannelType().equals(ChannelType.PRIVATE) && !msg.getMentions().getMembers().contains(guild.getSelfMember())
                 && !msg.getChannel().asTextChannel().equals(mainConfig.botSpamChannel) && !msg.getChannel().asTextChannel().equals(mainConfig.managementChannel)
                 && msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && msg.getAttachments().isEmpty()
-                && mainConfig.deleteOriginalNonStaffCommands) {
+                && mainConfig.deleteOriginalNonStaffCommands && !playerListMain.isValidCommand(args[0])) {
             msg.delete().queue();
             log.warn("Message Deleted - Channel Type Not Private, Does Not Mention Me, Not Bot Spam Channel, " +
                     "Not Management Channel, Prefix Found, Attachments Empty, Delete Original Staff Commands True");
@@ -609,7 +609,8 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
         else if (!msg.getChannelType().equals(ChannelType.PRIVATE) && !msg.getMentions().getMembers().contains(guild.getSelfMember()) &&
                 isTeamMember(msg.getAuthor().getIdLong()) && isValidCommand(msg) &&
                 (!msg.getChannel().asTextChannel().equals(mainConfig.discussionChannel) || mainConfig.deleteOriginalStaffCommands) &&
-                !msg.getChannel().asTextChannel().equals(mainConfig.managementChannel) && !msg.getChannel().asTextChannel().equals(ciFeature.getConfig().getCheckInChannel()) && msg.getAttachments().isEmpty()) {
+                !msg.getChannel().asTextChannel().equals(mainConfig.managementChannel) && !msg.getChannel().asTextChannel().equals(ciFeature.getConfig().getCheckInChannel()) && msg.getAttachments().isEmpty()
+        && !playerListMain.isValidCommand(args[0])) {
             msg.delete().queue();
             log.warn("Message Deleted - Channel Type Not Private, Does Not Mention Me, Not Bot Spam Channel, Is Team Member, Is Valid Command " +
                     "Discussion Channel or Delete Original Staff Commands True, Not Management Channel, Not Check-In Channel, Attachments Empty");
