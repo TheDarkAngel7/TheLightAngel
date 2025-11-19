@@ -165,6 +165,30 @@ public abstract class MainConfiguration {
         return memberRole;
     }
 
+    public String getWarningIconURL() {
+        return warningIconURL;
+    }
+
+    public String getCheckIconURL() {
+        return checkIconURL;
+    }
+
+    public String getErrorIconURL() {
+        return errorIconURL;
+    }
+
+    public String getInfoIconURL() {
+        return infoIconURL;
+    }
+
+    public String getStopIconURL() {
+        return stopIconURL;
+    }
+
+    public String getHelpIconURL() {
+        return helpIconURL;
+    }
+
     protected void setAdminRole(Role adminRole) {
         this.adminRole = adminRole;
     }

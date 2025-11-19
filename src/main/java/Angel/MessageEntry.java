@@ -206,22 +206,22 @@ public class MessageEntry implements CommonLogic {
         EmbedBuilder embed = new EmbedBuilder();
         switch (design) {
             case SUCCESS:
-                embed.setColor(Color.GREEN).setThumbnail(mainConfig.checkIconURL);
+                embed.setColor(Color.GREEN).setThumbnail(mainConfig.getCheckIconURL());
                 break;
             case WARNING:
-                embed.setColor(Color.YELLOW).setThumbnail(mainConfig.warningIconURL);
+                embed.setColor(Color.YELLOW).setThumbnail(mainConfig.getWarningIconURL());
                 break;
             case ERROR:
-                embed.setColor(Color.RED).setThumbnail(mainConfig.errorIconURL);
+                embed.setColor(Color.RED).setThumbnail(mainConfig.getErrorIconURL());
                 break;
             case STOP:
-                embed.setColor(Color.RED).setThumbnail(mainConfig.stopIconURL);
+                embed.setColor(Color.RED).setThumbnail(mainConfig.getStopIconURL());
                 break;
             case INFO:
-                embed.setColor(Color.BLUE).setThumbnail(mainConfig.infoIconURL);
+                embed.setColor(Color.BLUE).setThumbnail(mainConfig.getInfoIconURL());
                 break;
             case HELP:
-                embed.setColor(Color.decode("#2F3136").brighter()).setThumbnail(mainConfig.helpIconURL);
+                embed.setColor(Color.decode("#2F3136").brighter()).setThumbnail(mainConfig.getHelpIconURL());
                 break;
         }
 
