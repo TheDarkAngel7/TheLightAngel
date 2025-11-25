@@ -293,18 +293,13 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             builder = builder.addField("Supporters (" + supporters.size() + ")", convertListToRegexString(supporters, useMentions), false);
         }
 
-        if (members.isEmpty()) {
-            builder = builder.addField("Members (0)", "", false);
-        }
-
-        else {
+        if (!members.isEmpty()) {
             if (staffMembers.isEmpty() && supporters.isEmpty()) {
                 builder = builder.addField("", convertListToRegexString(members, useMentions), false);
             }
             else {
                 builder = builder.addField("Members (" + members.size() + ")", convertListToRegexString(members, useMentions), false);
             }
-
         }
 
         // Build the Resulting Output
