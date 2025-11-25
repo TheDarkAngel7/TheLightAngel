@@ -50,15 +50,18 @@ public class Player implements CommonLogic {
             int score = levenshteinDistance.apply(searchName.toLowerCase(), verifiedMembers.get().get(index).getEffectiveName().toLowerCase());
 
             if (score < lowestScore) {
-                log.info("Based on " + searchName + " we're thinking " + verifiedMembers.get().get(index).getEffectiveName() +
-                        " is the best match with a score of " + score);
+                log.debug("Based on {} we're thinking {} is the best match with a score of {}",
+                        searchName, verifiedMembers.get().get(index).getEffectiveName(), score);
                 accountCandidate = verifiedMembers.get().get(index);
                 lowestScore = score;
             }
+            if (lowestScore == 0) break;
             index++;
 
         }
         while (index < verifiedMembers.get().size());
+
+        log.info("Based on the Query of {}, Discord Account: {} (ID: {})", searchName, accountCandidate.getEffectiveName(), accountCandidate.getIdLong());
 
         playerAccount.set(accountCandidate);
 

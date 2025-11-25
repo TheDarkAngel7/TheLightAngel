@@ -72,12 +72,10 @@ public class SessionManager implements CommonLogic {
 
                 String channelName = Normalizer.normalize(textChannels.get(index).getName(), Normalizer.Form.NFD);
 
-                System.out.println("Channel Name: " + channelName + " Len: " + channelName.length());
-
-                log.debug(textChannels.get(index).getName() + " with ID " + textChannels.get(index).getIdLong() + " Have permission "
+                log.debug(channelName + " with ID " + textChannels.get(index).getIdLong() + " Have permission "
                         + getGuild().getSelfMember().hasPermission(textChannels.get(index), Permission.VIEW_CHANNEL));
 
-                int channelScore = levenshtein.apply(textChannels.get(index).getName(), sessionName);
+                int channelScore = levenshtein.apply(channelName, sessionName);
                 boolean iHavePermission = getGuild().getSelfMember().hasPermission(textChannels.get(index), Permission.VIEW_CHANNEL);
 
                 log.debug("Match Score " + channelScore + " iHavePermission: " + iHavePermission);
@@ -99,16 +97,28 @@ public class SessionManager implements CommonLogic {
             case RESTARTING:
             case OFFLINE:
                 sessionInQuestion.getSessionChannel().getPermissionOverride(mainConfig.getMemberRole())
-                        .getManager().deny(Permission.MESSAGE_SEND).reason("Received Call that " + sessionInQuestion.getSessionName() + "is Offline")
-                        .submit().whenComplete(
-                                (permissionOverride, throwable) ->
-                                        log.info("Successfully Closed the Session Channel #" + sessionInQuestion.getSessionChannel().getName()));
+                        .getManager().deny(Permission.MESSAGE_SEND).reason("Received Call that " + sessionInQuestion.getSessionName() + " is Offline")
+                        .submit().whenComplete((permissionOverride, throwable) -> {
+                            if (throwable == null) {
+                                log.info("Successfully Closed the Session Channel #{} by denying the permission: {}", sessionInQuestion.getSessionName(), permissionOverride);
+                            }
+                            else {
+                                log.error("Unable to Close the session channel #{} - Reason: {}", sessionInQuestion.getSessionChannel().getName(), throwable.getMessage());
+                            }
+                        });
                 break;
             case ONLINE:
                 sessionInQuestion.getSessionChannel().getPermissionOverride(mainConfig.getMemberRole())
-                        .getManager().clear(Permission.MESSAGE_SEND).reason("Received Call that " + sessionInQuestion.getSessionName() + "is Online")
-                        .submit().whenComplete((permissionOverride, throwable) ->
-                                log.info("Successfully Opened the Session Channel #" + sessionInQuestion.getSessionChannel().getName()));
+                        .getManager().clear(Permission.MESSAGE_SEND).reason("Received Call that " + sessionInQuestion.getSessionName() + " is Online")
+                        .submit().whenComplete((permissionOverride, throwable) -> {
+                            if (throwable == null) {
+                                log.info("Successfully Opened the Session Channel #{} by resetting the permission: {}", sessionInQuestion.getSessionName(), permissionOverride);
+                            }
+                            else {
+                                log.error("Unable to Open the session channel #{} - Reason: {}", sessionInQuestion.getSessionChannel().getName(), throwable.getMessage());
+                            }
+                        });
+
                 break;
         }
 
