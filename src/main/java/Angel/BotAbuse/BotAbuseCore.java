@@ -15,7 +15,7 @@ public class BotAbuseCore implements BotAbuseLogic {
     Angel.BotAbuse.FileHandler fileHandler;
     private final Logger log = LogManager.getLogger(BotAbuseCore.class);
     private List<BotAbuseRecord> records = new ArrayList<>();
-    Dictionary<String, String> reasonsDictionary = new Hashtable<>();
+    Map<String, String> reasonsDictionary = new Hashtable<>();
 
     BotAbuseCore() {
         this.fileHandler = new FileHandler();

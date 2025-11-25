@@ -2,9 +2,9 @@ package Angel.CheckIn;
 
 import Angel.FileGarbageTruck;
 import Angel.ZoneIDInstanceCreator;
+import Angel.ZonedDateTimeAdapter;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import com.google.gson.stream.JsonWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -13,6 +13,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Calendar;
 import java.util.List;
 
@@ -24,7 +25,9 @@ class FileHandler {
     private final FileGarbageTruck garbageTruck = new FileGarbageTruck("Check-In", "db-backups/CheckIn", 14);
 
     FileHandler() {
-        gson = new GsonBuilder().registerTypeAdapter(ZoneId.class, new ZoneIDInstanceCreator()).create();
+        gson = new GsonBuilder()
+                .registerTypeAdapter(ZoneId.class, new ZoneIDInstanceCreator())
+                .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeAdapter()).create();
     }
 
     public JsonObject getConfig()  {
@@ -42,10 +45,7 @@ class FileHandler {
     public List<CheckInResult> getDatabase() {
         try {
             FileReader fileReader = new FileReader(jsonCheckInDataFile);
-            JsonObject database = JsonParser.parseReader(fileReader).getAsJsonObject();
-            fileReader.close();
-
-            return gson.fromJson(database.get("ciResults").getAsString(), new TypeToken<List<CheckInResult>>(){}.getType());
+            return gson.fromJson(fileReader, new TypeToken<List<CheckInResult>>(){}.getType());
         }
         catch (IOException ex) {
             throw new RuntimeException(ex);
@@ -53,11 +53,9 @@ class FileHandler {
     }
 
     public void saveDatabase(List<CheckInResult> ciResults) throws IOException {
-        JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(Files.newOutputStream(jsonCheckInDataTempFile.toPath())));
-        jsonWriter.beginObject()
-                .name("ciResults").value(gson.toJson(ciResults))
-                .endObject();
-        jsonWriter.close();
+        Writer writer = new FileWriter(jsonCheckInDataFile);
+        gson.toJson(ciResults, writer);
+        writer.close();
         log.info("JSONWriter Successfully Ran to Check In Database Temp File");
         while (true) {
             try {

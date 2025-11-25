@@ -1330,8 +1330,8 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseLogic {
     private void reasonsCommand(Message msg, String[] args, boolean isTeamMember, boolean isStaffMember) throws IOException {
         String result = "";
         if ((args.length == 1 || args[1].equalsIgnoreCase("list")) && isTeamMember) {
-            Enumeration<String> keys = baCore.reasonsDictionary.keys();
-            Enumeration<String> elements = baCore.reasonsDictionary.elements();
+            Enumeration<String> keys = Collections.enumeration(baCore.reasonsDictionary.keySet());
+            Enumeration<String> elements = Collections.enumeration(baCore.reasonsDictionary.values());
             String defaultTitle = "Reasons Dictionary";
             try {
                 do {

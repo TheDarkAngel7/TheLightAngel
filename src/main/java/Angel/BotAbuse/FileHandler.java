@@ -2,36 +2,48 @@ package Angel.BotAbuse;
 
 import Angel.FileGarbageTruck;
 import Angel.ZoneIDInstanceCreator;
+import Angel.ZonedDateTimeAdapter;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import com.google.gson.stream.JsonWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Calendar;
-import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
 class FileHandler {
     Gson gson;
     private final Logger log = LogManager.getLogger(FileHandler.class);
     private final FileGarbageTruck garbageTruck = new FileGarbageTruck("Bot Abuse", "db-backups/BotAbuse", 9);
+    private BotAbuseFile botAbuseFile;
     private File jsonBADataFile = new File("data/BAdata.json");
     private File jsonTempBADataFile = new File("data/BAdatatemp.json");
     private Type recordsType = new TypeToken<List<BotAbuseRecord>>(){}.getType();
     private Type dictionary = new TypeToken<Hashtable<String, String>>(){}.getType();
 
     FileHandler() {
+        gson = new GsonBuilder().registerTypeAdapter(ZoneId.class, new ZoneIDInstanceCreator())
+                .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeAdapter()).create();
 
-        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter(ZoneId.class, new ZoneIDInstanceCreator());
-        gson = gsonBuilder.create();
+        try (FileReader fileReader = new FileReader(jsonBADataFile)) {
+            botAbuseFile = gson.fromJson(fileReader, BotAbuseFile.class);
+            fileReader.close();
+        }
+        catch (IOException e) {
+            log.fatal(e.getMessage());
+        }
     }
 
     public JsonObject getConfig() {
@@ -46,37 +58,19 @@ class FileHandler {
     }
 
     public List<BotAbuseRecord> getRecords() {
-        FileReader fileReader = null;
-        try {
-            fileReader = new FileReader(jsonBADataFile);
-            JsonObject database = JsonParser.parseReader(fileReader).getAsJsonObject();
-            fileReader.close();
-            return gson.fromJson(database.get("records").getAsString(), recordsType);
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return botAbuseFile.getRecords();
     }
 
-    public Dictionary<String, String> getReasonsDictionary() {
-        FileReader fileReader = null;
-        try {
-            fileReader = new FileReader(jsonBADataFile);
-            JsonObject database = JsonParser.parseReader(fileReader).getAsJsonObject();
-            return gson.fromJson(database.get("ReasonsDictionary").getAsString(), dictionary);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public Map<String, String> getReasonsDictionary() {
+        return botAbuseFile.getReasonsDictionary();
     }
 
-    public void saveDatabase(List<BotAbuseRecord> records, Dictionary<String, String> reasonsDictionary) {
+    public void saveDatabase(List<BotAbuseRecord> records, Map<String, String> reasonsDictionary) {
         try {
-            JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(new FileOutputStream(jsonTempBADataFile)));
-            jsonWriter.beginObject();
-            jsonWriter.name("records").value(gson.toJson(records));
-            jsonWriter.name("ReasonsDictionary").value(gson.toJson(reasonsDictionary));
-            jsonWriter.endObject();
-            jsonWriter.close();
+            FileWriter fileWriter = new FileWriter(jsonTempBADataFile);
+
+            fileWriter.write(gson.toJson(new BotAbuseFile(records, reasonsDictionary)));
+
             log.info("JSONWriter Successfully Ran to Bot Abuse Database Temp File");
             while (true) {
                 try {
