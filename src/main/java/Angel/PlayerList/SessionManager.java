@@ -50,10 +50,12 @@ public class SessionManager implements CommonLogic {
             Session sessionInQuestion = getSession(sessionName);
             int sessionIndexPosition = sessions.indexOf(sessionInQuestion);
 
-            // If the player list is 0 or very low, these are some formulas here that any of them could come up true
+            // If the player list is 0 or very low or excessively high to a number that is not possible (greater than 30),
+            // these are some formulas here that will be true
             // and it'll flag that the session likely missed a screenshot
 
-            if (sessionInQuestion.getPlayerList().size() - 5 > playerList.size()) {
+            if (sessionInQuestion.getPlayerList().size() - 5 > playerList.size() ||
+                    playerList.size() > 30) {
                 sessionInQuestion = sessionInQuestion.missedScreenshot();
             }
             else {
@@ -82,7 +84,14 @@ public class SessionManager implements CommonLogic {
 
                 if (channelScore <= 4 && iHavePermission) {
                     log.info("Session Channel Successfully Determined with ID " + textChannels.get(index).getIdLong());
-                    sessions.add(new Session(sessionName, textChannels.get(index), playerList));
+
+                    if (playerList.size() > 30) {
+                        sessions.add(new Session(sessionName, textChannels.get(index), new ArrayList<>()));
+                    }
+                    else {
+                        sessions.add(new Session(sessionName, textChannels.get(index), playerList));
+                    }
+
                     break;
                 }
                 index++;
