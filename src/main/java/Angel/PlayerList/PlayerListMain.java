@@ -15,10 +15,11 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
     private final Logger log = LogManager.getLogger(PlayerListMain.class);
@@ -107,43 +108,62 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
         String[] args = msg.getContentRaw().substring(1).split(" ");
 
+        PlayerListMessage playerListMessage;
         if (usedInSessionChannel(msg)) {
+            try {
+                playerListMessage = new PlayerListMessage(msg.getChannel().getName());
 
-            if (args.length == 2 && args[1].equalsIgnoreCase("clear") &&  isTeamMember(msg.getAuthor().getIdLong())) {
-                try {
-                    sessionManager.clearSessionPlayers(msg.getChannel().asTextChannel().getName());
+                if (args.length == 2 && args[1].equalsIgnoreCase("clear") &&  isTeamMember(msg.getAuthor().getIdLong())) {
+                    try {
+                        sessionManager.clearSessionPlayers(msg.getChannel().asTextChannel().getName());
+                        msg.delete().queue();
+                    }
+                    catch (InvalidSessionException ex) {
+                        aue.logCaughtException(Thread.currentThread(), ex);
+                    }
+                }
+
+                else if (baCore.botAbuseIsCurrent(msg.getAuthor().getIdLong())) {
                     msg.delete().queue();
+                    MessageEntry entry = new MessageEntry("You Are Bot Abused",
+                            "**Whoops, looks like you are currently bot abused:**\n\n" +
+                                    baCore.getInfo(msg.getAuthor().getIdLong(), false), EmbedDesign.INFO)
+                            .setTargetUser(msg.getAuthor()).setChannels(TargetChannelSet.DM);
+
+                    embed.sendAsMessageEntryObj(entry);
                 }
-                catch (InvalidSessionException ex) {
-                    aue.logCaughtException(Thread.currentThread(), ex);
+                else {
+                    playerListMessage.sortListAlphabetically(sortAlphabetically).useMentions(useMentions)
+                            .getMessageCreateAction().queue();
                 }
             }
-
-            else if (baCore.botAbuseIsCurrent(msg.getAuthor().getIdLong())) {
-                msg.delete().queue();
-                MessageEntry entry = new MessageEntry("You Are Bot Abused",
-                        "**Whoops, looks like you are currently bot abused:**\n\n" +
-                                baCore.getInfo(msg.getAuthor().getIdLong(), false), EmbedDesign.INFO)
-                        .setTargetUser(msg.getAuthor()).setChannels(TargetChannelSet.DM);
-
-                embed.sendAsMessageEntryObj(entry);
-            }
-            else {
-                msg.getChannel().asTextChannel()
-                        .sendMessageEmbeds(getPlayerListEmbed(msg.getChannel().getName(), sortAlphabetically, useMentions)).queue();
+            catch (InvalidSessionException e) {
+                msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Channel", "**Whoops... this does not appear to be a valid session channel!**", EmbedDesign.ERROR).getEmbed())
+                        .queue(m -> {
+                            msg.delete().queueAfter(10, TimeUnit.SECONDS);
+                            m.delete().queueAfter(10, TimeUnit.SECONDS);
+                        });
             }
         }
         else {
             if (args.length == 2) {
-                if (isTeamMember(msg.getAuthor().getIdLong())) {
-                    msg.getChannel().asTextChannel()
-                            .sendMessageEmbeds(getPlayerListEmbed(args[1], sortAlphabetically, useMentions)).queue();
+                try {
+                    playerListMessage = new PlayerListMessage(args[1]);
+                    if (isTeamMember(msg.getAuthor().getIdLong())) {
+                        playerListMessage.setTargetChannel(msg.getChannel().asTextChannel()).sortListAlphabetically(sortAlphabetically).useMentions(useMentions)
+                                .getMessageCreateAction().queue();
+                    }
+                    else {
+                        mainConfig.dedicatedOutputChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
+                        playerListMessage.setTargetChannel(mainConfig.dedicatedOutputChannel).sortListAlphabetically(sortAlphabetically)
+                                .useMentions(useMentions).getMessageCreateAction().queue();
+                    }
+                } catch (InvalidSessionException e) {
+                    mainConfig.dedicatedOutputChannel.sendMessageEmbeds(
+                            new MessageEntry("Invalid Search", "**Whoops... this does not appear to be a valid search!**",  EmbedDesign.ERROR).getEmbed())
+                            .queue();
                 }
-                else {
-                    mainConfig.dedicatedOutputChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
-                    mainConfig.dedicatedOutputChannel
-                            .sendMessageEmbeds(getPlayerListEmbed(args[1], sortAlphabetically, useMentions)).queue();
-                }
+
             }
             else {
                 if (args[2].equalsIgnoreCase("clear") &&  isTeamMember(msg.getAuthor().getIdLong())) {
@@ -296,125 +316,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         }
     }
 
-    private MessageEmbed getPlayerListEmbed(String searchQuery, boolean sortAlphabetically, boolean useMentions) {
-        Session sessionQuery;
 
-        try {
-            sessionQuery = sessionManager.getSession(searchQuery);
-        }
-        catch (InvalidSessionException e) {
-            return new MessageEntry("Invalid Search", "**Whoops... I came up empty for that session search query...**", EmbedDesign.ERROR).getEmbed();
-        }
-
-        // List of Staff Members
-        List<Player> staffMembers = new ArrayList<>();
-
-        // List of "Supporters"
-        // Supporters are VIPs, Nitro Boosters, or Patrons
-        List<Player> supporters = new ArrayList<>();
-
-        // List of Members who are Not Supporters
-        List<Player> members = new ArrayList<>();
-
-        // Atomic Boolean for Unrecognized Player Detection
-        // If a Player Cannot be found in the discord, the footer then comes in and says that a Kickvote may be needed
-        AtomicBoolean unrecognizedPlayerFound = new AtomicBoolean(false);
-
-        sessionQuery.getPlayerList().forEach(player -> {
-
-            if (player.isStaff()) {
-                staffMembers.add(player);
-            }
-            else if (player.isSupporter()) {
-                supporters.add(player);
-            }
-            else if (player.isCrewMember()) {
-                members.add(player);
-            }
-            else {
-                unrecognizedPlayerFound.set(true);
-            }
-        });
-
-        if (!sortAlphabetically) {
-            Collections.shuffle(staffMembers);
-            Collections.shuffle(supporters);
-            Collections.shuffle(members);
-        }
-        else {
-            staffMembers.sort(Comparator.comparing(Player::getPlayerName, String.CASE_INSENSITIVE_ORDER));
-            supporters.sort(Comparator.comparing(Player::getPlayerName, String.CASE_INSENSITIVE_ORDER));
-            members.sort(Comparator.comparing(Player::getPlayerName, String.CASE_INSENSITIVE_ORDER));
-        }
-
-        EmbedBuilder builder = new EmbedBuilder();
-
-       //  String result = "";
-
-        if (!staffMembers.isEmpty()) {
-            builder = builder.addField("Staff (" + staffMembers.size() + ")", convertListToRegexString(staffMembers, useMentions), false);
-        }
-
-        if (!supporters.isEmpty()) {
-            builder = builder.addField("Supporters (" + supporters.size() + ")", convertListToRegexString(supporters, useMentions), false);
-        }
-
-        if (!members.isEmpty()) {
-            if (staffMembers.isEmpty() && supporters.isEmpty()) {
-                builder = builder.addField("", convertListToRegexString(members, useMentions), false);
-            }
-            else {
-                builder = builder.addField("Members (" + members.size() + ")", convertListToRegexString(members, useMentions), false);
-            }
-        }
-
-        // Build the Resulting Output
-
-        int playerCount = staffMembers.size() + supporters.size() + members.size();
-
-        builder = builder.setTitle(sessionQuery.getSessionName() + " (" +  playerCount + ")")
-                .setThumbnail("https://safe-crew.net/img/assets/sessions" + sessionQuery.getSessionName().toLowerCase() + "_128sm.png");
-
-        switch (sessionQuery.getStatus()) {
-            case OFFLINE:
-                return new MessageEntry(sessionQuery.getSessionName() + " Status", "**" + sessionQuery.getSessionName() + " is Offline until Further Notice**", EmbedDesign.STOP)
-                        .getEmbed(false);
-            case ONLINE:
-                if (playerCount == 0) {
-                    builder = builder.clearFields().addField("", "**" + sessionQuery.getSessionName() + " is empty... YEET!**", false)
-                            .setColor(Color.RED);
-                }
-                else if (playerCount <= 9) {
-                    builder = builder.setFooter("Low Player Count - Great for Sourcing! - Last Read: " + sessionQuery.getLastUpdateInSeconds() + "s ago")
-                            .setColor(Color.decode("#80FF40"));
-                }
-                else if (playerCount >= 10 && playerCount < 20) {
-                    builder = builder.setFooter("Money Making Time - Join Now! - Last Read: " + sessionQuery.getLastUpdateInSeconds() + "s ago")
-                            .setColor(Color.GREEN);
-                }
-                else {
-                    builder = builder.setFooter("Money Making Time - May Be Hard to Join - Last Read: " + sessionQuery.getLastUpdateInSeconds() + "s ago")
-                            .setColor(Color.decode("#005700"));
-                }
-
-                if (sessionQuery.isExperiencingScreenshotTrouble()) {
-                    builder = builder.addField("", ":warning: **My sensors tell me that " + sessionQuery.getSessionName() +
-                            " appears to be having difficulties capturing the player list. The previous known good player list is being displayed.**", false);
-                }
-                    break;
-            case RESTARTING:
-                return new MessageEntry(sessionQuery.getSessionName() + " Status", "**" + sessionQuery.getSessionName() + " is being restarted at this time. You will be notified in "
-                        + sessionQuery.getSessionChannel().getAsMention() + " when the session is back online.**", EmbedDesign.STOP).getEmbed(false);
-            case RESTART_MOD:
-                return new MessageEntry(sessionQuery.getSessionName() + " Status", "**" + sessionQuery.getSessionName() + " is being restarted due to modded elements that have been discovered in the session. You will be notified in "
-                        + sessionQuery.getSessionChannel().getAsMention() + " when the session is back online.", EmbedDesign.STOP).getEmbed(false);
-            case RESTART_SOON:
-                builder = builder.addField("", ":warning: This session is going to be restarted soon! If you are in the session please wrap up what you are doing and leave it as soon as possible. If you outside the session please stay out until the session is back online.", false)
-                        .setColor(Color.YELLOW).setThumbnail(mainConfig.getWarningIconURL());
-                break;
-        }
-        return builder.build();
-    }
 
     private MessageEmbed getHeadCountEmbed() {
         List<Session> sessionList = sessionManager.getSessions();
@@ -459,28 +361,6 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         }
 
         return embedBuilder.build();
-    }
-
-    private String convertListToRegexString(List<Player> players, boolean useMentions) {
-        int index = 0;
-        String result = "";
-
-        while (index < players.size()) {
-            if (useMentions) {
-                result = result.concat(players.get(index).getDiscordAccount().getAsMention());
-            }
-            else {
-                result = result.concat("`" + players.get(index).getDiscordAccount().getEffectiveName() + "`");
-            }
-
-            if (index < players.size() - 1) {
-                result = result.concat(", ");
-            }
-
-            index++;
-        }
-
-        return result;
     }
     private boolean usedInSessionChannel(Message msg) {
         int index = 0;
