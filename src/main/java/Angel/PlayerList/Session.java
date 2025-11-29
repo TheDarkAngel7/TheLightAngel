@@ -73,11 +73,16 @@ public class Session {
         return players;
     }
 
+    public Session clearPlayerList() {
+        players.clear();
+        return this;
+    }
+
     public SessionStatus getStatus() {
         return status;
     }
     public boolean isExperiencingScreenshotTrouble() {
-        return isExperiencingScreenshotTrouble;
+        return isExperiencingScreenshotTrouble || getLastUpdateInSeconds() > 180;
     }
     public void resetListFilter() {
         this.missedScreenshots = 0;

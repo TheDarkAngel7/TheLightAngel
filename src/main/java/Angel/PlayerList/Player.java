@@ -63,6 +63,30 @@ public class Player implements CommonLogic {
 
         log.info("Based on the Query of {}, Discord Account: {} (ID: {})", searchName, accountCandidate.getEffectiveName(), accountCandidate.getIdLong());
 
+        if (lowestScore >= 4) {
+            log.info("Based on the high Levenshtein score, we're going to attempt to strip the query of any underscores and dashes - Possibly getting a better match");
+
+            index = 0;
+            do {
+                int score = levenshteinDistance.apply(searchName.replaceAll("_", "")
+                                .replaceAll("-", "").toLowerCase(),
+                        verifiedMembers.get().get(index).getEffectiveName().replaceAll("_", "")
+                                .replaceAll("-", "").toLowerCase());
+
+                if (score < lowestScore) {
+                    log.debug("With underscores and dashes removed from search query {}, we're thinking {} is the best match with a score of {}",
+                            searchName, verifiedMembers.get().get(index).getEffectiveName(), score);
+                    accountCandidate = verifiedMembers.get().get(index);
+                    lowestScore = score;
+                }
+                if (lowestScore == 0) break;
+                index++;
+
+            } while (index < verifiedMembers.get().size());
+            log.info("Based on Query of {} with underscores and dashes removed, Discord Account: {} (ID: {})",
+                    searchName, accountCandidate.getEffectiveName(), accountCandidate.getIdLong());
+        }
+
         playerAccount.set(accountCandidate);
 
     }

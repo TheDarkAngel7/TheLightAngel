@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
@@ -76,11 +77,20 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                             hostCommand(msg);
                         }
                         else {
-                            // A command used outside a session channel should throw an error stating that it needs to be
+                            msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Channel", "**The usage of this command is restricted to a session channel**", EmbedDesign.ERROR).getEmbed())
+                                    .queue(m -> {
+                                        msg.delete().queueAfter(10, TimeUnit.SECONDS);
+                                        m.delete().queueAfter(10, TimeUnit.SECONDS);
+                                    });
+
                         }
                     }
                     else {
-                        // Command used but they're not a team member
+                        msg.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions", ":x: **You Have No Permissions to use this command**", EmbedDesign.ERROR).getEmbed())
+                                .queue(m -> {
+                                    msg.delete().queueAfter(10, TimeUnit.SECONDS);
+                                    m.delete().queueAfter(10, TimeUnit.SECONDS);
+                                });
                     }
                     break;
                 case "shot":
@@ -96,10 +106,20 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         String[] args = msg.getContentRaw().substring(1).split(" ");
 
         if (usedInSessionChannel(msg)) {
-            if (baCore.botAbuseIsCurrent(msg.getAuthor().getIdLong())) {
+
+            if (args[1].equalsIgnoreCase("clear") &&  isTeamMember(msg.getAuthor().getIdLong())) {
+                try {
+                    sessionManager.clearSessionPlayers(msg.getChannel().asTextChannel().getName());
+                }
+                catch (InvalidSessionException ex) {
+                    aue.logCaughtException(Thread.currentThread(), ex);
+                }
+            }
+
+            else if (baCore.botAbuseIsCurrent(msg.getAuthor().getIdLong())) {
                 msg.delete().queue();
                 MessageEntry entry = new MessageEntry("You Are Bot Abused",
-                        "**Whoops, looks like you are currently bot abused:\n\n" +
+                        "**Whoops, looks like you are currently bot abused:**\n\n" +
                                 baCore.getInfo(msg.getAuthor().getIdLong(), false), EmbedDesign.INFO)
                         .setTargetUser(msg.getAuthor()).setChannels(TargetChannelSet.DM);
 
@@ -123,7 +143,29 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 }
             }
             else {
-                // Reserved for an Error
+                if (args[2].equalsIgnoreCase("clear") &&  isTeamMember(msg.getAuthor().getIdLong())) {
+                    try {
+                        sessionManager.clearSessionPlayers(args[1]);
+                    }
+                    catch (InvalidSessionException ex) {
+                        msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Unable to find a session to clear the player list for with the query:** " + args[1],
+                                EmbedDesign.ERROR).getEmbed()).submit().whenComplete((message, throwable) -> {
+                                    if (throwable == null) {
+                                        message.delete().queueAfter(15, TimeUnit.SECONDS);
+                                    }
+                                    else {
+                                        aue.logCaughtException(Thread.currentThread(), throwable);
+                                    }
+                                });
+                    }
+                }
+                else {
+                    msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Args!", "**Invalid Number of Arguments!**", EmbedDesign.ERROR).getEmbed())
+                            .queue(m -> {
+                                msg.delete().queueAfter(10, TimeUnit.SECONDS);
+                                m.delete().queueAfter(10, TimeUnit.SECONDS);
+                            });
+                }
             }
         }
 
@@ -185,7 +227,11 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 sessionInQuestion.getSessionChannel().sendMessageEmbeds(entry.getEmbed()).queue();
             }
             else {
-                // !host by itself
+                msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Usage", "Expected one of the following arguments: `up|online|down|off|offline|restart|mod|modder|cheat|cheater", EmbedDesign.ERROR).getEmbed())
+                        .queue(m -> {
+                            msg.delete().queueAfter(10, TimeUnit.SECONDS);
+                            m.delete().queueAfter(10, TimeUnit.SECONDS);
+                        });
             }
         } catch (InvalidSessionException e) {
             throw new RuntimeException(e);
