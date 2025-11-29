@@ -15,9 +15,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -92,6 +90,10 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                                     m.delete().queueAfter(10, TimeUnit.SECONDS);
                                 });
                     }
+                    break;
+                case "headcount":
+                case "hc":
+                    headCountCommand(msg);
                     break;
                 case "shot":
                     shotCommand(msg);
@@ -169,6 +171,17 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             }
         }
 
+    }
+
+    private void headCountCommand(Message msg) {
+        if (usedInSessionChannel(msg)) {
+            msg.delete().queue();
+        }
+        if (mainConfig.dedicatedOutputChannel.getIdLong() != msg.getChannel().asTextChannel().getIdLong()) {
+            mainConfig.dedicatedOutputChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
+        }
+
+        mainConfig.dedicatedOutputChannel.sendMessageEmbeds(getHeadCountEmbed()).queue();
     }
 
     private void hostCommand(Message msg) {
@@ -326,6 +339,11 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             Collections.shuffle(supporters);
             Collections.shuffle(members);
         }
+        else {
+            staffMembers.sort(Comparator.comparing(Player::getPlayerName, String.CASE_INSENSITIVE_ORDER));
+            supporters.sort(Comparator.comparing(Player::getPlayerName, String.CASE_INSENSITIVE_ORDER));
+            members.sort(Comparator.comparing(Player::getPlayerName, String.CASE_INSENSITIVE_ORDER));
+        }
 
         EmbedBuilder builder = new EmbedBuilder();
 
@@ -394,6 +412,51 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 break;
         }
         return builder.build();
+    }
+
+    private MessageEmbed getHeadCountEmbed() {
+        List<Session> sessionList = sessionManager.getSessions();
+
+        sessionList.sort(Comparator.comparing(Session::getSessionName, String.CASE_INSENSITIVE_ORDER));
+
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+
+        if (sessionManager.getSessionTotalPlayerCount() == 0) {
+            embedBuilder = embedBuilder.setColor(Color.decode("#2F3136").brighter());
+        }
+        else if (sessionManager.getSessionTotalPlayerCount() >= 1 && sessionManager.getSessionTotalPlayerCount() <= 9) {
+            embedBuilder = embedBuilder.setColor(Color.decode("#80FF40"));
+        }
+        else {
+            embedBuilder = embedBuilder.setColor(Color.GREEN);
+        }
+
+        int index = 0;
+
+        while (index < sessionList.size()) {
+            Session currentSession = sessionList.get(index);
+
+            embedBuilder = switch (currentSession.getStatus()) {
+                case ONLINE ->
+                        embedBuilder.addField(currentSession.getSessionName(), currentSession.getPlayerCount() + " Players", false);
+
+                case OFFLINE -> embedBuilder.addField(currentSession.getSessionName(), "*Session is Offline*", false);
+
+                case RESTARTING, RESTART_MOD ->
+                        embedBuilder.addField(currentSession.getSessionName(), "*Session is Restarting*", false);
+
+                case RESTART_SOON ->
+                        embedBuilder.addField(currentSession.getSessionName(), "*Session is Restarting Soon*", false);
+            };
+
+            if (index == sessionList.size() - 1) {
+                embedBuilder = embedBuilder.addField("", "**Total: " + sessionManager.getSessionTotalPlayerCount() + "**", false);
+            }
+
+            index++;
+        }
+
+        return embedBuilder.build();
     }
 
     private String convertListToRegexString(List<Player> players, boolean useMentions) {
