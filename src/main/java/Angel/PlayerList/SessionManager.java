@@ -142,4 +142,15 @@ public class SessionManager implements CommonLogic {
     public List<Session> getSessions() {
         return sessions;
     }
+
+    public int getSessionTotalPlayerCount() {
+        int index = 0;
+        int tally = 0;
+
+        do {
+            tally = tally + sessions.get(index++).getPlayerCount();
+        } while (index < sessions.size());
+
+        return tally;
+    }
 }
