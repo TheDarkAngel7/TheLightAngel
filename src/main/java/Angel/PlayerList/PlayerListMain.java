@@ -108,6 +108,8 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
         String[] args = msg.getContentRaw().substring(1).split(" ");
 
+        log.info("{} requested a player list, Use Mention: {} sortAlpha: {} ", msg.getMember().getEffectiveName(), useMentions, sortAlphabetically);
+
         PlayerListMessage playerListMessage;
         if (usedInSessionChannel(msg)) {
             try {
