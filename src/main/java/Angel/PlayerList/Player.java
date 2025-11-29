@@ -63,7 +63,7 @@ public class Player implements CommonLogic {
 
         log.info("Based on the Query of {}, Discord Account: {} (ID: {})", searchName, accountCandidate.getEffectiveName(), accountCandidate.getIdLong());
 
-        if (lowestScore >= 4) {
+        if (lowestScore >= 3) {
             log.info("Based on the high Levenshtein score, we're going to attempt to strip the query of any underscores and dashes - Possibly getting a better match");
 
             index = 0;
