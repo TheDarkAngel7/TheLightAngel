@@ -373,7 +373,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         int playerCount = staffMembers.size() + supporters.size() + members.size();
 
         builder = builder.setTitle(sessionQuery.getSessionName() + " (" +  playerCount + ")")
-                .setThumbnail("https://dint.nl/safe/beasts/" + sessionQuery.getSessionName().toLowerCase() + "_128sm.png");
+                .setThumbnail("https://safe-crew.net/img/assets/sessions" + sessionQuery.getSessionName().toLowerCase() + "_128sm.png");
 
         switch (sessionQuery.getStatus()) {
             case OFFLINE:
