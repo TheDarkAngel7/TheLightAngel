@@ -112,6 +112,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             if (args.length == 2 && args[1].equalsIgnoreCase("clear") &&  isTeamMember(msg.getAuthor().getIdLong())) {
                 try {
                     sessionManager.clearSessionPlayers(msg.getChannel().asTextChannel().getName());
+                    msg.delete().queue();
                 }
                 catch (InvalidSessionException ex) {
                     aue.logCaughtException(Thread.currentThread(), ex);
@@ -148,6 +149,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 if (args[2].equalsIgnoreCase("clear") &&  isTeamMember(msg.getAuthor().getIdLong())) {
                     try {
                         sessionManager.clearSessionPlayers(args[1]);
+                        msg.delete().queue();
                     }
                     catch (InvalidSessionException ex) {
                         msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Unable to find a session to clear the player list for with the query:** " + args[1],

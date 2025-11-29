@@ -101,6 +101,8 @@ public class SessionManager implements CommonLogic {
     public void clearSessionPlayers(String name) throws InvalidSessionException {
         Session sessionInQuestion = getSession(name);
 
+        log.info("Attempting to clear player list for " +  sessionInQuestion.getSessionName());
+
         sessions.set(sessions.indexOf(sessionInQuestion), sessionInQuestion.clearPlayerList());
     }
 
