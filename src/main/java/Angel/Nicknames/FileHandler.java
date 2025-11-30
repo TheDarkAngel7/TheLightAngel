@@ -2,9 +2,9 @@ package Angel.Nicknames;
 
 import Angel.FileGarbageTruck;
 import Angel.ZoneIDInstanceCreator;
+import Angel.ZonedDateTimeAdapter;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import com.google.gson.stream.JsonWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -14,6 +14,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -27,25 +28,27 @@ class FileHandler {
     private final Type integerType = new TypeToken<ArrayList<Integer>>(){}.getType();
     private final Type stringType = new TypeToken<ArrayList<String>>(){}.getType();
     private FileGarbageTruck garbageTruck = new FileGarbageTruck("Nicknames", "db-backups/Nicknames", 11);
-    private FileReader fileReader;
-    private JsonObject database;
+    private NicknameFile nicknameFile;
 
     FileHandler() {
-        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter(ZoneId.class, new ZoneIDInstanceCreator());
+        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter(ZoneId.class, new ZoneIDInstanceCreator())
+                .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeAdapter());
         gson = gsonBuilder.create();
 
-        try {
-            database = JsonParser.parseReader(new FileReader(jsonNickDataFile)).getAsJsonObject();
+        try (FileReader fileReader = new FileReader(jsonNickDataFile)) {
+            nicknameFile = gson.fromJson(fileReader, NicknameFile.class);
         }
         catch (FileNotFoundException e) {
             log.fatal("Nickname FileHandler Constructor: " + e.getMessage());
+            throw new RuntimeException(e);
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     public JsonObject getConfig() {
         try {
-            fileReader = new FileReader("configs/nickconfig.json");
+            FileReader fileReader = new FileReader("configs/nickconfig.json");
             JsonElement element = JsonParser.parseReader(fileReader);
             fileReader.close();
             return element.getAsJsonObject();
@@ -57,19 +60,18 @@ class FileHandler {
     }
 
     List<NicknameRequest> getNameRequests() {
-        return gson.fromJson(database.get("NicknameRequests").getAsString(), new TypeToken<ArrayList<NicknameRequest>>(){}.getType());
+        return nicknameFile.getNicknameRequests();
     }
 
     List<PlayerNameHistory> getNameHistory() {
-        return gson.fromJson(database.get("OldNameDictionary").getAsString(), new TypeToken<ArrayList<PlayerNameHistory>>(){}.getType());
+        return nicknameFile.getPlayerNameHistory();
     }
     public void saveDatabase(List<NicknameRequest> requests, List<PlayerNameHistory> oldNickDictionary) {
         try {
-            JsonWriter jsonWriter = new JsonWriter(new OutputStreamWriter(new FileOutputStream(jsonTempNickDataFile)));
-            jsonWriter.beginObject()
-                    .name("NicknameRequests").value(gson.toJson(requests))
-                    .name("OldNameDictionary").value(gson.toJson(oldNickDictionary))
-                    .endObject().close();
+            FileWriter fileWriter = new FileWriter(jsonTempNickDataFile);
+
+            fileWriter.write(gson.toJson(new NicknameFile(requests, oldNickDictionary)));
+
             log.info("JSONWriter Successfully Ran to Nickname Database Temp File");
             while (true) {
                 try {
