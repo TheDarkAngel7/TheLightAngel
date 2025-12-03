@@ -168,7 +168,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
             }
             else {
-                if (args[2].equalsIgnoreCase("clear") &&  isTeamMember(msg.getAuthor().getIdLong())) {
+                if (args.length == 3 && args[2].equalsIgnoreCase("clear") &&  isTeamMember(msg.getAuthor().getIdLong())) {
                     try {
                         sessionManager.clearSessionPlayers(args[1]);
                         msg.delete().queue();

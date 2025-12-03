@@ -72,6 +72,8 @@ class FileHandler {
 
             fileWriter.write(gson.toJson(new NicknameFile(requests, oldNickDictionary)));
 
+            fileWriter.close();
+
             log.info("JSONWriter Successfully Ran to Nickname Database Temp File");
             while (true) {
                 try {
