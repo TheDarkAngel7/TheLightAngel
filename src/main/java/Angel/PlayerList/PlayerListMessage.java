@@ -49,7 +49,12 @@ public class PlayerListMessage implements CommonLogic {
         InputStream resourceStream = getClass().getResourceAsStream("/sessions/" + targetSession.getSessionName().toLowerCase() +"_128sm.png");
         FileUpload thumbnail = FileUpload.fromData(resourceStream, targetSession.getSessionName().toLowerCase() + "_128sm.png");
         
-        return targetChannel.sendMessageEmbeds(getPlayerListEmbed()).setFiles(thumbnail);
+        if (targetSession.getStatus().equals(SessionStatus.ONLINE)) {
+            return targetChannel.sendMessageEmbeds(getPlayerListEmbed()).setFiles(thumbnail);
+        }
+        else {
+            return targetChannel.sendMessageEmbeds(getPlayerListEmbed());
+        }
     }
 
     private MessageEmbed getPlayerListEmbed() {
