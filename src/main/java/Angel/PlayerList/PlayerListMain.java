@@ -211,24 +211,20 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
     private void hostCommand(Message msg) {
 
         String[] args = msg.getContentRaw().substring(1).split(" ");
-        MessageEntry entry = new MessageEntry();
+
         try {
              Session sessionInQuestion = sessionManager.getSession(msg.getChannel().asTextChannel().getName());
             if (args.length >= 2) {
                 switch (args[1].toLowerCase()) {
                     case "up":
                     case "online":
-                        entry = entry.setTitle(sessionInQuestion.getSessionName() + " Online")
-                                .setMessage("**" + sessionInQuestion.getSessionName() + " is now back online! Hop in and start grinding!**")
-                                .setDesign(EmbedDesign.SUCCESS);
+                        // We Do Not Send our own MessageEntry objects in either online or offline states
+                        // as these are handled by the setSessionState method
                         sessionManager.setSessionState(sessionInQuestion.getSessionName(), SessionStatus.ONLINE);
                         break;
                     case "offline":
                     case "down":
                     case "off":
-                        entry = entry.setTitle(sessionInQuestion.getSessionName() + " Offline")
-                                .setMessage("**" + sessionInQuestion.getSessionName() + " is Offline Temporarily. You will be advised in this channel " +
-                                        "when it is back online**").setDesign(EmbedDesign.STOP);
                         sessionManager.setSessionState(sessionInQuestion.getSessionName(), SessionStatus.OFFLINE);
                         break;
 
@@ -237,6 +233,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     case "modder":
                     case "cheat":
                     case "cheater":
+                        MessageEntry entry = new MessageEntry();
                         entry = entry .setTitle(sessionInQuestion.getSessionName() + " Restarting")
                                 .setMessage("**" + sessionInQuestion.getSessionName() + " is being restarted**").setDesign(EmbedDesign.STOP);
                         if (args.length == 3) {
@@ -244,24 +241,30 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                                 int restartingInMinutes = Integer.parseInt(args[2]);
 
                                 entry = entry.setTitle(sessionInQuestion.getSessionName() + " Pending Restart")
-                                        .setMessage("**" + sessionInQuestion.getSessionName() + " is going to restart in "  + restartingInMinutes + " minutes! "
+                                        .setMessage("**" + sessionInQuestion.getSessionName() + " is going to restart in " + restartingInMinutes + " minutes! "
                                         + "At this time please wrap up what you're doing and leave the session.**" +
                                                 "\n\n:warning: **Do Not Bump This Message except with circumstances that requires a sooner restart**")
                                         .setDesign(EmbedDesign.WARNING);
-                                sessionManager.setSessionState(sessionInQuestion.getSessionName(), SessionStatus.RESTART_SOON);
                             }
                             catch (NumberFormatException ex) {
                                 log.warn("Unable to Parse a Integer from 3rd Argument: " + args[2]);
+                                entry = entry.setTitle(sessionInQuestion.getSessionName() + " Pending Restart")
+                                        .setMessage("**" + sessionInQuestion.getSessionName() + " is going to restart in 30 minutes! "
+                                                + "At this time please wrap up what you're doing and leave the session.**" +
+                                                "\n\n:warning: **Do Not Bump This Message except with circumstances that requires a sooner restart**")
+                                        .setDesign(EmbedDesign.WARNING);
                             }
+                            sessionManager.setSessionState(sessionInQuestion.getSessionName(), SessionStatus.RESTART_SOON);
+                            sessionInQuestion.getSessionChannel().sendMessageEmbeds(entry.getEmbed()).queue();
                         }
                         else {
                             sessionManager.setSessionState(sessionInQuestion.getSessionName(), SessionStatus.RESTARTING);
                         }
+
                         break;
                     default:
                 }
                 msg.delete().queue();
-                sessionInQuestion.getSessionChannel().sendMessageEmbeds(entry.getEmbed()).queue();
             }
             else {
                 msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Usage", "Expected one of the following arguments: `up|online|down|off|offline|restart|mod|modder|cheat|cheater", EmbedDesign.ERROR).getEmbed())

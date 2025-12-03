@@ -1,7 +1,9 @@
 package Angel.PlayerList;
 
 import Angel.CommonLogic;
+import Angel.EmbedDesign;
 import Angel.Exceptions.InvalidSessionException;
+import Angel.MessageEntry;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.apache.commons.text.similarity.LevenshteinDistance;
@@ -111,12 +113,20 @@ public class SessionManager implements CommonLogic {
 
         switch (sessionStatus) {
             case RESTARTING:
+                sessionInQuestion.getSessionChannel().sendMessageEmbeds(new MessageEntry().setTitle(sessionInQuestion.getSessionName() + " Restarting")
+                        .setMessage("**" + sessionInQuestion.getSessionName() + " is being Restarted. You will be advised in this channel " +
+                                "when it is back online**").setDesign(EmbedDesign.STOP).getEmbed()).queue();
             case OFFLINE:
+                if (sessionStatus.equals(SessionStatus.OFFLINE)) {
+                    sessionInQuestion.getSessionChannel().sendMessageEmbeds(new MessageEntry().setTitle(sessionInQuestion.getSessionName() + " Offline")
+                            .setMessage("**" + sessionInQuestion.getSessionName() + " is Offline Temporarily. You will be advised in this channel " +
+                                    "when it is back online**").setDesign(EmbedDesign.STOP).getEmbed()).queue();
+                }
                 sessionInQuestion.getSessionChannel().getPermissionOverride(mainConfig.getMemberRole())
                         .getManager().deny(Permission.MESSAGE_SEND).reason("Received Call that " + sessionInQuestion.getSessionName() + " is Offline")
                         .submit().whenComplete((permissionOverride, throwable) -> {
                             if (throwable == null) {
-                                log.info("Successfully Closed the Session Channel #{} by denying the permission: {}", sessionInQuestion.getSessionName(), permissionOverride);
+                                log.info("Successfully Closed the Session Channel #{}", sessionInQuestion.getSessionName());
                             }
                             else {
                                 log.error("Unable to Close the session channel #{} - Reason: {}", sessionInQuestion.getSessionChannel().getName(), throwable.getMessage());
@@ -124,11 +134,14 @@ public class SessionManager implements CommonLogic {
                         });
                 break;
             case ONLINE:
+                sessionInQuestion.getSessionChannel().sendMessageEmbeds(new MessageEntry().setTitle(sessionInQuestion.getSessionName() + " Online")
+                        .setMessage("**" + sessionInQuestion.getSessionName() + " is now back online! Hop in and start grinding!**")
+                        .setDesign(EmbedDesign.SUCCESS).getEmbed()).queue();
                 sessionInQuestion.getSessionChannel().getPermissionOverride(mainConfig.getMemberRole())
                         .getManager().clear(Permission.MESSAGE_SEND).reason("Received Call that " + sessionInQuestion.getSessionName() + " is Online")
                         .submit().whenComplete((permissionOverride, throwable) -> {
                             if (throwable == null) {
-                                log.info("Successfully Opened the Session Channel #{} by resetting the permission: {}", sessionInQuestion.getSessionName(), permissionOverride);
+                                log.info("Successfully Opened the Session Channel #{}", sessionInQuestion.getSessionName());
                             }
                             else {
                                 log.error("Unable to Open the session channel #{} - Reason: {}", sessionInQuestion.getSessionChannel().getName(), throwable.getMessage());
