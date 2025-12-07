@@ -147,6 +147,46 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                         });
             }
         }
+
+        else if (msg.getChannel().asTextChannel().getIdLong() == mainConfig.dedicatedOutputChannel.getIdLong()) {
+           try {
+               if (args.length == 1) {
+                   playerListMessage = new PlayerListMessage(sessionManager.getSessions().get(0).getSessionName());
+                   if (sessionManager.getSessions().size() == 1) {
+                       playerListMessage.setTargetChannel(msg.getChannel().asTextChannel()).sortListAlphabetically(sortAlphabetically).useMentions(useMentions)
+                               .getMessageCreateAction().queue();
+                   }
+                   else {
+                       msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... there appears to be more than one session running, I was expecting an argument for a session!**", EmbedDesign.ERROR).getEmbed())
+                               .queue(m -> {
+                                   msg.delete().queueAfter(10, TimeUnit.SECONDS);
+                                   m.delete().queueAfter(10, TimeUnit.SECONDS);
+                               });
+                   }
+               }
+               else if (args.length == 2) {
+                   playerListMessage =  new PlayerListMessage(args[1]);
+                   playerListMessage.setTargetChannel(msg.getChannel().asTextChannel()).sortListAlphabetically(sortAlphabetically).useMentions(useMentions)
+                           .getMessageCreateAction().queue();
+               }
+               else {
+                   msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Arguments", "**Whoops... I was expecting just 1 argument... but found " + (args.length - 1) + "**", EmbedDesign.ERROR).getEmbed())
+                           .queue(m -> {
+                               msg.delete().queueAfter(10, TimeUnit.SECONDS);
+                               m.delete().queueAfter(10, TimeUnit.SECONDS);
+                           });
+               }
+           }
+           catch (InvalidSessionException e) {
+               msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... this does not appear to belong to a session that's currently running!**", EmbedDesign.ERROR).getEmbed())
+                       .queue(m -> {
+                           msg.delete().queueAfter(10, TimeUnit.SECONDS);
+                           m.delete().queueAfter(10, TimeUnit.SECONDS);
+                       });
+           }
+
+        }
+
         else {
             if (args.length == 2) {
                 try {
