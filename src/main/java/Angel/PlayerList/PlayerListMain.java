@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
@@ -260,7 +262,17 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     case "online":
                         // We Do Not Send our own MessageEntry objects in either online or offline states
                         // as these are handled by the setSessionState method
-                        sessionManager.setSessionState(sessionInQuestion.getSessionName(), SessionStatus.ONLINE);
+                        sessionManager.setSessionState(sessionInQuestion.getSessionName(), SessionStatus.FRESH_ONLINE);
+                        ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
+
+                        service.schedule(() -> {
+                            try {
+                                sessionManager.setSessionState(sessionInQuestion.getSessionName(), SessionStatus.ONLINE);
+                            }
+                            catch (InvalidSessionException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }, 5, TimeUnit.MINUTES);
                         break;
                     case "offline":
                     case "down":
@@ -386,7 +398,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             Session currentSession = sessionList.get(index);
 
             embedBuilder = switch (currentSession.getStatus()) {
-                case ONLINE ->
+                case ONLINE, FRESH_ONLINE ->
                         embedBuilder.addField(currentSession.getSessionName(), currentSession.getPlayerCount() + " Players", false);
 
                 case OFFLINE -> embedBuilder.addField(currentSession.getSessionName(), "*Session is Offline*", false);

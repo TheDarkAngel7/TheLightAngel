@@ -35,7 +35,7 @@ public class SessionManager implements CommonLogic {
         throw new InvalidSessionException(name);
     }
 
-    public void setSessionPlayers(String sessionName, List<String> players) throws InvalidSessionException {
+    public void setSessionPlayers(String sessionName, List<String> players) {
 
         List<Player> playerList = new ArrayList<>();
         LevenshteinDistance levenshtein = new LevenshteinDistance();
@@ -52,12 +52,22 @@ public class SessionManager implements CommonLogic {
             Session sessionInQuestion = getSession(sessionName);
             int sessionIndexPosition = sessions.indexOf(sessionInQuestion);
 
-            // If the player list is 0 or very low or excessively high to a number that is not possible (greater than 30),
-            // these are some formulas here that will be true
-            // and it'll flag that the session likely missed a screenshot
+            // If the session has been freshly brought online then there's no restrictions on the new incoming player lists
 
-            if (sessionInQuestion.getPlayerList().size() - 5 > playerList.size() ||
-                    playerList.size() > 30) {
+            /*
+            If the player list is 0 or very low or excessively high to a number that is not possible (greater than 30),
+            these are some formulas here that will be true and it'll flag that the session likely missed a screenshot
+
+            sessionInQuestion.getPlayerList().size() - 5 > playerList.size()
+            If a scenerio arises where the player list that arrived from HostControl indicates more than 5 players
+            fewer than the previous list, this will be flagged as a missed screenshot, sessions generally don't shrink in size that fast.
+
+            These restrictions should only apply after the session becomes stable, not freshly online.
+             */
+
+            if (!sessionInQuestion.getStatus().equals(SessionStatus.FRESH_ONLINE) &&
+                    (sessionInQuestion.getPlayerList().size() - 5 > playerList.size() ||
+                    playerList.size() > 30)) {
                 sessionInQuestion = sessionInQuestion.missedScreenshot();
             }
             else {
@@ -66,7 +76,6 @@ public class SessionManager implements CommonLogic {
             sessions.set(sessionIndexPosition, sessionInQuestion);
         }
         catch (InvalidSessionException e) {
-            System.out.println(getGuild().getTextChannels().size());
             int index = 0;
             List<TextChannel> textChannels = getGuild().getTextChannels();
 

@@ -164,6 +164,11 @@ public class PlayerListMessage implements CommonLogic {
                             " appears to be having difficulties capturing the player list. The previous known good player list is being displayed.**", false);
                 }
                 break;
+            case FRESH_ONLINE:
+                builder = builder.addField("", ":warning: Remember all of those phone calls you get when first coming into GTA Online? Not even "
+                        + targetSession.getSessionName() + " is immune from those, this can cause the player list to display unexpected results temporarily.", false)
+                        .setColor(Color.YELLOW).setThumbnail(mainConfig.getWarningIconURL());
+                break;
             case RESTARTING:
                 return new MessageEntry(targetSession.getSessionName() + " Status", "**" + targetSession.getSessionName() + " is being restarted at this time. You will be notified in "
                         + targetSession.getSessionChannel().getAsMention() + " when the session is back online.**", EmbedDesign.STOP).getEmbed(false);
