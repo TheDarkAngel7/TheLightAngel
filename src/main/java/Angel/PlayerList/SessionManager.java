@@ -11,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.text.Normalizer;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -67,7 +68,7 @@ public class SessionManager implements CommonLogic {
 
             if (!sessionInQuestion.getStatus().equals(SessionStatus.FRESH_ONLINE) &&
                     (sessionInQuestion.getPlayerList().size() - 5 > playerList.size() ||
-                    playerList.size() > 30)) {
+                    playerList.size() > 29)) {
                 if (playerList.size() > 29) {
                     log.warn("A Player List received from {} was Filtered Out due to the list count exceeding the player limit", sessionInQuestion.getSessionName());
                 }
@@ -75,8 +76,18 @@ public class SessionManager implements CommonLogic {
                     log.warn("A Player List received from {} was Filtered Out, the player list I received was had {} players, and the previous player list had {} players",
                             sessionInQuestion.getSessionName(), playerList.size(), sessionInQuestion.getPlayerList().size());
                 }
-                sessionInQuestion = sessionInQuestion.missedScreenshot();
+                // If the players list in the session object is older than 10 minutes then we clear the list and accept the new data
+                if (ZonedDateTime.now().isAfter(sessionInQuestion.getLastUpdatedTime().plusMinutes(10))) {
+                    log.warn("Since the player list for {} was older than 10 minutes, it has been reset with fresh data", sessionInQuestion.getSessionName());
+                    sessionInQuestion = sessionInQuestion.clearPlayerList().setNewPlayers(playerList);
+                }
+                // Otherwise flag
+                else {
+                    sessionInQuestion = sessionInQuestion.missedScreenshot();
+                }
+
             }
+            // The Player List received passed the integrity check by the first if statement
             else {
                 log.info("A Player List received from {} Passed the Data Integrity Check: {} -> {} Players",
                         sessionInQuestion.getSessionName(), sessionInQuestion.getPlayerList().size(), playerList.size());
