@@ -147,15 +147,15 @@ public class PlayerListMessage implements CommonLogic {
                             .setColor(Color.RED);
                 }
                 else if (playerCount <= 9) {
-                    builder = builder.setFooter("Low Player Count - Great for Sourcing! - Last Read: " + targetSession.getLastUpdateInSeconds() + "s ago")
+                    builder = builder.setFooter("Low Player Count - Great for Sourcing! - Last Read: " + targetSession.getLastUpdateTimeString() + " ago")
                             .setColor(Color.decode("#80FF40"));
                 }
                 else if (playerCount >= 10 && playerCount < 20) {
-                    builder = builder.setFooter("Money Making Time - Join Now! - Last Read: " + targetSession.getLastUpdateInSeconds() + "s ago")
+                    builder = builder.setFooter("Money Making Time - Join Now! - Last Read: " + targetSession.getLastUpdateTimeString() + " ago")
                             .setColor(Color.GREEN);
                 }
                 else {
-                    builder = builder.setFooter("Money Making Time - May Be Hard to Join - Last Read: " + targetSession.getLastUpdateInSeconds() + "s ago")
+                    builder = builder.setFooter("Money Making Time - May Be Hard to Join - Last Read: " + targetSession.getLastUpdateTimeString() + " ago")
                             .setColor(Color.decode("#005700"));
                 }
 
@@ -189,12 +189,12 @@ public class PlayerListMessage implements CommonLogic {
         String result = "";
 
         while (index < players.size()) {
-            if (useMentions) {
-                result = result.concat(players.get(index).getDiscordAccount().getAsMention());
-            }
-            else {
-                result = result.concat("`" + players.get(index).getDiscordAccount().getEffectiveName() + "`");
-            }
+            var account = players.get(index).getDiscordAccount();
+
+            // If we want to use mentions, then we get the mention format,
+            // but if not then we make the effective name more readable by surrounding it with `
+            result = result.concat(useMentions ? account.getAsMention() :
+                    "`" + account.getEffectiveName() + "`");
 
             if (index < players.size() - 1) {
                 result = result.concat(", ");

@@ -58,12 +58,22 @@ public class Session {
         return sessionChannel;
     }
 
-    public ZonedDateTime getDate() {
+    public ZonedDateTime getLastUpdatedTime() {
         return date;
     }
 
-    public long getLastUpdateInSeconds() {
+    private long getLastUpdateInSeconds() {
         return Duration.between(date, ZonedDateTime.now()).getSeconds();
+    }
+
+    public String getLastUpdateTimeString() {
+
+        long totalSeconds = getLastUpdateInSeconds();
+
+        long seconds = totalSeconds % 60;
+        long minutes = totalSeconds / 60;
+
+        return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
     }
 
     public int getPlayerCount() {
