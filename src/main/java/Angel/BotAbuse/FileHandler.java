@@ -71,6 +71,8 @@ class FileHandler {
 
             fileWriter.write(gson.toJson(new BotAbuseFile(records, reasonsDictionary)));
 
+            fileWriter.close();
+
             log.info("JSONWriter Successfully Ran to Bot Abuse Database Temp File");
             while (true) {
                 try {
