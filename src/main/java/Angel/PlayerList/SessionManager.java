@@ -68,9 +68,18 @@ public class SessionManager implements CommonLogic {
             if (!sessionInQuestion.getStatus().equals(SessionStatus.FRESH_ONLINE) &&
                     (sessionInQuestion.getPlayerList().size() - 5 > playerList.size() ||
                     playerList.size() > 30)) {
+                if (playerList.size() > 29) {
+                    log.warn("A Player List received from {} was Filtered Out due to the list count exceeding the player limit", sessionInQuestion.getSessionName());
+                }
+                else {
+                    log.warn("A Player List received from {} was Filtered Out, the player list I received was had {} players, and the previous player list had {} players",
+                            sessionInQuestion.getSessionName(), playerList.size(), sessionInQuestion.getPlayerList().size());
+                }
                 sessionInQuestion = sessionInQuestion.missedScreenshot();
             }
             else {
+                log.info("A Player List received from {} Passed the Data Integrity Check: {} -> {} Players",
+                        sessionInQuestion.getSessionName(), sessionInQuestion.getPlayerList().size(), playerList.size());
                 sessionInQuestion = sessionInQuestion.setNewPlayers(playerList);
             }
             sessions.set(sessionIndexPosition, sessionInQuestion);
@@ -78,8 +87,6 @@ public class SessionManager implements CommonLogic {
         catch (InvalidSessionException e) {
             int index = 0;
             List<TextChannel> textChannels = getGuild().getTextChannels();
-
-            System.out.println("SessionName: " + sessionName + " Len: " + sessionName.length());
 
             while (index < textChannels.size()) {
 
@@ -172,7 +179,7 @@ public class SessionManager implements CommonLogic {
         int tally = 0;
 
         do {
-            tally = tally + sessions.get(index++).getPlayerCount();
+            tally += sessions.get(index++).getPlayerCount();
         } while (index < sessions.size());
 
         return tally;
