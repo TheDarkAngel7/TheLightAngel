@@ -160,7 +160,7 @@ public class SessionManager implements CommonLogic {
                             }
                         });
                 break;
-            case ONLINE:
+            case FRESH_ONLINE:
                 sessionInQuestion.getSessionChannel().sendMessageEmbeds(new MessageEntry().setTitle(sessionInQuestion.getSessionName() + " Online")
                         .setMessage("**" + sessionInQuestion.getSessionName() + " is now back online! Hop in and start grinding!**")
                         .setDesign(EmbedDesign.SUCCESS).getEmbed()).queue();
