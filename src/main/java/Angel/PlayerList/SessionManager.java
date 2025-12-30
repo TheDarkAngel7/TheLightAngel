@@ -38,15 +38,28 @@ public class SessionManager implements PlayerListLogic {
     public void setSessionPlayers(String sessionName, List<String> players) {
 
         List<Player> playerList = new ArrayList<>();
+        List<Long> playerListLong = new ArrayList<>();
         LevenshteinDistance levenshtein = new LevenshteinDistance();
 
-        players.forEach(player -> {
+        int index = 0;
+        do {
+
+            String playerString = players.get(index);
+
+
             // This is the filter for filtering out the host name from the list.
             // If the player's name scores greater than 4 compared to the host name, then it's allowed in.
-            int score = levenshtein.apply(sessionName, player);
+            int score = levenshtein.apply(sessionName, playerString);
 
-            if (score > 4) playerList.add(new Player(player));
-        });
+            if (score > 4) {
+                Player playerObj = new Player(playerString);
+
+                if (!playerListLong.contains(playerObj.getDiscordAccount().getIdLong())) {
+                    playerList.add(playerObj);
+                    playerListLong.add(playerObj.getDiscordAccount().getIdLong());
+                }
+            }
+        } while (++index < players.size());
 
         try  {
             Session sessionInQuestion = getSession(sessionName);
@@ -95,7 +108,7 @@ public class SessionManager implements PlayerListLogic {
             sessions.set(sessionIndexPosition, sessionInQuestion);
         }
         catch (InvalidSessionException e) {
-            int index = 0;
+            index = 0;
             List<TextChannel> textChannels = getGuild().getTextChannels();
 
             while (index < textChannels.size()) {
