@@ -1,6 +1,5 @@
 package Angel.PlayerList;
 
-import Angel.CommonLogic;
 import Angel.EmbedDesign;
 import Angel.Exceptions.InvalidSessionException;
 import Angel.MessageEntry;
@@ -17,7 +16,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class SessionManager implements CommonLogic {
+public class SessionManager implements PlayerListLogic {
     private final Logger log = LogManager.getLogger(SessionManager.class);
     private final List<Session> sessions = new ArrayList<>();
 
@@ -161,6 +160,7 @@ public class SessionManager implements CommonLogic {
                         });
                 break;
             case FRESH_ONLINE:
+                clearSessionPlayers(sessionName);
                 sessionInQuestion.getSessionChannel().sendMessageEmbeds(new MessageEntry().setTitle(sessionInQuestion.getSessionName() + " Online")
                         .setMessage("**" + sessionInQuestion.getSessionName() + " is now back online! Hop in and start grinding!**")
                         .setDesign(EmbedDesign.SUCCESS).getEmbed()).queue();

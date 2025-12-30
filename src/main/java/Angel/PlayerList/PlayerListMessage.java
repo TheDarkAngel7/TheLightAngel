@@ -1,6 +1,5 @@
 package Angel.PlayerList;
 
-import Angel.CommonLogic;
 import Angel.EmbedDesign;
 import Angel.Exceptions.InvalidSessionException;
 import Angel.MessageEntry;
@@ -18,7 +17,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class PlayerListMessage implements CommonLogic {
+public class PlayerListMessage implements PlayerListLogic {
 
     private final Session targetSession;
     private TextChannel targetChannel;

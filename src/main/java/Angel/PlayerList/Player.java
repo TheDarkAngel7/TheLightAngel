@@ -1,6 +1,5 @@
 package Angel.PlayerList;
 
-import Angel.CommonLogic;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import org.apache.commons.text.similarity.LevenshteinDistance;
@@ -13,7 +12,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class Player implements CommonLogic {
+public class Player implements PlayerListLogic {
     private final Logger log = LogManager.getLogger(Player.class);
     private final AtomicReference<Member> playerAccount = new AtomicReference<>(null);
     private final AtomicBoolean hasDuplicates = new AtomicBoolean(false);

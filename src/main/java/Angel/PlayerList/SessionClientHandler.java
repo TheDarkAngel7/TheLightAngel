@@ -1,6 +1,5 @@
 package Angel.PlayerList;
 
-import Angel.CommonLogic;
 import Angel.Exceptions.InvalidSessionException;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -16,7 +15,7 @@ import java.net.Socket;
 import java.text.Normalizer;
 import java.util.List;
 
-public class SessionClientHandler implements Runnable, CommonLogic {
+public class SessionClientHandler implements Runnable, PlayerListLogic {
     private final Logger log = LogManager.getLogger(SessionClientHandler.class);
 
     private final Socket clientSocket;
