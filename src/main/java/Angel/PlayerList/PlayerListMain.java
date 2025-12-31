@@ -74,7 +74,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 case "host":
                     if (isTeamMember(event.getAuthor().getIdLong())) {
 
-                        if (usedInSessionChannel(msg)) {
+                        if (sessionManager.usedInSessionChannel(msg)) {
                             hostCommand(msg);
                         }
                         else {
@@ -113,7 +113,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         log.info("{} requested a player list, Use Mention: {} sortAlpha: {} ", msg.getMember().getEffectiveName(), useMentions, sortAlphabetically);
 
         PlayerListMessage playerListMessage;
-        if (usedInSessionChannel(msg)) {
+        if (sessionManager.usedInSessionChannel(msg)) {
             try {
                 playerListMessage = new PlayerListMessage(msg.getChannel().getName());
 
@@ -244,7 +244,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             msg.getChannel().sendMessageEmbeds(getHeadCountEmbed()).queue();
         }
         else {
-            if (usedInSessionChannel(msg)) {
+            if (sessionManager.usedInSessionChannel(msg)) {
                 msg.delete().queue();
             }
             if (mainConfig.dedicatedOutputChannel.getIdLong() != msg.getChannel().asTextChannel().getIdLong()) {
@@ -423,19 +423,6 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         }
 
         return embedBuilder.build();
-    }
-    private boolean usedInSessionChannel(Message msg) {
-        int index = 0;
-        int sessionListSize = sessionManager.getSessions().size();
-
-        while (index < sessionListSize) {
-
-            if (msg.getChannel().asTextChannel().getIdLong() == sessionManager.getSessions().get(index++).getSessionChannel().getIdLong()) {
-                return true;
-            }
-
-        }
-        return false;
     }
 
     public boolean isValidCommand(String cmd) {

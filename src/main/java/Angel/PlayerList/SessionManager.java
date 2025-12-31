@@ -4,6 +4,7 @@ import Angel.EmbedDesign;
 import Angel.Exceptions.InvalidSessionException;
 import Angel.MessageEntry;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.logging.log4j.LogManager;
@@ -207,5 +208,19 @@ public class SessionManager implements PlayerListLogic {
         } while (index < sessions.size());
 
         return tally;
+    }
+
+    public boolean usedInSessionChannel(Message msg) {
+        int index = 0;
+        int sessionListSize = getSessions().size();
+
+        while (index < sessionListSize) {
+
+            if (msg.getChannel().asTextChannel().getIdLong() == getSessions().get(index++).getSessionChannel().getIdLong()) {
+                return true;
+            }
+
+        }
+        return false;
     }
 }
