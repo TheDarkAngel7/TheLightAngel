@@ -26,7 +26,7 @@ public class SessionManager implements PlayerListLogic {
         service.execute(new SessionClientListener());
     }
 
-    public Session getSession(String name) throws InvalidSessionException {
+    public Session getSessionByName(String name) throws InvalidSessionException {
         int index = 0;
         while (index < sessions.size()) {
             if (sessions.get(index).getSessionName().equalsIgnoreCase(name)) return sessions.get(index);
@@ -63,7 +63,7 @@ public class SessionManager implements PlayerListLogic {
         } while (++index < players.size());
 
         try  {
-            Session sessionInQuestion = getSession(sessionName);
+            Session sessionInQuestion = getSessionByName(sessionName);
             int sessionIndexPosition = sessions.indexOf(sessionInQuestion);
 
             // If the session has been freshly brought online then there's no restrictions on the new incoming player lists
@@ -141,7 +141,7 @@ public class SessionManager implements PlayerListLogic {
         }
     }
     public void clearSessionPlayers(String name) throws InvalidSessionException {
-        Session sessionInQuestion = getSession(name);
+        Session sessionInQuestion = getSessionByName(name);
 
         log.info("Attempting to clear player list for " +  sessionInQuestion.getSessionName());
 
@@ -149,7 +149,7 @@ public class SessionManager implements PlayerListLogic {
     }
 
     public void setSessionState(String sessionName, SessionStatus sessionStatus) throws InvalidSessionException {
-        Session sessionInQuestion = getSession(sessionName);
+        Session sessionInQuestion = getSessionByName(sessionName);
 
         switch (sessionStatus) {
             case RESTARTING:

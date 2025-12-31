@@ -45,7 +45,7 @@ class CheckInCore implements CheckInLogic {
 
     boolean isValidSessionName(String name) {
         try {
-            Session session = sessionManager.getSession(name);
+            Session session = sessionManager.getSessionByName(name);
             return true;
         } catch (InvalidSessionException e) {
             return false;

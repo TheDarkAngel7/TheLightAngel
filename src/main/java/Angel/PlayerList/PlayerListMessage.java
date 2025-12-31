@@ -25,7 +25,7 @@ public class PlayerListMessage implements PlayerListLogic {
     private boolean sortAlphabetically = false;
 
     public PlayerListMessage(String sessionName) throws InvalidSessionException {
-        this.targetSession = sessionManager.getSession(sessionName);
+        this.targetSession = sessionManager.getSessionByName(sessionName);
         this.targetChannel = targetSession.getSessionChannel();
     }
 

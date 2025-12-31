@@ -260,7 +260,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         String[] args = msg.getContentRaw().substring(1).split(" ");
 
         try {
-             Session sessionInQuestion = sessionManager.getSession(msg.getChannel().asTextChannel().getName());
+             Session sessionInQuestion = sessionManager.getSessionByName(msg.getChannel().asTextChannel().getName());
             if (args.length >= 2) {
                 switch (args[1].toLowerCase()) {
                     case "up":
