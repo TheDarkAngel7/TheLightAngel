@@ -240,14 +240,19 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
     }
 
     private void headCountCommand(Message msg) {
-        if (usedInSessionChannel(msg)) {
-            msg.delete().queue();
+        if (isTeamMember(msg.getAuthor().getIdLong())) {
+            msg.getChannel().sendMessageEmbeds(getHeadCountEmbed()).queue();
         }
-        if (mainConfig.dedicatedOutputChannel.getIdLong() != msg.getChannel().asTextChannel().getIdLong()) {
-            mainConfig.dedicatedOutputChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
-        }
+        else {
+            if (usedInSessionChannel(msg)) {
+                msg.delete().queue();
+            }
+            if (mainConfig.dedicatedOutputChannel.getIdLong() != msg.getChannel().asTextChannel().getIdLong()) {
+                mainConfig.dedicatedOutputChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
+            }
 
-        mainConfig.dedicatedOutputChannel.sendMessageEmbeds(getHeadCountEmbed()).queue();
+            mainConfig.dedicatedOutputChannel.sendMessageEmbeds(getHeadCountEmbed()).queue();
+        }
     }
 
     private void hostCommand(Message msg) {
