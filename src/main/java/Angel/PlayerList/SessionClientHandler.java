@@ -31,6 +31,8 @@ public class SessionClientHandler implements Runnable, PlayerListLogic {
             JsonElement jsonElement = JsonParser.parseReader(new InputStreamReader(clientSocket.getInputStream())).getAsJsonObject();
             JsonObject jsonObject = jsonElement.getAsJsonObject();
 
+            clientSocket.close();
+
             String hostName = formatCleaner(jsonObject.get("hostName").getAsString());
             List<String> playerList = gson.fromJson(jsonObject.get("players").getAsString(), new TypeToken<List<String>>(){}.getType());
 
@@ -56,7 +58,7 @@ public class SessionClientHandler implements Runnable, PlayerListLogic {
 
 
         } catch (InvalidSessionException | IOException e) {
-            throw new RuntimeException(e);
+            log.error("Error while handing P2P Session Update: {}", e.getMessage());
         }
     }
 
