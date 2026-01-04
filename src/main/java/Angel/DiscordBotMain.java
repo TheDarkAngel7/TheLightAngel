@@ -441,6 +441,7 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
                         if (mainConfig.reload(fileHandler.getMainConfig())) {
                             baFeature.reload(msg);
                             nickFeature.reload(msg);
+                            ciFeature.reload();
                             log.info("Successfully Reloaded All Configurations");
                             embed.editEmbed(msg, "Configuration Reloaded",
                                     "**All Configurations Successfully Reloaded from config files**",

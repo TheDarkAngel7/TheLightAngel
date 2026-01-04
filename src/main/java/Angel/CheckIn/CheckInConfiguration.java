@@ -41,6 +41,9 @@ public abstract class CheckInConfiguration implements CommonLogic {
 
         rolesThatCanBeCheckedInLong = gson.fromJson(configObj.get("rolesThatCanBeCheckedInIDs").getAsString(), new TypeToken<List<Long>>(){}.getType());
 
+        rolesThatCanBeCheckedInLong.forEach(roleID -> {
+            rolesThatCanBeCheckedIn.add(getGuild().getRoleById(roleID));
+        });
     }
     void reload(JsonObject reloadedObject) {
         configObj = reloadedObject;

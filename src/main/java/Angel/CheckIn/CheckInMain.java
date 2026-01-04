@@ -1366,4 +1366,8 @@ public class CheckInMain extends ListenerAdapter implements CheckInLogic {
     public CheckInConfiguration getConfig() {
         return ciConfig;
     }
+
+    public void reload() {
+        ciConfig.reload(fileHandler.getConfig());
+    }
 }
