@@ -113,6 +113,15 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         log.info("{} requested a player list, Use Mention: {} sortAlpha: {} ", msg.getMember().getEffectiveName(), useMentions, sortAlphabetically);
 
         PlayerListMessage playerListMessage;
+        if (sessionManager.getSessions().isEmpty()) {
+            msg.getChannel().sendMessageEmbeds(new MessageEntry("Unable to Find Active Session",
+                    "**Unable to Find an active session, this could be coming back from a fresh restart... or all sessions could be down right now...**", EmbedDesign.ERROR)
+                    .getEmbed(false)).queue(m -> {
+                msg.delete().queueAfter(10, TimeUnit.SECONDS);
+                m.delete().queueAfter(10, TimeUnit.SECONDS);
+            });
+            return;
+        }
         if (sessionManager.usedInSessionChannel(msg)) {
             try {
                 playerListMessage = new PlayerListMessage(msg.getChannel().getName());
@@ -240,6 +249,15 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
     }
 
     private void headCountCommand(Message msg) {
+        if (sessionManager.getSessions().isEmpty()) {
+            msg.getChannel().sendMessageEmbeds(new MessageEntry("Unable to Find Active Session",
+                    "**Unable to Find an active session for counting heads...**", EmbedDesign.ERROR)
+                    .getEmbed(false)).queue(m -> {
+                msg.delete().queueAfter(10, TimeUnit.SECONDS);
+                m.delete().queueAfter(10, TimeUnit.SECONDS);
+            });
+            return;
+        }
         if (isTeamMember(msg.getAuthor().getIdLong())) {
             msg.getChannel().sendMessageEmbeds(getHeadCountEmbed()).queue();
         }
