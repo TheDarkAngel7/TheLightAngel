@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 
+import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
@@ -105,5 +106,22 @@ public interface CommonLogic {
 
     default String getDiscordRelativeTimeTag(ZonedDateTime time) {
         return "<t:" + time.toEpochSecond() + ":R>";
+    }
+
+    default String getTimerFormatBetween(ZonedDateTime start, ZonedDateTime end) {
+        long totalSeconds = Duration.between(start, end).toSeconds();
+
+        long seconds =  totalSeconds % 60;
+        long minutes = totalSeconds / 60;
+
+        return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+    }
+    // Future Tense - Assuming we want to know the duration to a future time - This would be a countdown
+    default String getTimerFormatTo(ZonedDateTime endTime) {
+        return getTimerFormatBetween(ZonedDateTime.now(), endTime);
+    }
+    // Past Tense - Assuming we want to know the duration from a time in the past - This would be a countup
+    default String getTimerFormatFrom(ZonedDateTime beginTime) {
+        return getTimerFormatBetween(beginTime, ZonedDateTime.now());
     }
 }

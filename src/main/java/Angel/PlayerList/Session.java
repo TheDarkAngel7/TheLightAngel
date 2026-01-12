@@ -2,7 +2,6 @@ package Angel.PlayerList;
 
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
-import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,18 +61,8 @@ public class Session {
         return date;
     }
 
-    private long getLastUpdateInSeconds() {
-        return Duration.between(date, ZonedDateTime.now()).getSeconds();
-    }
-
     public String getLastUpdateTimeString() {
-
-        long totalSeconds = getLastUpdateInSeconds();
-
-        long seconds = totalSeconds % 60;
-        long minutes = totalSeconds / 60;
-
-        return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+        return getTimerFormatFrom(date);
     }
 
     public int getPlayerCount() {
