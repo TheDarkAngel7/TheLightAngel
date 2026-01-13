@@ -16,10 +16,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class SessionManager implements PlayerListLogic {
     private final Logger log = LogManager.getLogger(SessionManager.class);
     private final List<Session> sessions = new ArrayList<>();
+    private final ReentrantLock lock = new ReentrantLock();
 
     public SessionManager() {
         ExecutorService service = Executors.newFixedThreadPool(1);
@@ -27,13 +29,39 @@ public class SessionManager implements PlayerListLogic {
     }
 
     public Session getSessionByName(String name) throws InvalidSessionException {
-        int index = 0;
-        while (index < sessions.size()) {
-            if (sessions.get(index).getSessionName().equalsIgnoreCase(name)) return sessions.get(index);
-            else if (sessions.get(index).getSessionName().toLowerCase().contains(name)) return sessions.get(index);
-            index++;
+        lock.lock();
+        try {
+            int index = 0;
+            while (index < sessions.size()) {
+                if (sessions.get(index).getSessionName().equalsIgnoreCase(name)) return sessions.get(index);
+                else if (sessions.get(index).getSessionName().toLowerCase().contains(name)) return sessions.get(index);
+                index++;
+            }
+            throw new InvalidSessionException(name);
         }
-        throw new InvalidSessionException(name);
+        finally {
+            lock.unlock();
+        }
+    }
+
+    public Session getSessionByChannel(TextChannel channel) throws InvalidSessionException {
+        try {
+            return getSessionByChannel(channel.getIdLong());
+        }
+        catch (InvalidSessionException e) {
+            throw new InvalidSessionException(channel.getName());
+        }
+    }
+
+    public Session getSessionByChannel(long channelId) throws InvalidSessionException {
+        int index = 0;
+
+        while (index < sessions.size()) {
+            Session session = sessions.get(index++);
+
+            if (session.getSessionChannel().getIdLong() == channelId) return session;
+        }
+        throw new InvalidSessionException(String.valueOf(channelId));
     }
 
     public void setSessionPlayers(String sessionName, List<String> players) {
@@ -62,6 +90,7 @@ public class SessionManager implements PlayerListLogic {
             }
         } while (++index < players.size());
 
+        lock.lock();
         try  {
             Session sessionInQuestion = getSessionByName(sessionName);
             int sessionIndexPosition = sessions.indexOf(sessionInQuestion);
@@ -139,6 +168,9 @@ public class SessionManager implements PlayerListLogic {
                 index++;
             }
         }
+        finally {
+            lock.unlock();
+        }
     }
     public void clearSessionPlayers(String name) throws InvalidSessionException {
         Session sessionInQuestion = getSessionByName(name);
@@ -146,6 +178,10 @@ public class SessionManager implements PlayerListLogic {
         log.info("Attempting to clear player list for " +  sessionInQuestion.getSessionName());
 
         sessions.set(sessions.indexOf(sessionInQuestion), sessionInQuestion.clearPlayerList());
+    }
+
+    public void clearSessionPlayers() {
+        sessions.forEach(s -> sessions.set(sessions.indexOf(s), s.clearPlayerList()));
     }
 
     public void setSessionState(String sessionName, SessionStatus sessionStatus) throws InvalidSessionException {
@@ -193,6 +229,36 @@ public class SessionManager implements PlayerListLogic {
         }
 
         sessions.set(sessions.indexOf(sessionInQuestion), sessionInQuestion.setStatus(sessionStatus));
+    }
+
+    public void enablePlayerListCooldown(int cooldownDuration, int minNumberOfPlayers) {
+        lock.lock();
+        try {
+            sessions.forEach(s -> s.enablePlayerListCooldown(cooldownDuration, minNumberOfPlayers));
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+    public void enablePlayerListCooldown(String name, int cooldownDuration, int minNumberOfPlayers) throws InvalidSessionException {
+        Session session = getSessionByName(name);
+
+        session.enablePlayerListCooldown(cooldownDuration, minNumberOfPlayers);
+    }
+
+    public void disablePlayerListCooldown() {
+        lock.lock();
+        try {
+            sessions.forEach(Session::disablePlayerListCooldown);
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+    public void disablePlayerListCooldown(String name) throws InvalidSessionException {
+        Session session = getSessionByName(name);
+
+        session.disablePlayerListCooldown();
     }
 
     public List<Session> getSessions() {

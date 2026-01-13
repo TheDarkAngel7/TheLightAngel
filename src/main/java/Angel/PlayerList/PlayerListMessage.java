@@ -29,6 +29,11 @@ public class PlayerListMessage implements PlayerListLogic {
         this.targetChannel = targetSession.getSessionChannel();
     }
 
+    public PlayerListMessage(Session session) {
+        this.targetSession = session;
+        this.targetChannel = targetSession.getSessionChannel();
+    }
+
     public PlayerListMessage useMentions(boolean useMentions) {
         this.useMentions = useMentions;
         return this;
@@ -57,16 +62,6 @@ public class PlayerListMessage implements PlayerListLogic {
     }
 
     private MessageEmbed getPlayerListEmbed() {
-
-        /**
-        try {
-            targetSession = sessionManager.getSession(searchQuery);
-        }
-        catch (InvalidSessionException e) {
-
-        }
-         **/
-
         // List of Staff Members
         List<Player> staffMembers = new ArrayList<>();
 

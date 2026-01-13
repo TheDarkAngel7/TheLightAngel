@@ -8,6 +8,7 @@ import Angel.TargetChannelSet;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
@@ -112,7 +113,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
         log.info("{} requested a player list, Use Mention: {} sortAlpha: {} ", msg.getMember().getEffectiveName(), useMentions, sortAlphabetically);
 
-        PlayerListMessage playerListMessage;
+
         if (sessionManager.getSessions().isEmpty()) {
             msg.getChannel().sendMessageEmbeds(new MessageEntry("Unable to Find Active Session",
                     "**Unable to Find an active session, this could be coming back from a fresh restart... or all sessions could be down right now...**", EmbedDesign.ERROR)
@@ -124,19 +125,27 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         }
         if (sessionManager.usedInSessionChannel(msg)) {
             try {
-                playerListMessage = new PlayerListMessage(msg.getChannel().getName());
-
-                if (args.length == 2 && args[1].equalsIgnoreCase("clear") &&  isTeamMember(msg.getAuthor().getIdLong())) {
+                Session targetSession = sessionManager.getSessionByChannel(msg.getChannel().getIdLong());
+                if (args.length >= 2) {
                     try {
-                        sessionManager.clearSessionPlayers(msg.getChannel().asTextChannel().getName());
-                        msg.delete().queue();
+                        Session otherSession = sessionManager.getSessionByName(args[1]);
+
+                        if (isTeamMember(msg.getAuthor().getIdLong())) {
+                            otherSession.getPlayerListMessage(msg, sortAlphabetically, useMentions)
+                                    .setTargetChannel(msg.getChannel().asTextChannel()).getMessageCreateAction().queue();
+                        }
+                        else msg.delete().queue();
                     }
                     catch (InvalidSessionException ex) {
-                        aue.logCaughtException(Thread.currentThread(), ex);
+                        playerListConfig(msg, true);
                     }
+
                 }
 
                 else if (baCore.botAbuseIsCurrent(msg.getAuthor().getIdLong())) {
+                    mainConfig.dedicatedOutputChannel.sendMessage(msg.getAuthor().getAsMention() + ", because you are bot abused, the output got redirected here:").queue();
+                    targetSession.getPlayerListMessage(msg, sortAlphabetically, useMentions).setTargetChannel(mainConfig.dedicatedOutputChannel).getMessageCreateAction().queue();
+
                     msg.delete().queue();
                     MessageEntry entry = new MessageEntry("You Are Bot Abused",
                             "**Whoops, looks like you are currently bot abused:**\n\n" +
@@ -146,8 +155,27 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     embed.sendAsMessageEntryObj(entry);
                 }
                 else {
-                    playerListMessage.sortListAlphabetically(sortAlphabetically).useMentions(useMentions)
-                            .getMessageCreateAction().queue();
+                    PlayerListMessage playerListMessage;
+
+                    // If the player is not a team member (team members bypass cooldown) and the cooldown is active, then the output gets redirected
+                    if (!isTeamMember(msg.getAuthor().getIdLong()) && targetSession.isCooldownActive()) {
+                         playerListMessage = targetSession.getPlayerListMessage(msg, sortAlphabetically, useMentions).setTargetChannel(mainConfig.dedicatedOutputChannel);
+
+                        mainConfig.dedicatedOutputChannel.sendMessage("**" + msg.getAuthor().getAsMention() + " the output of `" + mainConfig.commandPrefix + "pl` was redirected here as "
+                                + targetSession.getSessionChannel().getAsMention() + " already had this command used less than " + targetSession.getCooldownDuration() + " minutes ago!**" +
+                                "\n\nTime Remaining: **" + targetSession.getTimerUntilCooldownIsOver() + "**").queue();
+                        msg.getChannel().sendMessage("**Cooldown Enabled for the session channel!** See " + mainConfig.dedicatedOutputChannel.getAsMention())
+                                .queue(m -> {
+                                    msg.delete().queueAfter(10, TimeUnit.SECONDS);
+                                    m.delete().queueAfter(10, TimeUnit.SECONDS);
+                                });
+                        log.info("{}'s `{}pl Output Stopped and Redirected as Cooldown is Enabled - {} Left!", msg.getMember().getEffectiveName(), mainConfig.commandPrefix, targetSession.getTimerUntilCooldownIsOver());
+                    }
+                    else {
+                        playerListMessage = targetSession.getPlayerListMessage(msg, sortAlphabetically, useMentions);
+                    }
+
+                    playerListMessage.getMessageCreateAction().queue();
                 }
             }
             catch (InvalidSessionException e) {
@@ -159,12 +187,12 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             }
         }
 
-        else if (msg.getChannel().asTextChannel().getIdLong() == mainConfig.dedicatedOutputChannel.getIdLong()) {
+        else if (msg.getChannel().asTextChannel().getIdLong() == mainConfig.dedicatedOutputChannel.getIdLong() || msg.getChannel().getType() == ChannelType.PRIVATE) {
            try {
                if (args.length == 1) {
-                   playerListMessage = new PlayerListMessage(sessionManager.getSessions().get(0).getSessionName());
+
                    if (sessionManager.getSessions().size() == 1) {
-                       playerListMessage.setTargetChannel(msg.getChannel().asTextChannel()).sortListAlphabetically(sortAlphabetically).useMentions(useMentions)
+                       sessionManager.getSessions().getFirst().getPlayerListMessage(msg, sortAlphabetically, useMentions).setTargetChannel(msg.getChannel().asTextChannel())
                                .getMessageCreateAction().queue();
                    }
                    else {
@@ -176,7 +204,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                    }
                }
                else if (args.length == 2) {
-                   playerListMessage =  new PlayerListMessage(args[1]);
+                   PlayerListMessage playerListMessage = sessionManager.getSessionByName(args[1]).getPlayerListMessage(msg, sortAlphabetically, useMentions);
                    playerListMessage.setTargetChannel(msg.getChannel().asTextChannel()).sortListAlphabetically(sortAlphabetically).useMentions(useMentions)
                            .getMessageCreateAction().queue();
                }
@@ -198,20 +226,35 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
         }
 
+        else if (msg.getChannel().getIdLong() == mainConfig.managementChannel.getIdLong()) {
+            if (args.length == 1) {
+
+            }
+            else if (args.length >= 2) {
+                try {
+                    Session targetSession = sessionManager.getSessionByName(args[1]);
+                    targetSession.getPlayerListMessage(msg, sortAlphabetically, useMentions).setTargetChannel(msg.getChannel().asTextChannel())
+                            .getMessageCreateAction().queue();
+                }
+                catch (InvalidSessionException e) {
+                    playerListConfig(msg, false);
+                }
+            }
+        }
+
         else {
             if (args.length == 2) {
                 try {
-                    playerListMessage = new PlayerListMessage(args[1]);
+                    PlayerListMessage playerListMessage = sessionManager.getSessionByName(args[1]).getPlayerListMessage(msg, sortAlphabetically, useMentions);
                     if (isTeamMember(msg.getAuthor().getIdLong())) {
-                        playerListMessage.setTargetChannel(msg.getChannel().asTextChannel()).sortListAlphabetically(sortAlphabetically).useMentions(useMentions)
-                                .getMessageCreateAction().queue();
+                        playerListMessage.setTargetChannel(msg.getChannel().asTextChannel()).getMessageCreateAction().queue();
                     }
                     else {
                         mainConfig.dedicatedOutputChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
-                        playerListMessage.setTargetChannel(mainConfig.dedicatedOutputChannel).sortListAlphabetically(sortAlphabetically)
-                                .useMentions(useMentions).getMessageCreateAction().queue();
+                        playerListMessage.setTargetChannel(mainConfig.dedicatedOutputChannel).getMessageCreateAction().queue();
                     }
-                } catch (InvalidSessionException e) {
+                }
+                catch (InvalidSessionException e) {
                     mainConfig.dedicatedOutputChannel.sendMessageEmbeds(
                             new MessageEntry("Invalid Search", "**Whoops... this does not appear to be a valid search!**",  EmbedDesign.ERROR).getEmbed())
                             .queue();
@@ -245,7 +288,77 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 }
             }
         }
+    }
 
+    private void playerListConfig(Message msg, boolean usedInSessionChannel) {
+        String[] args = msg.getContentRaw().substring(1).split(" ");
+
+
+        switch (args[1].toLowerCase()) {
+            case "clear":
+                if (usedInSessionChannel) {
+                    try {
+                        sessionManager.clearSessionPlayers(msg.getChannel().getName());
+                    } catch (InvalidSessionException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                else {
+                    sessionManager.clearSessionPlayers();
+                }
+                break;
+            case "enablecooldown":
+            case "enablecd":
+            case "ecd":
+            case "updatecooldown":
+            case "updatecd":
+            case "ucd":
+                msg.delete().queue();
+                int cooldownDuration;
+                int minNumberOfPlayers = 0;
+                try {
+                    cooldownDuration = Integer.parseInt(args[2]);
+                }
+                catch (NumberFormatException ex) {
+                    msg.delete().queue();
+                    mainConfig.discussionChannel.sendMessage("Whoops, that was an error! Syntax: `" + mainConfig.commandPrefix + "pl enablecooldown <minutes>`").queue();
+                    return;
+                }
+
+                try {
+                    minNumberOfPlayers = Integer.parseInt(args[3]);
+                }
+                catch (NumberFormatException ex) {
+                    log.warn("Unable to find a Minimum Number Of Players: {}", msg.getContentRaw());
+                }
+                if (usedInSessionChannel) {
+                    try {
+                        sessionManager.enablePlayerListCooldown(msg.getChannel().getName(), cooldownDuration, minNumberOfPlayers);
+                    }
+                    catch (InvalidSessionException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                else {
+                    sessionManager.enablePlayerListCooldown(cooldownDuration, minNumberOfPlayers);
+                }
+                break;
+            case "disablecooldown":
+            case "disablecd":
+            case "dcd":
+                if (usedInSessionChannel) {
+                    try {
+                        sessionManager.disablePlayerListCooldown(msg.getChannel().getName());
+                    }
+                    catch (InvalidSessionException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                else {
+                    sessionManager.disablePlayerListCooldown();
+                }
+                break;
+        }
     }
 
     private void headCountCommand(Message msg) {
