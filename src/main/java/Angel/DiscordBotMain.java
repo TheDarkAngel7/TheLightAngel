@@ -498,7 +498,8 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
                             "\nMain Thread: **" + msg.getJDA().getGatewayPing() + "ms**" +
                             "\nBot Abuse Thread: **#**" +
                             "\nNickname Thread: **$**" +
-                            "\nCheck-In Thread: **!**";
+                            "\nCheck-In Thread: **!**" +
+                            "\nPlayer List Thread: **%**";
 
                     if (baFeature.getConfig().isEnabled()) {
                         editedPing = editedPing.replace("#", String.valueOf(baInit.getPing()) + "ms");
@@ -519,6 +520,8 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
                     else {
                         editedPing = editedPing.replace("!", "Disabled");
                     }
+
+                    editedPing = editedPing.replace("%", String.valueOf(playerListInit.getPing()) + "ms");
 
                     embed.editEmbed(msg, null, originalOutput.replace(
                             "**Pinging Discord's Gateway... Please Wait...**", editedPing), null);

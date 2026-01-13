@@ -3,6 +3,7 @@ package Angel.Nicknames;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.apache.logging.log4j.LogManager;
@@ -30,7 +31,8 @@ public class NicknameInit implements Runnable, NickLogic {
     @Override
     public void run() {
         jda = JDABuilder.create(mainConfig.token, enabledIntents).disableCache(disabledFlags).setRequestTimeoutRetry(true)
-                .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).setMaxReconnectDelay(120).build();
+                .setAutoReconnect(true).setMemberCachePolicy(MemberCachePolicy.ALL).setChunkingFilter(ChunkingFilter.ALL)
+                .setMaxReconnectDelay(120).build();
         nickFeature.setCommandsSuspended(commandsSuspended);
         jda.addEventListener(nickFeature);
         log.info("Nickname Feature Added as Event Listener to its JDA instance");
