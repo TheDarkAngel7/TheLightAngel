@@ -134,10 +134,29 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                             otherSession.getPlayerListMessage(msg, sortAlphabetically, useMentions)
                                     .setTargetChannel(msg.getChannel().asTextChannel()).getMessageCreateAction().queue();
                         }
-                        else msg.delete().queue();
+                        else {
+                            msg.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions",
+                                    "**I cannot print that out here but I will print it out in " + mainConfig.dedicatedOutputChannel.getAsMention() + "**", EmbedDesign.ERROR).getEmbed())
+                                    .queue(m -> {
+                                        msg.delete().queueAfter(30, TimeUnit.SECONDS);
+                                        m.delete().queueAfter(30, TimeUnit.SECONDS);
+                                    });
+                            otherSession.getPlayerListMessage(msg, sortAlphabetically, useMentions)
+                                    .setTargetChannel(mainConfig.dedicatedOutputChannel).getMessageCreateAction().queue();
+                        }
                     }
                     catch (InvalidSessionException ex) {
-                        playerListConfig(msg, true);
+                        if (isTeamMember(msg.getAuthor().getIdLong())) {
+                            playerListConfig(msg, true);
+                        }
+                        else {
+                            msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session",
+                                            "**It seems you didn't provide me a valid session name, but if I were you I would go to " + mainConfig.dedicatedOutputChannel.getAsMention() + " for that**", EmbedDesign.ERROR).getEmbed())
+                                    .queue(m -> {
+                                        msg.delete().queueAfter(30, TimeUnit.SECONDS);
+                                        m.delete().queueAfter(30, TimeUnit.SECONDS);
+                                    });
+                        }
                     }
 
                 }
