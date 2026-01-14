@@ -226,7 +226,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
         }
 
-        else if (msg.getChannel().getIdLong() == mainConfig.managementChannel.getIdLong()) {
+        else if (msg.getChannel().getIdLong() == mainConfig.managementChannel.getIdLong() || msg.getChannel().getIdLong() == mainConfig.discussionChannel.getIdLong()) {
             if (args.length == 1) {
 
             }
