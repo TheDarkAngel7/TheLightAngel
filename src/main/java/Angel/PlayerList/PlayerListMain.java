@@ -158,7 +158,6 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                                     });
                         }
                     }
-
                 }
 
                 else if (baCore.botAbuseIsCurrent(msg.getAuthor().getIdLong())) {
@@ -188,7 +187,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                                     msg.delete().queueAfter(10, TimeUnit.SECONDS);
                                     m.delete().queueAfter(10, TimeUnit.SECONDS);
                                 });
-                        log.info("{}'s `{}pl Output Stopped and Redirected as Cooldown is Enabled - {} Left!", msg.getMember().getEffectiveName(), mainConfig.commandPrefix, targetSession.getTimerUntilCooldownIsOver());
+                        log.info("{}'s {}pl Output Stopped and Redirected as Cooldown is Enabled - {} Left!", msg.getMember().getEffectiveName(), mainConfig.commandPrefix, targetSession.getTimerUntilCooldownIsOver());
                     }
                     else {
                         playerListMessage = targetSession.getPlayerListMessage(msg, sortAlphabetically, useMentions);
