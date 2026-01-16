@@ -16,6 +16,7 @@ public class Session implements PlayerListLogic {
     private final TextChannel sessionChannel;
     private ZonedDateTime date;
 
+    private ZonedDateTime playerListLastUpdated;
     private List<Player> players;
     // Player List Trouble means LA received an empty player list and this session may be experiencing trouble,
     // If this happens 5 times then we'll put the session into the trouble status
@@ -35,14 +36,14 @@ public class Session implements PlayerListLogic {
 
         this.sessionChannel = sessionChannel;
 
-        this.date = ZonedDateTime.now();
+        this.playerListLastUpdated = ZonedDateTime.now();
         this.players = new ArrayList<>(players);
         this.status = SessionStatus.ONLINE;
     }
 
     public Session setNewPlayers(List<Player> players) {
         this.players = players;
-        this.date = ZonedDateTime.now();
+        this.playerListLastUpdated = ZonedDateTime.now();
         resetListFilter();
         return this;
     }
@@ -71,11 +72,11 @@ public class Session implements PlayerListLogic {
     }
 
     public ZonedDateTime getLastUpdatedTime() {
-        return date;
+        return playerListLastUpdated;
     }
 
     public String getLastUpdateTimeString() {
-        return getTimerFormatFrom(date);
+        return getTimerFormatFrom(playerListLastUpdated);
     }
 
     public int getPlayerCount() {
