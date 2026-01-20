@@ -9,10 +9,14 @@ import com.google.gson.reflect.TypeToken;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.text.Normalizer;
+import java.util.Base64;
 import java.util.List;
 
 public class SessionClientHandler implements Runnable, PlayerListLogic {
@@ -35,6 +39,8 @@ public class SessionClientHandler implements Runnable, PlayerListLogic {
 
             String hostName = formatCleaner(jsonObject.get("hostName").getAsString());
             List<String> playerList = gson.fromJson(jsonObject.get("players").getAsString(), new TypeToken<List<String>>(){}.getType());
+            String rawImageString = jsonObject.get("rawImage").getAsString();
+
 
             int index = 0;
 
@@ -53,7 +59,7 @@ public class SessionClientHandler implements Runnable, PlayerListLogic {
                     break;
                     // Online we'll update the player list too.
                 default:
-                    sessionManager.setSessionPlayers(hostName, playerList);
+                    sessionManager.setSessionPlayers(hostName, playerList, decodeImage(rawImageString));
             }
 
 
@@ -65,5 +71,17 @@ public class SessionClientHandler implements Runnable, PlayerListLogic {
     private String formatCleaner(String input) {
         return Normalizer.normalize(input.replaceAll("[^a-zA-Z0-9 ]", "")
                 .replaceAll("\\s+", " ").replaceAll("[^\\p{ASCII}]", ""), Normalizer.Form.NFD);
+    }
+    private BufferedImage decodeImage(String base64Image) {
+        try {
+            byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+            try (ByteArrayInputStream bis = new ByteArrayInputStream(imageBytes)) {
+                return ImageIO.read(bis);
+            }
+        }
+        catch (IOException e) {
+            log.error("Failed to decode image from JSON: {}", e.getMessage());
+            return null;
+        }
     }
 }

@@ -10,6 +10,7 @@ import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.awt.image.BufferedImage;
 import java.text.Normalizer;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -64,7 +65,7 @@ public class SessionManager implements PlayerListLogic {
         throw new InvalidSessionException(String.valueOf(channelId));
     }
 
-    public void setSessionPlayers(String sessionName, List<String> players) {
+    public void setSessionPlayers(String sessionName, List<String> players, BufferedImage playerListImage) {
 
         List<Player> playerList = new ArrayList<>();
         List<Long> playerListLong = new ArrayList<>();
@@ -121,7 +122,7 @@ public class SessionManager implements PlayerListLogic {
                 // If the players list in the session object is older than 10 minutes then we clear the list and accept the new data
                 if (ZonedDateTime.now().isAfter(sessionInQuestion.getLastUpdatedTime().plusMinutes(10))) {
                     log.warn("Since the player list for {} was older than 10 minutes, it has been reset with fresh data", sessionInQuestion.getSessionName());
-                    sessionInQuestion = sessionInQuestion.clearPlayerList().setNewPlayers(playerList);
+                    sessionInQuestion = sessionInQuestion.clearPlayerList().setNewPlayers(playerList, playerListImage);
                 }
                 // Otherwise flag
                 else {
@@ -133,7 +134,7 @@ public class SessionManager implements PlayerListLogic {
             else {
                 log.info("A Player List received from {} Passed the Data Integrity Check: {} -> {} Players",
                         sessionInQuestion.getSessionName(), sessionInQuestion.getPlayerList().size(), playerList.size());
-                sessionInQuestion = sessionInQuestion.setNewPlayers(playerList);
+                sessionInQuestion = sessionInQuestion.setNewPlayers(playerList, playerListImage);
             }
             sessions.set(sessionIndexPosition, sessionInQuestion);
         }
@@ -157,10 +158,10 @@ public class SessionManager implements PlayerListLogic {
                     log.info("Session Channel Successfully Determined with ID " + textChannels.get(index).getIdLong());
 
                     if (playerList.size() > 30) {
-                        sessions.add(new Session(sessionName, textChannels.get(index), new ArrayList<>()));
+                        sessions.add(new Session(sessionName, textChannels.get(index), new ArrayList<>(), playerListImage));
                     }
                     else {
-                        sessions.add(new Session(sessionName, textChannels.get(index), playerList));
+                        sessions.add(new Session(sessionName, textChannels.get(index), playerList, playerListImage));
                     }
 
                     break;

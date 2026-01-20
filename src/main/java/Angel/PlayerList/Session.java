@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.awt.image.BufferedImage;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,10 +15,11 @@ public class Session implements PlayerListLogic {
 
     private final String sessionName;
     private final TextChannel sessionChannel;
-    private ZonedDateTime date;
 
     private ZonedDateTime playerListLastUpdated;
     private List<Player> players;
+    private BufferedImage playerListImage;
+
     // Player List Trouble means LA received an empty player list and this session may be experiencing trouble,
     // If this happens 5 times then we'll put the session into the trouble status
     private int missedScreenshots = 0;
@@ -31,18 +33,20 @@ public class Session implements PlayerListLogic {
     private int cooldownDuration = 0;
     private int minNumberOfPlayers = 0;
 
-    public Session(String name, TextChannel sessionChannel, List<Player> players) {
+    public Session(String name, TextChannel sessionChannel, List<Player> players, BufferedImage playerListImage) {
         this.sessionName = name;
 
         this.sessionChannel = sessionChannel;
 
         this.playerListLastUpdated = ZonedDateTime.now();
         this.players = new ArrayList<>(players);
+        this.playerListImage = playerListImage;
         this.status = SessionStatus.ONLINE;
     }
 
-    public Session setNewPlayers(List<Player> players) {
+    public Session setNewPlayers(List<Player> players, BufferedImage playerListImage) {
         this.players = players;
+        this.playerListImage = playerListImage;
         this.playerListLastUpdated = ZonedDateTime.now();
         resetListFilter();
         return this;
@@ -73,6 +77,10 @@ public class Session implements PlayerListLogic {
 
     public ZonedDateTime getLastUpdatedTime() {
         return playerListLastUpdated;
+    }
+
+    public BufferedImage getPlayerListImage() {
+        return playerListImage;
     }
 
     public String getLastUpdateTimeString() {

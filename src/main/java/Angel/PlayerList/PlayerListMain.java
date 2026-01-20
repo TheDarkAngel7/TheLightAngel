@@ -16,6 +16,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -132,7 +133,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
                         if (isTeamMember(msg.getAuthor().getIdLong())) {
                             otherSession.getPlayerListMessage(msg, sortAlphabetically, useMentions)
-                                    .setTargetChannel(msg.getChannel().asTextChannel()).getMessageCreateAction().queue();
+                                    .setTargetChannel(msg.getChannel().asTextChannel()).getPlayerListEmbedAction().queue();
                         }
                         else {
                             msg.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions",
@@ -142,7 +143,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                                         m.delete().queueAfter(30, TimeUnit.SECONDS);
                                     });
                             otherSession.getPlayerListMessage(msg, sortAlphabetically, useMentions)
-                                    .setTargetChannel(mainConfig.dedicatedOutputChannel).getMessageCreateAction().queue();
+                                    .setTargetChannel(mainConfig.dedicatedOutputChannel).getPlayerListEmbedAction().queue();
                         }
                     }
                     catch (InvalidSessionException ex) {
@@ -162,7 +163,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
                 else if (baCore.botAbuseIsCurrent(msg.getAuthor().getIdLong())) {
                     mainConfig.dedicatedOutputChannel.sendMessage(msg.getAuthor().getAsMention() + ", because you are bot abused, the output got redirected here:").queue();
-                    targetSession.getPlayerListMessage(msg, sortAlphabetically, useMentions).setTargetChannel(mainConfig.dedicatedOutputChannel).getMessageCreateAction().queue();
+                    targetSession.getPlayerListMessage(msg, sortAlphabetically, useMentions).setTargetChannel(mainConfig.dedicatedOutputChannel).getPlayerListEmbedAction().queue();
 
                     msg.delete().queue();
                     MessageEntry entry = new MessageEntry("You Are Bot Abused",
@@ -193,7 +194,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                         playerListMessage = targetSession.getPlayerListMessage(msg, sortAlphabetically, useMentions);
                     }
 
-                    playerListMessage.getMessageCreateAction().queue();
+                    playerListMessage.getPlayerListEmbedAction().queue();
                 }
             }
             catch (InvalidSessionException e) {
@@ -211,7 +212,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
                    if (sessionManager.getSessions().size() == 1) {
                        sessionManager.getSessions().getFirst().getPlayerListMessage(msg, sortAlphabetically, useMentions).setTargetChannel(msg.getChannel().asTextChannel())
-                               .getMessageCreateAction().queue();
+                               .getPlayerListEmbedAction().queue();
                    }
                    else {
                        msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... there appears to be more than one session running, I was expecting an argument for a session!**", EmbedDesign.ERROR).getEmbed())
@@ -224,7 +225,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                else if (args.length == 2) {
                    PlayerListMessage playerListMessage = sessionManager.getSessionByName(args[1]).getPlayerListMessage(msg, sortAlphabetically, useMentions);
                    playerListMessage.setTargetChannel(msg.getChannel().asTextChannel()).sortListAlphabetically(sortAlphabetically).useMentions(useMentions)
-                           .getMessageCreateAction().queue();
+                           .getPlayerListEmbedAction().queue();
                }
                else {
                    msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Arguments", "**Whoops... I was expecting just 1 argument... but found " + (args.length - 1) + "**", EmbedDesign.ERROR).getEmbed())
@@ -252,7 +253,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 try {
                     Session targetSession = sessionManager.getSessionByName(args[1]);
                     targetSession.getPlayerListMessage(msg, sortAlphabetically, useMentions).setTargetChannel(msg.getChannel().asTextChannel())
-                            .getMessageCreateAction().queue();
+                            .getPlayerListEmbedAction().queue();
                 }
                 catch (InvalidSessionException e) {
                     playerListConfig(msg, false);
@@ -265,11 +266,11 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 try {
                     PlayerListMessage playerListMessage = sessionManager.getSessionByName(args[1]).getPlayerListMessage(msg, sortAlphabetically, useMentions);
                     if (isTeamMember(msg.getAuthor().getIdLong())) {
-                        playerListMessage.setTargetChannel(msg.getChannel().asTextChannel()).getMessageCreateAction().queue();
+                        playerListMessage.setTargetChannel(msg.getChannel().asTextChannel()).getPlayerListEmbedAction().queue();
                     }
                     else {
                         mainConfig.dedicatedOutputChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
-                        playerListMessage.setTargetChannel(mainConfig.dedicatedOutputChannel).getMessageCreateAction().queue();
+                        playerListMessage.setTargetChannel(mainConfig.dedicatedOutputChannel).getPlayerListEmbedAction().queue();
                     }
                 }
                 catch (InvalidSessionException e) {
@@ -486,9 +487,9 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
     private void shotCommand(Message msg) {
         List<String> randomComments = new ArrayList<>(Arrays.asList(
-                "You want the shot? I’d love to help! Unfortunately, my halo is more for decoration than file retrieval.",
+                "You want the shot? I’d love to help! Unfortunately, my halo is more for decoration than file retrieval for this channel.",
                 "Hang on—just reaching into the celestial archives… and… nope. Still can’t do it.",
-                "If I could show you that picture, I would. But apparently my divine powers are ‘image-restricted.’",
+                "If I could show you that picture, I would. But apparently my divine powers are ‘image-restricted’ in this channel",
                 "I know you want the shot, but my wings are tied. Regulations. Very boring stuff.",
                 "Aha, the old ‘show me the screenshot’ trick! Very funny. Very cruel.",
                 "Look, if I could beam the image directly into your retinas, I would. But the gods didn’t bless me with *that* upgrade",
@@ -503,7 +504,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 "I keep telling Dark Pit I need the ability to show screenshots. He keeps telling me to ‘deal with it.’ So... here we are.",
                 "Dark Pit won’t let me show the image yet. Something about ‘technical limitations’ or ‘not my problem.’",
                 "Dark Pit, could you not embarrass me in front of the mortals? I can’t show the picture yet!",
-                "The image you seek is locked away in Dark Pit’s secret vault of ‘unfinished features’.",
+                "The image you seek is locked away in Dark Pit’s secret vault of ‘staff only commands’.",
                 "The gods would let me show you the screenshot, but Pittoo overruled them. Somehow...",
                 "I’m gonna steal Dark Pit’s codebook one of these days and add image support myself.",
                 "The developer? Yeah, it’s Dark Pit. Which explains *everything*.",
@@ -517,10 +518,65 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
         int randomIndex = (int) (Math.random() * randomComments.size());
 
-        String response =  randomComments.get(randomIndex);
+        String response = randomComments.get(randomIndex);
+
+        String[] args = msg.getContentRaw().substring(1).split(" ");
 
         if (msg.getChannel().asTextChannel().getIdLong() == mainConfig.dedicatedOutputChannel.getIdLong()) {
-            msg.getChannel().asTextChannel().sendMessage(response).queue();
+            if (args.length == 1) {
+                if (sessionManager.getSessions().size() == 1) {
+                    try {
+                        PlayerListMessage playerListMessage = new PlayerListMessage(sessionManager.getSessions().getFirst().getSessionName());
+                        playerListMessage.setTargetChannel(mainConfig.dedicatedOutputChannel)
+                                .getScreenshotEmbedAction().queue();
+                    }
+                    catch (IOException e) {
+                        log.error("Unable to send screenshot to {}. Reason: {}",
+                                "#" + mainConfig.dedicatedOutputChannel.getName(), e.getMessage());
+                        msg.getChannel().asTextChannel().sendMessage(response).queue();
+                    }
+                    catch (InvalidSessionException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                else {
+                    mainConfig.dedicatedOutputChannel.sendMessageEmbeds(
+                            new MessageEntry("Invalid Session", "**Unable to Find a Session from no search as there is either more than 1 session running, or no sessions at all.**",
+                                    EmbedDesign.ERROR).getEmbed()).queue();
+                }
+            }
+            else {
+                try {
+                    PlayerListMessage playerListMessage = new PlayerListMessage(args[1]);
+
+                    playerListMessage.setTargetChannel(mainConfig.dedicatedOutputChannel)
+                            .getScreenshotEmbedAction().queue();
+                }
+                catch (InvalidSessionException e) {
+                    throw new RuntimeException(e);
+                }
+                catch (IOException e) {
+                    log.error("Unable to send screenshot to {}. Reason: {}",
+                            "#" + mainConfig.dedicatedOutputChannel.getName(), e.getMessage());
+                    msg.getChannel().asTextChannel().sendMessage(response).queue();
+                }
+            }
+        }
+        else if (sessionManager.usedInSessionChannel(msg)) {
+            if (isTeamMember(msg.getAuthor().getIdLong())) {
+                try {
+                    PlayerListMessage playerListMessage = new PlayerListMessage(msg.getChannel().getName());
+                    playerListMessage.getScreenshotEmbedAction().queue();
+                }
+                catch (InvalidSessionException | IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            else {
+                msg.getChannel().asTextChannel().sendMessageEmbeds(new MessageEntry("No Permissions", "**You Do Not Have Permissions to use this command in the session channel**",
+                        EmbedDesign.ERROR).getEmbed()).queue();
+                msg.delete().queue();
+            }
         }
         else {
             msg.delete().queue();

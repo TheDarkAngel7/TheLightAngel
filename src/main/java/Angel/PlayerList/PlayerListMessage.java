@@ -9,7 +9,10 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.FileUpload;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,8 +51,9 @@ public class PlayerListMessage implements PlayerListLogic {
         this.targetChannel = targetChannel;
         return this;
     }
-    
-    public MessageCreateAction getMessageCreateAction() {
+
+    // This is the method for returning the player list embed
+    public MessageCreateAction getPlayerListEmbedAction() {
         InputStream resourceStream = getClass().getResourceAsStream("/sessions/" + targetSession.getSessionName().toLowerCase() +"_128sm.png");
         FileUpload thumbnail = FileUpload.fromData(resourceStream, targetSession.getSessionName().toLowerCase() + "_128sm.png");
         
@@ -59,6 +63,23 @@ public class PlayerListMessage implements PlayerListLogic {
         else {
             return targetChannel.sendMessageEmbeds(getPlayerListEmbed());
         }
+    }
+    public MessageCreateAction getScreenshotEmbedAction() throws IOException {
+        // Convert BufferedImage to Byte Array (In-memory "file")
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(targetSession.getPlayerListImage(),"jpg", baos);
+        byte[] imageBytes = baos.toByteArray();
+
+        // Create FileUpload object
+        FileUpload file = FileUpload.fromData(imageBytes, "capture.jpg");
+
+        // Create Embed
+        EmbedBuilder embed = new EmbedBuilder();
+        embed = embed.setTitle(targetSession.getSessionName() + " (" + targetSession.getPlayerCount() + ")").setColor(Color.decode("#2F3136"))
+                .setImage("attachment://capture.jpg").setFooter("Last Updated: " + targetSession.getLastUpdateTimeString());
+
+        // Return MessageCreationAction using the attachment
+        return targetChannel.sendFiles(file).setEmbeds(embed.build());
     }
 
     private MessageEmbed getPlayerListEmbed() {
