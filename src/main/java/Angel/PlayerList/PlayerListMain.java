@@ -579,7 +579,42 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             }
         }
         else {
-            msg.delete().queue();
+            if (isTeamMember(msg.getAuthor().getIdLong())) {
+                if (sessionManager.getSessions().size() == 1) {
+                    try {
+                        PlayerListMessage playerListMessage = new PlayerListMessage(sessionManager.getSessions().getFirst().getSessionName());
+                        playerListMessage.setTargetChannel(msg.getChannel().asTextChannel())
+                                .getScreenshotEmbedAction().queue();
+                    }
+                    catch (IOException e) {
+                        log.error("Unable to send screenshot to {}. Reason: {}",
+                                "#" + mainConfig.dedicatedOutputChannel.getName(), e.getMessage());
+                        msg.getChannel().asTextChannel().sendMessage(response).queue();
+                    }
+                    catch (InvalidSessionException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                else {
+                    try {
+                        PlayerListMessage playerListMessage = new PlayerListMessage(args[1]);
+                        playerListMessage.setTargetChannel(msg.getChannel().asTextChannel()).getScreenshotEmbedAction().queue();
+                    }
+                    catch (InvalidSessionException e) {
+                        msg.getChannel().sendMessageEmbeds(
+                                new MessageEntry("Invalid Session", "**Unable to Find a Session from no search as there is either more than 1 session running, or no sessions at all.**",
+                                        EmbedDesign.ERROR).getEmbed()).queue();
+                    }
+                    catch (IOException e) {
+                        log.error("Unable to send screenshot to {}. Reason: {}",
+                                "#" + mainConfig.dedicatedOutputChannel.getName(), e.getMessage());
+                        msg.getChannel().asTextChannel().sendMessage(response).queue();
+                    }
+                }
+            }
+            else {
+                msg.delete().queue();
+            }
         }
     }
 
