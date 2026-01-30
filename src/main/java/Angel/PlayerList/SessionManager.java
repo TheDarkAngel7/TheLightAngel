@@ -122,7 +122,8 @@ public class SessionManager implements PlayerListLogic {
                 // If the players list in the session object is older than 10 minutes then we clear the list and accept the new data
                 if (ZonedDateTime.now().isAfter(sessionInQuestion.getLastUpdatedTime().plusMinutes(10))) {
                     log.warn("Since the player list for {} was older than 10 minutes, it has been reset with fresh data", sessionInQuestion.getSessionName());
-                    sessionInQuestion = sessionInQuestion.clearPlayerList().setNewPlayers(playerList, playerListImage);
+                    sessionInQuestion.clearPlayerList();
+                    sessionInQuestion = sessionInQuestion.setNewPlayers(playerList, playerListImage);
                 }
                 // Otherwise flag
                 else {
@@ -173,16 +174,9 @@ public class SessionManager implements PlayerListLogic {
             lock.unlock();
         }
     }
-    public void clearSessionPlayers(String name) throws InvalidSessionException {
-        Session sessionInQuestion = getSessionByName(name);
 
-        log.info("Attempting to clear player list for " +  sessionInQuestion.getSessionName());
-
-        sessions.set(sessions.indexOf(sessionInQuestion), sessionInQuestion.clearPlayerList());
-    }
-
-    public void clearSessionPlayers() {
-        sessions.forEach(s -> sessions.set(sessions.indexOf(s), s.clearPlayerList()));
+    public void clearAllSessionPlayers() {
+        sessions.forEach(Session::clearPlayerList);
     }
 
     public void setSessionState(String sessionName, SessionStatus sessionStatus) throws InvalidSessionException {
@@ -211,7 +205,7 @@ public class SessionManager implements PlayerListLogic {
                         });
                 break;
             case FRESH_ONLINE:
-                clearSessionPlayers(sessionName);
+                sessionInQuestion.clearPlayerList();
                 sessionInQuestion.getSessionChannel().sendMessageEmbeds(new MessageEntry().setTitle(sessionInQuestion.getSessionName() + " Online")
                         .setMessage("**" + sessionInQuestion.getSessionName() + " is now back online! Hop in and start grinding!**")
                         .setDesign(EmbedDesign.SUCCESS).getEmbed()).queue();

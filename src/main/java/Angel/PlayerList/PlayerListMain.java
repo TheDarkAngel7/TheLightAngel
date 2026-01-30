@@ -6,17 +6,22 @@ import Angel.Exceptions.InvalidSessionException;
 import Angel.MessageEntry;
 import Angel.TargetChannelSet;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
+import net.dv8tion.jda.api.utils.FileUpload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -223,9 +228,23 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                    }
                }
                else if (args.length == 2) {
-                   PlayerListMessage playerListMessage = sessionManager.getSessionByName(args[1]).getPlayerListMessage(msg, sortAlphabetically, useMentions);
-                   playerListMessage.setTargetChannel(msg.getChannel().asTextChannel()).sortListAlphabetically(sortAlphabetically).useMentions(useMentions)
-                           .getPlayerListEmbedAction().queue();
+                   Session session = sessionManager.getSessionByName(args[1]);
+                   PlayerListMessage playerListMessage = session.getPlayerListMessage(msg, sortAlphabetically, useMentions);
+
+                   if (session.isSessionChannelAccessible(msg.getAuthor().getIdLong())) {
+                       if (msg.getChannelType() == ChannelType.PRIVATE) {
+                           playerListMessage.sortListAlphabetically(sortAlphabetically).useMentions(false)
+                                   .setTargetChannel(msg.getChannel().asPrivateChannel()).getPlayerListEmbedAction().queue();
+                       }
+                       else {
+                           playerListMessage.sortListAlphabetically(sortAlphabetically).useMentions(false)
+                                   .setTargetChannel(msg.getChannel().asTextChannel()).getPlayerListEmbedAction().queue();
+                       }
+                   }
+                   else {
+                       msg.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions", "**You do not have permissions to view these players!**", EmbedDesign.ERROR).getEmbed()).queue();
+                   }
+
                }
                else {
                    msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Arguments", "**Whoops... I was expecting just 1 argument... but found " + (args.length - 1) + "**", EmbedDesign.ERROR).getEmbed())
@@ -247,7 +266,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
         else if (msg.getChannel().getIdLong() == mainConfig.managementChannel.getIdLong() || msg.getChannel().getIdLong() == mainConfig.discussionChannel.getIdLong()) {
             if (args.length == 1) {
-
+                // Reserved for !pl Help in these channels
             }
             else if (args.length >= 2) {
                 try {
@@ -283,7 +302,11 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             else {
                 if (args.length == 3 && args[2].equalsIgnoreCase("clear") &&  isTeamMember(msg.getAuthor().getIdLong())) {
                     try {
-                        sessionManager.clearSessionPlayers(args[1]);
+                        Session session = sessionManager.getSessionByName(args[1]);
+
+                        session.clearPlayerList();
+
+                        msg.getChannel().sendMessage("**" + msg.getMember().getEffectiveName() + " has cleared the player list of " + session.getSessionName() + "**").queue();
                         msg.delete().queue();
                     }
                     catch (InvalidSessionException ex) {
@@ -317,13 +340,17 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             case "clear":
                 if (usedInSessionChannel) {
                     try {
-                        sessionManager.clearSessionPlayers(msg.getChannel().getName());
+                        Session session = sessionManager.getSessionByChannel(msg.getChannel().asTextChannel());
+                        session.clearPlayerList();
+                        msg.getChannel().sendMessage("**" + msg.getMember().getEffectiveName() + " has cleared the player list for " + session.getSessionName() + "!**").queue();
+
                     } catch (InvalidSessionException e) {
                         throw new RuntimeException(e);
                     }
                 }
                 else {
-                    sessionManager.clearSessionPlayers();
+                    msg.getChannel().sendMessage("**" + msg.getMember().getEffectiveName() + " has cleared the player list for all sessions!**").queue();
+                    sessionManager.clearAllSessionPlayers();
                 }
                 break;
             case "enablecooldown":
@@ -391,7 +418,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             return;
         }
         if (isTeamMember(msg.getAuthor().getIdLong())) {
-            msg.getChannel().sendMessageEmbeds(getHeadCountEmbed()).queue();
+            getHeadCountEmbed(msg.getMember(), msg.getChannel()).queue();
         }
         else {
             if (sessionManager.usedInSessionChannel(msg)) {
@@ -401,7 +428,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 mainConfig.dedicatedOutputChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
             }
 
-            mainConfig.dedicatedOutputChannel.sendMessageEmbeds(getHeadCountEmbed()).queue();
+            getHeadCountEmbed(msg.getMember(), mainConfig.dedicatedOutputChannel).queue();
         }
     }
 
@@ -541,19 +568,30 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 }
                 else {
                     mainConfig.dedicatedOutputChannel.sendMessageEmbeds(
-                            new MessageEntry("Invalid Session", "**Unable to Find a Session from no search as there is either more than 1 session running, or no sessions at all.**",
+                            new MessageEntry("Invalid Session", "**Unable to Find a Session from no search as there is " + (sessionManager.getSessions().size() > 1 ? "more than 1 session running" :
+                                    "no sessions running. This may because I just restarted and I'm waiting for the first player list from the host.") + "**",
                                     EmbedDesign.ERROR).getEmbed()).queue();
                 }
             }
             else {
                 try {
-                    PlayerListMessage playerListMessage = new PlayerListMessage(args[1]);
+                    Session session = sessionManager.getSessionByName(args[1]);
 
-                    playerListMessage.setTargetChannel(mainConfig.dedicatedOutputChannel)
-                            .getScreenshotEmbedAction().queue();
+                    if (session.isSessionChannelAccessible(msg.getAuthor().getIdLong())) {
+                        session.getPlayerListMessage(msg).setTargetChannel(msg.getChannel())
+                                .getScreenshotEmbedAction().queue();
+                    }
+                    else {
+                        msg.getChannel().sendMessage(response).queue();
+                        msg.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions", "**You do not have permissions to view the screenshot!**", EmbedDesign.ERROR).getEmbed()).queue();
+                    }
                 }
                 catch (InvalidSessionException e) {
-                    throw new RuntimeException(e);
+                    mainConfig.dedicatedOutputChannel.sendMessageEmbeds(
+                            new MessageEntry("Invalid Session", "**Unable to Find a Session from that search**" +
+                                    (!sessionManager.getSessions().isEmpty() ? "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see the sessions that are running.**" :
+                                            "\n\n**There's no sessions running, this may be because I was just restarted and awaiting the first player list on this instance.**"),
+                                    EmbedDesign.ERROR).getEmbed()).queue();
                 }
                 catch (IOException e) {
                     log.error("Unable to send screenshot to {}. Reason: {}",
@@ -565,8 +603,9 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         else if (sessionManager.usedInSessionChannel(msg)) {
             if (isTeamMember(msg.getAuthor().getIdLong())) {
                 try {
-                    PlayerListMessage playerListMessage = new PlayerListMessage(msg.getChannel().getName());
-                    playerListMessage.getScreenshotEmbedAction().queue();
+                    Session session = sessionManager.getSessionByChannel(msg.getChannel().asTextChannel());
+
+                    session.getPlayerListMessage(msg).setTargetChannel(msg.getChannel()).getScreenshotEmbedAction().queue();
                 }
                 catch (InvalidSessionException | IOException e) {
                     throw new RuntimeException(e);
@@ -620,7 +659,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
 
 
-    private MessageEmbed getHeadCountEmbed() {
+    private MessageCreateAction getHeadCountEmbed(Member cmdUser, MessageChannel channel) {
         List<Session> sessionList = sessionManager.getSessions();
 
         sessionList.sort(Comparator.comparing(Session::getSessionName, String.CASE_INSENSITIVE_ORDER));
@@ -644,7 +683,9 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
             embedBuilder = switch (currentSession.getStatus()) {
                 case ONLINE, FRESH_ONLINE ->
-                        embedBuilder.addField(currentSession.getSessionName(), currentSession.getPlayerCount() + " Players", false);
+                        embedBuilder.addField(currentSession.getSessionName(), "**" + currentSession.getPlayerCount() + " Player" + (currentSession.getPlayerCount() == 1 ? "" : "s") + "**" +
+
+                                (!cmdUser.hasPermission(currentSession.getSessionChannel(), Permission.VIEW_CHANNEL) ? "\n\n:lock: **You Do Not Have Access to this Session**" : ""), false);
 
                 case OFFLINE -> embedBuilder.addField(currentSession.getSessionName(), "*Session is Offline*", false);
 
@@ -656,13 +697,16 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             };
 
             if (index == sessionList.size() - 1) {
-                embedBuilder = embedBuilder.addField("", "**Total: " + sessionManager.getSessionTotalPlayerCount() + "**", false);
+                embedBuilder = embedBuilder.addField("Total", "**" + sessionManager.getSessionTotalPlayerCount() + " Players**", false);
             }
 
             index++;
         }
 
-        return embedBuilder.build();
+        InputStream resourceStream = getClass().getResourceAsStream("/safe-logo.png");
+        FileUpload thumbnail = FileUpload.fromData(resourceStream, "safe-logo.png");
+
+        return channel.sendMessageEmbeds(embedBuilder.setThumbnail("attachment://safe-logo.png").build()).setFiles(thumbnail);
     }
 
     public boolean isValidCommand(String cmd) {

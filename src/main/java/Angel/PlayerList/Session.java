@@ -1,5 +1,7 @@
 package Angel.PlayerList;
 
+import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.apache.logging.log4j.LogManager;
@@ -108,10 +110,9 @@ public class Session implements PlayerListLogic {
         return new PlayerListMessage(this);
     }
 
-    public Session clearPlayerList() {
+    public void clearPlayerList() {
         players.clear();
         log.info("Player List for {} has been cleared",  sessionName);
-        return this;
     }
 
     public SessionStatus getStatus() {
@@ -126,6 +127,19 @@ public class Session implements PlayerListLogic {
         this.missedScreenshots = 0;
         this.isExperiencingScreenshotTrouble = false;
         log.info("List Filter has been reset for {}", sessionName);
+    }
+    // If the Session Channel is Accessible to the User
+
+    public boolean isSessionChannelAccessible(Member m) {
+        if (m == null) return false;
+
+        return m.hasPermission(sessionChannel, Permission.VIEW_CHANNEL);
+    }
+
+    public boolean isSessionChannelAccessible(long targetDiscordID) {
+        Member m = getGuild().getMemberById(targetDiscordID);
+
+        return isSessionChannelAccessible(m);
     }
 
     // These Methods are related to the cooldown

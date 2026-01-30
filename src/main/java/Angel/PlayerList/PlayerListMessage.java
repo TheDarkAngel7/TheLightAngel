@@ -5,7 +5,7 @@ import Angel.Exceptions.InvalidSessionException;
 import Angel.MessageEntry;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.FileUpload;
 
@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class PlayerListMessage implements PlayerListLogic {
 
     private final Session targetSession;
-    private TextChannel targetChannel;
+    private MessageChannel targetChannel;
     private boolean useMentions = false;
     private boolean sortAlphabetically = false;
 
@@ -47,7 +47,7 @@ public class PlayerListMessage implements PlayerListLogic {
         return this;
     }
 
-    public PlayerListMessage setTargetChannel(TextChannel targetChannel) {
+    public PlayerListMessage setTargetChannel(MessageChannel targetChannel) {
         this.targetChannel = targetChannel;
         return this;
     }
