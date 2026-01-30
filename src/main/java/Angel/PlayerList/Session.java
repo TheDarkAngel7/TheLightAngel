@@ -31,7 +31,7 @@ public class Session implements PlayerListLogic {
     // Session Channel Player List Cooldown
 
     private boolean playerListCooldownEnabled = false;
-    private ZonedDateTime cmdLastUsed;
+    private ZonedDateTime cmdLastUsed = null;
     private int cooldownDuration = 0;
     private int minNumberOfPlayers = 0;
 
@@ -103,7 +103,7 @@ public class Session implements PlayerListLogic {
     }
 
     public PlayerListMessage getPlayerListMessage(Message cmd) {
-        if (playerListCooldownEnabled && !isCooldownActive() && cmd.getChannel().getIdLong() == sessionChannel.getIdLong()) {
+        if (!isCooldownActive() && cmd.getChannel().getIdLong() == sessionChannel.getIdLong()) {
             cmdLastUsed = ZonedDateTime.now();
         }
 
@@ -153,7 +153,10 @@ public class Session implements PlayerListLogic {
         this.cooldownDuration = cooldownDuration;
         playerListCooldownEnabled = true;
         // This is so when the cooldown is enabled it won't immediately be active, but next time the command is used it will be
-        this.cmdLastUsed = ZonedDateTime.now().minusMinutes(cooldownDuration + 1);
+
+        if (cmdLastUsed == null) {
+            this.cmdLastUsed = ZonedDateTime.now().minusMinutes(cooldownDuration + 1);
+        }
 
         sessionChannel.sendMessage("**`" + mainConfig.commandPrefix + "pl` Cooldown has been enabled for this channel.**" +
                 "\n\nMinimum Duration Between Commands: **" + cooldownDuration + " Minutes**" +
