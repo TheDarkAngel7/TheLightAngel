@@ -69,7 +69,7 @@ public class SessionManager implements PlayerListLogic {
 
         List<Player> playerList = new ArrayList<>();
         List<Long> playerListLong = new ArrayList<>();
-        LevenshteinDistance levenshtein = new LevenshteinDistance();
+        LevenshteinDistance levenshtein = LevenshteinDistance.getDefaultInstance();
 
         int index = 0;
         do {

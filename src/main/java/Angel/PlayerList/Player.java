@@ -22,7 +22,7 @@ public class Player implements PlayerListLogic {
         int index = 0;
         Member accountCandidate = null;
         int lowestScore = 50;
-        LevenshteinDistance levenshteinDistance = new LevenshteinDistance();
+        LevenshteinDistance levenshteinDistance = LevenshteinDistance.getDefaultInstance();
         do {
             int score = levenshteinDistance.apply(searchName.toLowerCase(), verifiedMembers.get(index).getEffectiveName().toLowerCase());
 
