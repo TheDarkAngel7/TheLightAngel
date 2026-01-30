@@ -361,7 +361,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             case "ucd":
                 msg.delete().queue();
                 int cooldownDuration;
-                int minNumberOfPlayers = 0;
+                int minNumberOfPlayers;
                 try {
                     cooldownDuration = Integer.parseInt(args[2]);
                 }
@@ -370,23 +370,41 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     mainConfig.discussionChannel.sendMessage("Whoops, that was an error! Syntax: `" + mainConfig.commandPrefix + "pl enablecooldown <minutes>`").queue();
                     return;
                 }
+                Session session = null;
+
+                if (usedInSessionChannel) {
+                    try {
+                        session = sessionManager.getSessionByChannel(msg.getChannel().getIdLong());
+                    }
+                    catch (InvalidSessionException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
 
                 try {
+                    // Try to Parse minNumberOfPlayers from 4th Argument
+                    // !pl enablecooldown <cooldownDuration> [minNumberOfPlayers]
+                    // NumberFormatException would get thrown if the argument does not exist
+
                     minNumberOfPlayers = Integer.parseInt(args[3]);
+
+                    if (usedInSessionChannel) {
+
+                        session.enablePlayerListCooldown(cooldownDuration, minNumberOfPlayers);
+                    }
+                    else {
+                        sessionManager.getSessions().forEach(s -> s.enablePlayerListCooldown(cooldownDuration, minNumberOfPlayers));
+                    }
                 }
                 catch (NumberFormatException ex) {
                     log.warn("Unable to find a Minimum Number Of Players: {}", msg.getContentRaw());
-                }
-                if (usedInSessionChannel) {
-                    try {
-                        sessionManager.enablePlayerListCooldown(msg.getChannel().getName(), cooldownDuration, minNumberOfPlayers);
+
+                    if (usedInSessionChannel) {
+                        session.enablePlayerListCooldown(cooldownDuration);
                     }
-                    catch (InvalidSessionException e) {
-                        throw new RuntimeException(e);
+                    else {
+                        sessionManager.getSessions().forEach(s -> s.enablePlayerListCooldown(cooldownDuration));
                     }
-                }
-                else {
-                    sessionManager.enablePlayerListCooldown(cooldownDuration, minNumberOfPlayers);
                 }
                 break;
             case "disablecooldown":
@@ -394,14 +412,16 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             case "dcd":
                 if (usedInSessionChannel) {
                     try {
-                        sessionManager.disablePlayerListCooldown(msg.getChannel().getName());
+                        Session sessionInQuestion = sessionManager.getSessionByChannel(msg.getChannel().getIdLong());
+
+                        sessionInQuestion.disablePlayerListCooldown();
                     }
                     catch (InvalidSessionException e) {
                         throw new RuntimeException(e);
                     }
                 }
                 else {
-                    sessionManager.disablePlayerListCooldown();
+                    sessionManager.getSessions().forEach(Session::disablePlayerListCooldown);
                 }
                 break;
         }

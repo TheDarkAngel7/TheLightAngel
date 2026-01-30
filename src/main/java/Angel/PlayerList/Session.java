@@ -146,14 +146,21 @@ public class Session implements PlayerListLogic {
 
     public void enablePlayerListCooldown(int cooldownDuration, int minNumberOfPlayers) {
         this.minNumberOfPlayers = minNumberOfPlayers;
-        enablePlayerListCooldown(cooldownDuration);
+        this.cooldownDuration = cooldownDuration;
+        enablePlayerListCooldown();
     }
 
     public void enablePlayerListCooldown(int cooldownDuration) {
         this.cooldownDuration = cooldownDuration;
-        playerListCooldownEnabled = true;
-        // This is so when the cooldown is enabled it won't immediately be active, but next time the command is used it will be
+        this.minNumberOfPlayers = 0;
+        enablePlayerListCooldown();
+    }
 
+    private void enablePlayerListCooldown() {
+        playerListCooldownEnabled = true;
+
+        // This is so when the cooldown is enabled it will immediately go active, but if cmdLastUsed is null.
+        // We wait for the next time to start enforcing the cooldown
         if (cmdLastUsed == null) {
             this.cmdLastUsed = ZonedDateTime.now().minusMinutes(cooldownDuration + 1);
         }

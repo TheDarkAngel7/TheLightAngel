@@ -226,36 +226,6 @@ public class SessionManager implements PlayerListLogic {
         sessions.set(sessions.indexOf(sessionInQuestion), sessionInQuestion.setStatus(sessionStatus));
     }
 
-    public void enablePlayerListCooldown(int cooldownDuration, int minNumberOfPlayers) {
-        lock.lock();
-        try {
-            sessions.forEach(s -> s.enablePlayerListCooldown(cooldownDuration, minNumberOfPlayers));
-        }
-        finally {
-            lock.unlock();
-        }
-    }
-    public void enablePlayerListCooldown(String name, int cooldownDuration, int minNumberOfPlayers) throws InvalidSessionException {
-        Session session = getSessionByName(name);
-
-        session.enablePlayerListCooldown(cooldownDuration, minNumberOfPlayers);
-    }
-
-    public void disablePlayerListCooldown() {
-        lock.lock();
-        try {
-            sessions.forEach(Session::disablePlayerListCooldown);
-        }
-        finally {
-            lock.unlock();
-        }
-    }
-    public void disablePlayerListCooldown(String name) throws InvalidSessionException {
-        Session session = getSessionByName(name);
-
-        session.disablePlayerListCooldown();
-    }
-
     public List<Session> getSessions() {
         return sessions;
     }
