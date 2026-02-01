@@ -46,27 +46,24 @@ public class Session implements PlayerListLogic {
         this.status = SessionStatus.ONLINE;
     }
 
-    public Session setNewPlayers(List<Player> players, BufferedImage playerListImage) {
+    public void setNewPlayers(List<Player> players, BufferedImage playerListImage) {
         this.players = players;
         this.playerListImage = playerListImage;
         this.playerListLastUpdated = ZonedDateTime.now();
         resetListFilter();
-        return this;
     }
 
-    public Session setStatus(SessionStatus status) {
+    public void setStatus(SessionStatus status) {
         this.status = status;
-        return this;
     }
 
-    public Session missedScreenshot() {
+    public void missedScreenshot() {
         missedScreenshots++;
 
         if (missedScreenshots >= 5) {
             isExperiencingScreenshotTrouble = true;
         }
         log.warn("{} has missed a screenshot. Count: {} In Trouble: {}", sessionName, missedScreenshots, isExperiencingScreenshotTrouble);
-        return this;
     }
 
     public String getSessionName() {
@@ -180,7 +177,9 @@ public class Session implements PlayerListLogic {
 
     public boolean isCooldownActive() {
         // This answers whether the cooldown in the session channel is currently active
-        // Is the Cooldown Setting Enabled and is the current time before the time when the cooldown is over
+        // Is the Cooldown Setting Enabled
+        // Is the current time before the time when the cooldown is over
+        // Is the session over the minimum number of players to enforce the cooldown
         return playerListCooldownEnabled && getPlayerCount() >= minNumberOfPlayers &&
                 ZonedDateTime.now().isBefore(cmdLastUsed.plusMinutes(cooldownDuration));
     }

@@ -87,14 +87,20 @@ public class SessionManager implements PlayerListLogic {
                 if (!playerListLong.contains(playerObj.getDiscordAccount().getIdLong())) {
                     playerList.add(playerObj);
                     playerListLong.add(playerObj.getDiscordAccount().getIdLong());
+                    log.info("{} (ID: {}) was successfully added to the player list!", playerObj.getPlayerName(), playerObj.getDiscordAccount().getIdLong());
                 }
+                else {
+                    log.warn("{} (ID: {}) was not added as this would be a duplicate!", playerObj.getPlayerName(), playerObj.getDiscordAccount().getIdLong());
+                }
+            }
+            else {
+                log.info("{} was not added as we believe this is the session host!", playerString);
             }
         } while (++index < players.size());
 
         lock.lock();
         try  {
             Session sessionInQuestion = getSessionByName(sessionName);
-            int sessionIndexPosition = sessions.indexOf(sessionInQuestion);
 
             // If the session has been freshly brought online then there's no restrictions on the new incoming player lists
 
@@ -123,11 +129,11 @@ public class SessionManager implements PlayerListLogic {
                 if (ZonedDateTime.now().isAfter(sessionInQuestion.getLastUpdatedTime().plusMinutes(10))) {
                     log.warn("Since the player list for {} was older than 10 minutes, it has been reset with fresh data", sessionInQuestion.getSessionName());
                     sessionInQuestion.clearPlayerList();
-                    sessionInQuestion = sessionInQuestion.setNewPlayers(playerList, playerListImage);
+                    sessionInQuestion.setNewPlayers(playerList, playerListImage);
                 }
                 // Otherwise flag
                 else {
-                    sessionInQuestion = sessionInQuestion.missedScreenshot();
+                    sessionInQuestion.missedScreenshot();
                 }
 
             }
@@ -135,9 +141,8 @@ public class SessionManager implements PlayerListLogic {
             else {
                 log.info("A Player List received from {} Passed the Data Integrity Check: {} -> {} Players",
                         sessionInQuestion.getSessionName(), sessionInQuestion.getPlayerList().size(), playerList.size());
-                sessionInQuestion = sessionInQuestion.setNewPlayers(playerList, playerListImage);
+                sessionInQuestion.setNewPlayers(playerList, playerListImage);
             }
-            sessions.set(sessionIndexPosition, sessionInQuestion);
         }
         catch (InvalidSessionException e) {
             index = 0;
@@ -223,7 +228,7 @@ public class SessionManager implements PlayerListLogic {
                 break;
         }
 
-        sessions.set(sessions.indexOf(sessionInQuestion), sessionInQuestion.setStatus(sessionStatus));
+        sessionInQuestion.setStatus(sessionStatus);
     }
 
     public List<Session> getSessions() {

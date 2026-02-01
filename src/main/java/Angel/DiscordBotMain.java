@@ -279,15 +279,15 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
                 public void accept(Member member, Throwable throwable) {
                     if (throwable == null) {
                         if (event.getMessage().getChannelType().equals(ChannelType.PRIVATE)) {
-                            log.debug(member.getEffectiveName() + "@DM: " + event.getMessage().getContentRaw());
+                            log.info(member.getEffectiveName() + "@DM: " + event.getMessage().getContentRaw());
                         }
                         else {
-                            log.debug(member.getEffectiveName() + "@" + event.getMessage().getChannel().getName() + ": " +
+                            log.info(member.getEffectiveName() + "@" + event.getMessage().getChannel().getName() + ": " +
                                     event.getMessage().getContentRaw());
                         }
                     }
                     else {
-                        log.debug(throwable.getMessage());
+                        log.info(throwable.getMessage());
                         if (throwable.getMessage().contains("UNKNOWN_MEMBER")) {
                             MessageEntry entry = new MessageEntry("No Permissions to Use Me!", "You Do Not Have Permissions to use me at all because you're not a member of the SAFE Crew discord server!",
                                     EmbedDesign.STOP);

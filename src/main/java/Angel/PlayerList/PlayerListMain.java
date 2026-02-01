@@ -220,7 +220,8 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                                .getPlayerListEmbedAction().queue();
                    }
                    else {
-                       msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... there appears to be more than one session running, I was expecting an argument for a session!**", EmbedDesign.ERROR).getEmbed())
+                       msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... there appears to be more than one session running, I was expecting an argument for a session!**" +
+                                       "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see what sessions are available.", EmbedDesign.ERROR).getEmbed())
                                .queue(m -> {
                                    msg.delete().queueAfter(10, TimeUnit.SECONDS);
                                    m.delete().queueAfter(10, TimeUnit.SECONDS);
@@ -367,7 +368,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 }
                 catch (NumberFormatException ex) {
                     msg.delete().queue();
-                    mainConfig.discussionChannel.sendMessage("Whoops, that was an error! Syntax: `" + mainConfig.commandPrefix + "pl enablecooldown <minutes>`").queue();
+                    msg.getChannel().sendMessage("Whoops, that was an error! Syntax: `" + mainConfig.commandPrefix + "pl enablecooldown <minutes>`").queue();
                     return;
                 }
                 Session session = null;
