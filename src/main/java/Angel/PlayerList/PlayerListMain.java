@@ -211,7 +211,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             }
         }
 
-        else if (msg.getChannel().asTextChannel().getIdLong() == mainConfig.dedicatedOutputChannel.getIdLong() || msg.getChannel().getType() == ChannelType.PRIVATE) {
+        else if (msg.getChannel().asTextChannel().getIdLong() == mainConfig.dedicatedOutputChannel.getIdLong() || msg.getChannelType().equals(ChannelType.PRIVATE)) {
            try {
                if (args.length == 1) {
 
@@ -441,6 +441,16 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         if (isTeamMember(msg.getAuthor().getIdLong())) {
             getHeadCountEmbed(msg.getMember(), msg.getChannel()).queue();
         }
+        else if (msg.getChannelType().equals(ChannelType.PRIVATE)) {
+            Member m = getGuild().getMemberById(msg.getAuthor().getIdLong());
+            if (m == null) {
+                msg.getChannel().sendMessageEmbeds(new MessageEntry("No Access", "**You Do Not have access to this command as you are not in the SAFE Crew Discord Server!",
+                        EmbedDesign.ERROR).getEmbed()).queue();
+            }
+            else {
+                getHeadCountEmbed(m, msg.getChannel()).queue();
+            }
+        }
         else {
             if (sessionManager.usedInSessionChannel(msg)) {
                 msg.delete().queue();
@@ -570,54 +580,66 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
         String[] args = msg.getContentRaw().substring(1).split(" ");
 
-        if (msg.getChannel().asTextChannel().getIdLong() == mainConfig.dedicatedOutputChannel.getIdLong()) {
-            if (args.length == 1) {
-                if (sessionManager.getSessions().size() == 1) {
+        if (msg.getChannel().getIdLong() == mainConfig.dedicatedOutputChannel.getIdLong() || msg.getChannelType().equals(ChannelType.PRIVATE)) {
+            Member m = getGuild().getMemberById(msg.getAuthor().getIdLong());
+
+            if (m == null) {
+                msg.getChannel().sendMessageEmbeds(new MessageEntry("No Access", "**You Do Not have access to this command as you are not in the SAFE Crew Discord Server!",
+                        EmbedDesign.ERROR).getEmbed()).queue();
+            }
+            else {
+                if (args.length == 1) {
+                    if (sessionManager.getSessions().size() == 1) {
+                        try {
+                            Session session = sessionManager.getSessions().getFirst();
+
+                            if (session.isSessionChannelAccessible(msg.getAuthor().getIdLong())) {
+                                session.getPlayerListMessage(msg).setTargetChannel(msg.getChannel())
+                                        .getScreenshotEmbedAction().queue();
+                            }
+                            else {
+                                msg.getChannel().sendMessage(response).queue();
+                                msg.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions", "**You do not have permissions to view the screenshot!**", EmbedDesign.ERROR).getEmbed()).queue();
+                            }
+                        }
+                        catch (IOException e) {
+                            log.error("Unable to send screenshot to {}. Reason: {}",
+                                    "#" + mainConfig.dedicatedOutputChannel.getName(), e.getMessage());
+                            msg.getChannel().sendMessage(response).queue();
+                        }
+                    }
+                    else {
+                        mainConfig.dedicatedOutputChannel.sendMessageEmbeds(
+                                new MessageEntry("Invalid Session", "**Unable to Find a Session from no search as there is " + (sessionManager.getSessions().size() > 1 ? "more than 1 session running" :
+                                        "no sessions running. This may because I just restarted and I'm waiting for the first player list from the host.") + "**",
+                                        EmbedDesign.ERROR).getEmbed()).queue();
+                    }
+                }
+                else {
                     try {
-                        PlayerListMessage playerListMessage = new PlayerListMessage(sessionManager.getSessions().getFirst().getSessionName());
-                        playerListMessage.setTargetChannel(mainConfig.dedicatedOutputChannel)
-                                .getScreenshotEmbedAction().queue();
+                        Session session = sessionManager.getSessionByName(args[1]);
+
+                        if (session.isSessionChannelAccessible(msg.getAuthor().getIdLong())) {
+                            session.getPlayerListMessage(msg).setTargetChannel(msg.getChannel())
+                                    .getScreenshotEmbedAction().queue();
+                        }
+                        else {
+                            msg.getChannel().sendMessage(response).queue();
+                            msg.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions", "**You do not have permissions to view the screenshot!**", EmbedDesign.ERROR).getEmbed()).queue();
+                        }
+                    }
+                    catch (InvalidSessionException e) {
+                        mainConfig.dedicatedOutputChannel.sendMessageEmbeds(
+                                new MessageEntry("Invalid Session", "**Unable to Find a Session from that search**" +
+                                        (!sessionManager.getSessions().isEmpty() ? "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see the sessions that are running.**" :
+                                                "\n\n**There's no sessions running, this may be because I was just restarted and awaiting the first player list on this instance.**"),
+                                        EmbedDesign.ERROR).getEmbed()).queue();
                     }
                     catch (IOException e) {
                         log.error("Unable to send screenshot to {}. Reason: {}",
                                 "#" + mainConfig.dedicatedOutputChannel.getName(), e.getMessage());
                         msg.getChannel().asTextChannel().sendMessage(response).queue();
                     }
-                    catch (InvalidSessionException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                else {
-                    mainConfig.dedicatedOutputChannel.sendMessageEmbeds(
-                            new MessageEntry("Invalid Session", "**Unable to Find a Session from no search as there is " + (sessionManager.getSessions().size() > 1 ? "more than 1 session running" :
-                                    "no sessions running. This may because I just restarted and I'm waiting for the first player list from the host.") + "**",
-                                    EmbedDesign.ERROR).getEmbed()).queue();
-                }
-            }
-            else {
-                try {
-                    Session session = sessionManager.getSessionByName(args[1]);
-
-                    if (session.isSessionChannelAccessible(msg.getAuthor().getIdLong())) {
-                        session.getPlayerListMessage(msg).setTargetChannel(msg.getChannel())
-                                .getScreenshotEmbedAction().queue();
-                    }
-                    else {
-                        msg.getChannel().sendMessage(response).queue();
-                        msg.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions", "**You do not have permissions to view the screenshot!**", EmbedDesign.ERROR).getEmbed()).queue();
-                    }
-                }
-                catch (InvalidSessionException e) {
-                    mainConfig.dedicatedOutputChannel.sendMessageEmbeds(
-                            new MessageEntry("Invalid Session", "**Unable to Find a Session from that search**" +
-                                    (!sessionManager.getSessions().isEmpty() ? "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see the sessions that are running.**" :
-                                            "\n\n**There's no sessions running, this may be because I was just restarted and awaiting the first player list on this instance.**"),
-                                    EmbedDesign.ERROR).getEmbed()).queue();
-                }
-                catch (IOException e) {
-                    log.error("Unable to send screenshot to {}. Reason: {}",
-                            "#" + mainConfig.dedicatedOutputChannel.getName(), e.getMessage());
-                    msg.getChannel().asTextChannel().sendMessage(response).queue();
                 }
             }
         }
