@@ -117,9 +117,6 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
         String[] args = msg.getContentRaw().substring(1).split(" ");
 
-        log.info("{} requested a player list, Use Mention: {} sortAlpha: {} ", msg.getMember().getEffectiveName(), useMentions, sortAlphabetically);
-
-
         if (sessionManager.getSessions().isEmpty()) {
             msg.getChannel().sendMessageEmbeds(new MessageEntry("Unable to Find Active Session",
                     "**Unable to Find an active session, this could be coming back from a fresh restart... or all sessions could be down right now...**", EmbedDesign.ERROR)
@@ -211,13 +208,20 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             }
         }
 
-        else if (msg.getChannel().asTextChannel().getIdLong() == mainConfig.dedicatedOutputChannel.getIdLong() || msg.getChannelType().equals(ChannelType.PRIVATE)) {
+        else if (msg.getChannel().getIdLong() == mainConfig.dedicatedOutputChannel.getIdLong() || msg.getChannelType().equals(ChannelType.PRIVATE)) {
            try {
                if (args.length == 1) {
 
                    if (sessionManager.getSessions().size() == 1) {
-                       sessionManager.getSessions().getFirst().getPlayerListMessage(msg, sortAlphabetically, useMentions).setTargetChannel(msg.getChannel().asTextChannel())
-                               .getPlayerListEmbedAction().queue();
+                       Session session =  sessionManager.getSessions().getFirst();
+
+                       if (session.isSessionChannelAccessible(msg.getAuthor().getIdLong())) {
+                           session.getPlayerListMessage(msg, sortAlphabetically, useMentions).setTargetChannel(msg.getChannel())
+                                   .getPlayerListEmbedAction().queue();
+                       }
+                       else {
+                           msg.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions", "**You do not have permissions to view this player list!**", EmbedDesign.ERROR).getEmbed()).queue();
+                       }
                    }
                    else {
                        msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... there appears to be more than one session running, I was expecting an argument for a session!**" +
@@ -233,14 +237,8 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                    PlayerListMessage playerListMessage = session.getPlayerListMessage(msg, sortAlphabetically, useMentions);
 
                    if (session.isSessionChannelAccessible(msg.getAuthor().getIdLong())) {
-                       if (msg.getChannelType() == ChannelType.PRIVATE) {
-                           playerListMessage.sortListAlphabetically(sortAlphabetically).useMentions(false)
-                                   .setTargetChannel(msg.getChannel().asPrivateChannel()).getPlayerListEmbedAction().queue();
-                       }
-                       else {
-                           playerListMessage.sortListAlphabetically(sortAlphabetically).useMentions(false)
-                                   .setTargetChannel(msg.getChannel().asTextChannel()).getPlayerListEmbedAction().queue();
-                       }
+                       playerListMessage.sortListAlphabetically(sortAlphabetically).useMentions(false)
+                               .setTargetChannel(msg.getChannel()).getPlayerListEmbedAction().queue();
                    }
                    else {
                        msg.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions", "**You do not have permissions to view these players!**", EmbedDesign.ERROR).getEmbed()).queue();
