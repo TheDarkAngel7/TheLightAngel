@@ -225,11 +225,8 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                    }
                    else {
                        msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... there appears to be more than one session running, I was expecting an argument for a session!**" +
-                                       "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see what sessions are available.", EmbedDesign.ERROR).getEmbed())
-                               .queue(m -> {
-                                   msg.delete().queueAfter(10, TimeUnit.SECONDS);
-                                   m.delete().queueAfter(10, TimeUnit.SECONDS);
-                               });
+                                       "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see what sessions are available.**", EmbedDesign.ERROR).getEmbed())
+                               .queue();
                    }
                }
                else if (args.length == 2) {
@@ -247,18 +244,13 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                }
                else {
                    msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Arguments", "**Whoops... I was expecting just 1 argument... but found " + (args.length - 1) + "**", EmbedDesign.ERROR).getEmbed())
-                           .queue(m -> {
-                               msg.delete().queueAfter(10, TimeUnit.SECONDS);
-                               m.delete().queueAfter(10, TimeUnit.SECONDS);
-                           });
+                           .queue();
                }
            }
            catch (InvalidSessionException e) {
-               msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... this does not appear to belong to a session that's currently running!**", EmbedDesign.ERROR).getEmbed())
-                       .queue(m -> {
-                           msg.delete().queueAfter(10, TimeUnit.SECONDS);
-                           m.delete().queueAfter(10, TimeUnit.SECONDS);
-                       });
+               msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... this does not appear to belong to a session that's currently running!**" +
+                               "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see what sessions are available.**", EmbedDesign.ERROR).getEmbed())
+                       .queue();
            }
 
         }
@@ -608,7 +600,8 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     }
                     else {
                         mainConfig.dedicatedOutputChannel.sendMessageEmbeds(
-                                new MessageEntry("Invalid Session", "**Unable to Find a Session from no search as there is " + (sessionManager.getSessions().size() > 1 ? "more than 1 session running" :
+                                new MessageEntry("Invalid Session", "**Unable to Find a Session from no search as there is " + (sessionManager.getSessions().size() > 1 ? "more than 1 session running!"
+                                        + "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see what sessions are available.**" :
                                         "no sessions running. This may because I just restarted and I'm waiting for the first player list from the host.") + "**",
                                         EmbedDesign.ERROR).getEmbed()).queue();
                     }
