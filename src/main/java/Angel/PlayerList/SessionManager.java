@@ -241,7 +241,12 @@ public class SessionManager implements PlayerListLogic {
         int tally = 0;
 
         do {
-            tally += sessions.get(index++).getPlayerCount();
+            Session currentSession = sessions.get(index++);
+
+            switch (currentSession.getStatus()) {
+                case ONLINE, FRESH_ONLINE, RESTART_SOON ->
+                        tally += currentSession.getPlayerCount();
+            }
         } while (index < sessions.size());
 
         return tally;
