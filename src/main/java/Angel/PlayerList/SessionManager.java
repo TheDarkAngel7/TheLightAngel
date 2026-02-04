@@ -4,6 +4,7 @@ import Angel.EmbedDesign;
 import Angel.Exceptions.InvalidSessionException;
 import Angel.MessageEntry;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -64,6 +65,29 @@ public class SessionManager implements PlayerListLogic {
             if (session.getSessionChannel().getIdLong() == channelId) return session;
         }
         throw new InvalidSessionException(String.valueOf(channelId));
+    }
+
+    // Accessibility
+
+    public List<Session> getAccessibleSessions(Member m) {
+        List<Session> result = new ArrayList<>();
+        int index = 0;
+
+        do {
+            Session currentSession = sessions.get(index++);
+
+            if (currentSession.isSessionChannelAccessible(m)) {
+                result.add(currentSession);
+            }
+        } while (index < sessions.size());
+
+        return result;
+    }
+
+    public List<Session> getAccessibleSessions(long targetDiscordID) {
+        Member m = getGuild().getMemberById(targetDiscordID);
+
+        return getAccessibleSessions(m);
     }
 
     public void setSessionPlayers(String sessionName, List<String> players, BufferedImage playerListImage) {
