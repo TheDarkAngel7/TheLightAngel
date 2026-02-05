@@ -135,7 +135,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     try {
                         Session otherSession = sessionManager.getSessionByName(args[1]);
 
-                        if (isTeamMember(msg.getAuthor().getIdLong())) {
+                        if (isTeamMember(msg.getAuthor().getIdLong()) || msg.getChannel().getIdLong() == otherSession.getSessionChannel().getIdLong()) {
                             otherSession.getPlayerListMessage(msg, sortAlphabetically, useMentions)
                                     .setTargetChannel(msg.getChannel().asTextChannel()).getPlayerListEmbedAction().queue();
                         }
@@ -222,7 +222,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                    }
                    else {
                        msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... there appears to be more than one session running, I was expecting an argument for a session!**" +
-                                       "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see what accessibleSessions are available.**", EmbedDesign.ERROR).getEmbed())
+                                       "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see what sessions are available.**", EmbedDesign.ERROR).getEmbed())
                                .queue();
                    }
                }
@@ -241,12 +241,15 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                }
                else {
                    msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Arguments", "**Whoops... I was expecting just 1 argument... but found " + (args.length - 1) + "**", EmbedDesign.ERROR).getEmbed())
-                           .queue();
+                           .queue(m -> {
+                               m.delete().queueAfter(10, TimeUnit.SECONDS);
+                               msg.delete().queueAfter(10, TimeUnit.SECONDS);
+                           });
                }
            }
            catch (InvalidSessionException e) {
                msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... this does not appear to belong to a session that's currently running!**" +
-                               "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see what accessibleSessions are available.**", EmbedDesign.ERROR).getEmbed())
+                               "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see what sessions are available.**", EmbedDesign.ERROR).getEmbed())
                        .queue();
            }
 
