@@ -364,11 +364,11 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
                 do {
                     Session currentSession = sessions.get(index++);
-                    embed = embed.addField(currentSession.getSessionName(), "Status: " + (currentSession.isCooldownEnabled() ? "**Disabled**" :
+                    embed = embed.addField(currentSession.getSessionName(), "Status: " + (currentSession.isCooldownEnabled() ?
                             "**Enabled**" +
                                     "\nMin Time Between Cmds: **" + currentSession.getCooldownDuration() + "**" +
                                     (currentSession.getMinNumberOfPlayersInSessionForCooldown() > 0 ?
-                                            "\nMin Number of Players: **" + currentSession.getMinNumberOfPlayersInSessionForCooldown() + "**": "")), false);
+                                            "\nMin Number of Players: **" + currentSession.getMinNumberOfPlayersInSessionForCooldown() + "**": "") : "**Disabled**"), false);
                 } while (index < sessions.size());
 
                 msg.getChannel().sendMessageEmbeds(embed.build()).setFiles(getSAFECrewLogo()).queue();
