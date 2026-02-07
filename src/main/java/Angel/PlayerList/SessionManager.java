@@ -37,7 +37,7 @@ public class SessionManager implements PlayerListLogic {
             int index = 0;
             while (index < sessions.size()) {
                 if (sessions.get(index).getSessionName().equalsIgnoreCase(name)) return sessions.get(index);
-                else if (sessions.get(index).getSessionName().toLowerCase().contains(name)) return sessions.get(index);
+                else if (sessions.get(index).getSessionName().toLowerCase().contains(name.toLowerCase())) return sessions.get(index);
                 index++;
             }
             throw new InvalidSessionException(name);

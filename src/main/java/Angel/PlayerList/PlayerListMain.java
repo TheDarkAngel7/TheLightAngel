@@ -135,6 +135,10 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     try {
                         Session otherSession = sessionManager.getSessionByName(args[1]);
 
+                        /*
+                        If a team member searches for another session in the session channel,
+                        or if a player searches for the session in the same session channel as the one they're searching for
+                         */
                         if (isTeamMember(msg.getAuthor().getIdLong()) || msg.getChannel().getIdLong() == otherSession.getSessionChannel().getIdLong()) {
                             otherSession.getPlayerListMessage(msg, sortAlphabetically, useMentions)
                                     .setTargetChannel(msg.getChannel().asTextChannel()).getPlayerListEmbedAction().queue();
@@ -461,7 +465,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
     private void hostCommand(Message msg) {
 
-        String[] args = msg.getContentRaw().substring(1).split(" ");
+        String[] args = msg.getContentRaw().toLowerCase().substring(1).split(" ");
 
         try {
              Session sessionInQuestion = sessionManager.getSessionByName(msg.getChannel().asTextChannel().getName());
@@ -607,9 +611,9 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     }
                     else {
                         mainConfig.dedicatedOutputChannel.sendMessageEmbeds(
-                                new MessageEntry("Invalid Session", "**Unable to Find a Session from no search as there is " + (sessionManager.getSessions().size() > 1 ? "more than 1 session running!"
+                                new MessageEntry("Invalid Session", "**Unable to Find a Session from no search as there is " + (sessionManager.getSessions().size() > 1 ? "more than 1 session running!**"
                                         + "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see what sessions are available.**" :
-                                        "no sessions running. This may because I just restarted and I'm waiting for the first player list from the host.") + "**",
+                                        " **no sessions running. This may because I just restarted and I'm waiting for the first player list from the host.**") + "**",
                                         EmbedDesign.ERROR).getEmbed()).queue();
                     }
                 }
