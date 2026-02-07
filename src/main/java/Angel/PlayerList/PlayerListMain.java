@@ -354,6 +354,25 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     sessionManager.clearAllSessionPlayers();
                 }
                 break;
+            case "cooldown":
+            case "cd":
+                EmbedBuilder embed = new EmbedBuilder().setThumbnail("attachment://safe-logo.png")
+                        .setTitle("!pl Cooldown Status").setColor(Color.decode("#2F3136"));
+                List<Session> sessions = sessionManager.getSessions();
+
+                int index = 0;
+
+                do {
+                    Session currentSession = sessions.get(index++);
+                    embed = embed.addField(currentSession.getSessionName(), "Status: " + (currentSession.isCooldownEnabled() ? "**Disabled**" :
+                            "**Enabled**" +
+                                    "\nMin Time Between Cmds: **" + currentSession.getCooldownDuration() + "**" +
+                                    (currentSession.getMinNumberOfPlayersInSessionForCooldown() > 0 ?
+                                            "\nMin Number of Players: **" + currentSession.getMinNumberOfPlayersInSessionForCooldown() + "**": "")), false);
+                } while (index < sessions.size());
+
+                msg.getChannel().sendMessageEmbeds(embed.build()).setFiles(getSAFECrewLogo()).queue();
+                break;
             case "enablecooldown":
             case "enablecd":
             case "ecd":
@@ -753,13 +772,16 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             index++;
         }
 
-        InputStream resourceStream = getClass().getResourceAsStream("/safe-logo.png");
-        FileUpload thumbnail = FileUpload.fromData(resourceStream, "safe-logo.png");
-
-        return channel.sendMessageEmbeds(embedBuilder.setThumbnail("attachment://safe-logo.png").build()).setFiles(thumbnail);
+        return channel.sendMessageEmbeds(embedBuilder.setThumbnail("attachment://safe-logo.png").build()).setFiles(getSAFECrewLogo());
     }
 
     public boolean isValidCommand(String cmd) {
         return commands.contains(cmd.toLowerCase());
+    }
+    private FileUpload getSAFECrewLogo() {
+        InputStream resourceStream = getClass().getResourceAsStream("/safe-logo.png");
+        FileUpload thumbnail = FileUpload.fromData(resourceStream, "safe-logo.png");
+
+        return thumbnail;
     }
 }

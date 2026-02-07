@@ -184,11 +184,19 @@ public class Session implements PlayerListLogic {
                 ZonedDateTime.now().isBefore(cmdLastUsed.plusMinutes(cooldownDuration));
     }
 
+    public boolean isCooldownEnabled() {
+        return playerListCooldownEnabled;
+    }
+
     public String getTimerUntilCooldownIsOver() {
         return getTimerFormatTo(cmdLastUsed.plusMinutes(cooldownDuration));
     }
 
     public int getCooldownDuration() {
         return cooldownDuration;
+    }
+
+    public int getMinNumberOfPlayersInSessionForCooldown() {
+        return minNumberOfPlayers;
     }
 }
