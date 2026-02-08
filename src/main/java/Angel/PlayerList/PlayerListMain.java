@@ -366,9 +366,9 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     Session currentSession = sessions.get(index++);
                     embed = embed.addField(currentSession.getSessionName(), "Status: " + (currentSession.isCooldownEnabled() ?
                             "**Enabled**" +
-                                    "\nMin Time Between Cmds: **" + currentSession.getCooldownDuration() + "**" +
+                                    "\nCooldown Duration: **" + currentSession.getCooldownDuration() + " Minutes**" +
                                     (currentSession.getMinNumberOfPlayersInSessionForCooldown() > 0 ?
-                                            "\nMin Number of Players: **" + currentSession.getMinNumberOfPlayersInSessionForCooldown() + "**": "") : "**Disabled**"), false);
+                                            "\nMin Number of Players: **" + currentSession.getMinNumberOfPlayersInSessionForCooldown() + " Players**\n": "") : "**Disabled**"), false);
                 } while (index < sessions.size());
 
                 msg.getChannel().sendMessageEmbeds(embed.build()).setFiles(getSAFECrewLogo()).queue();
@@ -379,9 +379,8 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             case "updatecooldown":
             case "updatecd":
             case "ucd":
-                msg.delete().queue();
                 int cooldownDuration;
-                int minNumberOfPlayers;
+                int minNumberOfPlayers = 0;
                 try {
                     cooldownDuration = Integer.parseInt(args[2]);
                 }
@@ -409,11 +408,11 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     minNumberOfPlayers = Integer.parseInt(args[3]);
 
                     if (usedInSessionChannel) {
-
                         session.enablePlayerListCooldown(cooldownDuration, minNumberOfPlayers);
                     }
                     else {
-                        sessionManager.getSessions().forEach(s -> s.enablePlayerListCooldown(cooldownDuration, minNumberOfPlayers));
+                        int finalMinNumberOfPlayers = minNumberOfPlayers;
+                        sessionManager.getSessions().forEach(s -> s.enablePlayerListCooldown(cooldownDuration, finalMinNumberOfPlayers));
                     }
                 }
                 catch (NumberFormatException ex) {
@@ -425,6 +424,13 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     else {
                         sessionManager.getSessions().forEach(s -> s.enablePlayerListCooldown(cooldownDuration));
                     }
+                }
+
+                if (!usedInSessionChannel) {
+                    msg.getChannel().sendMessage("**" + msg.getMember().getEffectiveName() + " has enabled the player list cooldown for all sessions!**" +
+                            "\n\nCooldown Duration: **" + cooldownDuration + " Minutes**" +
+                            (minNumberOfPlayers > 0 ? "\nMin Number of Players: **" + minNumberOfPlayers + " Players**" : "") +
+                            "\n\n**You may use `" + mainConfig.commandPrefix + "pl cooldown` to view the cooldown settings**").queue();
                 }
                 break;
             case "disablecooldown":
@@ -441,6 +447,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     }
                 }
                 else {
+                    msg.getChannel().sendMessage("**" + msg.getMember().getEffectiveName() + " has disabled the player list cooldown for all sessions**").queue();
                     sessionManager.getSessions().forEach(Session::disablePlayerListCooldown);
                 }
                 break;
