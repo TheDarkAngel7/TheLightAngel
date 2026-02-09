@@ -217,7 +217,7 @@ public class SessionManager implements PlayerListLogic {
                 sessionInQuestion.getSessionChannel().sendMessageEmbeds(new MessageEntry().setTitle(sessionInQuestion.getSessionName() + " Restarting")
                         .setMessage("**" + sessionInQuestion.getSessionName() + " is being Restarted. You will be advised in this channel " +
                                 "when it is back online**").setDesign(EmbedDesign.STOP).getEmbed()).queue();
-            case OFFLINE:
+            case OFFLINE, RESTART_SOON, RESTART_MOD:
                 if (sessionStatus.equals(SessionStatus.OFFLINE)) {
                     sessionInQuestion.getSessionChannel().sendMessageEmbeds(new MessageEntry().setTitle(sessionInQuestion.getSessionName() + " Offline")
                             .setMessage("**" + sessionInQuestion.getSessionName() + " is Offline Temporarily. You will be advised in this channel " +

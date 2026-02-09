@@ -465,7 +465,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             return;
         }
         if (isTeamMember(msg.getAuthor().getIdLong())) {
-            getHeadCountEmbed(msg.getMember(), msg.getChannel()).queue();
+            getHeadCountEmbed(msg.getAuthor().getIdLong(), msg.getChannel()).queue();
         }
         else if (msg.getChannelType().equals(ChannelType.PRIVATE)) {
             Member m = getGuild().getMemberById(msg.getAuthor().getIdLong());
@@ -728,7 +728,9 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         }
     }
 
-
+    private MessageCreateAction getHeadCountEmbed(long cmdUserLong, MessageChannel channel) {
+        return getHeadCountEmbed(getGuild().getMemberById(cmdUserLong), channel);
+    }
 
     private MessageCreateAction getHeadCountEmbed(Member cmdUser, MessageChannel channel) {
         List<Session> sessionList = sessionManager.getAccessibleSessions(cmdUser);
@@ -761,7 +763,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 case ONLINE, FRESH_ONLINE ->
                         embedBuilder.addField(currentSession.getSessionName(), "**" + currentSession.getPlayerCount() + " Player" + (currentSession.getPlayerCount() == 1 ? "" : "s") + "**" +
 
-                                (!cmdUser.hasPermission(currentSession.getSessionChannel(), Permission.VIEW_CHANNEL) ? "\n\n:lock: **You Do Not Have Access to this Session**" : ""), false);
+                                (!cmdUser.hasPermission(currentSession.getSessionChannel(), Permission.VIEW_CHANNEL) ? "\n\n:lock: **You Do Not Have Access to " + currentSession.getSessionName() + "**" : ""), false);
 
                 case OFFLINE -> embedBuilder.addField(currentSession.getSessionName(), "*Session is Offline*", false);
 
@@ -769,7 +771,8 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                         embedBuilder.addField(currentSession.getSessionName(), "*Session is Restarting*", false);
 
                 case RESTART_SOON ->
-                        embedBuilder.addField(currentSession.getSessionName(), "*Session is Restarting Soon*", false);
+                        embedBuilder.addField(currentSession.getSessionName(), "**" + currentSession.getPlayerCount() + " Player" + (currentSession.getPlayerCount() == 1 ? "" : "s") + "**" +
+                                "\n*Session is Restarting Soon*", false);
             };
 
             if (index == sessionList.size() - 1) {
