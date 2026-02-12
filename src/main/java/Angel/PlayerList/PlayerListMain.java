@@ -155,8 +155,16 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                         }
                     }
                     catch (InvalidSessionException ex) {
-                        if (isTeamMember(msg.getAuthor().getIdLong())) {
+                        if (isStaffMember(msg.getMember())) {
                             playerListConfig(msg, true);
+                        }
+                        else if (isTeamMember(msg.getMember())) {
+                            msg.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions",
+                                    "**You Do Not Have Permissions to use these commands yet. Once you get promoted up from new staff member, then you will!**",
+                                    EmbedDesign.ERROR).getEmbed()).queue(m -> {
+                                        msg.delete().queueAfter(30, TimeUnit.SECONDS);
+                                        m.delete().queueAfter(30, TimeUnit.SECONDS);
+                            });
                         }
                         else {
                             msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session",
@@ -270,7 +278,14 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                             .getPlayerListEmbedAction().queue();
                 }
                 catch (InvalidSessionException e) {
-                    playerListConfig(msg, false);
+                    if (isStaffMember(msg.getMember())) {
+                        playerListConfig(msg, false);
+                    }
+                    else {
+                        msg.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions",
+                                "**You Do Not Have Permissions to use these commands yet. Once you get promoted up from new staff member, then you will!**",
+                                EmbedDesign.ERROR).getEmbed()).queue();
+                    }
                 }
             }
         }
@@ -368,7 +383,9 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                             "**Enabled**" +
                                     "\nCooldown Duration: **" + currentSession.getCooldownDuration() + " Minutes**" +
                                     (currentSession.getMinNumberOfPlayersInSessionForCooldown() > 0 ?
-                                            "\nMin Number of Players: **" + currentSession.getMinNumberOfPlayersInSessionForCooldown() + " Players**\n": "") : "**Disabled**"), false);
+                                            "\nMin Number of Players: **" + currentSession.getMinNumberOfPlayersInSessionForCooldown() + " Players**\n": "") +
+                                    "\n\nRedirect Next Cmd: " + (currentSession.isCooldownActive() ? "**Yes**" +
+                                    "\nTime Remaining: **" + currentSession.getTimerUntilCooldownIsOver() + "**" : "**No**") : "**Disabled**"), false);
                 } while (index < sessions.size());
 
                 msg.getChannel().sendMessageEmbeds(embed.build()).setFiles(getSAFECrewLogo()).queue();

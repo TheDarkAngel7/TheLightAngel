@@ -25,7 +25,7 @@ public class Session implements PlayerListLogic {
     // Player List Trouble means LA received an empty player list and this session may be experiencing trouble,
     // If this happens 5 times then we'll put the session into the trouble status
     private int missedScreenshots = 0;
-    private boolean isExperiencingScreenshotTrouble = false;
+
     private SessionStatus status;
 
     // Session Channel Player List Cooldown
@@ -60,10 +60,7 @@ public class Session implements PlayerListLogic {
     public void missedScreenshot() {
         missedScreenshots++;
 
-        if (missedScreenshots >= 5) {
-            isExperiencingScreenshotTrouble = true;
-        }
-        log.warn("{} has missed a screenshot. Count: {} In Trouble: {}", sessionName, missedScreenshots, isExperiencingScreenshotTrouble);
+        log.warn("{} has missed a screenshot. Count: {} In Trouble: {}", sessionName, missedScreenshots, isExperiencingScreenshotTrouble());
     }
 
     public String getSessionName() {
@@ -117,12 +114,11 @@ public class Session implements PlayerListLogic {
     }
 
     public boolean isExperiencingScreenshotTrouble() {
-        return isExperiencingScreenshotTrouble;
+        return missedScreenshots >= 5;
     }
 
     public void resetListFilter() {
         this.missedScreenshots = 0;
-        this.isExperiencingScreenshotTrouble = false;
         log.info("List Filter has been reset for {}", sessionName);
     }
     // If the Session Channel is Accessible to the User
