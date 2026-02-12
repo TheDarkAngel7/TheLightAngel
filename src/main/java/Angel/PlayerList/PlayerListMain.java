@@ -371,7 +371,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             case "cooldown":
             case "cd":
                 EmbedBuilder embed = new EmbedBuilder().setThumbnail("attachment://safe-logo.png")
-                        .setTitle("!pl Cooldown Status").setColor(Color.decode("#2F3136").brighter());
+                        .setTitle("!pl Cooldown Settings").setColor(Color.decode("#2F3136").brighter());
                 List<Session> sessions = sessionManager.getSessions();
 
                 int index = 0;
