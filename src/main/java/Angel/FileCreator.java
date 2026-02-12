@@ -64,11 +64,6 @@ class FileCreator {
                 Files.createDirectory(logFolder);
                 everythingExisted = false;
             }
-            if (!Files.exists(Paths.get(jarDirectory + "/log4j2.properties"))) {
-                log.warn("Log4J2 Config Not Found, Exporting Default...");
-                exportResource(null, "/log4j2.properties");
-                everythingExisted = false;
-            }
             return everythingExisted;
         }
         catch (IOException ex) {
