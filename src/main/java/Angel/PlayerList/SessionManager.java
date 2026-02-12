@@ -16,6 +16,7 @@ import java.awt.image.BufferedImage;
 import java.text.Normalizer;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,6 +31,8 @@ public class SessionManager implements PlayerListLogic {
         ExecutorService service = Executors.newFixedThreadPool(1);
         service.execute(new SessionClientListener());
     }
+
+    // Session Searching
 
     public Session getSessionByName(String name) throws InvalidSessionException {
         lock.lock();
@@ -89,6 +92,8 @@ public class SessionManager implements PlayerListLogic {
 
         return getAccessibleSessions(m);
     }
+
+    // Setters
 
     public void setSessionPlayers(String sessionName, List<String> players, BufferedImage playerListImage) {
 
@@ -195,6 +200,8 @@ public class SessionManager implements PlayerListLogic {
                         sessions.add(new Session(sessionName, textChannels.get(index), playerList, playerListImage));
                     }
 
+                    sessions.sort(Comparator.comparing(Session::getSessionName, String.CASE_INSENSITIVE_ORDER));
+
                     break;
                 }
                 index++;
@@ -255,6 +262,8 @@ public class SessionManager implements PlayerListLogic {
 
         sessionInQuestion.setStatus(sessionStatus);
     }
+
+    // Getters
 
     public List<Session> getSessions() {
         return sessions;

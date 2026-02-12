@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -372,7 +371,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             case "cooldown":
             case "cd":
                 EmbedBuilder embed = new EmbedBuilder().setThumbnail("attachment://safe-logo.png")
-                        .setTitle("!pl Cooldown Status").setColor(Color.decode("#2F3136"));
+                        .setTitle("!pl Cooldown Status").setColor(Color.decode("#2F3136").brighter());
                 List<Session> sessions = sessionManager.getSessions();
 
                 int index = 0;
@@ -756,8 +755,6 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         if (sessionList.isEmpty()) {
             return channel.sendMessageEmbeds(new MessageEntry("No Access", "**You Have No Access to Any Sessions**", EmbedDesign.ERROR).getEmbed());
         }
-
-        sessionList.sort(Comparator.comparing(Session::getSessionName, String.CASE_INSENSITIVE_ORDER));
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
 
