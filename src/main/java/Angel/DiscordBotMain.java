@@ -88,8 +88,8 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
             mainConfig.discordSetup();
         }
 
-        logFileGarbageTruck = new FileGarbageTruck("Log", "logs/Previous", 11)
-                .setFileNamingPattern("MM-dd-yy-HH-mm-ss-1").setDaysToStoreFilesBeforeDeletion(180).filesDoNotIncludeTimeZones();
+        logFileGarbageTruck = new FileGarbageTruck("Log", "logs/archive", 11)
+                .setFileNamingPattern("yyyy-MM-dd").setDaysToStoreFilesBeforeDeletion(180).filesDoNotIncludeTimeZones();
 
         nickInit = new NicknameInit(commandsSuspended);
         baInit = new BotAbuseInit();

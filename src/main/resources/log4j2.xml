@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN" monitorInterval="30">
     <Properties>
-        <Property name="logPath">logs</Property>
+        <Property name="logPath">./logs</Property>
         <Property name="archivePath">${logPath}/archive</Property>
     </Properties>
 
@@ -13,7 +13,7 @@
 
         <RollingFile name="File"
                      fileName="${logPath}/latest.log"
-                     filePattern="${archivePath}/%d{yyyy-MM-dd}-%i.log.gz">
+                     filePattern="${archivePath}/log-backup-%d{yyyy-MM-dd}.log.gz">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%t] %-5level %logger{36} - %msg%n" />
             <Policies>
                 <TimeBasedTriggeringPolicy interval="1" modulate="true" />

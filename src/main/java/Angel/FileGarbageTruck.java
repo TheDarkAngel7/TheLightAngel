@@ -54,7 +54,7 @@ public class FileGarbageTruck implements CommonLogic {
                 log.debug(sectionName + " Files Successfully Accessed - There are " + fileArray.size() + " files");
             }
             catch (NullPointerException ex) {
-                log.info("Unable to Access Files to Dump");
+                log.warn("Unable to Access Files to Dump");
                 return;
             }
 
@@ -66,7 +66,7 @@ public class FileGarbageTruck implements CommonLogic {
 
             long epochTimeBegin = currentTime.toEpochSecond();
 
-            do {
+            while (index < fileArray.size()) {
                 File file = fileArray.get(index++);
                 currentTime = ZonedDateTime.now(ZoneId.systemDefault());
 
@@ -107,7 +107,7 @@ public class FileGarbageTruck implements CommonLogic {
                     log.debug(sectionName + " Files are Being Processed... Currently Processing File " + (index + 1) + " of " + fileArray.size());
                     epochTimeBegin = currentTime.toEpochSecond();
                 }
-            } while (index < fileArray.size());
+            }
 
             // Logging
             if (filesDumped > 0) {
@@ -122,7 +122,7 @@ public class FileGarbageTruck implements CommonLogic {
                 }
             }
             else {
-                log.info( sectionName + " File Dump Successfully Completed but No Files were deleted");
+                log.info(sectionName + " File Dump Successfully Completed but No Files were deleted");
             }
         }
     }
