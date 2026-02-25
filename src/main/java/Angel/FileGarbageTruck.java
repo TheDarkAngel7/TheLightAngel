@@ -7,9 +7,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -88,8 +90,15 @@ public class FileGarbageTruck implements CommonLogic {
                 if (!fileNamesIncludeTimeZones) {
                     formatter = formatter.withZone(ZoneId.systemDefault());
                 }
+                ZonedDateTime fileWriteTime;
 
-                ZonedDateTime fileWriteTime = ZonedDateTime.parse(file.getName().substring(beginningSubstring, charIndex), formatter);
+                try {
+                     fileWriteTime = ZonedDateTime.parse(file.getName().substring(beginningSubstring, charIndex), formatter);
+                }
+                catch (DateTimeParseException ex) {
+                    LocalDate localDate = LocalDate.parse(file.getName().substring(beginningSubstring, charIndex), DateTimeFormatter.ISO_LOCAL_DATE);
+                    fileWriteTime = localDate.atStartOfDay(ZoneId.systemDefault());
+                }
 
                 if (fileWriteTime.isBefore(currentTime.minusDays(daysToStoreBeforeDeletion))) {
                     try {

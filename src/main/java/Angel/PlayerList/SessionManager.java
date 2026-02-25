@@ -76,13 +76,13 @@ public class SessionManager implements PlayerListLogic {
         List<Session> result = new ArrayList<>();
         int index = 0;
 
-        do {
+        while (index < sessions.size()) {
             Session currentSession = sessions.get(index++);
 
             if (currentSession.isSessionChannelAccessible(m)) {
                 result.add(currentSession);
             }
-        } while (index < sessions.size());
+        }
 
         return result;
     }
@@ -234,7 +234,7 @@ public class SessionManager implements PlayerListLogic {
                         .getManager().deny(Permission.MESSAGE_SEND).reason("Received Call that " + sessionInQuestion.getSessionName() + " is Offline")
                         .submit().whenComplete((permissionOverride, throwable) -> {
                             if (throwable == null) {
-                                log.info("Successfully Closed the Session Channel #{}", sessionInQuestion.getSessionName());
+                                log.info("Successfully Closed the Session Channel #{}", sessionInQuestion.getSessionChannel().getName());
                             }
                             else {
                                 log.error("Unable to Close the session channel #{} - Reason: {}", sessionInQuestion.getSessionChannel().getName(), throwable.getMessage());
