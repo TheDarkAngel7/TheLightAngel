@@ -56,6 +56,7 @@ public class Session implements PlayerListLogic {
 
     public void setStatus(SessionStatus status) {
         this.status = status;
+        log.info("{}'s Session State has been set: {}", sessionName, this.status.getStatusString());
     }
 
     public void missedScreenshot() {

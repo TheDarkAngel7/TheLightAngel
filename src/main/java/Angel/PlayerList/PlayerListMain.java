@@ -672,8 +672,8 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     else {
                         mainConfig.dedicatedOutputChannel.sendMessageEmbeds(
                                 new MessageEntry("Invalid Session", "**Unable to Find a Session from no search as there is " + (sessionManager.getSessions().size() > 1 ? "more than 1 session running!**"
-                                        + "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see what sessions are available.**" :
-                                        " **no sessions running. This may because I just restarted and I'm waiting for the first player list from the host.**") + "**",
+                                        + getExampleUsagesOfCommand(args[0], msg.getAuthor().getIdLong()) :
+                                        "no sessions running. This may because I just restarted and I'm waiting for the first player list from the host.**"),
                                         EmbedDesign.ERROR).getEmbed()).queue();
                     }
                 }
