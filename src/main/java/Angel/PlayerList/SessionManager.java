@@ -147,8 +147,8 @@ public class SessionManager implements PlayerListLogic {
 
             if (!sessionInQuestion.getStatus().equals(SessionStatus.FRESH_ONLINE) &&
                     (sessionInQuestion.getPlayerList().size() - 5 > playerList.size() ||
-                    playerList.size() > 29)) {
-                if (playerList.size() > 29) {
+                    playerList.size() >= 30)) {
+                if (playerList.size() >= 30) {
                     log.warn("A Player List received from {} was Filtered Out due to the list count exceeding the player limit", sessionInQuestion.getSessionName());
                 }
                 else {
@@ -193,7 +193,7 @@ public class SessionManager implements PlayerListLogic {
                 if (channelScore <= 4 && iHavePermission) {
                     log.info("Session Channel Successfully Determined with ID " + textChannels.get(index).getIdLong());
 
-                    if (playerList.size() > 30) {
+                    if (playerList.size() >= 30) {
                         sessions.add(new Session(sessionName, textChannels.get(index), new ArrayList<>(), playerListImage));
                     }
                     else {
@@ -250,7 +250,7 @@ public class SessionManager implements PlayerListLogic {
                         .getManager().clear(Permission.MESSAGE_SEND).reason("Received Call that " + sessionInQuestion.getSessionName() + " is Online")
                         .submit().whenComplete((permissionOverride, throwable) -> {
                             if (throwable == null) {
-                                log.info("Successfully Opened the Session Channel #{}", sessionInQuestion.getSessionName());
+                                log.info("Successfully Opened the Session Channel #{}", sessionInQuestion.getSessionChannel().getName());
                             }
                             else {
                                 log.error("Unable to Open the session channel #{} - Reason: {}", sessionInQuestion.getSessionChannel().getName(), throwable.getMessage());

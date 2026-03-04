@@ -233,7 +233,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                    }
                    else {
                        msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... there appears to be more than one session running, I was expecting an argument for a session!**" +
-                                       "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see what sessions are available.**", EmbedDesign.ERROR).getEmbed())
+                                       getExampleUsagesOfCommand(args[0], msg.getAuthor().getIdLong()), EmbedDesign.ERROR).getEmbed())
                                .queue();
                    }
                }
@@ -260,7 +260,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
            }
            catch (InvalidSessionException e) {
                msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... this does not appear to belong to a session that's currently running!**" +
-                               "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see what sessions are available.**", EmbedDesign.ERROR).getEmbed())
+                               getExampleUsagesOfCommand(args[0], msg.getAuthor().getIdLong()), EmbedDesign.ERROR).getEmbed())
                        .queue();
            }
 
@@ -470,6 +470,24 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         }
     }
 
+    private String getExampleUsagesOfCommand(String prefix, long targetDiscordID) {
+        List<Session> sessions = sessionManager.getAccessibleSessions(targetDiscordID);
+
+        String result = "\n\nExample Uses:\n";
+        int index = 0;
+
+        while (index < sessions.size()) {
+            Session currentSession = sessions.get(index++);
+            result = result.concat("**`" + mainConfig.commandPrefix + prefix + " " + currentSession.getAbbreviationSuggestion() + "` for " + currentSession.getSessionName() + "**");
+
+            if (index <= sessions.size() - 1) {
+                result = result.concat("\n");
+            }
+        }
+
+        return result;
+    }
+
     private void headCountCommand(Message msg) {
         if (sessionManager.getSessions().isEmpty()) {
             msg.getChannel().sendMessageEmbeds(new MessageEntry("Unable to Find Active Session",
@@ -675,7 +693,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     catch (InvalidSessionException e) {
                         mainConfig.dedicatedOutputChannel.sendMessageEmbeds(
                                 new MessageEntry("Invalid Session", "**Unable to Find a Session from that search**" +
-                                        (!sessionManager.getSessions().isEmpty() ? "\n\n**You may use `" + mainConfig.commandPrefix + "headcount` to see the sessions that are running.**" :
+                                        (!sessionManager.getSessions().isEmpty() ? getExampleUsagesOfCommand(args[0], msg.getAuthor().getIdLong()):
                                                 "\n\n**There's no sessions running, this may be because I was just restarted and awaiting the first player list on this instance.**"),
                                         EmbedDesign.ERROR).getEmbed()).queue();
                     }
@@ -779,14 +797,14 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
                                 (!cmdUser.hasPermission(currentSession.getSessionChannel(), Permission.VIEW_CHANNEL) ? "\n\n:lock: **You Do Not Have Access to " + currentSession.getSessionName() + "**" : ""), false);
 
-                case OFFLINE -> embedBuilder.addField(currentSession.getSessionName(), "*Session is Offline*", false);
+                case OFFLINE -> embedBuilder.addField(currentSession.getSessionName(), "***Session is Offline***", false);
 
                 case RESTARTING, RESTART_MOD ->
-                        embedBuilder.addField(currentSession.getSessionName(), "*Session is Restarting*", false);
+                        embedBuilder.addField(currentSession.getSessionName(), "***Session is Restarting***", false);
 
                 case RESTART_SOON ->
                         embedBuilder.addField(currentSession.getSessionName(), "**" + currentSession.getPlayerCount() + " Player" + (currentSession.getPlayerCount() == 1 ? "" : "s") + "**" +
-                                "\n*Session is Restarting Soon*", false);
+                                "\n***Session is Restarting Soon***", false);
             };
 
             if (index == sessionList.size() - 1) {

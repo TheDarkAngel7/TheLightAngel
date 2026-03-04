@@ -11,6 +11,7 @@ import java.awt.image.BufferedImage;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class Session implements PlayerListLogic {
     private final Logger log = LogManager.getLogger(Session.class);
@@ -186,6 +187,21 @@ public class Session implements PlayerListLogic {
 
     public String getTimerUntilCooldownIsOver() {
         return getTimerFormatTo(cmdLastUsed.plusMinutes(cooldownDuration));
+    }
+
+    public String getAbbreviationSuggestion() {
+        String[] tokens = sessionName.split("(?=\\p{Upper})");
+        String token = tokens[new Random().nextInt(tokens.length)];
+
+        // Determine the target length: 2, 3, or 4
+        // nextInt(3) returns 0, 1, or 2. Adding 2 makes it 2, 3, or 4.
+        int targetLength = new Random().nextInt(3) + 2;
+
+        // Adjust the length if the token is shorter than the target
+        int finalLength = Math.min(token.length(), targetLength);
+
+        // Return Substring
+        return token.substring(0, finalLength).toLowerCase();
     }
 
     public int getCooldownDuration() {
