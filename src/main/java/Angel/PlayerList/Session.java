@@ -1,13 +1,16 @@
 package Angel.PlayerList;
 
+import Angel.Exceptions.NoSessionChannelFoundException;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.image.BufferedImage;
+import java.text.Normalizer;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,15 +39,56 @@ public class Session implements PlayerListLogic {
     private int cooldownDuration = 0;
     private int minNumberOfPlayers = 0;
 
-    public Session(String name, TextChannel sessionChannel, List<Player> players, BufferedImage playerListImage) {
+    public Session(String name, List<Player> players, BufferedImage playerListImage) throws NoSessionChannelFoundException {
         this.sessionName = name;
 
-        this.sessionChannel = sessionChannel;
+        this.sessionChannel = fetchSessionChannel();
 
         this.playerListLastUpdated = ZonedDateTime.now();
         this.players = new ArrayList<>(players);
         this.playerListImage = playerListImage;
         this.status = SessionStatus.ONLINE;
+    }
+
+    public Session(String sessionName) throws NoSessionChannelFoundException {
+        this.sessionName = sessionName;
+        this.sessionChannel = fetchSessionChannel();
+
+        this.playerListLastUpdated = ZonedDateTime.now();
+        this.players = new ArrayList<>();
+
+        this.playerListImage = null;
+        this.status = SessionStatus.OFFLINE;
+    }
+
+    // Find Session Channel
+
+    private TextChannel fetchSessionChannel() throws NoSessionChannelFoundException {
+        List<TextChannel> channels = getGuild().getTextChannels();
+
+        int index = 0;
+        LevenshteinDistance levenshtein = LevenshteinDistance.getDefaultInstance();
+
+        while (index < channels.size()) {
+
+            String channelName = Normalizer.normalize(channels.get(index).getName(), Normalizer.Form.NFD);
+
+            log.debug("{} with ID {} Have permission {}", channelName, channels.get(index).getIdLong(), getGuild().getSelfMember().hasPermission(channels.get(index), Permission.VIEW_CHANNEL));
+
+            int channelScore = levenshtein.apply(channelName, sessionName);
+            boolean iHavePermission = getGuild().getSelfMember().hasPermission(channels.get(index), Permission.VIEW_CHANNEL);
+
+            log.debug("Match Score {} iHavePermission: {}", channelScore, iHavePermission);
+
+            if (channelScore <= 4 && iHavePermission) {
+                log.info("Session Channel Successfully Determined with ID {}", channels.get(index).getIdLong());
+
+                return channels.get(index);
+            }
+            index++;
+        }
+
+        throw new NoSessionChannelFoundException(sessionName);
     }
 
     public void setNewPlayers(List<Player> players, BufferedImage playerListImage) {

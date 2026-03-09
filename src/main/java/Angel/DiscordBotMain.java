@@ -1293,7 +1293,7 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
         if (restartSilently) {
             suffix = "-s";
         }
-        new ProcessBuilder("cmd", "/c", "start", "/MIN", "java", "-jar", "-Dlog4j.configurationFile=./log4j2.properties", "TheLightAngel.jar", suffix).start();
+        new ProcessBuilder("cmd", "/c", "start", "/MIN", "java", "-jar", "TheLightAngel.jar", suffix).start();
         System.exit(1);
     }
 

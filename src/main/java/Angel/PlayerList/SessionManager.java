@@ -2,21 +2,18 @@ package Angel.PlayerList;
 
 import Angel.EmbedDesign;
 import Angel.Exceptions.InvalidSessionException;
+import Angel.Exceptions.NoSessionChannelFoundException;
 import Angel.MessageEntry;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.image.BufferedImage;
-import java.text.Normalizer;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -91,6 +88,54 @@ public class SessionManager implements PlayerListLogic {
         Member m = getGuild().getMemberById(targetDiscordID);
 
         return getAccessibleSessions(m);
+    }
+
+    // Create New Session with only knowing the name of the session
+
+    public boolean createNewSession(String sessionName) {
+        int capsCount = 0;
+
+        for (char c : sessionName.toCharArray()) {
+            if (Character.isUpperCase(c)) capsCount++;
+        }
+
+        boolean startsWithCap = !sessionName.isEmpty() && Character.isUpperCase(sessionName.charAt(0));
+
+        if (capsCount >= 2 && startsWithCap) {
+            lock.lock();
+            try {
+                sessions.add(new Session(sessionName));
+                log.info("Successfully preloaded a new session object: {}", sessionName);
+                return true;
+            }
+            catch (NoSessionChannelFoundException e) {
+                return false;
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+        else return false;
+    }
+
+    // Delete Session
+
+    public boolean deleteSession(Session session) {
+        lock.lock();
+        try {
+            if (sessions.remove(session)) {
+                log.info("Successfully dumped a session object: {}", session.getSessionName());
+                return true;
+            }
+            else {
+                log.info("Failed to dump a session object: {}", session.getSessionName());
+                return false;
+            }
+
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     // Setters
@@ -175,36 +220,17 @@ public class SessionManager implements PlayerListLogic {
             }
         }
         catch (InvalidSessionException e) {
-            index = 0;
-            List<TextChannel> textChannels = getGuild().getTextChannels();
 
-            while (index < textChannels.size()) {
-
-                String channelName = Normalizer.normalize(textChannels.get(index).getName(), Normalizer.Form.NFD);
-
-                log.debug(channelName + " with ID " + textChannels.get(index).getIdLong() + " Have permission "
-                        + getGuild().getSelfMember().hasPermission(textChannels.get(index), Permission.VIEW_CHANNEL));
-
-                int channelScore = levenshtein.apply(channelName, sessionName);
-                boolean iHavePermission = getGuild().getSelfMember().hasPermission(textChannels.get(index), Permission.VIEW_CHANNEL);
-
-                log.debug("Match Score " + channelScore + " iHavePermission: " + iHavePermission);
-
-                if (channelScore <= 4 && iHavePermission) {
-                    log.info("Session Channel Successfully Determined with ID " + textChannels.get(index).getIdLong());
-
-                    if (playerList.size() >= 30) {
-                        sessions.add(new Session(sessionName, textChannels.get(index), new ArrayList<>(), playerListImage));
-                    }
-                    else {
-                        sessions.add(new Session(sessionName, textChannels.get(index), playerList, playerListImage));
-                    }
-
-                    sessions.sort(Comparator.comparing(Session::getSessionName, String.CASE_INSENSITIVE_ORDER));
-
-                    break;
+            try {
+                if (playerList.size() >= 30) {
+                    sessions.add(new Session(sessionName, new ArrayList<>(), playerListImage));
                 }
-                index++;
+                else {
+                    sessions.add(new Session(sessionName, playerList, playerListImage));
+                }
+            }
+            catch (NoSessionChannelFoundException ex) {
+                log.error("Unable to Find a Session Channel for {}", sessionName);
             }
         }
         finally {
@@ -283,20 +309,5 @@ public class SessionManager implements PlayerListLogic {
         } while (index < sessions.size());
 
         return tally;
-    }
-
-    public boolean usedInSessionChannel(Message msg) {
-        int index = 0;
-        int sessionListSize = getSessions().size();
-
-        if (msg.getChannelType() != ChannelType.PRIVATE && !msg.getChannelType().isThread()) {
-            while (index < sessionListSize) {
-
-                if (msg.getChannel().getIdLong() == getSessions().get(index++).getSessionChannel().getIdLong()) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 }

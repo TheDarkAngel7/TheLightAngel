@@ -80,7 +80,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 case "host":
                     if (isTeamMember(event.getAuthor().getIdLong())) {
 
-                        if (sessionManager.usedInSessionChannel(msg)) {
+                        if (usedInSessionChannel(msg)) {
                             hostCommand(msg);
                         }
                         else {
@@ -127,7 +127,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             });
             return;
         }
-        if (sessionManager.usedInSessionChannel(msg)) {
+        if (usedInSessionChannel(msg)) {
             try {
                 Session targetSession = sessionManager.getSessionByChannel(msg.getChannel().getIdLong());
                 if (args.length >= 2) {
@@ -352,6 +352,12 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
 
         switch (args[1].toLowerCase()) {
+            case "create":
+                if (args.length == 3 && sessionManager.createNewSession(args[2])) {
+                    msg.getChannel().sendMessage("**" + msg.getMember().getEffectiveName() + " has successfully preloaded " + args[2] + " into my session memory!**").queue();
+                }
+
+                break;
             case "clear":
                 if (usedInSessionChannel) {
                     try {
@@ -367,6 +373,48 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     msg.getChannel().sendMessage("**" + msg.getMember().getEffectiveName() + " has cleared the player list for all sessions!**").queue();
                     sessionManager.clearAllSessionPlayers();
                 }
+                break;
+
+            case "delete":
+            case "drop":
+
+                if (usedInSessionChannel) {
+                    try {
+                        Session session = sessionManager.getSessionByChannel(msg.getChannelIdLong());
+                        if (sessionManager.deleteSession(session)) {
+                            msg.getChannel().sendMessage("**" + msg.getMember() + " has erased " + session.getSessionName() + " from my session memory!**").queue();
+                        }
+                        else {
+                            msg.getChannel().sendMessage("**Unable to Erase " + session.getSessionName() + " from my session memory!**").queue();
+                        }
+                    } catch (InvalidSessionException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+
+                else {
+                    try {
+                        if (args.length == 3) {
+                            Session session = sessionManager.getSessionByName(args[2]);
+
+                            if (sessionManager.deleteSession(session)) {
+                                msg.getChannel().sendMessage("**" + msg.getMember() + " has erased " + session.getSessionName() + " from my session memory!**").queue();
+                            }
+                            else throw new InvalidSessionException();
+
+                        }
+                        else {
+                            msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Args", "**Unable To Erase a Session from that...**" +
+                                    "\n\n**Usage: `" + mainConfig.commandPrefix + "pl delete <name>`**", EmbedDesign.ERROR).getEmbed()).queue();
+                        }
+                    }
+                    catch (InvalidSessionException e) {
+                        msg.getChannel().sendMessageEmbeds(new MessageEntry("No Session Found", "**Unable To Erase a Session from that search...**" +
+                                "\n\n**Usage: `" + mainConfig.commandPrefix + "pl delete <name>`**", EmbedDesign.ERROR).getEmbed()).queue();
+                    }
+                }
+
+
                 break;
             case "cooldown":
             case "cd":
@@ -512,7 +560,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             }
         }
         else {
-            if (sessionManager.usedInSessionChannel(msg)) {
+            if (usedInSessionChannel(msg)) {
                 msg.delete().queue();
             }
             if (mainConfig.dedicatedOutputChannel.getIdLong() != msg.getChannel().asTextChannel().getIdLong()) {
@@ -705,7 +753,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 }
             }
         }
-        else if (sessionManager.usedInSessionChannel(msg)) {
+        else if (usedInSessionChannel(msg)) {
             if (isTeamMember(msg.getAuthor().getIdLong())) {
                 try {
                     Session session = sessionManager.getSessionByChannel(msg.getChannel().asTextChannel());
@@ -820,6 +868,22 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
     public boolean isValidCommand(String cmd) {
         return commands.contains(cmd.toLowerCase());
     }
+
+    public boolean usedInSessionChannel(Message msg) {
+        int index = 0;
+        List<Session> sessionList = sessionManager.getSessions();
+
+        if (msg.getChannelType() != ChannelType.PRIVATE && !msg.getChannelType().isThread()) {
+            while (index < sessionList.size()) {
+
+                if (msg.getChannel().getIdLong() == sessionList.get(index++).getSessionChannel().getIdLong()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private FileUpload getSAFECrewLogo() {
         InputStream resourceStream = getClass().getResourceAsStream("/safe-logo.png");
         FileUpload thumbnail = FileUpload.fromData(resourceStream, "safe-logo.png");
