@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import java.util.Arrays;
 import java.util.Collection;
 
-interface PlayerListLogic extends CommonLogic {
+public interface PlayerListLogic extends CommonLogic {
     PlayerListMain playerListMain = new PlayerListMain();
     Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
             GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES);

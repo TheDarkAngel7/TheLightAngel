@@ -1,10 +1,15 @@
 package Angel.PlayerList;
 
+import Angel.EmbedDesign;
+import Angel.Exceptions.InvalidHelpRequestException;
 import Angel.Exceptions.NoSessionChannelFoundException;
+import Angel.MessageEntry;
+import Angel.PlayerList.HelpRequests.HelpRequest;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,8 +18,10 @@ import java.awt.image.BufferedImage;
 import java.text.Normalizer;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 public class Session implements PlayerListLogic {
     private final Logger log = LogManager.getLogger(Session.class);
@@ -25,6 +32,8 @@ public class Session implements PlayerListLogic {
     private ZonedDateTime playerListLastUpdated;
     private List<Player> players;
     private BufferedImage playerListImage;
+
+    private List<HelpRequest> helpRequests = new ArrayList<>();
 
     // Player List Trouble means LA received an empty player list and this session may be experiencing trouble,
     // If this happens 5 times then we'll put the session into the trouble status
@@ -100,7 +109,42 @@ public class Session implements PlayerListLogic {
 
     public void setStatus(SessionStatus status) {
         this.status = status;
-        log.info("{}'s Session State has been set: {}", sessionName, this.status.getStatusString());
+
+        switch (status) {
+            case RESTART_SOON ->
+                    helpRequests.forEach(hr -> {
+                        ThreadChannel channel = hr.getThreadChannel();
+                        if (hr.isWaitingForHelpers()) {
+
+
+                            channel.sendMessage("@everyone").queue();
+                            channel.sendMessageEmbeds(new MessageEntry("Session Pending Restart", ":warning: **Heads up " + hr.getHost().getAsMention() + "! The session is going to restart soon! " +
+                                    "Since you have not received all of your helpers, this channel has been locked. Please disband your CEO/MC slot if you have one and leave the session, " +
+                                    "we don't want your sales to be in progress when the restart begins!**", EmbedDesign.WARNING).getEmbed(false)).queue();
+                            closeHelpRequest(hr.getHost(), "Session Pending Restart");
+                            channel.leave().queue();
+                        }
+                        else {
+                            channel.sendMessage("@everyone").queue();
+                            channel.sendMessageEmbeds(new MessageEntry("Session Pending Restart", ":warning: **Heads Up! " + sessionName + " is about to restart. " +
+                                    "Please wrap up your sales no later than the time displayed in the " + sessionChannel.getAsMention() + " channel.", EmbedDesign.WARNING).getEmbed(false)).queue();
+
+                        }
+                    });
+            case RESTARTING, RESTART_MOD, OFFLINE -> {
+                helpRequests.forEach(hr -> {
+                    ThreadChannel channel = hr.getThreadChannel();
+                    if (hr.isWaitingForHelpers()) {
+                        channel.sendMessage(":x: **The Session has gone offline while you were waiting for helpers. This thread has been closed and locked**").queue();
+                        closeHelpRequest(hr.getHost(), "Session Offline");
+                    }
+                    else {
+                        channel.sendMessage(":x: **The Session has gone offline, please wrap up your sales as soon as possible.**").queue();
+                    }
+                });
+            }
+
+        }
     }
 
     public void missedScreenshot() {
@@ -255,5 +299,130 @@ public class Session implements PlayerListLogic {
 
     public int getMinNumberOfPlayersInSessionForCooldown() {
         return minNumberOfPlayers;
+    }
+
+    public boolean isPlayerInSession(Member m) {
+        return isPlayerInSession(m.getIdLong());
+    }
+
+    public boolean isPlayerInSession(long discordID) {
+        int index = 0;
+
+        do {
+            if (players.get(index++).getDiscordAccount().getIdLong() == discordID) {
+                return true;
+            }
+
+        } while (index < players.size());
+
+        return false;
+    }
+
+    // Everything Below this line has to do with the HelpRequests
+
+    public void createNewHelpRequest(Message cmd) {
+        try {
+            HelpRequest helpRequest = new HelpRequest(cmd);
+
+            helpRequests.add(helpRequest);
+
+            sessionChannel.sendMessage("**" + helpRequest.getHost().getEffectiveName() + " is needing help with " + helpRequest.getRequest() + "**" +
+                    "\n\nQueue Position: **" + getQueuePositionByHost(helpRequest.getHost()) + "**").queue();
+        }
+        catch (InvalidHelpRequestException e) {
+            cmd.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions", "**Help Requests cannot be created in this channel**", EmbedDesign.ERROR)
+                    .getEmbed(false)).queue(m -> {
+                        m.delete().queueAfter(15, TimeUnit.SECONDS);
+                        cmd.delete().queueAfter(15, TimeUnit.SECONDS);
+            });
+        }
+    }
+
+    public void closeHelpRequest(long targetDiscordID, String reason) {
+        closeHelpRequest(getHelpRequestByHost(targetDiscordID), reason);
+    }
+
+    public void closeHelpRequest(Member m, String reason) {
+        closeHelpRequest(getHelpRequestByHost(m), reason);
+    }
+
+    public void closeHelpRequest(HelpRequest request, String reason) {
+        if (helpRequests.remove(request)) {
+            request.getThreadChannel().sendMessage("The Thread Channel has been locked and archived, Reason: **" + reason + "**").queue();
+            log.info("{}'s thread channel with the help request of \"{}\" has been closed and locked with the reason: {}",
+                    request.getHost().getEffectiveName(), request.getRequest(), reason);
+
+            request.getThreadChannel().getManager().setLocked(true).setArchived(true).and(request.getThreadChannel().leave()).queue();
+        }
+
+        else {
+            log.error("Unable to Close and Lock the thread channel for {} with reason {}", request.getHost().getEffectiveName(), reason);
+        }
+    }
+
+    public List<HelpRequest> getHelpRequests() {
+        return helpRequests;
+    }
+
+    public List<HelpRequest> getSaleQueue(boolean sort) {
+        List<HelpRequest> saleQueue = new ArrayList<>();
+
+        int index = 0;
+        do {
+            if (helpRequests.get(index).isWaitingForHelpers()) {
+                saleQueue.add(helpRequests.get(index));
+            }
+            index++;
+        } while (index < helpRequests.size());
+
+        if (sort) {
+            return saleQueue.stream().sorted(Comparator.comparing(HelpRequest::getRequestCreationTime)).toList();
+        }
+        else return saleQueue;
+    }
+
+    public int getSaleQueueSize() {
+        return getSaleQueue(false).size();
+    }
+
+    public HelpRequest getHelpRequestByHost(Member m) {
+        if (m == null) return null;
+
+        return getHelpRequestByHost(m.getIdLong());
+    }
+
+    public HelpRequest getHelpRequestByHost(long discordID) {
+        int index = 0;
+
+        HelpRequest helpRequest = null;
+
+        do {
+            if (helpRequests.get(index).getHost().getIdLong() == discordID) {
+                helpRequest = helpRequests.get(index);
+                break;
+            }
+        } while (++index < helpRequests.size());
+
+        return helpRequest;
+    }
+
+    public int getQueuePositionByHost(Member m) {
+        return getQueuePositionByHost(m.getIdLong());
+    }
+
+    public int getQueuePositionByHost(long discordID) {
+        List<HelpRequest> saleQueue = getSaleQueue(true);
+
+        int index = 0;
+
+        do {
+            if (saleQueue.get(index).getHost().getIdLong() == discordID) {
+                // We Return Index + 1 For Position as Index 0 = Position 1 in Queue and so forth
+                return index + 1;
+            }
+        } while (++index < saleQueue.size());
+
+        // We Return 0 if the Host's Sale is not in Queue
+        return 0;
     }
 }
