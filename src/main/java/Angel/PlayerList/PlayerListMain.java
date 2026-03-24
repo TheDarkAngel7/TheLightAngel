@@ -87,7 +87,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 case "host":
                     if (isTeamMember(event.getAuthor().getIdLong())) {
 
-                        if (usedInSessionChannel(msg)) {
+                        if (sessionManager.usedInSessionChannel(msg)) {
                             hostCommand(msg);
                         }
                         else {
@@ -134,7 +134,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             });
             return;
         }
-        if (usedInSessionChannel(msg)) {
+        if (sessionManager.usedInSessionChannel(msg)) {
             try {
                 Session targetSession = sessionManager.getSessionByChannel(msg.getChannel().getIdLong());
                 if (args.length >= 2) {
@@ -567,7 +567,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             }
         }
         else {
-            if (usedInSessionChannel(msg)) {
+            if (sessionManager.usedInSessionChannel(msg)) {
                 msg.delete().queue();
             }
             if (mainConfig.dedicatedOutputChannel.getIdLong() != msg.getChannel().asTextChannel().getIdLong()) {
@@ -760,7 +760,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 }
             }
         }
-        else if (usedInSessionChannel(msg)) {
+        else if (sessionManager.usedInSessionChannel(msg)) {
             if (isTeamMember(msg.getAuthor().getIdLong())) {
                 try {
                     Session session = sessionManager.getSessionByChannel(msg.getChannel().asTextChannel());
@@ -846,12 +846,10 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         while (index < sessionList.size()) {
             Session currentSession = sessionList.get(index);
 
-            int numOfHelpRequests = currentSession.getSaleQueueSize();
-
             embedBuilder = switch (currentSession.getStatus()) {
                 case ONLINE, FRESH_ONLINE ->
                         embedBuilder.addField(currentSession.getSessionName(), "**" + currentSession.getPlayerCount() + " Player" + (currentSession.getPlayerCount() == 1 ? "" : "s") + "**" +
-                                (numOfHelpRequests > 0 ? "\n\nHelp Requests: **" + numOfHelpRequests + "**"  : "") +
+
                                 (!cmdUser.hasPermission(currentSession.getSessionChannel(), Permission.VIEW_CHANNEL) ? "\n\n:lock: **You Do Not Have Access to " + currentSession.getSessionName() + "**" : ""), false);
 
                 case OFFLINE -> embedBuilder.addField(currentSession.getSessionName(), "***Session is Offline***", false);
@@ -878,22 +876,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         return commands.contains(cmd.toLowerCase());
     }
 
-    public boolean usedInSessionChannel(Message msg) {
-        int index = 0;
-        List<Session> sessionList = sessionManager.getSessions();
-
-        if (msg.getChannelType() != ChannelType.PRIVATE && !msg.getChannelType().isThread()) {
-            while (index < sessionList.size()) {
-
-                if (msg.getChannel().getIdLong() == sessionList.get(index++).getSessionChannel().getIdLong()) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    public FileUpload getSAFECrewLogo() {
+    private FileUpload getSAFECrewLogo() {
         InputStream resourceStream = getClass().getResourceAsStream("/safe-logo.png");
         FileUpload thumbnail = FileUpload.fromData(resourceStream, "safe-logo.png");
 

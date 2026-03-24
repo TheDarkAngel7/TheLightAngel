@@ -6,6 +6,8 @@ import Angel.Exceptions.NoSessionChannelFoundException;
 import Angel.MessageEntry;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
@@ -324,6 +326,21 @@ public class SessionManager implements PlayerListLogic {
             }
         } while (index < sessionChannels.size());
 
+        return false;
+    }
+
+    public boolean usedInSessionChannel(Message msg) {
+        int index = 0;
+        List<Session> sessionList = sessionManager.getSessions();
+
+        if (msg.getChannelType() != ChannelType.PRIVATE && !msg.getChannelType().isThread()) {
+            while (index < sessionList.size()) {
+
+                if (msg.getChannel().getIdLong() == sessionList.get(index++).getSessionChannel().getIdLong()) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 }
