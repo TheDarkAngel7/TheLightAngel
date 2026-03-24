@@ -80,7 +80,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
     public void onMessageReactionAdd(@NotNull MessageReactionAddEvent event) {
         Message originalMessage = event.getChannel().getHistory().getMessageById(event.getMessageIdLong());
 
-        if (event.getReaction().getEmoji().getName().equalsIgnoreCase("inv") && playerListMain.usedInSessionChannel(originalMessage)) {
+        if (event.getReaction().getEmoji().getName().equalsIgnoreCase("inv") && sessionManager.usedInSessionChannel(originalMessage)) {
             inviteCmd(originalMessage);
         }
     }
@@ -144,7 +144,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
         else if (msg.getContentRaw().toLowerCase().split(" ")[0].contains("lf")) {
             lookingForCmd(msg);
         }
-        else if (msg.getContentRaw().toLowerCase().split(" ")[0].contains("inv") && playerListMain.usedInSessionChannel(msg)) {
+        else if (msg.getContentRaw().toLowerCase().split(" ")[0].contains("inv") && sessionManager.usedInSessionChannel(msg)) {
             inviteCmd(msg);
         }
     }
@@ -228,7 +228,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
     private void queueCmd(Message msg) {
         String[] args = msg.getContentRaw().substring(1).toLowerCase().split(" ");
 
-        if (playerListMain.usedInSessionChannel(msg)) {
+        if (sessionManager.usedInSessionChannel(msg)) {
             // !queue
             if (args.length == 1) {
                 try {

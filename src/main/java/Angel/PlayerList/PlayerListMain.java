@@ -846,10 +846,12 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         while (index < sessionList.size()) {
             Session currentSession = sessionList.get(index);
 
+            int numOfHelpRequests = currentSession.getSaleQueueSize();
+
             embedBuilder = switch (currentSession.getStatus()) {
                 case ONLINE, FRESH_ONLINE ->
                         embedBuilder.addField(currentSession.getSessionName(), "**" + currentSession.getPlayerCount() + " Player" + (currentSession.getPlayerCount() == 1 ? "" : "s") + "**" +
-
+                                (numOfHelpRequests > 0 ? "\n\nHelp Requests: **" + numOfHelpRequests + "**"  : "") +
                                 (!cmdUser.hasPermission(currentSession.getSessionChannel(), Permission.VIEW_CHANNEL) ? "\n\n:lock: **You Do Not Have Access to " + currentSession.getSessionName() + "**" : ""), false);
 
                 case OFFLINE -> embedBuilder.addField(currentSession.getSessionName(), "***Session is Offline***", false);
@@ -876,7 +878,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         return commands.contains(cmd.toLowerCase());
     }
 
-    private FileUpload getSAFECrewLogo() {
+    public FileUpload getSAFECrewLogo() {
         InputStream resourceStream = getClass().getResourceAsStream("/safe-logo.png");
         FileUpload thumbnail = FileUpload.fromData(resourceStream, "safe-logo.png");
 
