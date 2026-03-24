@@ -80,7 +80,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 case "host":
                     if (isTeamMember(event.getAuthor().getIdLong())) {
 
-                        if (usedInSessionChannel(msg)) {
+                        if (sessionManager.usedInSessionChannel(msg)) {
                             hostCommand(msg);
                         }
                         else {
@@ -127,7 +127,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             });
             return;
         }
-        if (usedInSessionChannel(msg)) {
+        if (sessionManager.usedInSessionChannel(msg)) {
             try {
                 Session targetSession = sessionManager.getSessionByChannel(msg.getChannel().getIdLong());
                 if (args.length >= 2) {
@@ -560,7 +560,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             }
         }
         else {
-            if (usedInSessionChannel(msg)) {
+            if (sessionManager.usedInSessionChannel(msg)) {
                 msg.delete().queue();
             }
             if (mainConfig.dedicatedOutputChannel.getIdLong() != msg.getChannel().asTextChannel().getIdLong()) {
@@ -753,7 +753,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 }
             }
         }
-        else if (usedInSessionChannel(msg)) {
+        else if (sessionManager.usedInSessionChannel(msg)) {
             if (isTeamMember(msg.getAuthor().getIdLong())) {
                 try {
                     Session session = sessionManager.getSessionByChannel(msg.getChannel().asTextChannel());
@@ -867,21 +867,6 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
     public boolean isValidCommand(String cmd) {
         return commands.contains(cmd.toLowerCase());
-    }
-
-    public boolean usedInSessionChannel(Message msg) {
-        int index = 0;
-        List<Session> sessionList = sessionManager.getSessions();
-
-        if (msg.getChannelType() != ChannelType.PRIVATE && !msg.getChannelType().isThread()) {
-            while (index < sessionList.size()) {
-
-                if (msg.getChannel().getIdLong() == sessionList.get(index++).getSessionChannel().getIdLong()) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     private FileUpload getSAFECrewLogo() {
