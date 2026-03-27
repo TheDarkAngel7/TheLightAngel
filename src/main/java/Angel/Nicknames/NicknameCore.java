@@ -150,13 +150,13 @@ class NicknameCore implements NickLogic {
             if (targetDiscordID == -1) {
                 targetDiscordID = Long.parseLong(nicknames[1]);
                 result = result.concat("\nDiscord: <@!" + nicknames[1] + ">"
-                        + "\nOld Nickname: **" + nicknames[2]
-                        + "**\nNew Nickname: **" + nicknames[3] + "**");
+                        + "\nOld Nickname: **`" + nicknames[2]
+                        + "`**\nNew Nickname: **`" + nicknames[3] + "`**");
             }
             else {
                 result = result.concat("\nRequest ID: **" + nicknames[0]
-                        + "**\nOld Nickname: **" + nicknames[2]
-                        + "**\nNew Nickname: **" + nicknames[3] + "**");
+                        + "**\nOld Nickname: **`" + nicknames[2]
+                        + "`**\nNew Nickname: **`" + nicknames[3] + "`**");
             }
             return replaceNulls(targetDiscordID, result);
         }
@@ -184,8 +184,8 @@ class NicknameCore implements NickLogic {
                         "\n\n**Request Details:**" +
                         "\nRequest ID: **" + request.getRequestID() +
                         "**\nDiscord: <@!" + request.getDiscordID() + ">" +
-                        "\nOld Nickname: **" + request.getOldName() +
-                        "**\nNew Nickname: **" + request.getNewName() + "**"));
+                        "\nOld Nickname: **`" + request.getOldName() +
+                        "`**\nNew Nickname: **`" + request.getNewName() + "`**"));
         saveDatabase();
 
         if (!triggeredOnGuildLeave && !triggeredOnRoleRemove) return defaultReturn;
@@ -282,8 +282,8 @@ class NicknameCore implements NickLogic {
                     "Request ID: **" + nicknameRequests.get(index).getRequestID() +
                             "**\nRequest Time: **" + getDiscordTimeTag(nicknameRequests.get(index).getRequestTime()) +
                             "**\nDiscord Account: <@!" + nicknameRequests.get(index).getDiscordID() + ">" +
-                            "\nOld Nickname: **" + nicknameRequests.get(index).getOldName() +
-                            "**\nNew Nickname: **" + nicknameRequests.get(index).getNewName() + "**"));
+                            "\nOld Nickname: **`" + nicknameRequests.get(index).getOldName() +
+                            "`**\nNew Nickname: **`" + nicknameRequests.get(index).getNewName() + "`**"));
             if (++index <= nicknameRequests.size() - 1) result = result.concat("\n\n");
         }
         return result;
@@ -369,28 +369,28 @@ class NicknameCore implements NickLogic {
 
         if (targetMember.getNickname() != null && newNick != null) {
             return result.concat(
-                    "\nOld Nickname: **" + targetMember.getNickname() +
-                            "**\nNew Nickname: **" + newNick + "**"
+                    "\nOld Nickname: **`" + targetMember.getNickname() +
+                            "`**\nNew Nickname: **`" + newNick + "`**"
             );
         }
         else if (targetMember.getNickname() == null && newNick != null) {
 
             if (targetMember.getUser().getGlobalName() != null) {
                 result = result.concat(
-                        "\nOld Nickname: **" + targetMember.getEffectiveName() + " (Global Display Name)**" +
-                                "\nNew Nickname: **" + newNick + "**"
+                        "\nOld Nickname: **`" + targetMember.getEffectiveName() + "` (Global Display Name)**" +
+                                "\nNew Nickname: **`" + newNick + "`**"
                 );
 
                 if (newNick == targetMember.getUser().getName()) {
-                    return result.replace("**" + newNick + "**", "**" + newNick + " (Discord Username)");
+                    return result.replace("**`" + newNick + "`**", "**`" + newNick + "` (Discord Username)");
                 }
                 else return result;
             }
 
             else {
                 return result.concat(
-                        "\nOld Nickname: **" + targetMember.getEffectiveName() + " (Discord Username)**" +
-                                "\nNew Nickname: **" + newNick + "**"
+                        "\nOld Nickname: **`" + targetMember.getEffectiveName() + "` (Discord Username)**" +
+                                "\nNew Nickname: **`" + newNick + "`**"
                 );
             }
         }
@@ -398,15 +398,15 @@ class NicknameCore implements NickLogic {
 
             if (targetMember.getUser().getGlobalName() != null) {
                 return result.concat(
-                        "\nOld Nickname: **" + targetMember.getNickname() +
-                                "**\nNew Nickname: **" + targetMember.getUser().getGlobalName() + " (Reset to Global Display Name)**"
+                        "\nOld Nickname: **`" + targetMember.getNickname() +
+                                "**`\nNew Nickname: **`" + targetMember.getUser().getGlobalName() + "` (Reset to Global Display Name)**"
                 );
             }
 
             else {
                 return result.concat(
-                        "\nOld Nickname: **" + targetMember.getNickname() +
-                                "**\nNew Nickname: **" + targetMember.getUser().getName() + " (Reset to Discord Username)**"
+                        "\nOld Nickname: **`" + targetMember.getNickname() +
+                                "`**\nNew Nickname: **`" + targetMember.getUser().getName() + "` (Reset to Discord Username)**"
                 );
             }
         }

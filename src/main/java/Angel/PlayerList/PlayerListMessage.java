@@ -8,6 +8,8 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.FileUpload;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -21,7 +23,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PlayerListMessage implements PlayerListLogic {
-
+    private final Logger log = LogManager.getLogger(PlayerListMessage.class);
     private final Session targetSession;
     private MessageChannel targetChannel;
     private boolean useMentions = false;
@@ -67,19 +69,38 @@ public class PlayerListMessage implements PlayerListLogic {
     public MessageCreateAction getScreenshotEmbedAction() throws IOException {
         // Convert BufferedImage to Byte Array (In-memory "file")
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(targetSession.getPlayerListImage(),"jpg", baos);
-        byte[] imageBytes = baos.toByteArray();
+        FileUpload file = null;
+        try {
+            ImageIO.write(targetSession.getPlayerListImage(), "jpg", baos);
+            byte[] imageBytes = baos.toByteArray();
 
-        // Create FileUpload object
-        FileUpload file = FileUpload.fromData(imageBytes, "capture.jpg");
+            // Create FileUpload object
+            file = FileUpload.fromData(imageBytes, "capture.jpg");
+        }
+        catch (IllegalArgumentException e) {
+            log.error("Unable to Write Player List Image: {}", e.getMessage());
+        }
+        
 
         // Create Embed
         EmbedBuilder embed = new EmbedBuilder();
         embed = embed.setTitle(targetSession.getSessionName() + " (" + targetSession.getPlayerCount() + ")").setColor(Color.decode("#2F3136"))
                 .setImage("attachment://capture.jpg").setFooter("Last Updated: " + targetSession.getLastUpdateTimeString());
 
-        // Return MessageCreationAction using the attachment
-        return targetChannel.sendFiles(file).setEmbeds(embed.build());
+        return switch (targetSession.getStatus()) {
+            case OFFLINE ->
+                    targetChannel.sendMessageEmbeds(new MessageEntry(targetSession.getSessionName() + " Status", "**" + targetSession.getSessionName() + " is Offline until Further Notice**", EmbedDesign.STOP)
+                            .getEmbed(false));
+            case RESTARTING ->
+                    targetChannel.sendMessageEmbeds(new MessageEntry(targetSession.getSessionName() + " Status", "**" + targetSession.getSessionName() + " is being restarted at this time. You will be notified in "
+                            + targetSession.getSessionChannel().getAsMention() + " when the session is back online.**", EmbedDesign.STOP).getEmbed(false));
+            case RESTART_MOD ->
+                    targetChannel.sendMessageEmbeds(new MessageEntry(targetSession.getSessionName() + " Status", "**" + targetSession.getSessionName() + " is being restarted due to modded elements that have been discovered in the session. You will be notified in "
+                            + targetSession.getSessionChannel().getAsMention() + " when the session is back online.", EmbedDesign.STOP).getEmbed(false));
+            default ->
+                // Return MessageCreationAction using the attachment
+                    targetChannel.sendFiles(file).setEmbeds(embed.build());
+        };
     }
 
     private MessageEmbed getPlayerListEmbed() {
