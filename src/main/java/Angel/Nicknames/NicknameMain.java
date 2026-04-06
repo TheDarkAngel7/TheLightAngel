@@ -1130,7 +1130,7 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                 }
                 else {
                     String[] getNewNicknameArray = result.split("New Nickname: ");
-                    String getNewNickname = getNewNicknameArray[1].substring(2, getNewNicknameArray[1].lastIndexOf('*') - 1);
+                    String getNewNickname = getNewNicknameArray[1].substring(3, getNewNicknameArray[1].lastIndexOf('`') - 1);
                     if (requestAccepted) {
                         String defaultTitle = "Successful Nickname Request Acceptance";
                         if (newNickname == null) {
