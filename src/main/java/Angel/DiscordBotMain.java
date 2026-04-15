@@ -54,13 +54,16 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
     public boolean isStarting = true;
     private ArrayList<Date> pingCooldownOverTimes = new ArrayList<>();
     private ArrayList<Long> pingCooldownDiscordIDs = new ArrayList<>();
-    public final List<String> mainCommands = new ArrayList<>(Arrays.asList("search", "s", "reload", "restart", "ping", "status", "help", "set", "e", "embed"));
+    public final List<String> mainCommands = new ArrayList<>(Arrays.asList("search", "s", "reload", "restart", "ping", "status", "help", "set", "e", "embed", "transfer"));
 
     private List<ListEmbed> listEmbeds = new ArrayList<>();
     private Dictionary<Message, ScheduledFuture<?>> reactionClearTimers = new Hashtable<>();
 
     // File Garbage Truck Class for the Log Files
     private FileGarbageTruck logFileGarbageTruck;
+
+    // Transfer Records Hub
+    private final TransferHub transferHub = new TransferHub();
 
     DiscordBotMain() {
         this.fileHandler = new FileHandler();
@@ -134,6 +137,8 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
             }
             catch (NullPointerException ex) {}
         }
+        // Register Classes for Transferrable Records
+        transferHub.register(baFeature);
         log.info("All Features Successfully Initalized");
         isStarting = false;
         if (restartValue != 2 && !commandsSuspended) {
@@ -379,6 +384,21 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
         }
         else if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix) {
             switch (args[0].toLowerCase()) {
+                case "transfer":
+
+                    if (args.length != 3) {
+                        msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Usage!",
+                                "**That is not a valid use for this command!**\n\n Usage:`" + mainConfig.commandPrefix + "transfer <Old Account Mention or Discord ID> <New Account Mention or Discord ID>`",
+                                EmbedDesign.ERROR).getEmbed()).queue();
+                    }
+                    else {
+                        long oldDiscordID = Long.parseLong(args[1].replaceAll("[^0-9]", ""));
+                        long newDiscordID =  Long.parseLong(args[2].replaceAll("[^0-9]", ""));
+
+                        transferHub.executeTransfer(msg, oldDiscordID, newDiscordID);
+                    }
+
+                    break;
                 case "search":
                 case "s":
                     searchCommand(msg);
