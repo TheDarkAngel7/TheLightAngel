@@ -1,9 +1,6 @@
 package Angel.BotAbuse;
 
-import Angel.EmbedDesign;
-import Angel.ListEmbed;
-import Angel.MessageEntry;
-import Angel.TargetChannelSet;
+import Angel.*;
 import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -24,7 +21,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class BotAbuseMain extends ListenerAdapter implements BotAbuseLogic {
+public class BotAbuseMain extends ListenerAdapter implements BotAbuseLogic, TransferableRecords {
     private final Logger log = LogManager.getLogger(BotAbuseMain.class);
     private BotAbuseTimers baTimers;
     private Guild guild = getGuild();
@@ -39,7 +36,7 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseLogic {
     boolean isReload = false;
     private User targetUser;
     public final List<String> commands = new ArrayList<>(Arrays.asList("botAbuse", "ba", "permBotAbuse", "pba", "undo", "check",
-            "checkHistory", "clear", "transfer", "reasonsmanager", "rmgr", "reasons", "r"));
+            "checkHistory", "clear", "reasonsmanager", "rmgr", "reasons", "r"));
 
     BotAbuseMain()  {
         botConfig.initialSetup();
@@ -183,21 +180,6 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseLogic {
                 case "check":
                     // This handles a /check for someone to check their own Bot Abuse status or someone else's.
                     checkCommand(msg, isTeamMember);
-                    break;
-                case "transfer":
-                    // /transfer <Old Mention or Discord ID> <New Mention or Discord ID>
-                    if (isStaffMember) {
-                        try {
-                            transferRecords(msg);
-                        }
-                        catch (Exception e) {
-                            log.error("Transfer Command", e);
-                        }
-                    }
-                    else {
-                        embed.setAsError("Error - No Permissions", ":x: **You Lack Permissions to do that!**");
-                        embed.sendToMemberOutput(msg, msg.getAuthor());
-                    }
                     break;
                 case "clear":
                     if (isStaffMember) {
@@ -885,217 +867,49 @@ public class BotAbuseMain extends ListenerAdapter implements BotAbuseLogic {
             index++;
         }
     }
-    private void transferRecords(Message msg) throws IOException {
-        String[] args = msg.getContentRaw().substring(1).split(" ");
 
-        if (args.length == 3) {
-            if (msg.getMentions().getMembers().size() == 2) {
-                if (baCore.botAbuseIsCurrent(msg.getMentions().getMembers().get(0).getIdLong())) {
-                    guild.addRoleToMember(msg.getMentions().getMembers().get(1),
-                            botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " transferred all bot abuse records to this player").queue();
-                    guild.removeRoleFromMember(msg.getMentions().getMembers().get(0),
-                            botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " transferred all bot abuse records from this player").queue();
-                }
+    @Override
+    public void executeTransfer(Message originalCmd, long oldAccountID, long newAccountID) {
+        Member oldAccount = guild.getMemberById(oldAccountID);
+        Member newAccount = guild.getMemberById(newAccountID);
 
-                String result = baCore.transferRecords(msg.getMentions().getMembers().get(0).getIdLong(), msg.getMentions().getMembers().get(1).getIdLong());
-                MessageEntry entry = new MessageEntry("Successful Transfer of Records", result, EmbedDesign.SUCCESS)
-                        .setOriginalCmd(msg).setChannels(TargetChannelSet.TEAM, TargetChannelSet.LOG);
+        boolean oldAccountIsMember = oldAccount != null;
+        boolean newAccountIsMember = newAccount != null;
+        String result = "";
 
-                if (result.contains(":warning:")) {
-                    entry.setDesign(EmbedDesign.WARNING).setTitle("No Records Transferred");
-                    log.warn(msg.getMember().getEffectiveName() + " Attempted to Transfer the Records of "
-                            + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " + msg.getMentions().getMembers().get(1).getEffectiveName() +
-                            " but was not able to as no records existed to be transferred");
-                }
-                else {
-                    log.info(msg.getMember().getEffectiveName() + " Attempted to Transfer the Records of "
-                            + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " + msg.getMentions().getMembers().get(1).getEffectiveName());
-                }
+        // If the old account is currently bot abused and we're transferring the records to another account
+        if (oldAccountIsMember && baCore.botAbuseIsCurrent(oldAccountID)) {
+            guild.removeRoleFromMember(oldAccount, botConfig.getBotAbuseRole()).reason("Bot Abuse role removed via transfer").queue();
+        }
 
-                embed.sendAsMessageEntryObj(entry);
-            }
-            else if (msg.getMentions().getMembers().size() == 1) {
-                try {
-                    // If they provide a Discord ID First and a Mention Last
-                    if (baCore.botAbuseIsCurrent(Long.parseLong(args[1]))) {
-                        guild.addRoleToMember(msg.getMentions().getMembers().get(0),
-                                botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() +
-                                " transferred all bot abuse records to this player").queue();
-                        try {
-                            guild.removeRoleFromMember(User.fromId(Long.parseLong(args[1])),
-                                    botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() +
-                                    " transferred all bot abuse records from this player").queue();
-                        }
-                        catch (ErrorResponseException ex) {
-                            embed.setAsWarning("Exception Caught - Player Does Not Exist",
-                                    "**Could Not Remove the Bot Abuse Role from "
-                                            + args[1] + " because they do not exist in the Discord Server**");
-                            embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
-                        }
-                    }
-                    String result = baCore.transferRecords(Long.parseLong(args[1]), msg.getMentions().getMembers().get(0).getIdLong());
-                    MessageEntry entry = new MessageEntry("Successful Transfer of Records", result, EmbedDesign.SUCCESS)
-                            .setOriginalCmd(msg).setChannels(TargetChannelSet.TEAM, TargetChannelSet.LOG);
+        try {
+            result = baCore.transferRecords(oldAccountID, newAccountID);
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
-                    if (result.contains(":warning:")) {
-                        entry.setDesign(EmbedDesign.WARNING).setTitle("No Records Transferred");
+        MessageEntry entry = new MessageEntry("Bot Abuse Records Transfer", result, EmbedDesign.SUCCESS);
 
-                        try {
-                            log.info(msg.getMember().getEffectiveName() + " Attempted to Transfer the Records of "
-                                    + guild.getMemberById(Long.parseLong(args[1])).getEffectiveName()
-                                    + " to " + msg.getMentions().getMembers().get(0).getEffectiveName() +
-                                    " but was not able to as no records existed to be transferred");
-                        }
-                        catch (NullPointerException e) {
-                            log.info(msg.getMember().getEffectiveName() + " Attempted to Transfer the Records of " + args[1]
-                                    + " to " + msg.getMentions().getMembers().get(0).getEffectiveName() +
-                                    " but was not able to as no records existed to be transferred");
-                        }
-                    }
+        if (result.contains(":warning:")) {
+            entry = entry.setDesign(EmbedDesign.WARNING);
+            log.warn("Attempted Transfer the Bot Abuse records of {} to {} but no records were transferred",
+                    (oldAccountIsMember ? oldAccount.getEffectiveName() : oldAccountID),
+                    (newAccountIsMember ? newAccount.getEffectiveName() : newAccountID));
 
-                    else {
-                        try {
-                            log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
-                                    + guild.getMemberById(Long.parseLong(args[1])).getEffectiveName()
-                                    + " to " + msg.getMentions().getMembers().get(0).getEffectiveName());
-                        }
-                        catch (NullPointerException e) {
-                            log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of " + args[1]
-                                    + " to " + msg.getMentions().getMembers().get(0).getEffectiveName());
-                        }
-                    }
-
-                    embed.sendAsMessageEntryObj(entry);
-                }
-                catch (NumberFormatException ex) {
-                    // If they provide a mention first and a Discord ID Last
-                    if (baCore.botAbuseIsCurrent(msg.getMentions().getMembers().get(0).getIdLong())) {
-                        try {
-                            guild.addRoleToMember(User.fromId(Long.parseLong(args[2])),
-                                    botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() +
-                                    " transferred all bot abuse records to this player").queue();
-                        }
-                        catch (ErrorResponseException e) {
-                            embed.setAsWarning("Exception Caught - Player Does Not Exist",
-                                    "**Could Not Add the Bot Abuse Role to "
-                                    + args[2] + " because they do not exist in the Discord Server**");
-                            embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
-                        }
-                        guild.removeRoleFromMember(msg.getMentions().getMembers().get(0),
-                                botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() +
-                                " transferred all bot abuse records from this player").queue();
-                    }
-                    String result = baCore.transferRecords(msg.getMentions().getMembers().get(0).getIdLong(), Long.parseLong(args[2]));
-                    MessageEntry entry = new MessageEntry("Successful Transfer of Records", result, EmbedDesign.SUCCESS)
-                            .setOriginalCmd(msg).setChannels(TargetChannelSet.TEAM, TargetChannelSet.LOG);
-
-                    if (result.contains(":warning:")) {
-                        entry.setDesign(EmbedDesign.WARNING).setTitle("No Records Transferred");
-
-                        try {
-                            log.info(msg.getMember().getEffectiveName() + " Attempted to Transfer the Records of "
-                                    + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " +
-                                    guild.getMemberById(Long.parseLong(args[2])).getEffectiveName() +
-                                            " but was not able to as no records existed to be transferred");
-                        }
-                        catch (NullPointerException e) {
-                            log.info(msg.getMember().getEffectiveName() +
-                                    " Attempted to Transfer the Records of "
-                                    + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " + args[2] +
-                                    " but was not able to as no records existed to be transferred");
-                        }
-                    }
-
-                    else {
-                        try {
-                            log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
-                                    + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " +
-                                    guild.getMemberById(Long.parseLong(args[2])).getEffectiveName());
-                        }
-                        catch (NullPointerException e) {
-                            log.info(msg.getMember().getEffectiveName() +
-                                    " Successfully Transferred the Records of "
-                                    + msg.getMentions().getMembers().get(0).getEffectiveName() + " to " + args[2]);
-                        }
-                    }
-
-                    embed.sendAsMessageEntryObj(entry);
-                }
-            }
-            else if (msg.getMentions().getMembers().isEmpty()) {
-                if (baCore.botAbuseIsCurrent(Long.parseLong(args[1]))) {
-                    try {
-                        guild.addRoleToMember(User.fromId(Long.parseLong(args[2])),
-                                botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " transferred all bot abuse records to this player").queue();
-                    }
-                    catch (ErrorResponseException ex) {
-                        embed.setAsWarning("Exception Caught - Player Does Not Exist",
-                                "**Could Not Add the Bot Abuse Role to "
-                                        + args[2] + " because they do not exist in the Discord Server**");
-                        embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
-                        log.warn("Could Not Add the Bot Abuse Role to " +
-                                args[2] + " because they do not exist in the Discord Server");
-                    }
-                    try {
-                        guild.removeRoleFromMember(User.fromId(Long.parseLong(args[1])),
-                                botConfig.getBotAbuseRole()).reason(msg.getAuthor().getAsTag() + " transferred all bot abuse records from this player").queue();
-                    }
-                    catch (ErrorResponseException ex) {
-                        embed.setAsWarning("Exception Caught - Player Does Not Exist",
-                                "**Could Not Remove the Bot Abuse Role from "
-                                        + args[1] + " because they do not exist in the Discord Server**");
-                        embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
-                        log.warn("Could Not Remove the Bot Abuse Role from " + args[1] +
-                                " because they do not exist in the Discord Server");
-                    }
-                }
-                String result = baCore.transferRecords(Long.parseLong(args[1]), Long.parseLong(args[2]));
-                MessageEntry entry = new MessageEntry("Successful Transfer of Records", result, EmbedDesign.SUCCESS)
-                        .setOriginalCmd(msg).setChannels(TargetChannelSet.TEAM, TargetChannelSet.LOG);
-
-                if (result.contains(":warning:")) {
-                    entry.setDesign(EmbedDesign.WARNING).setTitle("No Records Transferred");
-
-                    try {
-                        log.info(msg.getMember().getEffectiveName() + " Attempted to Transfer the Records of "
-                                + guild.getMemberById(Long.parseLong(args[1])) + " to " +
-                                guild.getMemberById(Long.parseLong(args[2])).getEffectiveName() +
-                                " but was not able to as no records existed to be transferred");
-                    }
-                    catch (NullPointerException e) {
-                        log.info(msg.getMember().getEffectiveName() +
-                                " Attempted to Transfer the Records of "
-                                + args[1] + " to " + args[2] +
-                                " but was not able to as no records existed to be transferred");
-                    }
-                }
-                else {
-                    try {
-                        log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of "
-                                + guild.getMemberById(Long.parseLong(args[1])).getEffectiveName() + " to " +
-                                guild.getMemberById(Long.parseLong(args[2])).getEffectiveName());
-                    }
-                    catch (NullPointerException ex) {
-                        log.info(msg.getMember().getEffectiveName() + " Successfully Transferred the Records of " +
-                                args[1] + " to " + args[2]);
-                    }
-                }
-
-                embed.sendAsMessageEntryObj(entry);
-            }
-            else {
-                embed.setAsError("Error while Parsing Transfer Command",
-                        "Invalid Number of Mentions!" +
-                        "\nUsage: " + mainConfig.commandPrefix + "transfer <Old Mention or Discord ID> <New Mention or Discord ID>");
-                embed.sendToTeamOutput(msg, msg.getAuthor());
-            }
         }
         else {
-            embed.setAsError("Error while Parsing Transfer Command",
-                    "Invalid Number of Arguments!" +
-                            "\nUsage: " + mainConfig.commandPrefix + "transfer <Old Mention or Discord ID> <New Mention or Discord ID>");
-            embed.sendToChannel(msg, msg.getChannel().asTextChannel());
+            log.info("Successfully Transferred the Bot Abuse records of {} to {}",
+                    (oldAccountIsMember ? oldAccount.getEffectiveName() : oldAccountID),
+                    (newAccountIsMember ? newAccount.getEffectiveName() : newAccountID));
         }
+
+        // If the new account is receiving records that indicates a bot abuse should be active
+        if (newAccountIsMember && baCore.botAbuseIsCurrent(newAccountID)) {
+            guild.addRoleToMember(newAccount, botConfig.getBotAbuseRole()).reason("Bot Abuse role added via transfer").queue();
+        }
+
+        originalCmd.getChannel().sendMessageEmbeds(entry.getEmbed()).queue();
     }
     private void checkHistory(Message msg, boolean isTeamMember) {
         // Thoughout this Method, a 100 is a placeholder in the timeOffset arguement of core.seeHistory
