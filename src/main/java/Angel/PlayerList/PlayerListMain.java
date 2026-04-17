@@ -689,10 +689,10 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         String[] args = msg.getContentRaw().substring(1).split(" ");
 
         if (msg.getChannel().getIdLong() == mainConfig.dedicatedOutputChannel.getIdLong() || msg.getChannelType().equals(ChannelType.PRIVATE)) {
-            Member m = msg.getMember();
+            Member m = getGuild().getMemberById(msg.getAuthor().getIdLong());
 
             if (m == null) {
-                msg.getChannel().sendMessageEmbeds(new MessageEntry("No Access", "**You Do Not have access to this command as you are not in the SAFE Crew Discord Server!**",
+                msg.getChannel().sendMessageEmbeds(new MessageEntry("No Access", "**You Do Not have access to this command as you are not in the SAFE Crew Discord Server!",
                         EmbedDesign.ERROR).getEmbed()).queue();
             }
             else {
@@ -794,7 +794,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     }
                     catch (InvalidSessionException e) {
                         msg.getChannel().sendMessageEmbeds(
-                                new MessageEntry("Invalid Session", "**Unable to Find a Session from that search, try again**",
+                                new MessageEntry("Invalid Session", "**Unable to Find a Session from no search as there is either more than 1 session running, or no sessions at all.**",
                                         EmbedDesign.ERROR).getEmbed()).queue();
                     }
                     catch (IOException e) {
