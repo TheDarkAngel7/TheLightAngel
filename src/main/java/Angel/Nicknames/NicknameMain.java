@@ -1153,7 +1153,7 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                                     " their nickname was erased and now it matches their " + revertedName + ".");
                         }
                         else {
-                            memberInQuestion.get().modifyNickname(getNewNickname)
+                            memberInQuestion.get().modifyNickname(newNickname)
                                     .reason("Staff Member " + handler.getUser().getName() + " accepted their nickname request").queue();
                             embed.setAsSuccess("Nickname Request Accepted", result);
                             embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
