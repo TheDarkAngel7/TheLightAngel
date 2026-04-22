@@ -328,27 +328,33 @@ public class Session implements PlayerListLogic {
 
             sessionChannel.sendMessage("**" + helpRequest.getHost().getEffectiveName() + " is needing help with " + helpRequest.getRequest() + "**" +
                     "\n\nQueue Position: **" + getQueuePositionByHost(helpRequest.getHost()) + "**").queue();
+
+            log.info("{} has created a help request for {} - Queue Position on Creation: {}", helpRequest.getHost().getEffectiveName(), helpRequest.getRequest(), getQueuePositionByHost(helpRequest.getHost()));
         }
         catch (InvalidHelpRequestException e) {
-            cmd.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions", "**Help Requests cannot be created in this channel**", EmbedDesign.ERROR)
+            cmd.getChannel().sendMessageEmbeds(new MessageEntry("Error Creating Help Request", "**Unable to Create Help Request**\n\nReason: **" + e.getMessage() + "**", EmbedDesign.ERROR)
                     .getEmbed(false)).queue(m -> {
-                        m.delete().queueAfter(15, TimeUnit.SECONDS);
-                        cmd.delete().queueAfter(15, TimeUnit.SECONDS);
+                        m.delete().queueAfter(30, TimeUnit.SECONDS);
+                        cmd.delete().queueAfter(30, TimeUnit.SECONDS);
             });
+
+            log.error("Unable to Create Help Request - Reason: {}", e.getMessage());
         }
     }
 
     public void closeHelpRequest(long targetDiscordID, String reason) {
-        closeHelpRequest(getHelpRequestByHost(targetDiscordID), reason);
+        closeHelpRequest(getHelpRequestByHost(targetDiscordID), reason, false);
     }
 
     public void closeHelpRequest(Member m, String reason) {
-        closeHelpRequest(getHelpRequestByHost(m), reason);
+        closeHelpRequest(getHelpRequestByHost(m), reason, false);
     }
 
-    public void closeHelpRequest(HelpRequest request, String reason) {
+    public void closeHelpRequest(HelpRequest request, String reason, boolean silentClose) {
         if (helpRequests.remove(request)) {
-            request.getThreadChannel().sendMessage("The Thread Channel has been locked and archived, Reason: **" + reason + "**").queue();
+            if (!silentClose) {
+                request.getThreadChannel().sendMessage("The Thread Channel has been locked and archived, Reason: **" + reason + "**").queue();
+            }
             log.info("{}'s thread channel with the help request of \"{}\" has been closed and locked with the reason: {}",
                     request.getHost().getEffectiveName(), request.getRequest(), reason);
 
@@ -398,6 +404,45 @@ public class Session implements PlayerListLogic {
 
         do {
             if (helpRequests.get(index).getHost().getIdLong() == discordID) {
+                helpRequest = helpRequests.get(index);
+                break;
+            }
+        } while (++index < helpRequests.size());
+
+        return helpRequest;
+    }
+
+    public HelpRequest getHelpRequestByPlayer(Member m) {
+        return getHelpRequestByPlayer(m.getIdLong());
+    }
+
+    public HelpRequest getHelpRequestByPlayer(long discordID) {
+        int index = 0;
+
+        HelpRequest helpRequest = null;
+
+        do {
+            List<Long> helpersDiscordIDs = helpRequests.get(index).getHelpers().stream().map(Member::getIdLong).toList();
+            if (helpersDiscordIDs.contains(discordID)) {
+                helpRequest = helpRequests.get(index);
+                break;
+            }
+        } while (++index < helpRequests.size());
+
+        return helpRequest;
+    }
+
+    public HelpRequest getHelpRequestByThreadChannel(ThreadChannel tc) {
+        return getHelpRequestByThreadChannel(tc.getIdLong());
+    }
+
+    public HelpRequest getHelpRequestByThreadChannel(long channelID) {
+        int index = 0;
+
+        HelpRequest helpRequest = null;
+
+        do {
+            if (helpRequests.get(index).getThreadChannel().getIdLong() == channelID) {
                 helpRequest = helpRequests.get(index);
                 break;
             }

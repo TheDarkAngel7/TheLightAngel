@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
+import net.dv8tion.jda.api.events.channel.update.ChannelUpdateArchivedEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -27,6 +28,22 @@ import java.util.concurrent.TimeUnit;
 
 public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, PlayerListLogic {
     private final Logger log = LogManager.getLogger(HelpRequestMain.class);
+
+    @Override
+    public void onChannelUpdateArchived(@NotNull ChannelUpdateArchivedEvent event) {
+        if (event.getChannelType() == ChannelType.GUILD_PRIVATE_THREAD && Boolean.TRUE.equals(event.getNewValue())) {
+            try {
+                Session session = sessionManager.getSessionByChannel(event.getChannel().asThreadChannel().getParentMessageChannel().getIdLong());
+
+                HelpRequest request = session.getHelpRequestByThreadChannel(event.getChannel().asThreadChannel());
+
+                session.closeHelpRequest(request, "Automatically Archived", true);
+            }
+            catch (InvalidSessionException e) {
+                aue.logCaughtException(Thread.currentThread(), e);
+            }
+        }
+    }
 
     @Override
     public void onThreadMemberLeave(@NotNull ThreadMemberLeaveEvent event) {
@@ -103,25 +120,63 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
         if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix) {
 
             if (msg.getChannel().getType() == ChannelType.GUILD_PRIVATE_THREAD) {
+                Session session;
+                HelpRequest helpRequest;
 
+                try {
+                    session = sessionManager.getSessionByChannel(msg.getChannel().asThreadChannel().getParentMessageChannel().getIdLong());
+                    helpRequest = session.getHelpRequestByHost(msg.getAuthor().getIdLong());
+
+                    if (helpRequest == null) {
+                        helpRequest = session.getHelpRequestByPlayer(msg.getAuthor().getIdLong());
+                    }
+                }
+                catch (InvalidSessionException e) {
+                    msg.getChannel().sendMessage("**Whoops, those commands are disabled in these threads**").queue();
+                    return;
+                }
                 switch (args[0].toLowerCase()) {
                     case "start":
                     case "startsale":
-
+                        helpRequest.noLongerWaitingForHelpers();
+                        break;
                     case "req":
                     case "requeue":
-
+                        helpRequest.requeueRequest();
+                        break;
                     case "helper":
                     case "helpers":
+                        int helpersNeeded;
 
+                        try {
+                            helpersNeeded = Integer.parseInt(args[1]);
+                        }
+                        catch (NumberFormatException e) {
+                            helpRequest.getThreadChannel().sendMessage("**Unable to parse an integer from that command.**\n\nSyntax: `" + mainConfig.commandPrefix + " helpers <# of Helpers>`\nExample:  `" + mainConfig.commandPrefix + " helpers 3`").queue();
+                            return;
+                        }
+
+                        helpRequest.setNewMaxPlayers(helpersNeeded);
+                        break;
                     case "purpose":
+                        int index = 1;
 
+                        String newPurpose = "";
+
+                        do {
+                            newPurpose = newPurpose.concat(args[index] + " ");
+                        } while (++index < args.length);
+
+                        helpRequest.setNewPurpose(newPurpose);
+                        break;
                     case "newhost":
-
+                        helpRequest.setNewHost(msg.getMentions().getMembers().getFirst());
+                        break;
                     case "close":
                     case "closed":
                     case "closesale":
-
+                        session.closeHelpRequest(helpRequest, "Manually Closed by " + event.getAuthor().getAsMention(), false);
+                        break;
                 }
             }
             else {
@@ -171,9 +226,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
             // Command Wasn't used in a session channel
             if (msg.getChannel().getName().contains("lf")) {
                 msg.getChannel().asTextChannel().createThreadChannel(msg.getMember().getEffectiveName() + " Session", false)
-                        .queue(tc -> {
-                            tc.getManager().setAutoArchiveDuration(ThreadChannel.AutoArchiveDuration.TIME_24_HOURS).queue();
-                        });
+                        .queue(tc -> tc.getManager().setAutoArchiveDuration(ThreadChannel.AutoArchiveDuration.TIME_24_HOURS).queue());
             }
             else {
                 msg.replyEmbeds(new MessageEntry("No Permissions", "**No Permissions to Create a Help Request here**", EmbedDesign.ERROR).getEmbed()).queue();
@@ -221,7 +274,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
         HelpRequest oldHelpRequest = session.getHelpRequestByHost(msg.getMember());
 
         if (oldHelpRequest != null) {
-            session.closeHelpRequest(oldHelpRequest, "Host Left to Help Someone Else");
+            session.closeHelpRequest(oldHelpRequest, "Host Left to Help Someone Else", false);
         }
     }
 

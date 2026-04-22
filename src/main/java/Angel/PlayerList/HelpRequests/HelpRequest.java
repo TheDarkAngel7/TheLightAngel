@@ -8,12 +8,16 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class HelpRequest implements PlayerListLogic {
+    private final Logger log = LogManager.getLogger(HelpRequest.class);
+
     private Session session = null;
 
     private ThreadChannel targetThread;
@@ -84,7 +88,7 @@ public class HelpRequest implements PlayerListLogic {
                         this.targetThread = thread;
                         targetThread.getManager().setAutoArchiveDuration(ThreadChannel.AutoArchiveDuration.TIME_1_HOUR).queue();
                         targetThread.join().and(targetThread.addThreadMember(host)).submit()
-                                .whenComplete((unused, throwable1) ->
+                                .thenAccept((unused) ->
                                         targetThread.sendMessage(
                                                 "**Welcome " + host.getAsMention() + " to your own thread channel for your organization! Please use this channel to communicate with your helpers as they join.**" +
                                                 "\n\nMax Helpers: **" + this.maxHelpers + "**" +
@@ -96,9 +100,8 @@ public class HelpRequest implements PlayerListLogic {
                                                 "\n\n`" + mainConfig.commandPrefix + "helpers <# of Helpers>` (ex. `" + mainConfig.commandPrefix + "helpers 3`): **This tells me how many helpers you're wanting if it is now different from your original request for help.**" +
                                                 "\n\n`" + mainConfig.commandPrefix + "purpose <purpose>` (ex. `" + mainConfig.commandPrefix + "purpose 2MCs and bunker`): **This tells me the new purpose for the help request, you should update it before you requeue your request!**" +
                                                 "\n\n`" + mainConfig.commandPrefix + "newhost <New Host Mention>` (ex. `" + mainConfig.commandPrefix + "newhost @TheDarkAngel7`): **This tells me that one of the helpers is taking over as host of sales. Use this when you are finished with your sales and going to help one of your helpers.**")
-                                                .queue(m -> {
-                                                    m.pin().queue();
-                                        }));
+                                                .submit().thenAccept(m -> m.pin().queue())
+                                        );
                     }
                     else aue.logCaughtException(Thread.currentThread(), throwable);
                 });
@@ -139,8 +142,30 @@ public class HelpRequest implements PlayerListLogic {
         targetThread.removeThreadMember(member).queue();
     }
 
+    public void setNewHost(Member m) {
+        if (!targetThread.getMembers().contains(m)) {
+            targetThread.addThreadMember(m).queue();
+        }
+        host = m;
+    }
+
+    public void setNewPurpose(String purpose) {
+        this.request = purpose;
+
+        targetThread.getManager().setName(host.getEffectiveName() + ": " + purpose).queue();
+    }
+
+    public void setNewMaxPlayers(int newMaxPlayers) {
+        this.maxHelpers = newMaxPlayers;
+    }
+
     public void noLongerWaitingForHelpers() {
         isWaitingForHelpers = false;
+    }
+
+    public void requeueRequest() {
+        requestCreationTime = ZonedDateTime.now();
+        isWaitingForHelpers = true;
     }
 
     public boolean receivedAllHelpers() {
