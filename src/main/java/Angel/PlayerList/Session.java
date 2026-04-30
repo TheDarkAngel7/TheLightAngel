@@ -143,7 +143,11 @@ public class Session implements PlayerListLogic {
     }
 
     public PlayerListMessage getPlayerListMessage(Message cmd) {
-        if (!isCooldownActive() && cmd.getChannel().getIdLong() == sessionChannel.getIdLong()) {
+        // We're only watching if the command is used in the session channel and two things will reset the cooldown timer:
+        // Is the Cooldown inactive and the timer needs to start
+        // If the Cooldown is active and a team member used the cmd
+        // If either condition is true it'll still have the same effect
+        if ((!isCooldownActive() || isTeamMember(cmd.getAuthor().getIdLong())) && cmd.getChannel().getIdLong() == sessionChannel.getIdLong()) {
             cmdLastUsed = ZonedDateTime.now();
         }
 
