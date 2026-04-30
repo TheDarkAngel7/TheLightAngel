@@ -685,17 +685,15 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                                     embed.sendToMemberOutput(msg, msg.getAuthor());
                                     return;
                                 }
-                                if (args[2].equalsIgnoreCase("reset") || args[2].equals(msg.getAuthor().getName()) || args[2].equals(msg.getAuthor().getGlobalName())) {
-
-                                    if (msg.getAuthor().getGlobalName() != null && member.getNickname() == null && args[2].equals(msg.getAuthor().getName())) {
-                                        result = nickCore.submitRequest(member, msg.getAuthor().getName());
-                                    }
-
-                                    else {
-                                        result = nickCore.submitRequest(member, null);
-                                    }
+                                if (args[2].equalsIgnoreCase("reset") || args[2].equals(msg.getAuthor().getGlobalName())) {
+                                    result = nickCore.submitRequest(member, null);
                                 }
-                                else result = nickCore.submitRequest(member, args[2]);
+                                else if (args[2].equals(msg.getAuthor().getName())) {
+                                    result = nickCore.submitRequest(member, (member.getUser().getGlobalName()) == null ? null : member.getUser().getName());
+                                }
+                                else {
+                                    result = nickCore.submitRequest(member, args[2]);
+                                }
 
                                 // Message Handling
 

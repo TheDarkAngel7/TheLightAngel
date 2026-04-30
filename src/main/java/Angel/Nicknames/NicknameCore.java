@@ -382,7 +382,7 @@ class NicknameCore implements NickLogic {
                 );
 
                 if (newNick == targetMember.getUser().getName()) {
-                    return result.replace("**`" + newNick + "`**", "**`" + newNick + "` (Discord Username)");
+                    return result.replace("**`" + newNick + "`**", "**`" + newNick + "` (Discord Username)**");
                 }
                 else return result;
             }
