@@ -399,7 +399,7 @@ class NicknameCore implements NickLogic {
             if (targetMember.getUser().getGlobalName() != null) {
                 return result.concat(
                         "\nOld Nickname: **`" + targetMember.getNickname() +
-                                "**`\nNew Nickname: **`" + targetMember.getUser().getGlobalName() + "` (Reset to Global Display Name)**"
+                                "`**\nNew Nickname: **`" + targetMember.getUser().getGlobalName() + "` (Reset to Global Display Name)**"
                 );
             }
 
