@@ -1,9 +1,9 @@
 package Angel.PlayerList;
 
 import Angel.EmbedDesign;
-import Angel.Exceptions.InvalidSessionException;
-import Angel.Exceptions.NoSessionChannelFoundException;
 import Angel.MessageEntry;
+import Angel.PlayerList.Exceptions.InvalidSessionException;
+import Angel.PlayerList.Exceptions.NoSessionChannelFoundException;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;

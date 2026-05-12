@@ -1,10 +1,14 @@
 package Angel.PlayerList;
 
-import Angel.Exceptions.NoSessionChannelFoundException;
+import Angel.EmbedDesign;
+import Angel.MessageEntry;
+import Angel.PlayerList.Exceptions.KickvoteException;
+import Angel.PlayerList.Exceptions.NoSessionChannelFoundException;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.emoji.RichCustomEmoji;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -12,9 +16,9 @@ import org.apache.logging.log4j.Logger;
 import java.awt.image.BufferedImage;
 import java.text.Normalizer;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class Session implements PlayerListLogic {
     private final Logger log = LogManager.getLogger(Session.class);
@@ -38,6 +42,26 @@ public class Session implements PlayerListLogic {
     private ZonedDateTime cmdLastUsed = null;
     private int cooldownDuration = 0;
     private int minNumberOfPlayers = 0;
+
+    // Kickvote Data
+
+    private boolean kickvoteRunning = false;
+    private MessageEntry kickvoteEmbed;
+    private String targetKickvotePlayer;
+
+    private final RichCustomEmoji kickEmoji = getGuild().getEmojisByName("kick", true).getFirst();
+    private final RichCustomEmoji cooldownEmoji = getGuild().getEmojisByName("cooldown", true).getFirst();
+    private final String kickvoteEmbedMessage = kickEmoji.getAsMention() + "**?**" +
+            "\n\n**During a kickvote, all session chatter is slowed until the kickvote is complete!**" +
+            "\n\n**Vote to kick this player out with: `Pause Menu` ➡️ `Online` ➡️ `Players` ➡️ `?` ➡️ `Kick`**" +
+            "\n\nReact to this message with: " +
+            "\n" + kickEmoji.getAsMention() + " **to indicate you have voted to kick**" +
+            "\n" + cooldownEmoji.getAsMention() + " **to indicate the Kick button is Disabled but you will check again later." +
+            "\n ✅ **to indicate the player has left the session.**" +
+            "\n ❌ **to cancel the kickvote.**";
+
+    private int numOfBumps = 0;
+    private Map<Long, RichCustomEmoji> kickvoteReactions;
 
     public Session(String name, List<Player> players, BufferedImage playerListImage) throws NoSessionChannelFoundException {
         this.sessionName = name;
@@ -144,11 +168,25 @@ public class Session implements PlayerListLogic {
 
     public PlayerListMessage getPlayerListMessage(Message cmd) {
         // We're only watching if the command is used in the session channel and two things will reset the cooldown timer:
-        // Is the Cooldown inactive and the timer needs to start
-        // If the Cooldown is active and a team member used the cmd
-        // If either condition is true it'll still have the same effect
-        if ((!isCooldownActive() || isTeamMember(cmd.getAuthor().getIdLong())) && cmd.getChannel().getIdLong() == sessionChannel.getIdLong()) {
-            cmdLastUsed = ZonedDateTime.now();
+
+        if (cmd.getChannel().getIdLong() == sessionChannel.getIdLong()) {
+            // If a kickvote is in progress, ONLY team members can reset the timer
+            if (kickvoteInProgress()) {
+                if (isTeamMember(cmd.getAuthor().getIdLong())) {
+                    log.info("Cooldown Timer Reset: Team Member Used Command During Kickvote");
+                    cmdLastUsed = ZonedDateTime.now();
+                }
+            }
+            // If NO kickvote is in progress, use our standard cooldown logic
+            // Is the Cooldown inactive and the timer needs to start
+            // If the Cooldown is active and a team member used the cmd
+            else {
+                if ((!isCooldownActive() || isTeamMember(cmd.getAuthor().getIdLong()))) {
+                    log.info("Cooldown Timer Reset: No Kickvote Active, Original Cooldown {} and the command user {} a team member",
+                            (isCooldownActive() ? "was active" : "was not active"), (isTeamMember(cmd.getAuthor().getIdLong())) ? "was" : "was not");
+                    cmdLastUsed = ZonedDateTime.now();
+                }
+            }
         }
 
         return new PlayerListMessage(this);
@@ -183,6 +221,189 @@ public class Session implements PlayerListLogic {
         Member m = getGuild().getMemberById(targetDiscordID);
 
         return isSessionChannelAccessible(m);
+    }
+    // Kickvote Methods
+
+    public boolean kickvoteInProgress() {
+        return kickvoteRunning;
+    }
+
+    public void kickvoteWasBumped() {
+        numOfBumps += 1;
+        log.debug("Kickvote Was Bumped, Number of Bumps: {}", numOfBumps);
+    }
+
+    public Message getKickvoteEmbed() throws KickvoteException {
+        if (!kickvoteRunning) throw new KickvoteException("Fetch Kickvote Embed with No Kickvote Running", sessionName);
+        return kickvoteEmbed.getResultEmbed();
+    }
+
+    public void postReactions(long targetDiscordID, RichCustomEmoji emoji) throws KickvoteException {
+        if (!kickvoteRunning) throw new KickvoteException("Kickvote Reaction Received But Not Running", sessionName);
+
+        kickvoteReactions.put(targetDiscordID, emoji);
+
+        Member m = getGuild().getMemberById(targetDiscordID);
+
+        if (m != null) {
+            log.debug("{} reacted with {}", m.getEffectiveName(), emoji.getName());
+        }
+    }
+
+    private void postKickvoteMessage(boolean repost) {
+
+        if (repost) {
+            kickvoteEmbed.getResultEmbed().delete().queueAfter(10, TimeUnit.SECONDS);
+        }
+
+        sessionChannel.sendMessageEmbeds(kickvoteEmbed.getEmbed()).queue(m -> {
+            kickvoteEmbed = kickvoteEmbed.setResultEmbed(m);
+
+            m.addReaction(kickEmoji).queue();
+            m.addReaction(cooldownEmoji).queue();
+        });
+    }
+
+    public void initiateKickvote(Member cmdUser, String targetPlayer) throws KickvoteException {
+        if (kickvoteRunning) throw new KickvoteException("Kickvote already running", sessionName);
+
+        this.targetKickvotePlayer = targetPlayer;
+
+        String title = "A Kickvote Has Been Initiated!";
+
+        // Slow the Channel Down and Disable Message Attachments and Embeds
+        sessionChannel.getManager().setSlowmode(60)
+                .flatMap(voidResult -> sessionChannel.getPermissionOverride(mainConfig.getMemberRole())
+                        .getManager()
+                        .deny(Permission.MESSAGE_ATTACH_FILES, Permission.MESSAGE_EMBED_LINKS))
+                .onSuccess(action -> {
+            log.info("{}'s Session Channel Cooldown has been set to 1 minute, file attachments and embeds have been disabled", sessionName);
+        }).queue();
+
+        kickvoteEmbed = new MessageEntry(title, kickvoteEmbedMessage.replace("?", targetKickvotePlayer), EmbedDesign.WARNING).dontUseFieldHeader();
+
+        kickvoteRunning = true;
+
+        kickvoteReactions = new HashMap<>();
+
+        postKickvoteMessage(false);
+
+        log.info("A Kickvote Has Been Initiated Against {} by {} in {}", targetKickvotePlayer, cmdUser.getEffectiveName(), sessionName);
+    }
+
+    public void updateKickvoteMessage() throws KickvoteException {
+        if (!kickvoteRunning) throw new KickvoteException("No Kickvote Running", sessionName);
+
+        int totalPlayersCountingHost = getPlayerCount() + 1;
+
+        int numberOfVotesNeeded = (totalPlayersCountingHost / 2) + 1;
+
+        int currentKickVotes = Math.toIntExact(kickvoteReactions.values().stream()
+                        .filter(Objects::nonNull)
+                        .filter(emoji -> emoji.getName().equalsIgnoreCase("kick")).count());
+
+        boolean kickvoteThresholdMet = currentKickVotes >= numberOfVotesNeeded;
+
+        log.debug("Kickvote Message Updating - totalPlayersCountingHost: {} - Votes: {}/{}", totalPlayersCountingHost, currentKickVotes, numberOfVotesNeeded);
+
+        if (kickvoteThresholdMet && sessionChannel.getSlowmode() != 30) {
+            sessionChannel.getManager().setSlowmode(30).onSuccess(action -> {
+                log.info("{}'s Session Channel Cooldown has been set to 30 seconds successfully",  sessionName);
+            }).queue();
+        }
+        if (!kickvoteThresholdMet && sessionChannel.getSlowmode() != 60) {
+            sessionChannel.getManager().setSlowmode(60).onSuccess(action -> {
+                log.info("{}'s Session Channel Cooldown has been set to 1 minute successfully" +
+                        " after detecting the kickvote threshold is no longer met",  sessionName);
+            }).queue();
+        }
+
+        kickvoteEmbed = kickvoteEmbed.setMessage(kickvoteEmbedMessage.replace("?", targetKickvotePlayer).concat(
+                "\n\nPlayers: ** " + getPlayerCount() +
+                    "\nVotes: " + currentKickVotes + "/" + numberOfVotesNeeded +
+                        (kickvoteThresholdMet ? "**\n\nThreshold " + (currentKickVotes > numberOfVotesNeeded ? "Crossed" : "Met") + "!**" +
+                                                                   "\n**Don't Forget to React with ✅ when you see the leave message!**" +
+                                                                    "\n**If you haven't voted yet, please do so! If you have, thanks!**" : "")
+        ));
+
+        if (numOfBumps >= 5) {
+            postKickvoteMessage(true);
+            numOfBumps = 0;
+        }
+        else {
+            kickvoteEmbed.getResultEmbed().editMessageEmbeds(kickvoteEmbed.getEmbed()).queue();
+        }
+    }
+
+    public void completeKickvote(Member reactionUser) throws KickvoteException {
+        if (kickvoteRunning) kickvoteRunning = false;
+
+        else throw new KickvoteException("Completed While Not Running", sessionName);
+
+        kickvoteEmbed = kickvoteEmbed.setTitle("Kickvote Completed").setMessage(kickEmoji.getAsMention() + "**" + targetKickvotePlayer + "**" +
+                "\n\n**The Kickvote has been marked as complete by " + reactionUser.getAsMention() + "**" +
+                "\n\n**All Normal Session Chatter may resume at this time!**").setDesign(EmbedDesign.SUCCESS);
+
+        kickvoteEmbed.getResultEmbed().editMessageEmbeds(kickvoteEmbed.getEmbed()).queue();
+
+        log.info("{}'s Kickvote Has Been Marked as Complete by {}", targetKickvotePlayer, reactionUser.getEffectiveName());
+
+        sendKickvoteResults();
+    }
+
+    public void cancelKickvote(Member reactionUser) throws KickvoteException {
+        if (kickvoteRunning) kickvoteRunning = false;
+
+        else throw new KickvoteException("Cancelled While Not Running", sessionName);
+
+        kickvoteEmbed = kickvoteEmbed.setTitle("Kickvote Cancelled").setMessage(kickEmoji.getAsMention() + "**" + targetKickvotePlayer + "**" +
+                "\n\n**The Kickvote has been cancelled by " + reactionUser.getAsMention() + "**" +
+                "\n\n**Please Follow Staff Directives if any arise!**");
+
+        kickvoteEmbed.getResultEmbed().editMessageEmbeds(kickvoteEmbed.getEmbed()).queue();
+
+        log.info("{}'s Kickvote Has Been Marked as Cancelled by {}", targetKickvotePlayer, reactionUser.getEffectiveName());
+
+        sendKickvoteResults();
+    }
+
+    private void sendKickvoteResults() {
+        // Turn Off the Cooldown, Re-Enable Attachments and Embeds before transmitting the results
+        sessionChannel.getManager().setSlowmode(0)
+
+                .flatMap(voidResult -> sessionChannel.getPermissionOverride(mainConfig.getMemberRole())
+                        .getManager()
+                        .clear(Permission.MESSAGE_ATTACH_FILES, Permission.MESSAGE_EMBED_LINKS))
+                .onSuccess(action -> {
+            log.info("{}'s Session Channel Cooldown has been disabled, file attachments and embeds have been enabled", sessionName);
+        }).queue();
+
+        MessageEntry kickvoteResults = new MessageEntry();
+
+        List<Long> votedForKick = kickvoteReactions.entrySet().stream()
+                .filter(entry -> entry.getValue().getName().equalsIgnoreCase("kick"))
+                .map(Map.Entry::getKey)
+                .toList();
+        List<Long> votedForCooldown = kickvoteReactions.entrySet().stream()
+                .filter(entry -> entry.getValue().getName().equalsIgnoreCase("cooldown"))
+                .map(Map.Entry::getKey)
+                .toList();
+
+        String result = kickEmoji.getAsMention() + "**" + targetKickvotePlayer + "**" +
+                "\n\nReacted with " + kickEmoji.getAsMention() + ": " + votedForKick.stream()
+                .map(id -> "<@" + id + ">")
+                .collect(Collectors.joining(", ")) +
+
+                "\n\nReacted with " + cooldownEmoji.getAsMention() + ": " + votedForCooldown.stream()
+                .map(id -> "<@" + id + ">")
+                .collect(Collectors.joining(", "));
+
+        kickvoteResults = kickvoteResults.setTitle("Kickvote Results").setMessage(result).setDesign(EmbedDesign.INFO);
+
+        mainConfig.discussionChannel.sendMessageEmbeds(kickvoteResults.getEmbed(false)).queue();
+
+        log.info("Successfully Transmitted Kickvote Results with {} Players who voted to kick and {} Players who voted cooldown",
+                votedForKick.size(), votedForCooldown.size());
     }
 
     // These Methods are related to the cooldown

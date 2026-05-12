@@ -2,8 +2,9 @@ package Angel.PlayerList;
 
 import Angel.BotAbuse.BotAbuseLogic;
 import Angel.EmbedDesign;
-import Angel.Exceptions.InvalidSessionException;
 import Angel.MessageEntry;
+import Angel.PlayerList.Exceptions.InvalidSessionException;
+import Angel.PlayerList.Exceptions.KickvoteException;
 import Angel.TargetChannelSet;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
@@ -11,7 +12,10 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionRemoveEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.FileUpload;
@@ -34,7 +38,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
     private final List<String> commands = Arrays.asList("playersm", "playerm", "plm", "playersam", "playeram", "plam",
             "playersa", "playera", "pla", "players", "player", "pl", "plma", "playersma", "playerma",
-            "host", "shot", "headcount", "hc");
+            "host", "shot", "headcount", "hc", "k", "kick");
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
@@ -107,6 +111,97 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 case "shot":
                     shotCommand(msg);
                     break;
+                case "k":
+                case "kick":
+                    kickCommand(msg);
+                    break;
+            }
+        }
+        else if (!isValidCommand(args[0]) && sessionManager.usedInSessionChannel(msg)) {
+            try {
+                Session session = sessionManager.getSessionByChannel(msg.getChannel().asTextChannel());
+
+                if (session.kickvoteInProgress() && !isTeamMember(msg.getAuthor().getIdLong())) {
+                    session.kickvoteWasBumped();
+                }
+            }
+            catch (InvalidSessionException e) {
+                throw new RuntimeException(e);
+            }
+
+        }
+    }
+
+    @Override
+    public void onMessageReactionAdd(@NotNull MessageReactionAddEvent event) {
+        Session targetSession;
+
+        try {
+            targetSession = sessionManager.getSessionByChannel(event.getChannel().getIdLong());
+        }
+        catch (InvalidSessionException e) {
+            return;
+        }
+
+        if (event.getUser().isBot()) return;
+
+        String emojiName = event.getEmoji().getName();
+
+        if (event.getEmoji().getType() == Emoji.Type.UNICODE) {
+            if (emojiName.equals("✅") || emojiName.contains("check")) {
+                try {
+                    targetSession.completeKickvote(event.getMember());
+                }
+                catch (KickvoteException e) {
+                    log.warn(e.getMessage());
+                }
+            }
+            if (emojiName.equals("❌")) {
+                try {
+                    targetSession.cancelKickvote(event.getMember());
+                }
+                catch (KickvoteException e) {
+                    event.getChannel().removeReactionById(event.getMessageId(), event.getEmoji()).queue();
+                    log.warn(e.getMessage());
+                }
+            }
+        }
+        else if (event.getEmoji().getType() == Emoji.Type.CUSTOM) {
+            try {
+                if (emojiName.equalsIgnoreCase("kick") && event.getMessageIdLong() == targetSession.getKickvoteEmbed().getIdLong()) {
+                    targetSession.updateKickvoteMessage();
+                }
+                targetSession.postReactions(event.getUser().getIdLong(), event.getEmoji().asRich());
+            }
+            catch (KickvoteException e) {
+                log.warn(e.getMessage());
+            }
+        }
+    }
+
+    @Override
+    public void onMessageReactionRemove(@NotNull MessageReactionRemoveEvent event) {
+        Session targetSession;
+
+        try {
+            targetSession = sessionManager.getSessionByChannel(event.getChannel().getIdLong());
+        }
+        catch (InvalidSessionException e) {
+            return;
+        }
+
+        if (event.getUser().isBot()) return;
+
+        String emojiName = event.getEmoji().getName();
+
+        if (event.getEmoji().getType() == Emoji.Type.CUSTOM &&
+                emojiName.equalsIgnoreCase("kick") &&
+                event.getMessageIdLong() == targetSession.getKickvoteEmbed().getIdLong()) {
+            try {
+                targetSession.updateKickvoteMessage();
+            }
+            catch (KickvoteException e) {
+                log.warn(e.getMessage());
             }
         }
     }
@@ -191,8 +286,22 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 else {
                     PlayerListMessage playerListMessage;
 
+                    // If the player is not a team member (team members can still bypass) and there's a kickvote running, then redirect the output
+                    if (!isTeamMember(msg.getAuthor().getIdLong()) && targetSession.kickvoteInProgress()) {
+                        playerListMessage = targetSession.getPlayerListMessage(msg, sortAlphabetically, useMentions)
+                                .setTargetChannel(mainConfig.dedicatedOutputChannel);
+                        mainConfig.dedicatedOutputChannel.sendMessage("**" + msg.getAuthor().getAsMention() + " the output of `" + mainConfig.commandPrefix + "pl` was redirected here as "
+                                + targetSession.getSessionChannel().getAsMention() + " has a kickvote that is still in progress**").queue();
+
+                        msg.getChannel().sendMessage("**Kickvote In Progress!** See " + mainConfig.dedicatedOutputChannel.getAsMention())
+                                .queue(m -> {
+                                    msg.delete().queueAfter(10, TimeUnit.SECONDS);
+                                    m.delete().queueAfter(10, TimeUnit.SECONDS);
+                                });
+                    }
+
                     // If the player is not a team member (team members bypass cooldown) and the cooldown is active, then the output gets redirected
-                    if (!isTeamMember(msg.getAuthor().getIdLong()) && targetSession.isCooldownActive()) {
+                    else if (!isTeamMember(msg.getAuthor().getIdLong()) && targetSession.isCooldownActive()) {
                          playerListMessage = targetSession.getPlayerListMessage(msg, sortAlphabetically, useMentions).setTargetChannel(mainConfig.dedicatedOutputChannel);
 
                         mainConfig.dedicatedOutputChannel.sendMessage("**" + msg.getAuthor().getAsMention() + " the output of `" + mainConfig.commandPrefix + "pl` was redirected here as "
@@ -819,6 +928,45 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             else {
                 msg.delete().queue();
             }
+        }
+    }
+
+    private void kickCommand(Message msg) {
+        String[] args = msg.getContentRaw().substring(1).split(" ");
+
+        if (sessionManager.usedInSessionChannel(msg)) {
+            if (args.length > 1) {
+                String targetName = args[1];
+
+                try {
+                    Session session = sessionManager.getSessionByChannel(msg.getChannel().asTextChannel());
+
+                    if (msg.getMentions().getMembers().size() == 1) {
+                        targetName = msg.getMentions().getMembers().getFirst().getEffectiveName();
+                    }
+
+                    session.initiateKickvote(msg.getMember(), targetName);
+
+                    msg.delete().queue();
+                }
+                catch (InvalidSessionException e) {
+                    throw new RuntimeException(e);
+                }
+                catch (KickvoteException ex) {
+                    log.warn(ex.getMessage());
+                    msg.getChannel().sendMessageEmbeds(new MessageEntry("Kickvote Already Running", "**A Kickvote is already running for this session!**",
+                            EmbedDesign.ERROR).getEmbed()).queue(m -> {
+                        msg.delete().queue();
+                        m.delete().queueAfter(15, TimeUnit.SECONDS);
+                    });
+                }
+            }
+            else {
+                msg.getChannel().sendMessageEmbeds(new MessageEntry("Command Usage", "Syntax: `" + mainConfig.commandPrefix + "kick <PlayerName or Mention>", EmbedDesign.HELP).getEmbed(false)).queue();
+            }
+        }
+        else {
+            msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Usage", "**The usage of this command is restricted to session channels only!**", EmbedDesign.ERROR).getEmbed()).queue();
         }
     }
 
