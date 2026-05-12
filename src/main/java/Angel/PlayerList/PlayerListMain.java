@@ -232,9 +232,21 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                                .getPlayerListEmbedAction().queue();
                    }
                    else {
-                       msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... there appears to be more than one session running, I was expecting an argument for a session!**" +
-                                       getExampleUsagesOfCommand(args[0], msg.getAuthor().getIdLong()), EmbedDesign.ERROR).getEmbed())
-                               .queue();
+
+                       List<Session> onlineSessions = accessibleSessions.stream()
+                               .filter(s -> s.getStatus().equals(SessionStatus.ONLINE) || s.getStatus().equals(SessionStatus.FRESH_ONLINE))
+                                       .toList();
+
+                       if (onlineSessions.size() == 1) {
+                           onlineSessions.getFirst().getPlayerListMessage(msg, sortAlphabetically, useMentions).setTargetChannel(msg.getChannel())
+                                   .getPlayerListEmbedAction().queue();
+                       }
+
+                       else {
+                           msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... there appears to be more than one session running, I was expecting an argument for a session!**" +
+                                           getExampleUsagesOfCommand(args[0], msg.getAuthor().getIdLong()), EmbedDesign.ERROR).getEmbed())
+                                   .queue();
+                       }
                    }
                }
                else if (args.length == 2) {
