@@ -1,6 +1,6 @@
 package Angel.CheckIn;
 
-import Angel.Exceptions.InvalidSessionException;
+import Angel.PlayerList.Exceptions.InvalidSessionException;
 import Angel.PlayerList.Player;
 import Angel.PlayerList.Session;
 import net.dv8tion.jda.api.entities.Guild;

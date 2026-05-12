@@ -1,4 +1,4 @@
-package Angel.Exceptions;
+package Angel.PlayerList.Exceptions;
 
 public class NoSessionChannelFoundException extends Throwable {
     public NoSessionChannelFoundException(String name) {
