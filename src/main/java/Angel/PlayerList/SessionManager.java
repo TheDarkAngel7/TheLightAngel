@@ -18,6 +18,7 @@ import org.apache.logging.log4j.Logger;
 import java.awt.image.BufferedImage;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -111,6 +112,7 @@ public class SessionManager implements PlayerListLogic {
             try {
                 sessions.add(new Session(sessionName));
                 log.info("Successfully preloaded a new session object: {}", sessionName);
+                sortSessionObjects();
                 return true;
             }
             catch (NoSessionChannelFoundException e) {
@@ -141,6 +143,12 @@ public class SessionManager implements PlayerListLogic {
         finally {
             lock.unlock();
         }
+    }
+
+    // Sort Session Objects
+
+    private void sortSessionObjects() {
+        sessions.sort(Comparator.comparing(Session::getSessionName, Comparator.naturalOrder()));
     }
 
     // Setters
@@ -233,6 +241,7 @@ public class SessionManager implements PlayerListLogic {
                 else {
                     sessions.add(new Session(sessionName, playerList, playerListImage));
                 }
+                sortSessionObjects();
             }
             catch (NoSessionChannelFoundException ex) {
                 log.error("Unable to Find a Session Channel for {}", sessionName);
