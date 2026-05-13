@@ -1188,8 +1188,6 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                     discord.failedIntegrityCheck(this.getClass().getName(), msg, "Nickname: Request Handler - Request ID");
                 }
                 else {
-                    String[] getNewNicknameArray = result.split("New Nickname: ");
-                    String getNewNickname = getNewNicknameArray[1].substring(2, getNewNicknameArray[1].lastIndexOf('*') - 1);
                     if (requestAccepted) {
                         if (newNickname == null) {
                             String revertedName = "discord username";
@@ -1211,12 +1209,12 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
                                     " their nickname was erased and now it matches their " + revertedName);
                         }
                         else {
-                            memberInQuestion.get().modifyNickname(getNewNickname).reason("Staff Member " + handler.getEffectiveName() +
+                            memberInQuestion.get().modifyNickname(newNickname).reason("Staff Member " + handler.getEffectiveName() +
                                     " accepted the nickname request of " + memberInQuestion.get().getUser().getName()).queue();
                             embed.setAsSuccess("Successful Nickname Request Acceptance", result);
                             embed.sendToChannels(msg, TargetChannelSet.TEAM, TargetChannelSet.LOG);
                             String messageToPlayer = "**Your Nickname Request was Accepted** \n " +
-                                    "Your new name on the Discord Server is now " + getNewNickname;
+                                    "Your new name on the Discord Server is now " + newNickname;
                             embed.setAsSuccess("Successful Nickname Request Acceptance", messageToPlayer);
                             embed.sendDM(msg, memberInQuestion.get().getUser());
                             log.info("Team Member " + handler.getEffectiveName() + " successfully accepted the nickname request of player " +
