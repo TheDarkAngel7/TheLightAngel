@@ -4,17 +4,15 @@ import Angel.EmbedDesign;
 import Angel.Exceptions.InvalidHelpRequestException;
 import Angel.Exceptions.NoSessionChannelFoundException;
 import Angel.MessageEntry;
-import Angel.PlayerList.HelpRequests.HelpRequest;
-import Angel.EmbedDesign;
-import Angel.MessageEntry;
 import Angel.PlayerList.Exceptions.KickvoteException;
-import Angel.PlayerList.Exceptions.NoSessionChannelFoundException;
+import Angel.PlayerList.HelpRequests.HelpRequest;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.PermissionOverride;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
-import net.dv8tion.jda.api.entities.emoji.RichCustomEmoji;
+import net.dv8tion.jda.api.entities.emoji.CustomEmoji;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,11 +20,6 @@ import org.apache.logging.log4j.Logger;
 import java.awt.image.BufferedImage;
 import java.text.Normalizer;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -62,19 +55,19 @@ public class Session implements PlayerListLogic {
     private MessageEntry kickvoteEmbed;
     private String targetKickvotePlayer;
 
-    private final RichCustomEmoji kickEmoji = getGuild().getEmojisByName("kick", true).getFirst();
-    private final RichCustomEmoji cooldownEmoji = getGuild().getEmojisByName("cooldown", true).getFirst();
+    private final CustomEmoji kickEmoji = getGuild().getEmojisByName("kick", true).getFirst();
+    private final CustomEmoji cooldownEmoji = getGuild().getEmojisByName("cooldown", true).getFirst();
     private final String kickvoteEmbedMessage = kickEmoji.getAsMention() + "**?**" +
             "\n\n**During a kickvote, all session chatter is slowed until the kickvote is complete!**" +
             "\n\n**Vote to kick this player out with: `Pause Menu` ➡️ `Online` ➡️ `Players` ➡️ `?` ➡️ `Kick`**" +
             "\n\nReact to this message with: " +
             "\n" + kickEmoji.getAsMention() + " **to indicate you have voted to kick**" +
-            "\n" + cooldownEmoji.getAsMention() + " **to indicate the Kick button is Disabled but you will check again later." +
+            "\n" + cooldownEmoji.getAsMention() + " **to indicate the Kick button is Disabled but you will check again later.**" +
             "\n ✅ **to indicate the player has left the session.**" +
             "\n ❌ **to cancel the kickvote.**";
 
     private int numOfBumps = 0;
-    private Map<Long, RichCustomEmoji> kickvoteReactions;
+    private Map<Long, CustomEmoji> kickvoteReactions;
 
     public Session(String name, List<Player> players, BufferedImage playerListImage) throws NoSessionChannelFoundException {
         this.sessionName = name;
@@ -85,6 +78,9 @@ public class Session implements PlayerListLogic {
         this.players = new ArrayList<>(players);
         this.playerListImage = playerListImage;
         this.status = SessionStatus.ONLINE;
+
+        resetCooldown();
+        resetPermissions();
     }
 
     public Session(String sessionName) throws NoSessionChannelFoundException {
@@ -96,6 +92,8 @@ public class Session implements PlayerListLogic {
 
         this.playerListImage = null;
         this.status = SessionStatus.OFFLINE;
+        resetCooldown();
+        resetPermissions();
     }
 
     // Find Session Channel
@@ -126,6 +124,25 @@ public class Session implements PlayerListLogic {
         }
 
         throw new NoSessionChannelFoundException(sessionName);
+    }
+
+    private void resetCooldown() {
+        if (sessionChannel.getSlowmode() != 0) {
+            sessionChannel.getManager().setSlowmode(0).queue();
+            log.info("Session Channel Slowmode Reset on initialization");
+        }
+    }
+
+    private void resetPermissions() {
+        PermissionOverride override = sessionChannel.getPermissionContainer().getPermissionOverride(mainConfig.getMemberRole());
+        if (override != null) {
+            if (override.getDenied().contains(Permission.MESSAGE_EMBED_LINKS) || override.getDenied().contains(Permission.MESSAGE_ATTACH_FILES)) {
+                sessionChannel.getPermissionOverride(mainConfig.getMemberRole()).getManager()
+                        .clear(Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_ATTACH_FILES)
+                        .queue();
+                log.info("Permissions MESSAGE_EMBED_LINKS and MESSAGE_ATTACH_FILES were reset for {} on initialization", sessionName);
+            }
+        }
     }
 
     public void setNewPlayers(List<Player> players, BufferedImage playerListImage) {
@@ -286,15 +303,27 @@ public class Session implements PlayerListLogic {
         return kickvoteEmbed.getResultEmbed();
     }
 
-    public void postReactions(long targetDiscordID, RichCustomEmoji emoji) throws KickvoteException {
-        if (!kickvoteRunning) throw new KickvoteException("Kickvote Reaction Received But Not Running", sessionName);
+    public void postReactions(long targetDiscordID, CustomEmoji emoji) throws KickvoteException {
+        if (!kickvoteRunning) throw new KickvoteException("Kickvote Reaction Added But Not Running", sessionName);
 
         kickvoteReactions.put(targetDiscordID, emoji);
 
         Member m = getGuild().getMemberById(targetDiscordID);
 
         if (m != null) {
-            log.debug("{} reacted with {}", m.getEffectiveName(), emoji.getName());
+            log.debug("{} added reaction: {}", m.getEffectiveName(), emoji.getName());
+        }
+    }
+
+    public void removeReactions(long targetDiscordID) throws KickvoteException {
+        if (!kickvoteRunning) throw new KickvoteException("Kickvote Reaction Removed But Not Running", sessionName);
+
+        CustomEmoji reaction = kickvoteReactions.remove(targetDiscordID);
+
+        Member m = getGuild().getMemberById(targetDiscordID);
+
+        if (m != null) {
+            log.debug("{} removed reaction: {}", m.getEffectiveName(), reaction.getName());
         }
     }
 
@@ -367,8 +396,8 @@ public class Session implements PlayerListLogic {
         }
 
         kickvoteEmbed = kickvoteEmbed.setMessage(kickvoteEmbedMessage.replace("?", targetKickvotePlayer).concat(
-                "\n\nPlayers: ** " + getPlayerCount() +
-                    "\nVotes: " + currentKickVotes + "/" + numberOfVotesNeeded +
+                "\n\nPlayers: ** " + getPlayerCount() + "**" +
+                    "\nVotes: **" + currentKickVotes + "/" + numberOfVotesNeeded + "**" +
                         (kickvoteThresholdMet ? "**\n\nThreshold " + (currentKickVotes > numberOfVotesNeeded ? "Crossed" : "Met") + "!**" +
                                                                    "\n**Don't Forget to React with ✅ when you see the leave message!**" +
                                                                     "\n**If you haven't voted yet, please do so! If you have, thanks!**" : "")

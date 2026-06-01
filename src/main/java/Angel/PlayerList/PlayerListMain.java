@@ -175,10 +175,10 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         }
         else if (event.getEmoji().getType() == Emoji.Type.CUSTOM) {
             try {
+                targetSession.postReactions(event.getUser().getIdLong(), event.getEmoji().asCustom());
                 if (emojiName.equalsIgnoreCase("kick") && event.getMessageIdLong() == targetSession.getKickvoteEmbed().getIdLong()) {
                     targetSession.updateKickvoteMessage();
                 }
-                targetSession.postReactions(event.getUser().getIdLong(), event.getEmoji().asRich());
             }
             catch (KickvoteException e) {
                 log.warn(e.getMessage());
@@ -205,6 +205,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 emojiName.equalsIgnoreCase("kick") &&
                 event.getMessageIdLong() == targetSession.getKickvoteEmbed().getIdLong()) {
             try {
+                targetSession.removeReactions(event.getUser().getIdLong());
                 targetSession.updateKickvoteMessage();
             }
             catch (KickvoteException e) {
@@ -220,7 +221,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
         List<Session> accessibleSessions = sessionManager.getAccessibleSessions(msg.getAuthor().getIdLong());
 
-        if (accessibleSessions.isEmpty()) {
+        if (accessibleSessions.isEmpty() && !isTeamMember(msg.getAuthor().getIdLong())) {
             msg.getChannel().sendMessageEmbeds(new MessageEntry("Unable to Find Active Session",
                     "**Unable to Find an active session, this could be coming back from a fresh restart... or all sessions could be down right now...**", EmbedDesign.ERROR)
                     .getEmbed(false)).queue(m -> {
