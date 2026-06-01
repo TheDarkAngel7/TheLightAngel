@@ -9,13 +9,13 @@ public class AngelExceptionHandler implements Thread.UncaughtExceptionHandler {
 
     @Override
     public void uncaughtException(Thread t, Throwable e) {
-        log.error("Uncaught Exception in " + t.getName() + ": " + e.getMessage());
+        log.error("Uncaught Exception in " + t.getName() + ": " + e.getMessage(), e);
 
         logException(e);
     }
 
     public void logCaughtException(Thread t, Throwable e) {
-        log.warn("Caught Exception in " + t.getName() + ": " + e.getMessage());
+        log.warn("Caught Exception in " + t.getName() + ": " + e.getMessage(), e);
 
         logException(e);
     }

@@ -66,7 +66,7 @@ public class SessionClientHandler implements Runnable, PlayerListLogic {
 
         }
         catch (InvalidSessionException | Exception e) {
-            log.error("Error while handing P2P Session Update - {}: {}",e.getClass().getSimpleName(), e.getMessage());
+            log.error("Error while handing P2P Session Update", e);
         }
     }
 
