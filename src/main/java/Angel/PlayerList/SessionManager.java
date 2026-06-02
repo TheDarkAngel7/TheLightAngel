@@ -241,7 +241,7 @@ public class SessionManager implements PlayerListLogic {
                 sortSessionObjects();
             }
             catch (NoSessionChannelFoundException ex) {
-                log.error("Unable to Find a Session Channel for {}", sessionName);
+                log.error("Unable to Find a Session Channel for {}", sessionName, ex);
             }
         }
         finally {

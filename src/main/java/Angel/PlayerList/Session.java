@@ -64,6 +64,7 @@ public class Session implements PlayerListLogic {
     private int numOfBumps = 0;
     private Map<Long, CustomEmoji> kickvoteReactions;
 
+    // This constructor is used when the bot receives information from the host, so the Session object is loaded automatically
     public Session(String name, List<Player> players, BufferedImage playerListImage) throws NoSessionChannelFoundException {
         this.sessionName = name;
 
@@ -78,15 +79,17 @@ public class Session implements PlayerListLogic {
         resetPermissions();
     }
 
+    // This constructor is used to preload a Session object into memory, it's created with no player list or image
     public Session(String sessionName) throws NoSessionChannelFoundException {
         this.sessionName = sessionName;
+
         this.sessionChannel = fetchSessionChannel();
 
         this.playerListLastUpdated = ZonedDateTime.now();
         this.players = new ArrayList<>();
-
         this.playerListImage = null;
         this.status = SessionStatus.OFFLINE;
+
         resetCooldown();
         resetPermissions();
     }
@@ -111,7 +114,7 @@ public class Session implements PlayerListLogic {
             log.debug("Match Score {} iHavePermission: {}", channelScore, iHavePermission);
 
             if (channelScore <= 4 && iHavePermission) {
-                log.info("Session Channel Successfully Determined with ID {}", channels.get(index).getIdLong());
+                log.info("{}'s Session Channel Successfully Determined with ID {}", sessionName, channels.get(index).getIdLong());
 
                 return channels.get(index);
             }
@@ -121,24 +124,67 @@ public class Session implements PlayerListLogic {
         throw new NoSessionChannelFoundException(sessionName);
     }
 
+    // Reset Cooldown and Permissions based on the states of different objects
+
+    public void resetChannelParameters() {
+        resetCooldown();
+        resetPermissions();
+    }
+
     private void resetCooldown() {
-        if (sessionChannel.getSlowmode() != 0) {
-            sessionChannel.getManager().setSlowmode(0).queue();
-            log.info("Session Channel Slowmode Reset on initialization");
+        if (!kickvoteInProgress() && sessionChannel.getSlowmode() != 0) {
+            sessionChannel.getManager().setSlowmode(0).queue(
+                    success -> log.info("{}'s Session Channel Slowmode Reset on the resetCooldown() method", sessionName),
+                    error -> log.error("Unable to change the cooldown on {}'s session channel. MANAGE_CHANNEL Permission: {}", sessionName, sessionChannel.getGuild().getSelfMember().hasPermission(Permission.MANAGE_CHANNEL) ? "GRANTED" : "REQUIRED", error)
+            );
+        }
+        else if (kickvoteInProgress() && sessionChannel.getSlowmode() == 0) {
+            updateKickvoteMessage();
         }
     }
 
     private void resetPermissions() {
         PermissionOverride override = sessionChannel.getPermissionContainer().getPermissionOverride(mainConfig.getMemberRole());
         if (override != null) {
-            if (override.getDenied().contains(Permission.MESSAGE_EMBED_LINKS) || override.getDenied().contains(Permission.MESSAGE_ATTACH_FILES)) {
-                sessionChannel.getPermissionOverride(mainConfig.getMemberRole()).getManager()
-                        .clear(Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_ATTACH_FILES)
-                        .queue();
-                log.info("Permissions MESSAGE_EMBED_LINKS and MESSAGE_ATTACH_FILES were reset for {} on initialization", sessionName);
+            if (kickvoteInProgress()) {
+                if (!override.getDenied().contains(Permission.MESSAGE_EMBED_LINKS) || !override.getDenied().contains(Permission.MESSAGE_ATTACH_FILES)) {
+                    sessionChannel.getPermissionOverride(mainConfig.getMemberRole())
+                            .getManager()
+                            .deny(Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_ATTACH_FILES)
+                            .queue(
+                                    success -> log.info("{}'s Session Channel Permissions MESSAGE_EMBED_LINKS and MESSAGE_ATTACH_FILES were denied on the resetPermissions() method", sessionName),
+                                    error -> log.error("Unable to change permissions for {}'s session channel. MANAGE_PERMISSIONS Permission: {}", sessionName, sessionChannel.getGuild().getSelfMember().hasPermission(Permission.MANAGE_PERMISSIONS), error)
+                            );
+                }
+            }
+            else {
+                if (override.getDenied().contains(Permission.MESSAGE_EMBED_LINKS) || override.getDenied().contains(Permission.MESSAGE_ATTACH_FILES)) {
+                    sessionChannel.getPermissionOverride(mainConfig.getMemberRole())
+                            .getManager()
+                            .clear(Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_ATTACH_FILES)
+                            .queue(
+                                    success -> log.info("{}'s Session Channel Permissions MESSAGE_EMBED_LINKS and MESSAGE_ATTACH_FILES were cleared on the resetPermissions() method", sessionName),
+                                    error ->  log.error("Unable to change permissions for {}'s session channel. MANAGE_PERMISSIONS Permission: {}", sessionName, sessionChannel.getGuild().getSelfMember().hasPermission(Permission.MANAGE_PERMISSIONS), error)
+                            );
+                }
+            }
+            if (status.equals(SessionStatus.ONLINE) && override.getDenied().contains(Permission.MESSAGE_SEND)) {
+                override.getManager().clear(Permission.MESSAGE_SEND).queue(
+                        success -> log.info("{}'s Session Channel Permission MESSAGE_SEND were cleared on the resetPermissions() method", sessionName),
+                        error ->  log.error("Unable to change permissions for {}'s session channel. MANAGE_PERMISSIONS Permission: {}", sessionName, sessionChannel.getGuild().getSelfMember().hasPermission(Permission.MANAGE_PERMISSIONS), error)
+                );
+            }
+            else if (status.equals(SessionStatus.OFFLINE) && !override.getDenied().contains(Permission.MESSAGE_SEND)) {
+                override.getManager().deny(Permission.MESSAGE_SEND)
+                        .queue(
+                                success -> log.warn("{}'s Session Channel Permission MESSAGE_SEND was denied on the resetPermissions() method", sessionName),
+                                error -> log.error("Unable to change permissions for {}'s session channel. MANAGE_PERMISSIONS Permission: {}", sessionName, sessionChannel.getGuild().getSelfMember().hasPermission(Permission.MANAGE_PERMISSIONS), error)
+                        );
             }
         }
     }
+
+    // Setters
 
     public void setNewPlayers(List<Player> players, BufferedImage playerListImage) {
         this.players = players;
@@ -247,6 +293,7 @@ public class Session implements PlayerListLogic {
 
         return isSessionChannelAccessible(m);
     }
+
     // Kickvote Methods
 
     public boolean kickvoteInProgress() {
@@ -298,11 +345,12 @@ public class Session implements PlayerListLogic {
 
             m.addReaction(kickEmoji).queue();
             m.addReaction(cooldownEmoji).queue();
-        });
+            log.info("Kickvote in {}'s Session wasMessage {} Successfully", sessionName,  repost ? "Reposted" : "Posted");
+        }, error -> log.error("Unable to {} the Kickvote Message in {}'s Session Channel", repost ? "Reposted" : "Posted", sessionName, error));
     }
 
     public void initiateKickvote(Member cmdUser, String targetPlayer) throws KickvoteException {
-        if (kickvoteRunning) throw new KickvoteException("Kickvote already running", sessionName);
+        if (kickvoteRunning) throw new KickvoteException("Kickvote Already Running", sessionName);
 
         this.targetKickvotePlayer = targetPlayer;
 
@@ -313,9 +361,13 @@ public class Session implements PlayerListLogic {
                 .flatMap(voidResult -> sessionChannel.getPermissionOverride(mainConfig.getMemberRole())
                         .getManager()
                         .deny(Permission.MESSAGE_ATTACH_FILES, Permission.MESSAGE_EMBED_LINKS))
-                .onSuccess(action -> {
-            log.info("{}'s Session Channel Cooldown has been set to 1 minute, file attachments and embeds have been disabled", sessionName);
-        }).queue();
+                .queue(
+                        success -> log.info("{}'s Session Channel Cooldown has been set to 1 minute, file attachments and embeds have been disabled", sessionName),
+                        error -> log.error("Unable to Change {}'s Session Channel Parameters and initialization has been halted! MANAGE_CHANNEL Permission: {}, MANAGE_PERMISSIONS Permission: {}", sessionName,
+                                sessionChannel.getGuild().getSelfMember().hasPermission(Permission.MANAGE_CHANNEL) ? "GRANTED" : "REQUIRED",
+                                sessionChannel.getGuild().getSelfMember().hasPermission(Permission.MANAGE_PERMISSIONS) ? "GRANTED" : "REQUIRED",
+                                error)
+                );
 
         kickvoteEmbed = new MessageEntry(title, kickvoteEmbedMessage.replace("?", targetKickvotePlayer), EmbedDesign.WARNING).dontUseFieldHeader();
 
@@ -344,15 +396,25 @@ public class Session implements PlayerListLogic {
         log.debug("Kickvote Message Updating - totalPlayersCountingHost: {} - Votes: {}/{}", totalPlayersCountingHost, currentKickVotes, numberOfVotesNeeded);
 
         if (kickvoteThresholdMet && sessionChannel.getSlowmode() != 30) {
-            sessionChannel.getManager().setSlowmode(30).onSuccess(action -> {
-                log.info("{}'s Session Channel Cooldown has been set to 30 seconds successfully",  sessionName);
-            }).queue();
+            sessionChannel.getManager().setSlowmode(30)
+                    .queue(
+                            success -> log.info("{}'s Session Channel Cooldown has been set to 30 seconds successfully",  sessionName),
+                            error -> log.error("{}'s Session Channel Cooldown could not be set to 30 seconds. MANAGE_CHANNEL Permission: {}",
+                                    sessionName,
+                                    sessionChannel.getGuild().getSelfMember().hasPermission(Permission.MANAGE_CHANNEL) ? "GRANTED" : "REQUIRED",
+                                    error)
+                    );
         }
         if (!kickvoteThresholdMet && sessionChannel.getSlowmode() != 60) {
-            sessionChannel.getManager().setSlowmode(60).onSuccess(action -> {
-                log.info("{}'s Session Channel Cooldown has been set to 1 minute successfully" +
-                        " after detecting the kickvote threshold is no longer met",  sessionName);
-            }).queue();
+            sessionChannel.getManager().setSlowmode(60)
+                    .queue(
+                    success -> log.info("{}'s Session Channel Cooldown has been set to 30 seconds successfully" +
+                            " after detecting the kickvote threshold is no longer met",  sessionName),
+                    error -> log.error("{}'s Session Channel Cooldown could not be set to 1 minute. MANAGE_CHANNEL Permission: {}",
+                            sessionName,
+                            sessionChannel.getGuild().getSelfMember().hasPermission(Permission.MANAGE_CHANNEL) ? "GRANTED" : "REQUIRED",
+                            error)
+            );
         }
 
         kickvoteEmbed = kickvoteEmbed.setMessage(kickvoteEmbedMessage.replace("?", targetKickvotePlayer).concat(
@@ -368,7 +430,10 @@ public class Session implements PlayerListLogic {
             numOfBumps = 0;
         }
         else {
-            kickvoteEmbed.getResultEmbed().editMessageEmbeds(kickvoteEmbed.getEmbed()).queue();
+            kickvoteEmbed.getResultEmbed().editMessageEmbeds(kickvoteEmbed.getEmbed()).queue(
+                    success -> log.info("Successfully Edited Kickvote Message in {}'s Session Channel. Players: {}, Votes {}/{}", sessionName, totalPlayersCountingHost, currentKickVotes, numberOfVotesNeeded),
+                    error -> log.error("Unable to Edit the Kickvote Message in {}'s Session Channel", sessionName, error)
+            );
         }
     }
 
@@ -411,9 +476,14 @@ public class Session implements PlayerListLogic {
                 .flatMap(voidResult -> sessionChannel.getPermissionOverride(mainConfig.getMemberRole())
                         .getManager()
                         .clear(Permission.MESSAGE_ATTACH_FILES, Permission.MESSAGE_EMBED_LINKS))
-                .onSuccess(action -> {
-            log.info("{}'s Session Channel Cooldown has been disabled, file attachments and embeds have been enabled", sessionName);
-        }).queue();
+                .queue(
+                        success -> log.info("{}'s Session Channel Cooldown has been disabled, file attachments and embeds have been enabled", sessionName),
+                        error -> log.error("Unable to release Slowmode and Permission Restrictions on {}'s Session Channel. MANAGE_CHANNEL Permission: {}, MANAGE_PERMISSIONS Permission {}",
+                                sessionName,
+                                sessionChannel.getGuild().getSelfMember().hasPermission(Permission.MANAGE_CHANNEL) ? "GRANTED" : "REQUIRED",
+                                sessionChannel.getGuild().getSelfMember().hasPermission(Permission.MANAGE_PERMISSIONS) ? "GRANTED" : "REQUIRED",
+                                error)
+                );
 
         MessageEntry kickvoteResults = new MessageEntry();
 

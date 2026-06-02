@@ -299,6 +299,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                                     msg.delete().queueAfter(10, TimeUnit.SECONDS);
                                     m.delete().queueAfter(10, TimeUnit.SECONDS);
                                 });
+                        log.info("{}'s {}pl Output Stopped and Redirected as a Kickvote is in Progress!", msg.getMember().getEffectiveName(), mainConfig.commandPrefix);
                     }
 
                     // If the player is not a team member (team members bypass cooldown) and the cooldown is active, then the output gets redirected
