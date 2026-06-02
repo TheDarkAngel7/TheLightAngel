@@ -472,6 +472,15 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
     private void playerListConfig(Message msg, boolean usedInSessionChannel) {
         String[] args = msg.getContentRaw().substring(1).split(" ");
+        Session session = null;
+
+        if (usedInSessionChannel) {
+            try {
+                session = sessionManager.getSessionByChannel(msg.getChannel().asTextChannel());
+            } catch (InvalidSessionException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
 
         switch (args[1].toLowerCase()) {
@@ -483,14 +492,9 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 break;
             case "clear":
                 if (usedInSessionChannel) {
-                    try {
-                        Session session = sessionManager.getSessionByChannel(msg.getChannel().asTextChannel());
-                        session.clearPlayerList();
-                        msg.getChannel().sendMessage("**" + msg.getMember().getEffectiveName() + " has cleared the player list for " + session.getSessionName() + "!**").queue();
+                    session.clearPlayerList();
+                    msg.getChannel().sendMessage("**" + msg.getMember().getEffectiveName() + " has cleared the player list for " + session.getSessionName() + "!**").queue();
 
-                    } catch (InvalidSessionException e) {
-                        throw new RuntimeException(e);
-                    }
                 }
                 else {
                     msg.getChannel().sendMessage("**" + msg.getMember().getEffectiveName() + " has cleared the player list for all sessions!**").queue();
@@ -500,25 +504,20 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
             case "delete":
             case "drop":
-
                 if (usedInSessionChannel) {
-                    try {
-                        Session session = sessionManager.getSessionByChannel(msg.getChannelIdLong());
-                        if (sessionManager.deleteSession(session)) {
-                            msg.getChannel().sendMessage("**" + msg.getMember() + " has erased " + session.getSessionName() + " from my session memory!**").queue();
-                        }
-                        else {
-                            msg.getChannel().sendMessage("**Unable to Erase " + session.getSessionName() + " from my session memory!**").queue();
-                        }
-                    } catch (InvalidSessionException e) {
-                        throw new RuntimeException(e);
+
+                    if (sessionManager.deleteSession(session)) {
+                        msg.getChannel().sendMessage("**" + msg.getMember().getAsMention() + " has erased " + session.getSessionName() + " from my session memory!**").queue();
+                    }
+                    else {
+                        msg.getChannel().sendMessage("**Unable to Erase " + session.getSessionName() + " from my session memory!**").queue();
                     }
                 }
 
                 else {
                     try {
                         if (args.length == 3) {
-                            Session session = sessionManager.getSessionByName(args[2]);
+                            session = sessionManager.getSessionByName(args[2]);
 
                             if (sessionManager.deleteSession(session)) {
                                 msg.getChannel().sendMessage("**" + msg.getMember() + " has erased " + session.getSessionName() + " from my session memory!**").queue();
@@ -536,7 +535,6 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                                 "\n\n**Usage: `" + mainConfig.commandPrefix + "pl delete <name>`**", EmbedDesign.ERROR).getEmbed()).queue();
                     }
                 }
-
 
                 break;
             case "cooldown":
@@ -576,7 +574,6 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     msg.getChannel().sendMessage("Whoops, that was an error! Syntax: `" + mainConfig.commandPrefix + "pl enablecooldown <minutes>`").queue();
                     return;
                 }
-                Session session = null;
 
                 if (usedInSessionChannel) {
                     try {
@@ -637,6 +634,21 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                     msg.getChannel().sendMessage("**" + msg.getMember().getEffectiveName() + " has disabled the player list cooldown for all sessions**").queue();
                     sessionManager.getSessions().forEach(Session::disablePlayerListCooldown);
                 }
+                break;
+
+            case "reset":
+            case "resetperm":
+            case "resetperms":
+            case "resetpermissions":
+            case "resetpermission":
+                if (usedInSessionChannel) {
+                    session.resetChannelParameters();
+                }
+                else {
+                    sessionManager.getSessions().forEach(Session::resetChannelParameters);
+                }
+
+                msg.getChannel().sendMessage(msg.getMember().getEffectiveName() + " has reset " + (usedInSessionChannel ? msg.getChannel().getAsMention() : "All") + " Session Channel Permissions and Cooldown").queue();
                 break;
         }
     }
