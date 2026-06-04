@@ -2,8 +2,8 @@ package Angel.PlayerList.HelpRequests;
 
 import Angel.BotAbuse.BotAbuseLogic;
 import Angel.EmbedDesign;
-import Angel.Exceptions.InvalidSessionException;
 import Angel.MessageEntry;
+import Angel.PlayerList.Exceptions.InvalidSessionException;
 import Angel.PlayerList.PlayerListLogic;
 import Angel.PlayerList.Session;
 import net.dv8tion.jda.api.entities.Member;
