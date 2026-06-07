@@ -38,7 +38,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
     private final List<String> commands = Arrays.asList("playersm", "playerm", "plm", "playersam", "playeram", "plam",
             "playersa", "playera", "pla", "players", "player", "pl", "plma", "playersma", "playerma",
-            "host", "shot", "headcount", "hc", "k", "kick");
+            "host", "shot", "headcount", "hc", "k", "kick", "reset", "resetperm", "resetperms", "resetpermissions", "resetpermission");
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
@@ -346,6 +346,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
                        List<Session> onlineSessions = accessibleSessions.stream()
                                .filter(s -> s.getStatus().equals(SessionStatus.ONLINE) || s.getStatus().equals(SessionStatus.FRESH_ONLINE))
+                               .filter(s -> s.getPlayerCount() > 0)
                                        .toList();
 
                        if (onlineSessions.size() == 1) {
