@@ -2,6 +2,7 @@ package Angel.PlayerList;
 
 import Angel.EmbedDesign;
 import Angel.MessageEntry;
+import Angel.PlayerList.Cooldown.SessionCooldownConfiguration;
 import Angel.PlayerList.Exceptions.KickvoteException;
 import Angel.PlayerList.Exceptions.NoSessionChannelFoundException;
 import net.dv8tion.jda.api.Permission;
@@ -39,10 +40,7 @@ public class Session implements PlayerListLogic {
 
     // Session Channel Player List Cooldown
 
-    private boolean playerListCooldownEnabled = false;
-    private ZonedDateTime cmdLastUsed = null;
-    private int cooldownDuration = 0;
-    private int minNumberOfPlayers = 0;
+    private final SessionCooldownConfiguration sessionCooldownConfig;
 
     // Kickvote Data
 
@@ -65,7 +63,7 @@ public class Session implements PlayerListLogic {
     private Map<Long, CustomEmoji> kickvoteReactions;
 
     // This constructor is used when the bot receives information from the host, so the Session object is loaded automatically
-    public Session(String name, List<Player> players, BufferedImage playerListImage) throws NoSessionChannelFoundException {
+    public Session(String name, List<Player> players, BufferedImage playerListImage, SessionCooldownConfiguration sessionCooldownConfig) throws NoSessionChannelFoundException {
         this.sessionName = name;
 
         this.sessionChannel = fetchSessionChannel();
@@ -75,12 +73,16 @@ public class Session implements PlayerListLogic {
         this.playerListImage = playerListImage;
         this.status = SessionStatus.ONLINE;
 
+        this.sessionCooldownConfig = sessionCooldownConfig;
+
         resetCooldown();
         resetPermissions();
+
+        log.info("Successfully Created Session Object from receiving player list for {} with session channel as #{}", sessionName, sessionChannel.getName());
     }
 
     // This constructor is used to preload a Session object into memory, it's created with no player list or image
-    public Session(String sessionName) throws NoSessionChannelFoundException {
+    public Session(String sessionName, SessionCooldownConfiguration sessionCooldownConfig) throws NoSessionChannelFoundException {
         this.sessionName = sessionName;
 
         this.sessionChannel = fetchSessionChannel();
@@ -90,8 +92,12 @@ public class Session implements PlayerListLogic {
         this.playerListImage = null;
         this.status = SessionStatus.OFFLINE;
 
+        this.sessionCooldownConfig = sessionCooldownConfig;
+
         resetCooldown();
         resetPermissions();
+
+        log.info("Successfully Created Session Object from preload command for {} with session channel as #{}", sessionName, sessionChannel.getName());
     }
 
     // Find Session Channel
@@ -114,7 +120,7 @@ public class Session implements PlayerListLogic {
             log.debug("Match Score {} iHavePermission: {}", channelScore, iHavePermission);
 
             if (channelScore <= 4 && iHavePermission) {
-                log.info("{}'s Session Channel Successfully Determined with ID {}", sessionName, channels.get(index).getIdLong());
+                log.debug("{}'s Session Channel Successfully Determined with ID {}", sessionName, channels.get(index).getIdLong());
 
                 return channels.get(index);
             }
@@ -245,7 +251,8 @@ public class Session implements PlayerListLogic {
             if (kickvoteInProgress()) {
                 if (isTeamMember(cmd.getAuthor().getIdLong())) {
                     log.info("Cooldown Timer Reset: Team Member Used Command During Kickvote");
-                    cmdLastUsed = ZonedDateTime.now();
+                    sessionCooldownConfig.setCmdLastUsed(ZonedDateTime.now());
+                    sessionManager.getCooldownManager().saveConfiguration();
                 }
             }
             // If NO kickvote is in progress, use our standard cooldown logic
@@ -255,7 +262,8 @@ public class Session implements PlayerListLogic {
                 if ((!isCooldownActive() || isTeamMember(cmd.getAuthor().getIdLong()))) {
                     log.info("Cooldown Timer Reset: No Kickvote Active, Original Cooldown {} and the command user {} a team member",
                             (isCooldownActive() ? "was active" : "was not active"), (isTeamMember(cmd.getAuthor().getIdLong())) ? "was" : "was not");
-                    cmdLastUsed = ZonedDateTime.now();
+                    sessionCooldownConfig.setCmdLastUsed(ZonedDateTime.now());
+                    sessionManager.getCooldownManager().saveConfiguration();
                 }
             }
         }
@@ -516,24 +524,26 @@ public class Session implements PlayerListLogic {
     // These Methods are related to the cooldown
 
     public void enablePlayerListCooldown(int cooldownDuration, int minNumberOfPlayers) {
-        this.minNumberOfPlayers = minNumberOfPlayers;
-        this.cooldownDuration = cooldownDuration;
+        sessionCooldownConfig.setCooldownDuration(cooldownDuration);
+        sessionCooldownConfig.setMinNumberOfPlayers(minNumberOfPlayers);
         enablePlayerListCooldown();
     }
 
     public void enablePlayerListCooldown(int cooldownDuration) {
-        this.cooldownDuration = cooldownDuration;
-        this.minNumberOfPlayers = 0;
+        sessionCooldownConfig.setCooldownDuration(cooldownDuration);
+        sessionCooldownConfig.setMinNumberOfPlayers(0);
         enablePlayerListCooldown();
     }
 
     private void enablePlayerListCooldown() {
-        playerListCooldownEnabled = true;
+        int minNumberOfPlayers = sessionCooldownConfig.getMinNumberOfPlayers();
+        int cooldownDuration = sessionCooldownConfig.getCooldownDuration();
+        ZonedDateTime cmdLastUsed = sessionCooldownConfig.getCmdLastUsed();
 
         // This is so when the cooldown is enabled it will immediately go active, but if cmdLastUsed is null.
         // We wait for the next time to start enforcing the cooldown
         if (cmdLastUsed == null) {
-            this.cmdLastUsed = ZonedDateTime.now().minusMinutes(cooldownDuration + 1);
+            sessionCooldownConfig.setCmdLastUsed(ZonedDateTime.now().minusMinutes(1));
         }
 
         sessionChannel.sendMessage("**`" + mainConfig.commandPrefix + "pl` Cooldown has been enabled for this channel.**" +
@@ -543,26 +553,33 @@ public class Session implements PlayerListLogic {
     }
 
     public void disablePlayerListCooldown() {
-        playerListCooldownEnabled = false;
+        sessionCooldownConfig.setCooldownDuration(0);
 
         sessionChannel.sendMessage("**`" + mainConfig.commandPrefix + "pl` Cooldown has been disabled for this channel.**").queue();
         log.info("Cooldown has been disabled for #{}", sessionChannel.getName());
     }
 
     public boolean isCooldownActive() {
+        int minNumberOfPlayers = sessionCooldownConfig.getMinNumberOfPlayers();
+        int cooldownDuration = sessionCooldownConfig.getCooldownDuration();
+        ZonedDateTime cmdLastUsed = sessionCooldownConfig.getCmdLastUsed();
+
         // This answers whether the cooldown in the session channel is currently active
         // Is the Cooldown Setting Enabled
         // Is the current time before the time when the cooldown is over
         // Is the session over the minimum number of players to enforce the cooldown
-        return playerListCooldownEnabled && getPlayerCount() >= minNumberOfPlayers &&
+        return isCooldownEnabled() && getPlayerCount() >= minNumberOfPlayers &&
                 ZonedDateTime.now().isBefore(cmdLastUsed.plusMinutes(cooldownDuration));
     }
 
     public boolean isCooldownEnabled() {
-        return playerListCooldownEnabled;
+        return sessionCooldownConfig.getCooldownDuration() > 0;
     }
 
     public String getTimerUntilCooldownIsOver() {
+        int cooldownDuration = sessionCooldownConfig.getCooldownDuration();
+        ZonedDateTime cmdLastUsed = sessionCooldownConfig.getCmdLastUsed();
+
         return getTimerFormatTo(cmdLastUsed.plusMinutes(cooldownDuration));
     }
 
@@ -580,12 +597,7 @@ public class Session implements PlayerListLogic {
         // Return Substring
         return token.substring(0, finalLength).toLowerCase();
     }
-
-    public int getCooldownDuration() {
-        return cooldownDuration;
-    }
-
-    public int getMinNumberOfPlayersInSessionForCooldown() {
-        return minNumberOfPlayers;
+    public SessionCooldownConfiguration getSessionCooldownConfiguration() {
+        return sessionCooldownConfig;
     }
 }

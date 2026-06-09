@@ -2,6 +2,9 @@ package Angel.PlayerList;
 
 import Angel.EmbedDesign;
 import Angel.MessageEntry;
+import Angel.PlayerList.Cooldown.SessionCooldownConfigContainer;
+import Angel.PlayerList.Cooldown.SessionCooldownConfigManager;
+import Angel.PlayerList.Exceptions.CooldownConfigDoesNotExist;
 import Angel.PlayerList.Exceptions.InvalidSessionException;
 import Angel.PlayerList.Exceptions.NoSessionChannelFoundException;
 import net.dv8tion.jda.api.Permission;
@@ -27,9 +30,18 @@ public class SessionManager implements PlayerListLogic {
     private final List<Session> sessions = new ArrayList<>();
     private final ReentrantLock lock = new ReentrantLock();
 
+    // Session Cooldown Manager
+    private final SessionCooldownConfigManager cooldownManager = new SessionCooldownConfigManager();
+    private final SessionCooldownConfigContainer cooldownContainer = cooldownManager.loadConfiguration();
+
     public SessionManager() {
         ExecutorService service = Executors.newFixedThreadPool(1);
         service.execute(new SessionClientListener());
+    }
+    // Get SessionCooldownConfigManager for calls
+
+    public SessionCooldownConfigManager getCooldownManager() {
+        return cooldownManager;
     }
 
     // Session Searching
@@ -107,7 +119,12 @@ public class SessionManager implements PlayerListLogic {
         if (capsCount >= 2 && startsWithCap) {
             lock.lock();
             try {
-                sessions.add(new Session(sessionName));
+                try {
+                    sessions.add(new Session(sessionName, cooldownContainer.getConfiguration(sessionName)));
+                }
+                catch (CooldownConfigDoesNotExist e) {
+                    sessions.add(new Session(sessionName, cooldownContainer.createNewConfiguration(sessionName)));
+                }
                 log.info("Successfully preloaded a new session object: {}", sessionName);
                 sortSessionObjects();
                 return true;
@@ -233,15 +250,29 @@ public class SessionManager implements PlayerListLogic {
 
             try {
                 if (playerList.size() >= 30) {
-                    sessions.add(new Session(sessionName, new ArrayList<>(), playerListImage));
+                    sessions.add(new Session(sessionName, new ArrayList<>(), playerListImage, cooldownContainer.getConfiguration(sessionName)));
                 }
                 else {
-                    sessions.add(new Session(sessionName, playerList, playerListImage));
+                    sessions.add(new Session(sessionName, playerList, playerListImage, cooldownContainer.getConfiguration(sessionName)));
                 }
                 sortSessionObjects();
             }
             catch (NoSessionChannelFoundException ex) {
                 log.error("Unable to Find a Session Channel for {}", sessionName, ex);
+            }
+            catch (CooldownConfigDoesNotExist ex) {
+                // This catches if the cooldown configuration does not exist already
+                try {
+                    if (playerList.size() >= 30) {
+                        sessions.add(new Session(sessionName, new ArrayList<>(), playerListImage, cooldownContainer.createNewConfiguration(sessionName)));
+                    }
+                    else {
+                        sessions.add(new Session(sessionName, playerList, playerListImage, cooldownContainer.createNewConfiguration(sessionName)));
+                    }
+                }
+                catch (NoSessionChannelFoundException oof) {
+                    log.error("Unable to Find a Session Channel for {}", sessionName, oof);
+                }
             }
         }
         finally {
