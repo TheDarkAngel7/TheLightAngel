@@ -14,7 +14,7 @@ import java.util.Collection;
 interface PlayerListLogic extends CommonLogic {
     PlayerListMain playerListMain = new PlayerListMain();
     Collection<GatewayIntent> enabledIntents = Arrays.asList(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS,
-            GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_EXPRESSIONS);
+            GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_EXPRESSIONS, GatewayIntent.GUILD_MESSAGE_REACTIONS);
     Collection<CacheFlag> disabledFlags = Arrays.asList(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS,
             CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE, CacheFlag.ONLINE_STATUS, CacheFlag.STICKER, CacheFlag.SCHEDULED_EVENTS);
     JDA jda = JDABuilder.create(mainConfig.token, enabledIntents).enableCache(CacheFlag.EMOJI).disableCache(disabledFlags).setRequestTimeoutRetry(true)
