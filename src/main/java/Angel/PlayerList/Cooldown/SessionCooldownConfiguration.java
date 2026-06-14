@@ -8,7 +8,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class SessionCooldownConfiguration {
-    private final Logger log = LogManager.getLogger(SessionCooldownConfiguration.class);
+    protected static final Logger log = LogManager.getLogger(SessionCooldownConfiguration.class);
 
     @Expose
     private final String sessionName;
