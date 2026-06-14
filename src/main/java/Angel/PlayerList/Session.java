@@ -80,7 +80,7 @@ public class Session implements PlayerListLogic {
 
         this.sessionCooldownConfig = sessionCooldownConfig;
 
-        resetCooldown();
+        resetSlowmode();
         resetPermissions();
 
         log.info("Successfully Created Session Object from receiving player list for {} with session channel as #{}", sessionName, sessionChannel.getName());
@@ -99,7 +99,7 @@ public class Session implements PlayerListLogic {
 
         this.sessionCooldownConfig = sessionCooldownConfig;
 
-        resetCooldown();
+        resetSlowmode();
         resetPermissions();
 
         log.info("Successfully Created Session Object from preload command for {} with session channel as #{}", sessionName, sessionChannel.getName());
@@ -138,11 +138,11 @@ public class Session implements PlayerListLogic {
     // Reset Cooldown and Permissions based on the states of different objects
 
     public void resetChannelParameters() {
-        resetCooldown();
+        resetSlowmode();
         resetPermissions();
     }
 
-    private void resetCooldown() {
+    private void resetSlowmode() {
         if (!kickvoteInProgress() && sessionChannel.getSlowmode() != 0) {
             sessionChannel.getManager().setSlowmode(0).queue(
                     success -> log.info("{}'s Session Channel Slowmode Reset on the resetCooldown() method", sessionName),
@@ -589,7 +589,7 @@ public class Session implements PlayerListLogic {
         sessionChannel.sendMessage("**`" + mainConfig.commandPrefix + "pl` Cooldown has been enabled for this channel.**" +
                 "\n\nMinimum Duration Between Commands: **" + cooldownDuration + " Minutes**" +
                 (minNumberOfPlayers > 0 ? "\nMinimum Number Of Players: **" + minNumberOfPlayers + "**" : "")).queue();
-        log.info("Cooldown has been enabled for #{} - Duration: {} minutes with {} Players Minimum", sessionChannel.getName(), cooldownDuration, minNumberOfPlayers);
+        log.info("Cooldown has been enabled for #{} - Duration: {} minutes{}", sessionChannel.getName(), cooldownDuration, (minNumberOfPlayers > 0 ? " with " + minNumberOfPlayers + " Players Minimum" : ""));
     }
 
     public void disablePlayerListCooldown() {
