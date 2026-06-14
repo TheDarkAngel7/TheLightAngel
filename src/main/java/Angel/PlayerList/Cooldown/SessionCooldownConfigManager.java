@@ -22,7 +22,6 @@ public class SessionCooldownConfigManager {
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(ZoneId.class, new ZoneIDInstanceCreator())
             .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeAdapter())
-            .registerTypeAdapter(SessionCooldownConfiguration.class, new SessionCooldownDeserializer())
             .excludeFieldsWithoutExposeAnnotation()
             .setPrettyPrinting()
             .create();

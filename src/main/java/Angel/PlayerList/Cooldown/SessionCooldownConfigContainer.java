@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SessionCooldownConfigContainer {
-    private final transient Logger log = LogManager.getLogger(SessionCooldownConfigContainer.class);
+    protected static final Logger log = LogManager.getLogger(SessionCooldownConfigContainer.class);
 
     @Expose
     private final List<SessionCooldownConfiguration> sessionCooldownConfigurations;
