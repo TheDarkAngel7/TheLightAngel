@@ -3,7 +3,9 @@ package Angel.PlayerList.Cooldown;
 import Angel.ZoneIDInstanceCreator;
 import Angel.ZonedDateTimeAdapter;
 import com.google.gson.*;
+import org.apache.logging.log4j.LogManager;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -23,9 +25,9 @@ public class SessionCooldownDeserializer implements JsonDeserializer<SessionCool
 
         // 2. CRITICAL: Re-initialize the logger manually using reflection since it's private final
         try {
-            java.lang.reflect.Field logField = SessionCooldownConfiguration.class.getDeclaredField("log");
+            Field logField = SessionCooldownConfiguration.class.getDeclaredField("log");
             logField.setAccessible(true);
-            logField.set(config, org.apache.logging.log4j.LogManager.getLogger(SessionCooldownConfiguration.class));
+            logField.set(config, LogManager.getLogger(SessionCooldownConfiguration.class));
         } catch (Exception e) {
             throw new JsonParseException("Failed to inject logger into configuration", e);
         }
