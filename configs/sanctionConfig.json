@@ -1,0 +1,9 @@
+{
+  "minAttachments": 4,
+  "minLinks": 4,
+  "antiScamViolationsBanTrigger": 3,
+  "maxAntiScamTimeoutSeconds": 15,
+  "antiScamBanDuration": "7d",
+  "suspensionRoleID": 785932013785448448,
+  "blockedRoleID": 258942124458770432
+}

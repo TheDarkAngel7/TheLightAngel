@@ -59,6 +59,11 @@ class FileCreator {
                 Files.createDirectory(Paths.get(dbBackupsFolder + "/CheckIn"));
                 everythingExisted = false;
             }
+            if (!Files.exists(Paths.get(dbBackupsFolder + "/Sanctions"))) {
+                log.warn("Sanctions Folder in Database Backups Folder Did Not Exist! Creating New...");
+                Files.createDirectory(Paths.get(dbBackupsFolder + "/Sanctions"));
+                everythingExisted = false;
+            }
             if (!Files.exists(logFolder)) {
                 log.warn("Log Folder Did Not Exist! Creating New...");
                 Files.createDirectory(logFolder);
