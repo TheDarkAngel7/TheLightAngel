@@ -10,6 +10,8 @@ import Angel.Nicknames.NicknameInit;
 import Angel.Nicknames.NicknameMain;
 import Angel.PlayerList.PlayerListInit;
 import Angel.PlayerList.PlayerListMain;
+import Angel.Sanctions.SanctionInit;
+import Angel.Sanctions.SanctionMain;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -49,6 +51,8 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
     private CheckInMain ciFeature = null;
     private PlayerListInit playerListInit;
     private PlayerListMain playerListMain = null;
+    private SanctionInit sanctionInit;
+    private SanctionMain sanctionFeature = null;
     private int restartValue;
     private boolean commandsSuspended = false;
     public boolean isStarting = true;
@@ -99,12 +103,14 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
         ciInit = new CheckInInit();
         customEmbedInit = new CustomEmbedInit();
         playerListInit = new PlayerListInit();
+        sanctionInit = new SanctionInit();
 
         Thread tNickFeature = new Thread(nickInit);
         Thread tBotAbuseFeature = new Thread(baInit);
         Thread tCustomEmbedFeature = new Thread(customEmbedInit);
         Thread tCheckInFeature = new Thread(ciInit);
         Thread tPlayerListFeature = new Thread(playerListInit);
+        Thread tSanctionFeature = new Thread(sanctionInit);
 
         tNickFeature.setUncaughtExceptionHandler(aue);
         tNickFeature.setName("Nickname Thread");
@@ -126,7 +132,11 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
         tPlayerListFeature.setName("Player List Thread");
         tPlayerListFeature.start();
 
-        while (baFeature == null || nickFeature == null || customEmbedFeature == null || ciFeature == null || playerListMain == null) {
+        tSanctionFeature.setUncaughtExceptionHandler(aue);
+        tSanctionFeature.setName("Sanction Thread");
+        tSanctionFeature.start();
+
+        while (baFeature == null || nickFeature == null || customEmbedFeature == null || ciFeature == null || playerListMain == null || sanctionFeature == null) {
             try { Thread.sleep(1000); } catch (InterruptedException e) {}
             try {
                 baFeature = baInit.getBaFeature();
@@ -134,6 +144,7 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
                 ciFeature = ciInit.getThis();
                 customEmbedFeature = customEmbedInit.getFeature();
                 playerListMain = playerListInit.getPlayerListFeature();
+                sanctionFeature = sanctionInit.getSanctionFeature();
             }
             catch (NullPointerException ex) {}
         }
@@ -462,6 +473,7 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
                             baFeature.reload(msg);
                             nickFeature.reload(msg);
                             ciFeature.reload();
+                            sanctionFeature.reload();
                             log.info("Successfully Reloaded All Configurations");
                             embed.editEmbed(msg, "Configuration Reloaded",
                                     "**All Configurations Successfully Reloaded from config files**",
