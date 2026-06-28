@@ -31,8 +31,8 @@ public class AntiScamListener extends ListenerAdapter implements SanctionLogic {
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         if (event.getAuthor().isBot() || isTeamMember(event.getAuthor().getIdLong()) || event.getChannelType() == ChannelType.PRIVATE) return;
 
-        if (event.getMessage().getAttachments().size() > sanctionConfig.getMinAttachments() ||
-                countLinks(event.getMessage().getContentRaw()) > sanctionConfig.getMinLinks()) {
+        if (event.getMessage().getAttachments().size() >= sanctionConfig.getMinAttachments() ||
+                countLinks(event.getMessage().getContentRaw()) >= sanctionConfig.getMinLinks()) {
 
             violations.entrySet().removeIf(entry -> entry.getValue().hasTimedOut());
 

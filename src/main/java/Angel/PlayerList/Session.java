@@ -353,7 +353,7 @@ public class Session implements PlayerListLogic {
 
             m.addReaction(kickEmoji).queue();
             m.addReaction(cooldownEmoji).queue();
-            log.info("Kickvote in {}'s Session wasMessage {} Successfully", sessionName,  repost ? "Reposted" : "Posted");
+            log.info("Kickvote in {}'s Session Kickvote Message was {} Successfully", sessionName,  repost ? "Reposted" : "Posted");
         }, error -> log.error("Unable to {} the Kickvote Message in {}'s Session Channel", repost ? "Reposted" : "Posted", sessionName, error));
     }
 
@@ -384,6 +384,8 @@ public class Session implements PlayerListLogic {
         kickvoteReactions = new HashMap<>();
 
         postKickvoteMessage(false);
+
+        numOfBumps = 0;
 
         log.info("A Kickvote Has Been Initiated Against {} by {} in {}", targetKickvotePlayer, cmdUser.getEffectiveName(), sessionName);
     }
@@ -433,7 +435,7 @@ public class Session implements PlayerListLogic {
                                                                     "\n**If you haven't voted yet, please do so! If you have, thanks!**" : "")
         ));
 
-        if (numOfBumps >= 5) {
+        if (numOfBumps >= 3) {
             postKickvoteMessage(true);
             numOfBumps = 0;
         }
