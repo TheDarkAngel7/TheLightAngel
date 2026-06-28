@@ -128,7 +128,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             try {
                 Session session = sessionManager.getSessionByChannel(msg.getChannel().asTextChannel());
 
-                if (session.kickvoteInProgress() && !isTeamMember(msg.getAuthor().getIdLong())) {
+                if (session.kickvoteInProgress()) {
                     session.kickvoteWasBumped();
                 }
             }
