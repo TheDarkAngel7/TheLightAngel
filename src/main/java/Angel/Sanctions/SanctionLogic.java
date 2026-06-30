@@ -38,7 +38,6 @@ public interface SanctionLogic extends CommonLogic {
             .addEventListeners(sanctionMain, antiScamListener).build();
 
 
-
     @Override
     default Guild getGuild() {
         while (true) {
@@ -53,7 +52,7 @@ public interface SanctionLogic extends CommonLogic {
     default TextChannel getTeamBureauChannel() {
         return getGuild().getTextChannelsByName("team_bureau", true).getFirst();
     }
-    default String formatDurationString(String duration) {
+    default String formatDurationString(String duration) throws InvalidExpirationDateException {
         Pattern DURATION_PATTERN = Pattern.compile("^(\\d+)(mo?|[dhwy])$", Pattern.CASE_INSENSITIVE);
 
         if (duration == null || duration.trim().isEmpty()) {
