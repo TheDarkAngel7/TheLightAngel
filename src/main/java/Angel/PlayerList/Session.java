@@ -50,7 +50,7 @@ public class Session implements PlayerListLogic {
 
     private final CustomEmoji kickEmoji = getGuild().getEmojisByName("kick", true).getFirst();
     private final CustomEmoji cooldownEmoji = getGuild().getEmojisByName("cooldown", true).getFirst();
-    private final String kickvoteEmbedMessage = kickEmoji.getAsMention() + "**?**" +
+    private final String kickvoteEmbedMessage = kickEmoji.getAsMention() + " **?**" +
             "\n\n**During a kickvote, all session chatter is slowed until the kickvote is complete!**" +
             "\n\n**Vote to kick this player out with: `Pause Menu` ➡️ `Online` ➡️ `Players` ➡️ `?` ➡️ `Kick`**" +
             "\n\nReact to this message with: " +
@@ -428,9 +428,9 @@ public class Session implements PlayerListLogic {
         }
 
         kickvoteEmbed = kickvoteEmbed.setMessage(kickvoteEmbedMessage.replace("?", targetKickvotePlayer).concat(
-                "\n\nPlayers: ** " + getPlayerCount() + "**" +
+                "\n\nPlayers: **" + getPlayerCount() + "**" +
                     "\nVotes: **" + currentKickVotes + "/" + numberOfVotesNeeded + "**" +
-                        (kickvoteThresholdMet ? "**\n\nThreshold " + (currentKickVotes > numberOfVotesNeeded ? "Crossed" : "Met") + "!**" +
+                        (kickvoteThresholdMet ? "\n\n**Threshold " + (currentKickVotes > numberOfVotesNeeded ? "Crossed" : "Met") + "!**" +
                                                                    "\n**Don't Forget to React with ✅ when you see the leave message!**" +
                                                                     "\n**If you haven't voted yet, please do so! If you have, thanks!**" : "")
         ));
@@ -506,7 +506,7 @@ public class Session implements PlayerListLogic {
                 .map(Map.Entry::getKey)
                 .toList();
 
-        String result = kickEmoji.getAsMention() + "**" + targetKickvotePlayer + "**" +
+        String result = kickEmoji.getAsMention() + " **" + targetKickvotePlayer + "**" +
                 "\n\nReacted with " + kickEmoji.getAsMention() + ": " + votedForKick.stream()
                 .map(id -> "<@" + id + ">")
                 .collect(Collectors.joining(", ")) +

@@ -366,7 +366,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                    PlayerListMessage playerListMessage = session.getPlayerListMessage(msg, sortAlphabetically, useMentions);
 
                    if (session.isSessionChannelAccessible(msg.getAuthor().getIdLong())) {
-                       playerListMessage.sortListAlphabetically(sortAlphabetically).useMentions(false)
+                       playerListMessage.sortListAlphabetically(sortAlphabetically).useMentions(useMentions)
                                .setTargetChannel(msg.getChannel()).getPlayerListEmbedAction().queue();
                    }
                    else {
