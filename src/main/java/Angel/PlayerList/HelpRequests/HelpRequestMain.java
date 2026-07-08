@@ -40,7 +40,10 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                 session.closeHelpRequest(request, "Automatically Archived", true);
             }
             catch (InvalidSessionException e) {
-                aue.logCaughtException(Thread.currentThread(), e);
+                log.warn("Unable to parse a session channel from #{}", event.getChannel().getName());
+            }
+            catch (Exception e) {
+                log.warn("Unable to parse a session channel from onChannelUpdateArchived Event", e);
             }
         }
     }
@@ -289,7 +292,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
 
                     if (baCore.botAbuseIsCurrent(msg.getAuthor().getIdLong())) {
 
-                        queueEmbed = queueEmbed.setTargetChannel(mainConfig.dedicatedOutputChannel);
+                        queueEmbed.setTargetChannel(mainConfig.dedicatedOutputChannel);
 
                         mainConfig.dedicatedOutputChannel.sendMessage("**Unfortunately you are bot abused " + msg.getAuthor().getAsMention() + ", so your queue embed has been redirected here:**").queue();
                     }
@@ -307,11 +310,11 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                     QueueEmbed queueEmbed = new QueueEmbed(session, msg.getMember());
 
                     if (isTeamMember(msg.getMember()) || msg.getChannel().getIdLong() == session.getSessionChannel().getIdLong()) {
-                        queueEmbed = queueEmbed.setTargetChannel(msg.getChannel());
+                        queueEmbed.setTargetChannel(msg.getChannel());
                     }
 
                     else {
-                        queueEmbed = queueEmbed.setTargetChannel(mainConfig.dedicatedOutputChannel);
+                        queueEmbed.setTargetChannel(mainConfig.dedicatedOutputChannel);
                         msg.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions",
                                         "**I cannot print that out here but I will print it out in " + mainConfig.dedicatedOutputChannel.getAsMention() + "**", EmbedDesign.ERROR).getEmbed())
                                 .queue(m -> {
@@ -336,11 +339,13 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
             try {
                 QueueEmbed queueEmbed;
                 if (args.length == 1) {
-                    queueEmbed = new QueueEmbed(msg.getChannel().asThreadChannel().getParentChannel().getName(), msg.getMember()).setTargetChannel(msg.getChannel());
+                    queueEmbed = new QueueEmbed(msg.getChannel().asThreadChannel().getParentChannel().getName(), msg.getMember());
+
                 }
                 else {
-                    queueEmbed = new QueueEmbed(args[1], msg.getMember()).setTargetChannel(msg.getChannel());
+                    queueEmbed = new QueueEmbed(args[1], msg.getMember());
                 }
+                queueEmbed.setTargetChannel(msg.getChannel());
                 queueEmbed.getQueueEmbedAction().setMessageReference(msg).mentionRepliedUser(false).queue();
             }
             catch (InvalidSessionException e) {
@@ -404,7 +409,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
 
                 mainConfig.dedicatedOutputChannel.sendMessage(msg.getAuthor().getAsMention()).queue();
 
-                queueEmbed = queueEmbed.setTargetChannel(mainConfig.dedicatedOutputChannel);
+                queueEmbed.setTargetChannel(mainConfig.dedicatedOutputChannel);
             }
             queueEmbed.getQueueEmbedAction().queue();
         }

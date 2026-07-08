@@ -70,9 +70,8 @@ public class QueueEmbed implements PlayerListLogic {
         this.requester = requester;
     }
 
-    public QueueEmbed setTargetChannel(MessageChannel channel) {
+    public void setTargetChannel(MessageChannel channel) {
         this.targetChannel = channel;
-        return this;
     }
 
     public MessageCreateAction getQueueEmbedAction() {

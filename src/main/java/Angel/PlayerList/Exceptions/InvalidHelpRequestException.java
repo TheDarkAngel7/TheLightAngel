@@ -1,4 +1,4 @@
-package Angel.Exceptions;
+package Angel.PlayerList.Exceptions;
 
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 

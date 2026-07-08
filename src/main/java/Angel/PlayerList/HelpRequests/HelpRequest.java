@@ -1,6 +1,6 @@
 package Angel.PlayerList.HelpRequests;
 
-import Angel.Exceptions.InvalidHelpRequestException;
+import Angel.PlayerList.Exceptions.InvalidHelpRequestException;
 import Angel.PlayerList.Exceptions.InvalidSessionException;
 import Angel.PlayerList.PlayerListLogic;
 import Angel.PlayerList.Session;
@@ -86,24 +86,33 @@ public class HelpRequest implements PlayerListLogic {
                 .whenComplete((thread, throwable) -> {
                     if (throwable == null) {
                         this.targetThread = thread;
-                        targetThread.getManager().setAutoArchiveDuration(ThreadChannel.AutoArchiveDuration.TIME_1_HOUR).queue();
+                        targetThread.getManager().setAutoArchiveDuration(ThreadChannel.AutoArchiveDuration.TIME_1_HOUR).queue(
+                                success -> log.debug("Successfully Setup Thread Channel for {} with an Auto Archive Duration of 1 Hour", host.getEffectiveName()),
+                                error -> log.error("Failed to Setup Thread Channel for {}", host.getEffectiveName(), error)
+                        );
                         targetThread.join().and(targetThread.addThreadMember(host)).submit()
-                                .thenAccept((unused) ->
-                                        targetThread.sendMessage(
-                                                "**Welcome " + host.getAsMention() + " to your own thread channel for your organization! Please use this channel to communicate with your helpers as they join.**" +
-                                                "\n\nMax Helpers: **" + this.maxHelpers + "**" +
-                                                "\nRequested Help For: **" + this.request + "**" +
+                                .thenAccept(unused -> {
+                                    log.info("Successfully Created New Thread Channel for {}, Purpose: {}", host.getEffectiveName(), request);
+                                    targetThread.sendMessage(
+                                                    "**Welcome " + host.getAsMention() + " to your own thread channel for your organization! Please use this channel to communicate with your helpers as they join.**" +
+                                                            "\n\nMax Helpers: **" + this.maxHelpers + "**" +
+                                                            "\nRequested Help For: **" + this.request + "**" +
 
-                                                        "\n\n**__Commands__**" +
-                                                        "\n\n`" + mainConfig.commandPrefix + "startsale`: **This tells me you're starting your sale and you are no longer asking for anymore help. NOTE: Only use this command if you are starting before you have received all of your helpers, this already occurs automatically when you receive all of your helpers.**" +
-                                                "\n\n`" + mainConfig.commandPrefix + "requeue` or `" + mainConfig.commandPrefix + "req`: **This tells me you want your request for help requeued. Use this command if you had someone leave the sale or session and you need a replacement.**" +
-                                                "\n\n`" + mainConfig.commandPrefix + "helpers <# of Helpers>` (ex. `" + mainConfig.commandPrefix + "helpers 3`): **This tells me how many helpers you're wanting if it is now different from your original request for help.**" +
-                                                "\n\n`" + mainConfig.commandPrefix + "purpose <purpose>` (ex. `" + mainConfig.commandPrefix + "purpose 2MCs and bunker`): **This tells me the new purpose for the help request, you should update it before you requeue your request!**" +
-                                                "\n\n`" + mainConfig.commandPrefix + "newhost <New Host Mention>` (ex. `" + mainConfig.commandPrefix + "newhost @TheDarkAngel7`): **This tells me that one of the helpers is taking over as host of sales. Use this when you are finished with your sales and going to help one of your helpers.**")
-                                                .submit().thenAccept(m -> m.pin().queue())
-                                        );
+                                                            "\n\n**__Commands__**" +
+                                                            "\n\n`" + mainConfig.commandPrefix + "startsale`: **This tells me you're starting your sale and you are no longer asking for anymore help. NOTE: Only use this command if you are starting before you have received all of your helpers, this already occurs automatically when you receive all of your helpers.**" +
+                                                            "\n\n`" + mainConfig.commandPrefix + "requeue` or `" + mainConfig.commandPrefix + "req`: **This tells me you want your request for help requeued. Use this command if you had someone leave the sale or session and you need a replacement.**" +
+                                                            "\n\n`" + mainConfig.commandPrefix + "helpers <# of Helpers>` (ex. `" + mainConfig.commandPrefix + "helpers 3`): **This tells me how many helpers you're wanting if it is now different from your original request for help.**" +
+                                                            "\n\n`" + mainConfig.commandPrefix + "purpose <purpose>` (ex. `" + mainConfig.commandPrefix + "purpose 2MCs and bunker`): **This tells me the new purpose for the help request, you should update it before you requeue your request!**" +
+                                                            "\n\n`" + mainConfig.commandPrefix + "newhost <New Host Mention>` (ex. `" + mainConfig.commandPrefix + "newhost @TheDarkAngel7`): **This tells me that one of the helpers is taking over as host of sales. Use this when you are finished with your sales and going to help one of your helpers.**")
+                                            .submit().thenAccept(m -> m.pin().queue(
+                                                    success -> log.debug("Successfully Pinned the Getting Started Message to Thread Channel!"),
+                                                error -> log.error("Unable to Pin the Getting Started Message to Thread Channel", error)
+                                            ));
+                                        });
                     }
-                    else aue.logCaughtException(Thread.currentThread(), throwable);
+                    else {
+                        log.error("Unable to Create New Thread Channel for {}", host.getEffectiveName(), throwable);
+                    }
                 });
     }
 
@@ -187,13 +196,13 @@ public class HelpRequest implements PlayerListLogic {
     public List<Member> getHelpers() {
         List<Member> helpers = new ArrayList<>(targetThread.getMembers());
         int index = 0;
-        do {
+        while (index < helpers.size()) {
             if (helpers.get(index).getIdLong() == targetThread.getSelfThreadMember().getIdLong() ||
             helpers.get(index).getIdLong() == host.getIdLong()) {
                 helpers.remove(index);
             }
             index++;
-        } while (index < helpers.size());
+        }
 
         return helpers;
     }
