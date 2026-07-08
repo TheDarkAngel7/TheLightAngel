@@ -42,6 +42,9 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
             catch (InvalidSessionException e) {
                 log.warn("Unable to parse a session channel from #{}", event.getChannel().getName());
             }
+            catch (IndexOutOfBoundsException e ) {
+                log.warn("A Thread Channel was just archieved and I could not find it in memory, likely due to it already getting closed");
+            }
             catch (Exception e) {
                 log.warn("Unable to parse a session channel from onChannelUpdateArchived Event", e);
             }
@@ -53,10 +56,10 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
         if (isValidSaleThreadChannel(event.getThread()) && !event.getThread().isArchived() && !event.getThread().isLocked()) {
             try {
                 Session session = sessionManager.getSessionByName(event.getThread().getParentChannel().getName());
-                HelpRequest helpRequest = session.getHelpRequestByHost(event.getMember());
+                HelpRequest helpRequest = session.getHelpRequestByThreadChannel(event.getThread());
 
                 if (event.getMember().getIdLong() == helpRequest.getHost().getIdLong()) {
-                    session.closeHelpRequest(event.getMember(), "Host Left Thread Channel");
+                    session.closeHelpRequest(helpRequest, "Host Left Thread Channel", false);
                 }
                 else {
                     event.getThread().sendMessage(event.getThreadMember().getMember().getEffectiveName() + " has left the thread." +
@@ -68,8 +71,6 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
             catch (InvalidSessionException e) {
                 throw new RuntimeException(e);
             }
-
-
         }
 
         if (event.getThread().getMemberCount() == 1) {
@@ -138,48 +139,53 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                     msg.getChannel().sendMessage("**Whoops, those commands are disabled in these threads**").queue();
                     return;
                 }
-                switch (args[0].toLowerCase()) {
-                    case "start":
-                    case "startsale":
-                        helpRequest.noLongerWaitingForHelpers();
-                        break;
-                    case "req":
-                    case "requeue":
-                        helpRequest.requeueRequest();
-                        break;
-                    case "helper":
-                    case "helpers":
-                        int helpersNeeded;
+                if (msg.getAuthor().getIdLong() == helpRequest.getHost().getIdLong() || isTeamMember(msg.getAuthor().getIdLong())) {
+                    switch (args[0].toLowerCase()) {
+                        case "start":
+                        case "startsale":
+                            helpRequest.noLongerWaitingForHelpers();
+                            break;
+                        case "req":
+                        case "requeue":
+                            helpRequest.requeueRequest();
+                            break;
+                        case "helper":
+                        case "helpers":
+                            int helpersNeeded;
 
-                        try {
-                            helpersNeeded = Integer.parseInt(args[1]);
-                        }
-                        catch (NumberFormatException e) {
-                            helpRequest.getThreadChannel().sendMessage("**Unable to parse an integer from that command.**\n\nSyntax: `" + mainConfig.commandPrefix + " helpers <# of Helpers>`\nExample:  `" + mainConfig.commandPrefix + " helpers 3`").queue();
-                            return;
-                        }
+                            try {
+                                helpersNeeded = Integer.parseInt(args[1]);
+                            }
+                            catch (NumberFormatException e) {
+                                helpRequest.getThreadChannel().sendMessage("**Unable to parse an integer from that command.**\n\nSyntax: `" + mainConfig.commandPrefix + " helpers <# of Helpers>`\nExample:  `" + mainConfig.commandPrefix + " helpers 3`").queue();
+                                return;
+                            }
 
-                        helpRequest.setNewMaxPlayers(helpersNeeded);
-                        break;
-                    case "purpose":
-                        int index = 1;
+                            helpRequest.setNewMaxPlayers(helpersNeeded);
+                            break;
+                        case "purpose":
+                            int index = 1;
 
-                        String newPurpose = "";
+                            String newPurpose = "";
 
-                        do {
-                            newPurpose = newPurpose.concat(args[index] + " ");
-                        } while (++index < args.length);
+                            do {
+                                newPurpose = newPurpose.concat(args[index] + " ");
+                            } while (++index < args.length);
 
-                        helpRequest.setNewPurpose(newPurpose);
-                        break;
-                    case "newhost":
-                        helpRequest.setNewHost(msg.getMentions().getMembers().getFirst());
-                        break;
-                    case "close":
-                    case "closed":
-                    case "closesale":
-                        session.closeHelpRequest(helpRequest, "Manually Closed by " + event.getAuthor().getAsMention(), false);
-                        break;
+                            helpRequest.setNewPurpose(newPurpose);
+                            break;
+                        case "newhost":
+                            helpRequest.setNewHost(msg.getMentions().getMembers().getFirst());
+                            break;
+                        case "close":
+                        case "closed":
+                        case "closesale":
+                            session.closeHelpRequest(helpRequest, "Manually Closed by " + event.getAuthor().getAsMention(), false);
+                            break;
+                        case "kick":
+                            helpRequest.kickHelper(msg.getMentions().getMembers().getFirst());
+                            break;
+                    }
                 }
             }
             else {

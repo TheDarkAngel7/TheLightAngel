@@ -989,9 +989,6 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 msg.getChannel().sendMessageEmbeds(new MessageEntry("Command Usage", "Syntax: `" + mainConfig.commandPrefix + "kick <PlayerName or Mention>", EmbedDesign.HELP).getEmbed(false)).queue();
             }
         }
-        else {
-            msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Usage", "**The usage of this command is restricted to session channels only!**", EmbedDesign.ERROR).getEmbed()).queue();
-        }
     }
 
     private MessageCreateAction getHeadCountEmbed(long cmdUserLong, MessageChannel channel) {

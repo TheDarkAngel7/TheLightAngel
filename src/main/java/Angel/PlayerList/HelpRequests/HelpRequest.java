@@ -6,6 +6,7 @@ import Angel.PlayerList.PlayerListLogic;
 import Angel.PlayerList.Session;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.ThreadMember;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import org.apache.logging.log4j.LogManager;
@@ -117,10 +118,12 @@ public class HelpRequest implements PlayerListLogic {
     }
 
     public void addHelper(Member member) {
-        targetThread.addThreadMember(member).submit().thenRun(() -> {
+        targetThread.addThreadMember(member).queue(success -> {
 
             targetThread.sendMessage("**" + member.getAsMention() + " has joined your sale thread channel!**" +
                     (!receivedAllHelpers() ? "\n\n**Waiting for " + getHelpersToFind() + " more players**" : "")).queue();
+
+            log.info("{} has joined as a Helper for {}'s sale thread. Helper count: {}", member.getEffectiveName(), host.getEffectiveName(), getCurrentNumberOfHelpers());
 
             if (receivedAllHelpers()) {
                 noLongerWaitingForHelpers();
@@ -144,24 +147,41 @@ public class HelpRequest implements PlayerListLogic {
 
                 targetThread.sendMessage(result).queue();
             }
-        });
+        },
+                error -> log.error("{} was unable to join {} sale thread", member.getEffectiveName(), host.getEffectiveName(), error));
     }
 
-    public void removeHelper(Member member) {
-        targetThread.removeThreadMember(member).queue();
+    public void kickHelper(Member member) {
+        targetThread.removeThreadMember(member).queue(
+                success -> log.info("{} was kicked from {}'s sale channel", member.getEffectiveName(), host.getEffectiveName()),
+                error -> log.error("Unable to kick {} from {}'s sale channel", member.getEffectiveName(), host.getEffectiveName(), error)
+                );
     }
 
     public void setNewHost(Member m) {
-        if (!targetThread.getMembers().contains(m)) {
+        if (!getHelpers().contains(m)) {
             targetThread.addThreadMember(m).queue();
         }
         host = m;
+
+        targetThread.sendMessage("**" + host.getAsMention() + " was successfully set as the new host for the sale!**").queue();
+
+        log.debug("[Thread ID: {}] New Host is now {} ", targetThread.getIdLong(), host.getEffectiveName());
+
+        updateThreadTitle();
     }
 
     public void setNewPurpose(String purpose) {
         this.request = purpose;
+        targetThread.sendMessage("The purpose of this sale is now **" + purpose + "**").queue();
 
-        targetThread.getManager().setName(host.getEffectiveName() + ": " + purpose).queue();
+        log.debug("[Thread ID: {}] {}'s new sale thread purpose is \"{}\"", targetThread.getIdLong(), host.getEffectiveName(), purpose);
+
+        updateThreadTitle();
+    }
+
+    private void updateThreadTitle() {
+        targetThread.getManager().setName(host.getEffectiveName() + ": " + request).queue();
     }
 
     public void setNewMaxPlayers(int newMaxPlayers) {
@@ -194,17 +214,18 @@ public class HelpRequest implements PlayerListLogic {
     }
 
     public List<Member> getHelpers() {
-        List<Member> helpers = new ArrayList<>(targetThread.getMembers());
+        List<ThreadMember> helpers = new ArrayList<>(targetThread.getThreadMembers());
         int index = 0;
         while (index < helpers.size()) {
-            if (helpers.get(index).getIdLong() == targetThread.getSelfThreadMember().getIdLong() ||
+            if (helpers.get(index).getIdLong() == targetThread.getOwnerIdLong() ||
             helpers.get(index).getIdLong() == host.getIdLong()) {
                 helpers.remove(index);
+                index = -1;
             }
             index++;
         }
 
-        return helpers;
+        return helpers.stream().map(ThreadMember::getMember).toList();
     }
 
 

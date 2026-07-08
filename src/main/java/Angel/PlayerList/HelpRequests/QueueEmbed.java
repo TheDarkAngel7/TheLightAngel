@@ -110,7 +110,7 @@ public class QueueEmbed implements PlayerListLogic {
                     .setThumbnail("attachment://safe-logo.png");
         }
         else {
-            builder = builder.setTitle(targetSession.getSessionName() + "'s Queue (" + targetSession.getSaleQueueSize() + ")")
+            builder = builder.setTitle(targetSession.getSessionName() + "'s Sale Queue (" + targetSession.getSaleQueueSize() + ")")
                     .setThumbnail("attachment://" + targetSession.getSessionName().toLowerCase() + "_128sm.png");
         }
 

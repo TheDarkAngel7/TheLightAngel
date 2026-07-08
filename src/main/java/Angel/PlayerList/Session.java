@@ -695,12 +695,15 @@ public class Session implements PlayerListLogic {
     public void closeHelpRequest(HelpRequest request, String reason, boolean silentClose) {
         if (helpRequests.remove(request)) {
             if (!silentClose) {
-                request.getThreadChannel().sendMessage("The Thread Channel has been locked and archived, Reason: **" + reason + "**").queue();
+                request.getThreadChannel().sendMessage("The Thread Channel has been locked and archived, Reason: **" + reason + "**").submit().thenRun(() -> {
+                    request.getThreadChannel().getManager().setLocked(true).setArchived(true).and(request.getThreadChannel().leave()).queue();
+                });
+            }
+            else {
+                request.getThreadChannel().getManager().setLocked(true).setArchived(true).and(request.getThreadChannel().leave()).queue();
             }
             log.info("{}'s thread channel with the help request of \"{}\" has been closed and locked with the reason: {}",
                     request.getHost().getEffectiveName(), request.getRequest(), reason);
-
-            request.getThreadChannel().getManager().setLocked(true).setArchived(true).and(request.getThreadChannel().leave()).queue();
         }
 
         else {
