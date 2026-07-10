@@ -207,7 +207,21 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
         try {
             Session session = sessionManager.getSessionByChannel(msg.getChannel().asTextChannel());
 
-            session.createNewHelpRequest(msg);
+            HelpRequest helpRequest = session.getHelpRequestByHost(msg.getAuthor().getIdLong());
+
+            if (helpRequest != null && helpRequest.isWaitingForHelpers()) {
+                msg.replyEmbeds(new MessageEntry("Open Help Request",
+                        "**You Already have an open help request... please navigate back to your thread channel " + helpRequest.getThreadChannel().getAsMention() + "**" +
+                                "\n\nYou may modify the channel as necessary using the commands in the pinned messages.", EmbedDesign.ERROR).getEmbed(false)).queue(m -> {
+                                    m.delete().queueAfter(30, TimeUnit.SECONDS);
+                                    msg.delete().queueAfter(30, TimeUnit.SECONDS);
+                });
+            }
+            else if (helpRequest != null && !helpRequest.isWaitingForHelpers()) {
+                session.closeHelpRequest(helpRequest, "Creating New Help Request so there's no duplicates", false);
+                session.createNewHelpRequest(msg);
+            }
+            else session.createNewHelpRequest(msg);
             /* For Testing Purposes this has been noted out
 
             if (session.isPlayerInSession(msg.getMember())) {
