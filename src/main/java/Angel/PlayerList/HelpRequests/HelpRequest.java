@@ -41,14 +41,19 @@ public class HelpRequest implements PlayerListLogic {
         so then we try to grab the number from the last character of the first argument args[0]
          */
 
-        boolean playerJoinedMaxHelpersWithFirstArg = false;
+        boolean playerJoinedMaxHelpersWithFirstArg = true;
         try {
-            this.maxHelpers = Integer.parseInt(args[1]);
+            if (args[0].charAt(args[0].length() - 1) == 'm') {
+                this.maxHelpers = Integer.parseInt(args[0].substring(args[0].length() - 2));
+            }
+            else {
+                this.maxHelpers = Integer.parseInt(args[0].substring(args[0].length() - 1));
+            }
         }
         catch (NumberFormatException e) {
             try {
-                playerJoinedMaxHelpersWithFirstArg = true;
-                this.maxHelpers = Integer.parseInt(args[0].substring(args[0].length() - 1));
+                playerJoinedMaxHelpersWithFirstArg = false;
+                this.maxHelpers = Integer.parseInt(args[1]);
             }
             catch (NumberFormatException ex) {
                 throw new InvalidHelpRequestException(cmd.getChannel().asTextChannel(), "Invalid Number of Helpers");
@@ -127,25 +132,6 @@ public class HelpRequest implements PlayerListLogic {
 
             if (receivedAllHelpers()) {
                 noLongerWaitingForHelpers();
-
-                String result = "**This sale has received all of its helpers, " +
-                        "so it has been removed from the session's sale queue.**" +
-                        "\n**Don't Forget to Invite these people to your organization " + host.getAsMention() + "!**" +
-                        "\n\nHelpers: ";
-
-                List<Member> helpers = getHelpers();
-
-                int index = 0;
-
-                do {
-                    result = result.concat(helpers.get(index).getAsMention());
-
-                    if (index < helpers.size() - 1) {
-                        result = result.concat(", ");
-                    }
-                } while (++index < helpers.size());
-
-                targetThread.sendMessage(result).queue();
             }
         },
                 error -> log.error("{} was unable to join {} sale thread", member.getEffectiveName(), host.getEffectiveName(), error));
@@ -193,11 +179,34 @@ public class HelpRequest implements PlayerListLogic {
 
     public void noLongerWaitingForHelpers() {
         isWaitingForHelpers = false;
+
+        String result = "**This sale has received all of its helpers, " +
+                "so it has been removed from the session's sale queue.**" +
+                "\n**Don't Forget to Invite these people to your organization " + host.getAsMention() + "!**" +
+                "\n\nHelpers: ";
+
+        List<Member> helpers = getHelpers();
+
+        int index = 0;
+
+        do {
+            result = result.concat(helpers.get(index).getAsMention());
+
+            if (index < helpers.size() - 1) {
+                result = result.concat(", ");
+            }
+        } while (++index < helpers.size());
+
+        targetThread.sendMessage(result).queue();
     }
 
     public void requeueRequest() {
         requestCreationTime = ZonedDateTime.now();
         isWaitingForHelpers = true;
+        targetThread.sendMessage("**The sale has been requeued!**" +
+                "\n\nHost: **" + host.getAsMention() + "**" +
+                "\nPurpose: **" + request + "**" +
+                "\nHelpers Needed: **" + getHelpersToFind() + "**").queue();
     }
 
     public boolean receivedAllHelpers() {

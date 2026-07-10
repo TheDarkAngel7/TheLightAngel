@@ -273,9 +273,20 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
             List<Member> mentionedPlayers = msg.getMentions().getMembers();
 
             if (mentionedPlayers.size() == 1) {
-                helpRequest = session.getHelpRequestByHost(mentionedPlayers.getFirst());
+                try {
+                    helpRequest = session.getHelpRequestByHost(mentionedPlayers.getFirst());
 
-                helpRequest.addHelper(msg.getMember());
+                    helpRequest.addHelper(msg.getMember());
+                }
+                catch (NullPointerException e) {
+                    msg.replyEmbeds(new MessageEntry("No Sale Found",
+                            "**Unable to Find a sale awaiting helpers from that mention. Are you sure that player is looking for help?**", EmbedDesign.ERROR).getEmbed(false))
+                            .queue(m -> {
+                                m.delete().queueAfter(30, TimeUnit.SECONDS);
+                                msg.delete().queueAfter(30, TimeUnit.SECONDS);
+                            });
+                    return;
+                }
             }
             else {
                 msg.replyEmbeds(new MessageEntry("No Sale Found", "**Unable to Find a sale from that phrase.**" +
