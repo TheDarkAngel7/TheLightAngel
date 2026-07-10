@@ -12,6 +12,8 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,6 +26,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 public class SessionManager implements PlayerListLogic {
     private final Logger log = LogManager.getLogger(SessionManager.class);
@@ -351,6 +354,19 @@ public class SessionManager implements PlayerListLogic {
         } while (index < sessions.size());
 
         return tally;
+    }
+
+    public boolean isParentChannelASessionChannel(ThreadChannel threadChannel) {
+        List<MessageChannel> sessionChannels = getSessions().stream().map(Session::getSessionChannel).collect(Collectors.toList());
+        int index = 0;
+
+        do {
+            if (sessionChannels.get(index++).getIdLong() == threadChannel.getParentMessageChannel().getIdLong()) {
+                return true;
+            }
+        } while (index < sessionChannels.size());
+
+        return false;
     }
 
     public boolean usedInSessionChannel(Message msg) {

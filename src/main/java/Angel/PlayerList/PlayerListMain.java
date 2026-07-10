@@ -5,6 +5,7 @@ import Angel.EmbedDesign;
 import Angel.MessageEntry;
 import Angel.PlayerList.Exceptions.InvalidSessionException;
 import Angel.PlayerList.Exceptions.KickvoteException;
+import Angel.PlayerList.HelpRequests.HelpRequestMain;
 import Angel.TargetChannelSet;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
@@ -16,6 +17,7 @@ import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionRemoveEvent;
+import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.FileUpload;
@@ -39,6 +41,11 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
     private final List<String> commands = Arrays.asList("playersm", "playerm", "plm", "playersam", "playeram", "plam",
             "playersa", "playera", "pla", "players", "player", "pl", "plma", "playersma", "playerma",
             "host", "shot", "headcount", "hc", "k", "kick", "reset", "resetperm", "resetperms", "resetpermissions", "resetpermission");
+
+    @Override
+    public void onReady(@NotNull ReadyEvent event) {
+        event.getJDA().addEventListener(new HelpRequestMain());
+    }
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
@@ -982,9 +989,6 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                 msg.getChannel().sendMessageEmbeds(new MessageEntry("Command Usage", "Syntax: `" + mainConfig.commandPrefix + "kick <PlayerName or Mention>", EmbedDesign.HELP).getEmbed(false)).queue();
             }
         }
-        else {
-            msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Usage", "**The usage of this command is restricted to session channels only!**", EmbedDesign.ERROR).getEmbed()).queue();
-        }
     }
 
     private MessageCreateAction getHeadCountEmbed(long cmdUserLong, MessageChannel channel) {
@@ -1016,10 +1020,12 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         while (index < sessionList.size()) {
             Session currentSession = sessionList.get(index);
 
+            int numOfHelpRequests = currentSession.getSaleQueueSize();
+
             embedBuilder = switch (currentSession.getStatus()) {
                 case ONLINE, FRESH_ONLINE ->
                         embedBuilder.addField(currentSession.getSessionName(), "**" + currentSession.getPlayerCount() + " Player" + (currentSession.getPlayerCount() == 1 ? "" : "s") + "**" +
-
+                                (numOfHelpRequests > 0 ? "\n\nHelp Requests: **" + numOfHelpRequests + "**"  : "") +
                                 (!cmdUser.hasPermission(currentSession.getSessionChannel(), Permission.VIEW_CHANNEL) ? "\n\n:lock: **You Do Not Have Access to " + currentSession.getSessionName() + "**" : ""), false);
 
                 case OFFLINE -> embedBuilder.addField(currentSession.getSessionName(), "***Session is Offline***", false);
@@ -1046,7 +1052,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
         return commands.contains(cmd.toLowerCase());
     }
 
-    private FileUpload getSAFECrewLogo() {
+    public FileUpload getSAFECrewLogo() {
         InputStream resourceStream = getClass().getResourceAsStream("/safe-logo.png");
         FileUpload thumbnail = FileUpload.fromData(resourceStream, "safe-logo.png");
 
