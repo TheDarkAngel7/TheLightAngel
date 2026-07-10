@@ -216,10 +216,8 @@ public class Session implements PlayerListLogic {
 
                             channel.sendMessage("@everyone").queue();
                             channel.sendMessageEmbeds(new MessageEntry("Session Pending Restart", ":warning: **Heads up " + hr.getHost().getAsMention() + "! The session is going to restart soon! " +
-                                    "Since you have not received all of your helpers, this channel has been locked. Please disband your CEO/MC slot if you have one and leave the session, " +
-                                    "we don't want your sales to be in progress when the restart begins!**", EmbedDesign.WARNING).getEmbed(false)).queue();
+                                    "Since you have not received all of your helpers, this channel has been locked.**", EmbedDesign.WARNING).getEmbed(false)).queue();
                             closeHelpRequest(hr.getHost(), "Session Pending Restart");
-                            channel.leave().queue();
                         }
                         else {
                             channel.sendMessage("@everyone").queue();
@@ -236,9 +234,10 @@ public class Session implements PlayerListLogic {
                         closeHelpRequest(hr.getHost(), "Session Offline");
                     }
                     else {
-                        channel.sendMessage(":x: **The Session has gone offline, please wrap up your sales as soon as possible.**").queue();
+                        channel.sendMessage(":x: **The Session has gone offline, please wrap up your sales as soon as possible.**").submit().thenRun(() -> channel.leave().queue());
                     }
                 });
+                helpRequests.clear();
             }
 
         }
@@ -693,6 +692,7 @@ public class Session implements PlayerListLogic {
     }
 
     public void closeHelpRequest(HelpRequest request, String reason, boolean silentClose) {
+        if (request == null) return;
         if (helpRequests.remove(request)) {
             if (!silentClose) {
                 request.getThreadChannel().sendMessage("The Thread Channel has been locked and archived, Reason: **" + reason + "**").submit().thenRun(() -> {
@@ -719,12 +719,12 @@ public class Session implements PlayerListLogic {
         List<HelpRequest> saleQueue = new ArrayList<>();
 
         int index = 0;
-        do {
+        while (index < helpRequests.size()) {
             if (helpRequests.get(index).isWaitingForHelpers()) {
                 saleQueue.add(helpRequests.get(index));
             }
             index++;
-        } while (index < helpRequests.size());
+        }
 
         if (sort) {
             return saleQueue.stream().sorted(Comparator.comparing(HelpRequest::getRequestCreationTime)).toList();
@@ -747,12 +747,13 @@ public class Session implements PlayerListLogic {
 
         HelpRequest helpRequest = null;
 
-        do {
+        while (index < helpRequests.size()){
             if (helpRequests.get(index).getHost().getIdLong() == discordID) {
                 helpRequest = helpRequests.get(index);
                 break;
             }
-        } while (++index < helpRequests.size());
+            index++;
+        }
 
         return helpRequest;
     }
@@ -766,13 +767,14 @@ public class Session implements PlayerListLogic {
 
         HelpRequest helpRequest = null;
 
-        do {
+        while (index < helpRequests.size()) {
             List<Long> helpersDiscordIDs = helpRequests.get(index).getHelpers().stream().map(Member::getIdLong).toList();
             if (helpersDiscordIDs.contains(discordID)) {
                 helpRequest = helpRequests.get(index);
                 break;
             }
-        } while (++index < helpRequests.size());
+            index++;
+        }
 
         return helpRequest;
     }
@@ -786,12 +788,13 @@ public class Session implements PlayerListLogic {
 
         HelpRequest helpRequest = null;
 
-        do {
+        while (index < helpRequests.size()) {
             if (helpRequests.get(index).getThreadChannel().getIdLong() == channelID) {
                 helpRequest = helpRequests.get(index);
                 break;
             }
-        } while (++index < helpRequests.size());
+            index++;
+        }
 
         return helpRequest;
     }

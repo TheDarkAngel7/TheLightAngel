@@ -186,6 +186,9 @@ public class HelpRequest implements PlayerListLogic {
 
     public void setNewMaxPlayers(int newMaxPlayers) {
         this.maxHelpers = newMaxPlayers;
+        targetThread.sendMessage("The New Maximum Number of Helpers is now **" + maxHelpers + "**").queue();
+
+        log.debug("[Thread ID: {}] The new maximum number of helpers is now {} for {}'s sale", targetThread.getIdLong(), maxHelpers, host.getEffectiveName());
     }
 
     public void noLongerWaitingForHelpers() {

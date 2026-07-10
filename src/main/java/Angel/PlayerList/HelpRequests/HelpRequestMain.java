@@ -15,7 +15,6 @@ import net.dv8tion.jda.api.events.channel.update.ChannelUpdateArchivedEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.events.thread.member.ThreadMemberLeaveEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
@@ -40,10 +39,10 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                 session.closeHelpRequest(request, "Automatically Archived", true);
             }
             catch (InvalidSessionException e) {
-                log.warn("Unable to parse a session channel from #{}", event.getChannel().getName());
+                log.warn("ChannelUpdateArchivedEvent: Unable to parse a session channel from #{}", event.getChannel().getName());
             }
-            catch (IndexOutOfBoundsException e ) {
-                log.warn("A Thread Channel was just archieved and I could not find it in memory, likely due to it already getting closed");
+            catch (IndexOutOfBoundsException e) {
+                log.warn("ChannelUpdateArchivedEvent: A Thread Channel was just archived and I could not find it in memory, likely due to it already getting closed");
             }
             catch (Exception e) {
                 log.warn("Unable to parse a session channel from onChannelUpdateArchived Event", e);
@@ -63,19 +62,14 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                 }
                 else {
                     event.getThread().sendMessage(event.getThreadMember().getMember().getEffectiveName() + " has left the thread." +
-                            "\n\n**If you need another helper, be sure to update the purpose with the sales that you still need to do (see pinned message), " +
-                            "and then you can use `" + mainConfig.commandPrefix + "requeue`**" +
-                            "\n\n**Otherwise if you're finished with your sales and nobody has sales to do, just use `" + mainConfig.commandPrefix + "close`**").queue();
+                            (!helpRequest.isWaitingForHelpers() ? "\n\n**If you need another helper, be sure to update the purpose with the sales that you still need to do (see pinned message), " +
+                                                                  "and then you can use `" + mainConfig.commandPrefix + "requeue`**" : "") +
+                            "\n\n**If you're finished with your sales and nobody has sales to do, just use `" + mainConfig.commandPrefix + "close`**").queue();
                 }
             }
             catch (InvalidSessionException e) {
-                throw new RuntimeException(e);
+                log.warn("ThreadMemberLeaveEvent: Unable to parse a session channel from #{}", event.getThread().getParentMessageChannel().getName());
             }
-        }
-
-        if (event.getThread().getMemberCount() == 1) {
-            event.getThread().getManager().setLocked(true).setArchived(true)
-                    .and(event.getThread().leave()).queue();
         }
     }
 
@@ -95,15 +89,6 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
         sessionManager.getSessions().forEach(s -> {
             s.closeHelpRequest(event.getUser().getIdLong(), "Host has left the server");
         });
-    }
-
-    @Override
-    public void onMessageReactionAdd(@NotNull MessageReactionAddEvent event) {
-        Message originalMessage = event.getChannel().getHistory().getMessageById(event.getMessageIdLong());
-
-        if (event.getReaction().getEmoji().getName().equalsIgnoreCase("inv") && sessionManager.usedInSessionChannel(originalMessage)) {
-            inviteCmd(originalMessage);
-        }
     }
 
     @Override
@@ -185,6 +170,10 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                         case "kick":
                             helpRequest.kickHelper(msg.getMentions().getMembers().getFirst());
                             break;
+                        case "queue":
+                        case "q":
+                            queueCmd(msg);
+                            break;
                     }
                 }
             }
@@ -195,6 +184,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                         lookingForCmd(msg);
                         break;
                     case "inv":
+                    case "invite":
                     case "join":
                         inviteCmd(msg);
                         break;
@@ -275,7 +265,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
             }
             else {
                 msg.replyEmbeds(new MessageEntry("No Sale Found", "**Unable to Find a sale from that phrase.**" +
-                        "\nRemember, you need to either reply to the original LF message by the host or you can also use ` " + mainConfig.commandPrefix + "inv <@mention>`", EmbedDesign.ERROR).getEmbed()).queue();
+                        "\nRemember, you need to either reply to the original LF message by the host or you can also use `" + mainConfig.commandPrefix + "inv <@mention>`", EmbedDesign.ERROR).getEmbed()).queue();
                 return;
             }
         }
@@ -380,6 +370,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                 if (accessibleSessions.size() == 1) {
                     try {
                         queueEmbed = new QueueEmbed(accessibleSessions.getFirst().getSessionName(),  msg.getAuthor().getIdLong());
+                        queueEmbed.setTargetChannel(mainConfig.dedicatedOutputChannel);
                     }
                     catch (InvalidSessionException e) {
                         throw new RuntimeException(e);
@@ -394,6 +385,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
             else if (args.length == 2) {
                 try {
                     queueEmbed = new QueueEmbed(args[1], msg.getAuthor().getIdLong());
+                    queueEmbed.setTargetChannel(mainConfig.dedicatedOutputChannel);
                 }
                 catch (InvalidSessionException e) {
                     msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... this does not appear to belong to a session that's currently running!**" +
@@ -427,17 +419,17 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
 
         int index = 0;
 
-        do {
+        while (index < sessions.size()) {
             helpRequests.addAll(sessions.get(index++).getHelpRequests());
-        } while (index < sessions.size());
+        }
 
         index = 0;
 
-        do {
+        while (index < helpRequests.size()) {
             if (helpRequests.get(index++).getThreadChannel().getIdLong() == tc.getIdLong()) {
                 return true;
             }
-        } while (index < helpRequests.size());
+        }
 
         return false;
     }
