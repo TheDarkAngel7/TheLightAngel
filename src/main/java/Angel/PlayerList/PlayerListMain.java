@@ -40,7 +40,8 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
     private final List<String> commands = Arrays.asList("playersm", "playerm", "plm", "playersam", "playeram", "plam",
             "playersa", "playera", "pla", "players", "player", "pl", "plma", "playersma", "playerma",
-            "host", "shot", "headcount", "hc", "k", "kick", "reset", "resetperm", "resetperms", "resetpermissions", "resetpermission");
+            "host", "shot", "headcount", "hc", "k", "kick", "reset", "resetperm", "resetperms", "resetpermissions", "resetpermission",
+            "queue", "q", "lfp", "lf", "inv", "invite", "join");
 
     @Override
     public void onReady(@NotNull ReadyEvent event) {
