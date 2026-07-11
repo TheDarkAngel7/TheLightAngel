@@ -109,7 +109,8 @@ public class HelpRequest implements PlayerListLogic {
                                                             "\n\n`" + mainConfig.commandPrefix + "requeue` or `" + mainConfig.commandPrefix + "req`: **This tells me you want your request for help requeued. Use this command if you had someone leave the sale or session and you need a replacement.**" +
                                                             "\n\n`" + mainConfig.commandPrefix + "helpers <# of Helpers>` (ex. `" + mainConfig.commandPrefix + "helpers 3`): **This tells me how many helpers you're wanting if it is now different from your original request for help.**" +
                                                             "\n\n`" + mainConfig.commandPrefix + "purpose <purpose>` (ex. `" + mainConfig.commandPrefix + "purpose 2MCs and bunker`): **This tells me the new purpose for the help request, you should update it before you requeue your request!**" +
-                                                            "\n\n`" + mainConfig.commandPrefix + "newhost <New Host Mention>` (ex. `" + mainConfig.commandPrefix + "newhost @TheDarkAngel7`): **This tells me that one of the helpers is taking over as host of sales. Use this when you are finished with your sales and going to help one of your helpers.**")
+                                                            "\n\n`" + mainConfig.commandPrefix + "newhost <New Host Mention>` (ex. `" + mainConfig.commandPrefix + "newhost @TheDarkAngel7`): **This tells me that one of the helpers is taking over as host of sales. Use this when you are finished with your sales and going to help one of your helpers.**" +
+                                                            "\n\n`" + mainConfig.commandPrefix + "close` **This tells me you're done with this thread and I can close it, you may use this at the end of your sale and nobody else has sales, or if you created this thread in error.**")
                                             .submit().thenAccept(m -> m.pin().queue(
                                                     success -> log.debug("Successfully Pinned the Getting Started Message to Thread Channel!"),
                                                 error -> log.error("Unable to Pin the Getting Started Message to Thread Channel", error)
@@ -183,7 +184,7 @@ public class HelpRequest implements PlayerListLogic {
         String result = "**This sale has received all of its helpers, " +
                 "so it has been removed from the session's sale queue.**" +
                 "\n**Don't Forget to Invite these people to your organization " + host.getAsMention() + "!**" +
-                "\n\nHelpers: ";
+                "\n\nHelpers: **";
 
         List<Member> helpers = getHelpers();
 
@@ -197,7 +198,9 @@ public class HelpRequest implements PlayerListLogic {
             }
         } while (++index < helpers.size());
 
-        targetThread.sendMessage(result).queue();
+        targetThread.sendMessage(result.concat("**" +
+                "\n\n**Players can no longer join this thread via commands. You may still manually add players to this thread by `@Mention` them here.**" +
+                "\n**When you're done with this thread you may also use `" + mainConfig.commandPrefix + "close` when this channel is no longer needed**")).queue();
     }
 
     public void requeueRequest() {

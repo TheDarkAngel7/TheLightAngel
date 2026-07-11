@@ -165,6 +165,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                         case "close":
                         case "closed":
                         case "closesale":
+                        case "cancel":
                             session.closeHelpRequest(helpRequest, "Manually Closed by " + event.getAuthor().getAsMention(), false);
                             break;
                         case "kick":
@@ -276,7 +277,13 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                 try {
                     helpRequest = session.getHelpRequestByHost(mentionedPlayers.getFirst());
 
-                    helpRequest.addHelper(msg.getMember());
+                    if (!helpRequest.receivedAllHelpers()) {
+                        helpRequest.addHelper(msg.getMember());
+                    }
+                    else {
+                        msg.replyEmbeds(new MessageEntry("Sale Full", "**Unable to join this sale as they have already received their helpers.**", EmbedDesign.ERROR).getEmbed()).queue();
+                        return;
+                    }
                 }
                 catch (NullPointerException e) {
                     msg.replyEmbeds(new MessageEntry("No Sale Found",
