@@ -123,19 +123,23 @@ public class HelpRequest implements PlayerListLogic {
                 });
     }
 
-    public void addHelper(Member member) {
-        targetThread.addThreadMember(member).queue(success -> {
+    public void addHelper(Member member, boolean addMemberToThread) {
 
-            targetThread.sendMessage("**" + member.getAsMention() + " has joined your sale thread channel!**" +
-                    (!receivedAllHelpers() ? "\n\n**Waiting for " + getHelpersToFind() + " more players**" : "")).queue();
+        if (addMemberToThread) {
+            targetThread.addThreadMember(member).queue(success -> {
 
-            log.info("{} has joined as a Helper for {}'s sale thread. Helper count: {}", member.getEffectiveName(), host.getEffectiveName(), getCurrentNumberOfHelpers());
+                        targetThread.sendMessage("**" + member.getAsMention() + " has joined your sale thread channel!**" +
+                                (!receivedAllHelpers() ? "\n\n**Waiting for " + getHelpersToFind() + " more players**" : "")).queue();
 
-            if (receivedAllHelpers()) {
-                noLongerWaitingForHelpers();
-            }
-        },
-                error -> log.error("{} was unable to join {} sale thread", member.getEffectiveName(), host.getEffectiveName(), error));
+                        log.info("{} has joined as a Helper for {}'s sale thread. Helper count: {}", member.getEffectiveName(), host.getEffectiveName(), getCurrentNumberOfHelpers());
+
+                    },
+                    error -> log.error("{} was unable to join {} sale thread", member.getEffectiveName(), host.getEffectiveName(), error));
+        }
+
+        if (receivedAllHelpers()) {
+            noLongerWaitingForHelpers();
+        }
     }
 
     public void kickHelper(Member member) {

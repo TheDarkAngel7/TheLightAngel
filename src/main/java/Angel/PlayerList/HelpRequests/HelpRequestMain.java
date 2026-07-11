@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.events.channel.update.ChannelUpdateArchivedEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.thread.member.ThreadMemberJoinEvent;
 import net.dv8tion.jda.api.events.thread.member.ThreadMemberLeaveEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.logging.log4j.LogManager;
@@ -46,6 +47,21 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
             }
             catch (Exception e) {
                 log.warn("Unable to parse a session channel from onChannelUpdateArchived Event", e);
+            }
+        }
+    }
+
+    @Override
+    public void onThreadMemberJoin(@NotNull ThreadMemberJoinEvent event) {
+        if (isValidSaleThreadChannel(event.getThread()) && !event.getThread().isArchived() && !event.getThread().isLocked()) {
+            try {
+                Session session = sessionManager.getSessionByName(event.getThread().getParentChannel().getName());
+                HelpRequest helpRequest = session.getHelpRequestByThreadChannel(event.getThread());
+
+                helpRequest.addHelper(event.getMember(), false);
+            }
+            catch (InvalidSessionException e) {
+                log.warn("ThreadMemberJoinEvent: Unable to parse a session channel from #{}", event.getThread().getParentMessageChannel().getName());
             }
         }
     }
@@ -262,7 +278,9 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
             helpRequest = session.getHelpRequestByHost(msg.getReferencedMessage().getMember());
 
             if (!helpRequest.receivedAllHelpers()) {
-                helpRequest.addHelper(msg.getMember());
+                helpRequest.addHelper(msg.getMember(), true);
+                msg.replyEmbeds(new MessageEntry("Successfully Joined Sale", "**You've successfully joined " + helpRequest.getHost().getAsMention() + "'s sale thread.**" +
+                        "\n\n**Please move chatter within the organization over to " + helpRequest.getThreadChannel().getAsMention() + "**", EmbedDesign.SUCCESS).getEmbed(false)).queue();
             }
             else {
                 msg.replyEmbeds(new MessageEntry("Sale Full", "**Unable to join this sale as they have already received their helpers.**", EmbedDesign.ERROR).getEmbed()).queue();
@@ -278,7 +296,9 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                     helpRequest = session.getHelpRequestByHost(mentionedPlayers.getFirst());
 
                     if (!helpRequest.receivedAllHelpers()) {
-                        helpRequest.addHelper(msg.getMember());
+                        helpRequest.addHelper(msg.getMember(), true);
+                        msg.replyEmbeds(new MessageEntry("Successfully Joined Sale", "**You've successfully joined " + helpRequest.getHost().getAsMention() + "'s sale thread.**" +
+                                "\n\n**Please move chatter within the organization over to " + helpRequest.getThreadChannel().getAsMention() + "**", EmbedDesign.SUCCESS).getEmbed(false)).queue();
                     }
                     else {
                         msg.replyEmbeds(new MessageEntry("Sale Full", "**Unable to join this sale as they have already received their helpers.**", EmbedDesign.ERROR).getEmbed()).queue();
