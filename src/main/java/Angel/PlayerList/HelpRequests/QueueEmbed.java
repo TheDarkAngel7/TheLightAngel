@@ -134,7 +134,7 @@ public class QueueEmbed implements PlayerListLogic {
                         // 1st: @Player needs 2 more helpers for 3 MCs and Bunker as of 3 minutes ago.
                         queueString = queueString.concat(
                                 "**" + getOrdinalSuffix(currentSession.getQueuePositionByHost(helpRequest.getHost())) + ": " + helpRequest.getHost().getAsMention() + "** needs **"
-                                        + helpRequest.getHelpersToFind() + "** more helpers for **" + helpRequest.getRequest() + "** as of **" + getDiscordRelativeTimeTag(helpRequest.getRequestCreationTime()) + ".**");
+                                        + helpRequest.getHelpersToFind() + "** more " + (helpRequest.getHelpersToFind() > 1 ? "helpers" : "helper") +  " for **" + helpRequest.getRequest() + "** as of **" + getDiscordRelativeTimeTag(helpRequest.getRequestCreationTime()) + ".**");
 
                         if (helpRequestIndex < helpRequests.size() - 1) {
                             queueString = queueString.concat("\n\u200B");

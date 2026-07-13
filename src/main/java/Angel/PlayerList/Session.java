@@ -14,6 +14,7 @@ import net.dv8tion.jda.api.entities.PermissionOverride;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.entities.emoji.CustomEmoji;
+import net.dv8tion.jda.api.utils.TimeUtil;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,7 +36,11 @@ public class Session implements PlayerListLogic {
     private List<Player> players;
     private BufferedImage playerListImage;
 
-    private List<HelpRequest> helpRequests = new ArrayList<>();
+    // Help Request List
+    private final List<HelpRequest> helpRequests = new ArrayList<>();
+
+    // Help Request Scanner
+    private final Timer timer = new Timer();
 
     // Player List Trouble means LA received an empty player list and this session may be experiencing trouble,
     // If this happens 5 times then we'll put the session into the trouble status
@@ -83,6 +88,8 @@ public class Session implements PlayerListLogic {
         resetSlowmode();
         resetPermissions();
 
+        startHelpRequestScanner();
+
         log.info("Successfully Created Session Object from receiving player list for {} with session channel as #{}", sessionName, sessionChannel.getName());
     }
 
@@ -101,6 +108,8 @@ public class Session implements PlayerListLogic {
 
         resetSlowmode();
         resetPermissions();
+
+        startHelpRequestScanner();
 
         log.info("Successfully Created Session Object from preload command for {} with session channel as #{}", sessionName, sessionChannel.getName());
     }
@@ -193,6 +202,43 @@ public class Session implements PlayerListLogic {
                         );
             }
         }
+    }
+
+    // Help Request Scanner
+
+    private void startHelpRequestScanner() {
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                for (HelpRequest hr : helpRequests) {
+                    try {
+                        long latestMessageId = hr.getThreadChannel().getLatestMessageIdLong();
+
+                        // If the thread has absolutely no messages, it will return 0
+                        if (latestMessageId == 0) {
+                            log.debug("[Help Request Scanner] Thread {} has no latest message ID yet.", hr.getThreadChannel().getName());
+                            continue;
+                        }
+
+                        ZonedDateTime lastestMessageTime = TimeUtil.getTimeCreated(latestMessageId).toZonedDateTime();
+                        log.debug("[Help Request Scanner] Scanning {}'s Help Request... Time Since Last Message: {}", hr.getHost().getEffectiveName(), getTimerFormatFrom(lastestMessageTime));
+                        if (hr.isWaitingForHelpers()) {
+                            if (ZonedDateTime.now().isAfter(lastestMessageTime.plusMinutes(30))) {
+                                closeHelpRequest(hr, "Automatically Closed Due to Inactivity", false);
+                            }
+                        }
+                        else {
+                            if (ZonedDateTime.now().isAfter(lastestMessageTime.plusHours(1))) {
+                                closeHelpRequest(hr, "Automatically Closed Due to Inactivity", false);
+                            }
+                        }
+                    }
+                    catch (NullPointerException ex) {
+                        log.warn("[Help Request Scanner] Unable to find the Lastest Message from {}'s thread", hr.getHost().getEffectiveName(), ex);
+                    }
+                }
+            }
+        }, 0, 600000);
     }
 
     // Setters
@@ -758,22 +804,22 @@ public class Session implements PlayerListLogic {
         return helpRequest;
     }
 
-    public HelpRequest getHelpRequestByPlayer(Member m) {
-        return getHelpRequestByPlayer(m.getIdLong());
+    public HelpRequest getHelpRequestByHelper(Member m) {
+        return getHelpRequestByHelper(m.getIdLong());
     }
 
-    public HelpRequest getHelpRequestByPlayer(long discordID) {
-        int index = 0;
+    public HelpRequest getHelpRequestByHelper(long discordID) {
+        int index = helpRequests.size() - 1;
 
         HelpRequest helpRequest = null;
 
-        while (index < helpRequests.size()) {
+        while (index >= 0) {
             List<Long> helpersDiscordIDs = helpRequests.get(index).getHelpers().stream().map(Member::getIdLong).toList();
             if (helpersDiscordIDs.contains(discordID)) {
                 helpRequest = helpRequests.get(index);
                 break;
             }
-            index++;
+            index--;
         }
 
         return helpRequest;

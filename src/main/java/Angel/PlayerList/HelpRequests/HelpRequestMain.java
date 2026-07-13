@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
-import net.dv8tion.jda.api.events.channel.update.ChannelUpdateArchivedEvent;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -22,34 +22,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, PlayerListLogic {
     private final Logger log = LogManager.getLogger(HelpRequestMain.class);
-
-    @Override
-    public void onChannelUpdateArchived(@NotNull ChannelUpdateArchivedEvent event) {
-        if (event.getChannelType() == ChannelType.GUILD_PRIVATE_THREAD && Boolean.TRUE.equals(event.getNewValue())) {
-            try {
-                Session session = sessionManager.getSessionByChannel(event.getChannel().asThreadChannel().getParentMessageChannel().getIdLong());
-
-                HelpRequest request = session.getHelpRequestByThreadChannel(event.getChannel().asThreadChannel());
-
-                session.closeHelpRequest(request, "Automatically Archived", true);
-            }
-            catch (InvalidSessionException e) {
-                log.warn("ChannelUpdateArchivedEvent: Unable to parse a session channel from #{}", event.getChannel().getName());
-            }
-            catch (IndexOutOfBoundsException e) {
-                log.warn("ChannelUpdateArchivedEvent: A Thread Channel was just archived and I could not find it in memory, likely due to it already getting closed");
-            }
-            catch (Exception e) {
-                log.warn("Unable to parse a session channel from onChannelUpdateArchived Event", e);
-            }
-        }
-    }
 
     @Override
     public void onThreadMemberJoin(@NotNull ThreadMemberJoinEvent event) {
@@ -133,7 +112,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                     helpRequest = session.getHelpRequestByHost(msg.getAuthor().getIdLong());
 
                     if (helpRequest == null) {
-                        helpRequest = session.getHelpRequestByPlayer(msg.getAuthor().getIdLong());
+                        helpRequest = session.getHelpRequestByHelper(msg.getAuthor().getIdLong());
                     }
                 }
                 catch (InvalidSessionException e) {
@@ -226,7 +205,21 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
 
             HelpRequest helpRequest = session.getHelpRequestByHost(msg.getAuthor().getIdLong());
 
-            if (helpRequest != null && helpRequest.isWaitingForHelpers()) {
+            // Did the player recently go in to help someone else?
+
+            HelpRequest helperHelpRequest = session.getHelpRequestByHelper(msg.getMember());
+
+            if (helperHelpRequest != null && helperHelpRequest.isWaitingForHelpers() &&
+                    ZonedDateTime.now().isBefore(helperHelpRequest.getRequestCreationTime().plusMinutes(10))) {
+                msg.replyEmbeds(new MessageEntry("Helper Creating Request",
+                        "**You Cannot create a help request after having recently joined someone else's sale**", EmbedDesign.ERROR).getEmbed()).queue(m -> {
+                            m.delete().queueAfter(30, TimeUnit.SECONDS);
+                            msg.delete().queueAfter(30, TimeUnit.SECONDS);
+                        }
+                );
+            }
+
+            else if (helpRequest != null && helpRequest.isWaitingForHelpers()) {
                 msg.replyEmbeds(new MessageEntry("Open Help Request",
                         "**You Already have an open help request... please navigate back to your thread channel " + helpRequest.getThreadChannel().getAsMention() + "**" +
                                 "\n\nYou may modify the channel as necessary using the commands in the pinned messages.", EmbedDesign.ERROR).getEmbed(false)).queue(m -> {
@@ -279,8 +272,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
 
             if (!helpRequest.receivedAllHelpers()) {
                 helpRequest.addHelper(msg.getMember(), true);
-                msg.replyEmbeds(new MessageEntry("Successfully Joined Sale", "**You've successfully joined " + helpRequest.getHost().getAsMention() + "'s sale thread.**" +
-                        "\n\n**Please move chatter within the organization over to " + helpRequest.getThreadChannel().getAsMention() + "**", EmbedDesign.SUCCESS).getEmbed(false)).queue();
+                msg.addReaction(Emoji.fromUnicode("✅")).queue();
             }
             else {
                 msg.replyEmbeds(new MessageEntry("Sale Full", "**Unable to join this sale as they have already received their helpers.**", EmbedDesign.ERROR).getEmbed()).queue();
@@ -297,8 +289,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
 
                     if (!helpRequest.receivedAllHelpers()) {
                         helpRequest.addHelper(msg.getMember(), true);
-                        msg.replyEmbeds(new MessageEntry("Successfully Joined Sale", "**You've successfully joined " + helpRequest.getHost().getAsMention() + "'s sale thread.**" +
-                                "\n\n**Please move chatter within the organization over to " + helpRequest.getThreadChannel().getAsMention() + "**", EmbedDesign.SUCCESS).getEmbed(false)).queue();
+                        msg.addReaction(Emoji.fromUnicode("✅")).queue();
                     }
                     else {
                         msg.replyEmbeds(new MessageEntry("Sale Full", "**Unable to join this sale as they have already received their helpers.**", EmbedDesign.ERROR).getEmbed()).queue();

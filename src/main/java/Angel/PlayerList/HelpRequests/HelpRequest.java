@@ -129,7 +129,9 @@ public class HelpRequest implements PlayerListLogic {
             targetThread.addThreadMember(member).queue(success -> {
 
                         targetThread.sendMessage("**" + member.getAsMention() + " has joined your sale thread channel!**" +
-                                (!receivedAllHelpers() ? "\n\n**Waiting for " + getHelpersToFind() + " more players**" : "")).queue();
+                                (!receivedAllHelpers() ? "\n\n**Waiting for " + getHelpersToFind() + " more " + (getHelpersToFind() > 1 ? "players" : "player") + "...**" +
+                                                         "\n**Remember " + host.getAsMention() + ", if you wish to start your sale and you don't want to wait for any more helpers," +
+                                                         " use `" + mainConfig.commandPrefix + "startsale` in this channel to remove the sale from the waiting queue, then you may start your sale in game.**": "")).queue();
 
                         log.info("{} has joined as a Helper for {}'s sale thread. Helper count: {}", member.getEffectiveName(), host.getEffectiveName(), getCurrentNumberOfHelpers());
 
@@ -214,6 +216,9 @@ public class HelpRequest implements PlayerListLogic {
                 "\n\nHost: **" + host.getAsMention() + "**" +
                 "\nPurpose: **" + request + "**" +
                 "\nHelpers Needed: **" + getHelpersToFind() + "**").queue();
+        session.getSessionChannel().sendMessage("**" + host.getEffectiveName() + " has reentered the queue as they need " + getHelpersToFind() + " more " +
+                (getHelpersToFind() > 1 ? "helpers" : "helper") + " for " + request + "**" +
+                "\n\nQueue Position: **" + session.getQueuePositionByHost(host) + "**").queue();
     }
 
     public boolean receivedAllHelpers() {
