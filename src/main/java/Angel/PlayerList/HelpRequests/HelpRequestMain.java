@@ -6,6 +6,7 @@ import Angel.MessageEntry;
 import Angel.PlayerList.Exceptions.InvalidSessionException;
 import Angel.PlayerList.PlayerListLogic;
 import Angel.PlayerList.Session;
+import Angel.PlayerList.SessionStatus;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
@@ -161,7 +162,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                         case "closed":
                         case "closesale":
                         case "cancel":
-                            session.closeHelpRequest(helpRequest, "Manually Closed by " + event.getAuthor().getAsMention(), false);
+                            session.closeHelpRequest(helpRequest, "Manually Closed by " + event.getMember().getEffectiveName(), false);
                             break;
                         case "kick":
                             helpRequest.kickHelper(msg.getMentions().getMembers().getFirst());
@@ -400,6 +401,11 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
         }
         else {
             List<Session> accessibleSessions = sessionManager.getAccessibleSessions(msg.getAuthor().getIdLong());
+
+            List<Session> onlineSessions = accessibleSessions.stream()
+                    .filter(s -> s.getStatus() == SessionStatus.ONLINE || s.getStatus() == SessionStatus.FRESH_ONLINE)
+                    .toList();
+
             QueueEmbed queueEmbed;
 
             if (accessibleSessions.isEmpty()) {
@@ -410,25 +416,18 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
 
             if (args.length == 1) {
 
-                if (accessibleSessions.size() == 1) {
-                    try {
-                        queueEmbed = new QueueEmbed(accessibleSessions.getFirst().getSessionName(),  msg.getAuthor().getIdLong());
-                        queueEmbed.setTargetChannel(mainConfig.dedicatedOutputChannel);
-                    }
-                    catch (InvalidSessionException e) {
-                        throw new RuntimeException(e);
-                    }
+                if (onlineSessions.size() == 1) {
+                    queueEmbed = new QueueEmbed(accessibleSessions.getFirst(), msg.getAuthor().getIdLong());
+                    queueEmbed.setTargetChannel(msg.getChannel());
                 }
                 else {
                     queueEmbed = new QueueEmbed(msg.getAuthor().getIdLong());
                 }
-
-
             }
             else if (args.length == 2) {
                 try {
                     queueEmbed = new QueueEmbed(args[1], msg.getAuthor().getIdLong());
-                    queueEmbed.setTargetChannel(mainConfig.dedicatedOutputChannel);
+                    queueEmbed.setTargetChannel(msg.getChannel());
                 }
                 catch (InvalidSessionException e) {
                     msg.getChannel().sendMessageEmbeds(new MessageEntry("Invalid Session", "**Whoops... this does not appear to belong to a session that's currently running!**" +

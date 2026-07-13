@@ -5,6 +5,7 @@ import Angel.MessageEntry;
 import Angel.PlayerList.Exceptions.InvalidSessionException;
 import Angel.PlayerList.PlayerListLogic;
 import Angel.PlayerList.Session;
+import Angel.PlayerList.SessionStatus;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -70,16 +71,28 @@ public class QueueEmbed implements PlayerListLogic {
         this.requester = requester;
     }
 
+    public QueueEmbed(Session session, long targetDiscordID) {
+        this.targetSpecificSession = true;
+
+        this.targetSession = session;
+        this.targetChannel = targetSession.getSessionChannel();
+        this.requester = getGuild().getMemberById(targetDiscordID);
+    }
+
     public void setTargetChannel(MessageChannel channel) {
         this.targetChannel = channel;
     }
 
     public MessageCreateAction getQueueEmbedAction() {
-        InputStream resourceStream = getClass().getResourceAsStream("/sessions/" + targetSession.getSessionName().toLowerCase() + "_128sm.png");
-        FileUpload thumbnail = FileUpload.fromData(resourceStream, targetSession.getSessionName().toLowerCase() + "_128sm.png");
+        InputStream resourceStream;
+        FileUpload thumbnail;
 
         if (!targetSpecificSession) {
             thumbnail = playerListMain.getSAFECrewLogo();
+        }
+        else {
+            resourceStream = getClass().getResourceAsStream("/sessions/" + targetSession.getSessionName().toLowerCase() + "_128sm.png");
+            thumbnail = FileUpload.fromData(resourceStream, targetSession.getSessionName().toLowerCase() + "_128sm.png");
         }
 
         return targetChannel.sendMessageEmbeds(getQueueEmbed()).setFiles(thumbnail);
@@ -138,6 +151,9 @@ public class QueueEmbed implements PlayerListLogic {
 
                         if (helpRequestIndex < helpRequests.size() - 1) {
                             queueString = queueString.concat("\n\u200B");
+                        }
+                        if (currentSession.getStatus() != SessionStatus.ONLINE && currentSession.getStatus() != SessionStatus.FRESH_ONLINE) {
+                            queueString = "**Session is " + currentSession.getStatus().getStatusString() + "**";
                         }
                     } while (++helpRequestIndex < helpRequests.size());
                 }
