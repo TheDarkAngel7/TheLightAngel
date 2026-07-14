@@ -14,6 +14,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class HelpRequest implements PlayerListLogic {
@@ -238,7 +239,15 @@ public class HelpRequest implements PlayerListLogic {
     }
 
     public List<Member> getHelpers() {
-        List<ThreadMember> helpers = new ArrayList<>(targetThread.getThreadMembers());
+        List<ThreadMember> helpers = new ArrayList<>();
+
+        try {
+            helpers.addAll(targetThread.getThreadMembers());
+        }
+        catch (NullPointerException e) {
+            return Collections.emptyList();
+        }
+
         int index = 0;
         while (index < helpers.size()) {
             if (helpers.get(index).getIdLong() == targetThread.getOwnerIdLong() ||
