@@ -33,7 +33,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
 
     @Override
     public void onThreadMemberJoin(@NotNull ThreadMemberJoinEvent event) {
-        if (isValidSaleThreadChannel(event.getThread()) && !event.getThread().isArchived() && !event.getThread().isLocked()) {
+        if (isValidSaleThreadChannel(event.getThread())) {
             try {
                 Session session = sessionManager.getSessionByName(event.getThread().getParentChannel().getName());
                 HelpRequest helpRequest = session.getHelpRequestByThreadChannel(event.getThread());
@@ -43,12 +43,15 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
             catch (InvalidSessionException e) {
                 log.warn("ThreadMemberJoinEvent: Unable to parse a session channel from #{}", event.getThread().getParentMessageChannel().getName());
             }
+            catch (Exception e) {
+                log.error("ThreadMemberJoinEvent: Unable to Parse a member joining from {}", event.getThread().getName(), e);
+            }
         }
     }
 
     @Override
     public void onThreadMemberLeave(@NotNull ThreadMemberLeaveEvent event) {
-        if (isValidSaleThreadChannel(event.getThread()) && !event.getThread().isArchived() && !event.getThread().isLocked()) {
+        if (isValidSaleThreadChannel(event.getThread())) {
             try {
                 Session session = sessionManager.getSessionByName(event.getThread().getParentChannel().getName());
                 HelpRequest helpRequest = session.getHelpRequestByThreadChannel(event.getThread());
@@ -57,14 +60,19 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                     session.closeHelpRequest(helpRequest, "Host Left Thread Channel", false);
                 }
                 else {
-                    event.getThread().sendMessage(event.getThreadMember().getMember().getEffectiveName() + " has left the thread." +
-                            (!helpRequest.isWaitingForHelpers() ? "\n\n**If you need another helper, be sure to update the purpose with the sales that you still need to do (see pinned message), " +
-                                                                  "and then you can use `" + mainConfig.commandPrefix + "requeue`**" : "") +
-                            "\n\n**If you're finished with your sales and nobody has sales to do, just use `" + mainConfig.commandPrefix + "close`**").queue();
+                    if (!event.getThread().isLocked()) {
+                        event.getThread().sendMessage(event.getThreadMember().getMember().getEffectiveName() + " has left the thread." +
+                                (!helpRequest.isWaitingForHelpers() ? "\n\n**If you need another helper, be sure to update the purpose with the sales that you still need to do (see pinned message), " +
+                                                                      "and then you can use `" + mainConfig.commandPrefix + "requeue`**" : "") +
+                                "\n\n**If you're finished with your sales and nobody has sales to do, just use `" + mainConfig.commandPrefix + "close`**").queue();
+                    }
                 }
             }
             catch (InvalidSessionException e) {
                 log.warn("ThreadMemberLeaveEvent: Unable to parse a session channel from #{}", event.getThread().getParentMessageChannel().getName());
+            }
+            catch (Exception e) {
+                log.error("ThreadMemberLeaveEvent: Unable to Parse a member leaving from {}", event.getThread().getName(), e);
             }
         }
     }
@@ -110,17 +118,19 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
 
                 try {
                     session = sessionManager.getSessionByChannel(msg.getChannel().asThreadChannel().getParentMessageChannel().getIdLong());
-                    helpRequest = session.getHelpRequestByHost(msg.getAuthor().getIdLong());
+                    helpRequest = session.getHelpRequestByThreadChannel(msg.getChannel().asThreadChannel());
 
                     if (helpRequest == null) {
-                        helpRequest = session.getHelpRequestByHelper(msg.getAuthor().getIdLong());
+                        InvalidSessionException e = new InvalidSessionException("No Help Request Exists with the thread ID " +  msg.getChannel().asThreadChannel().getIdLong());
+                        log.error("Error Occured while looking up help request from thread", e);
+                        throw e;
                     }
                 }
                 catch (InvalidSessionException e) {
                     msg.getChannel().sendMessage("**Whoops, those commands are disabled in these threads**").queue();
                     return;
                 }
-                if (msg.getAuthor().getIdLong() == helpRequest.getHost().getIdLong() || isTeamMember(msg.getAuthor().getIdLong())) {
+                if (isTeamMember(msg.getAuthor().getIdLong()) || msg.getAuthor().getIdLong() == helpRequest.getHost().getIdLong()) {
                     switch (args[0].toLowerCase()) {
                         case "start":
                         case "startsale":

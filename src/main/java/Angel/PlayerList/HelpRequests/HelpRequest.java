@@ -226,7 +226,7 @@ public class HelpRequest implements PlayerListLogic {
     }
 
     public boolean isWaitingForHelpers() {
-        return isWaitingForHelpers;
+        return isWaitingForHelpers && getHelpersToFind() > 0;
     }
 
     public int getHelpersToFind() {
