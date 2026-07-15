@@ -762,20 +762,16 @@ public class Session implements PlayerListLogic {
     }
 
     public List<HelpRequest> getSaleQueue(boolean sort) {
-        List<HelpRequest> saleQueue = new ArrayList<>();
-
-        int index = 0;
-        while (index < helpRequests.size()) {
-            if (helpRequests.get(index).isWaitingForHelpers()) {
-                saleQueue.add(helpRequests.get(index));
-            }
-            index++;
-        }
+        List<HelpRequest> saleQueue = helpRequests.stream()
+                .filter(HelpRequest::isWaitingForHelpers)
+                .filter(hr -> !hr.getThreadChannel().isArchived())
+                .toList();
 
         if (sort) {
-            return saleQueue.stream().sorted(Comparator.comparing(HelpRequest::getRequestCreationTime)).toList();
+            saleQueue = saleQueue.stream().sorted(Comparator.comparing(HelpRequest::getRequestCreationTime)).toList();
         }
-        else return saleQueue;
+
+        return saleQueue;
     }
 
     public int getSaleQueueSize() {
