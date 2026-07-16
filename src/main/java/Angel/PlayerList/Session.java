@@ -712,11 +712,6 @@ public class Session implements PlayerListLogic {
             HelpRequest helpRequest = new HelpRequest(cmd);
 
             helpRequests.add(helpRequest);
-
-            sessionChannel.sendMessage("**" + helpRequest.getHost().getEffectiveName() + " is needing help with " + helpRequest.getRequest() + "**" +
-                    "\n\nQueue Position: **" + getQueuePositionByHost(helpRequest.getHost()) + "**").queue();
-
-            log.info("{} has created a help request for {} - Queue Position on Creation: {}", helpRequest.getHost().getEffectiveName(), helpRequest.getRequest(), getQueuePositionByHost(helpRequest.getHost()));
         }
         catch (InvalidHelpRequestException e) {
             cmd.getChannel().sendMessageEmbeds(new MessageEntry("Error Creating Help Request", "**Unable to Create Help Request**\n\nReason: **" + e.getMessage() + "**", EmbedDesign.ERROR)

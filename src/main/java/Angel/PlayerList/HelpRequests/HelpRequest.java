@@ -94,7 +94,12 @@ public class HelpRequest implements PlayerListLogic {
                     if (throwable == null) {
                         this.targetThread = thread;
                         targetThread.getManager().setAutoArchiveDuration(ThreadChannel.AutoArchiveDuration.TIME_1_HOUR).queue(
-                                success -> log.debug("Successfully Setup Thread Channel for {} with an Auto Archive Duration of 1 Hour", host.getEffectiveName()),
+                                success -> {
+                                    channel.sendMessage("**" + host.getEffectiveName() + " is needing help with " + request + "**" +
+                                            (sessionManager.isParentChannelASessionChannel(targetThread) ? "\n\nQueue Position: **" + session.getQueuePositionByHost(host) + "**": "")).queue();
+
+                                    log.info("{} has created a help request for {} - Queue Position on Creation: {}", host.getEffectiveName(), request, (sessionManager.isParentChannelASessionChannel(targetThread) ? session.getQueuePositionByHost(host) : "None"));
+                                },
                                 error -> log.error("Failed to Setup Thread Channel for {}", host.getEffectiveName(), error)
                         );
                         targetThread.join().and(targetThread.addThreadMember(host)).submit()
