@@ -22,6 +22,7 @@ public class SuspensionInfo extends SanctionInfo {
         super(targetDiscordID, duration, reason);
         this.revokedRoleIDs = revokedRoles.stream()
                 .map(Role::getIdLong)
+                .filter(id -> !mainConfig.getSupporterRoles().stream().map(Role::getIdLong).toList().contains(id))
                 .toList();
     }
 

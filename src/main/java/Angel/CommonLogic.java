@@ -51,15 +51,7 @@ public interface CommonLogic {
     }
 
     default boolean isSupporter(Member m) {
-        int index = 0;
-
-        while (index < mainConfig.getSupporterRoles().size()) {
-            if (m.getRoles().contains(mainConfig.getSupporterRoles().get(index))) {
-                return true;
-            }
-            index++;
-        }
-        return false;
+        return m.getRoles().stream().anyMatch(mainConfig.getSupporterRoles()::contains);
     }
 
     default boolean isCrewMember(Member m) {

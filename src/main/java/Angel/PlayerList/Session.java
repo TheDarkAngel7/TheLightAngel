@@ -238,7 +238,8 @@ public class Session implements PlayerListLogic {
                     }
                 }
             }
-        }, 0, 600000);
+        }, 0, 300000);
+        log.info("[Help Request Scanner] Help Request Scanner Started!");
     }
 
     // Setters

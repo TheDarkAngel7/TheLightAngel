@@ -263,7 +263,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                         .queue(tc -> tc.getManager().setAutoArchiveDuration(ThreadChannel.AutoArchiveDuration.TIME_24_HOURS).queue());
             }
             else {
-                msg.replyEmbeds(new MessageEntry("No Permissions", "**No Permissions to Create a Help Request here**", EmbedDesign.ERROR).getEmbed()).queue();
+                log.warn("Unable to get a Session Channel from #{} from {}'s Message", msg.getChannel().getName(), msg.getMember().getEffectiveName());
             }
         }
     }
