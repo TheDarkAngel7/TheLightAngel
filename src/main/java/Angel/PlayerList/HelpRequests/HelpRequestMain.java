@@ -175,7 +175,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                             session.closeHelpRequest(helpRequest, "Manually Closed by " + event.getMember().getEffectiveName(), false);
                             break;
                         case "kick":
-                            helpRequest.kickHelper(msg.getMentions().getMembers().getFirst());
+                            helpRequest.kickHelper(msg.getMentions().getMembers().getFirst(), msg.getMember());
                             break;
                         case "queue":
                         case "q":

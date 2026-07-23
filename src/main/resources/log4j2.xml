@@ -24,8 +24,9 @@
     </Appenders>
 
     <Loggers>
-        <Logger name="net.dv8tion.jda" level="WARN" additivity="false">
+        <Logger name="net.dv8tion.jda" level="INFO" additivity="false">
             <AppenderRef ref="Console" />
+            <AppenderRef ref="File" />
         </Logger>
 
         <Root level="DEBUG">

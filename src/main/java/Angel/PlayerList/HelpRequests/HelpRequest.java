@@ -115,10 +115,11 @@ public class HelpRequest implements PlayerListLogic {
                                                             "\n\n`" + mainConfig.commandPrefix + "requeue` or `" + mainConfig.commandPrefix + "req`: **This tells me you want your request for help requeued. Use this command if you had someone leave the sale or session and you need a replacement.**" +
                                                             "\n\n`" + mainConfig.commandPrefix + "helpers <# of Helpers>` (ex. `" + mainConfig.commandPrefix + "helpers 3`): **This tells me how many helpers you're wanting if it is now different from your original request for help.**" +
                                                             "\n\n`" + mainConfig.commandPrefix + "purpose <purpose>` (ex. `" + mainConfig.commandPrefix + "purpose 2MCs and bunker`): **This tells me the new purpose for the help request, you should update it before you requeue your request!**" +
-                                                            "\n\n`" + mainConfig.commandPrefix + "newhost <New Host Mention>` (ex. `" + mainConfig.commandPrefix + "newhost @TheDarkAngel7`): **This tells me that one of the helpers is taking over as host of sales. Use this when you are finished with your sales and going to help one of your helpers.**" +
+                                                            "\n\n`" + mainConfig.commandPrefix + "newhost <@Mention>` (ex. `" + mainConfig.commandPrefix + "newhost @TheDarkAngel7`): **This tells me that one of the helpers is taking over as host of sales. Use this when you are finished with your sales and going to help one of your helpers.**" +
+                                                            "\n\n`" + mainConfig.commandPrefix + "kick <@Mention>` (ex. `" + mainConfig.commandPrefix + "`kick @TheDarkAngel7`): **This tells me to remove one of the helpers from the thread.**" +
                                                             "\n\n`" + mainConfig.commandPrefix + "close` **This tells me you're done with this thread and I can close it, you may use this at the end of your sale and nobody else has sales, or if you created this thread in error.**")
                                             .submit().thenAccept(m -> m.pin().queue(
-                                                    success -> log.debug("Successfully Pinned the Getting Started Message to Thread Channel!"),
+                                                    success -> log.debug("Successfully Pinned the Getting Started Message to {}'s Sale Thread Channel!", host.getEffectiveName()),
                                                 error -> log.error("Unable to Pin the Getting Started Message to Thread Channel", error)
                                             ));
                                         });
@@ -145,14 +146,20 @@ public class HelpRequest implements PlayerListLogic {
                     error -> log.error("{} was unable to join {} sale thread", member.getEffectiveName(), host.getEffectiveName(), error));
         }
 
-        if (receivedAllHelpers()) {
+        if (receivedAllHelpers() && isWaitingForHelpers()) {
             noLongerWaitingForHelpers();
+        }
+        else if (!addMemberToThread && !isStaffMember(member)) {
+            targetThread.sendMessage("**" + member.getAsMention() + " has joined your sale thread channel!**").queue();
         }
     }
 
-    public void kickHelper(Member member) {
+    public void kickHelper(Member member, Member cmdUser) {
         targetThread.removeThreadMember(member).queue(
-                success -> log.info("{} was kicked from {}'s sale channel", member.getEffectiveName(), host.getEffectiveName()),
+                success -> {
+                    log.info("{} was kicked from {}'s sale channel", member.getEffectiveName(), host.getEffectiveName());
+                    targetThread.sendMessage("**" + member.getEffectiveName() + " has been kicked from sale thread channel by " + cmdUser.getAsMention() + "!**").queue();
+                },
                 error -> log.error("Unable to kick {} from {}'s sale channel", member.getEffectiveName(), host.getEffectiveName(), error)
                 );
     }
