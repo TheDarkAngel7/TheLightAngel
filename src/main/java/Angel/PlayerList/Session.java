@@ -24,6 +24,7 @@ import java.text.Normalizer;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 public class Session implements PlayerListLogic {
@@ -41,6 +42,7 @@ public class Session implements PlayerListLogic {
 
     // Help Request Scanner
     private final Timer timer = new Timer();
+    private final ReentrantLock lock = new ReentrantLock();
 
     // Player List Trouble means LA received an empty player list and this session may be experiencing trouble,
     // If this happens 5 times then we'll put the session into the trouble status
@@ -210,7 +212,9 @@ public class Session implements PlayerListLogic {
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                for (HelpRequest hr : helpRequests) {
+                List<HelpRequest> requestsToScan = new ArrayList<>(helpRequests);
+
+                for (HelpRequest hr : requestsToScan) {
                     try {
                         long latestMessageId = hr.getThreadChannel().getLatestMessageIdLong();
 
@@ -233,7 +237,7 @@ public class Session implements PlayerListLogic {
                             }
                         }
                     }
-                    catch (NullPointerException ex) {
+                    catch (Exception ex) {
                         log.warn("[Help Request Scanner] Unable to find the Lastest Message from {}'s thread", hr.getHost().getEffectiveName(), ex);
                     }
                 }
@@ -254,40 +258,47 @@ public class Session implements PlayerListLogic {
     public void setStatus(SessionStatus status) {
         this.status = status;
 
-        switch (status) {
-            case RESTART_SOON ->
+        try {
+            lock.lock();
+
+            switch (status) {
+                case RESTART_SOON ->
+                        helpRequests.forEach(hr -> {
+                            ThreadChannel channel = hr.getThreadChannel();
+                            if (hr.isWaitingForHelpers()) {
+
+
+                                channel.sendMessage("@everyone").queue();
+                                channel.sendMessageEmbeds(new MessageEntry("Session Pending Restart", ":warning: **Heads up " + hr.getHost().getAsMention() + "! The session is going to restart soon! " +
+                                        "Since you have not received all of your helpers, this channel has been locked.**", EmbedDesign.WARNING).getEmbed(false)).queue();
+                                closeHelpRequest(hr.getHost(), "Session Pending Restart");
+                            }
+                            else {
+                                channel.sendMessage("@everyone").queue();
+                                channel.sendMessageEmbeds(new MessageEntry("Session Pending Restart", ":warning: **Heads Up! " + sessionName + " is about to restart. " +
+                                        "Please wrap up your sales no later than the time displayed in the " + sessionChannel.getAsMention() + " channel.", EmbedDesign.WARNING).getEmbed(false)).queue();
+
+                            }
+                        });
+                case RESTARTING, RESTART_MOD, OFFLINE -> {
                     helpRequests.forEach(hr -> {
                         ThreadChannel channel = hr.getThreadChannel();
                         if (hr.isWaitingForHelpers()) {
-
-
-                            channel.sendMessage("@everyone").queue();
-                            channel.sendMessageEmbeds(new MessageEntry("Session Pending Restart", ":warning: **Heads up " + hr.getHost().getAsMention() + "! The session is going to restart soon! " +
-                                    "Since you have not received all of your helpers, this channel has been locked.**", EmbedDesign.WARNING).getEmbed(false)).queue();
-                            closeHelpRequest(hr.getHost(), "Session Pending Restart");
+                            channel.sendMessage(":x: **The Session has gone offline while you were waiting for helpers. This thread has been closed and locked**").queue();
+                            closeHelpRequest(hr.getHost(), "Session Offline");
                         }
                         else {
-                            channel.sendMessage("@everyone").queue();
-                            channel.sendMessageEmbeds(new MessageEntry("Session Pending Restart", ":warning: **Heads Up! " + sessionName + " is about to restart. " +
-                                    "Please wrap up your sales no later than the time displayed in the " + sessionChannel.getAsMention() + " channel.", EmbedDesign.WARNING).getEmbed(false)).queue();
-
+                            channel.sendMessage(":x: **The Session has gone offline, please wrap up your sales as soon as possible.**").submit().thenRun(() -> channel.leave().queue());
                         }
                     });
-            case RESTARTING, RESTART_MOD, OFFLINE -> {
-                helpRequests.forEach(hr -> {
-                    ThreadChannel channel = hr.getThreadChannel();
-                    if (hr.isWaitingForHelpers()) {
-                        channel.sendMessage(":x: **The Session has gone offline while you were waiting for helpers. This thread has been closed and locked**").queue();
-                        closeHelpRequest(hr.getHost(), "Session Offline");
-                    }
-                    else {
-                        channel.sendMessage(":x: **The Session has gone offline, please wrap up your sales as soon as possible.**").submit().thenRun(() -> channel.leave().queue());
-                    }
-                });
-                helpRequests.clear();
+                    helpRequests.clear();
+                }
             }
-
         }
+        finally {
+            lock.unlock();
+        }
+
     }
 
     public void missedScreenshot() {
@@ -710,6 +721,8 @@ public class Session implements PlayerListLogic {
 
     public void createNewHelpRequest(Message cmd) {
         try {
+            lock.lock();
+
             HelpRequest helpRequest = new HelpRequest(cmd);
 
             helpRequests.add(helpRequest);
@@ -723,6 +736,9 @@ public class Session implements PlayerListLogic {
 
             log.error("Unable to Create Help Request - Reason: {}", e.getMessage());
         }
+        finally {
+            lock.unlock();
+        }
     }
 
     public void closeHelpRequest(long targetDiscordID, String reason) {
@@ -735,22 +751,30 @@ public class Session implements PlayerListLogic {
 
     public void closeHelpRequest(HelpRequest request, String reason, boolean silentClose) {
         if (request == null) return;
-        if (helpRequests.remove(request)) {
-            if (!silentClose) {
-                request.getThreadChannel().sendMessage("The Thread Channel has been locked and archived, Reason: **" + reason + "**").submit().thenRun(() -> {
+        try {
+            lock.lock();
+
+            if (helpRequests.remove(request)) {
+                if (!silentClose) {
+                    request.getThreadChannel().sendMessage("The Thread Channel has been locked and archived, Reason: **" + reason + "**").submit().thenRun(() -> {
+                        request.getThreadChannel().getManager().setLocked(true).setArchived(true).and(request.getThreadChannel().leave()).queue();
+                    });
+                }
+                else {
                     request.getThreadChannel().getManager().setLocked(true).setArchived(true).and(request.getThreadChannel().leave()).queue();
-                });
+                }
+                log.info("{}'s thread channel with the help request of \"{}\" has been closed and locked with the reason: {}",
+                        request.getHost().getEffectiveName(), request.getRequest(), reason);
             }
+
             else {
-                request.getThreadChannel().getManager().setLocked(true).setArchived(true).and(request.getThreadChannel().leave()).queue();
+                log.error("Unable to Close and Lock the thread channel for {} with reason {}", request.getHost().getEffectiveName(), reason);
             }
-            log.info("{}'s thread channel with the help request of \"{}\" has been closed and locked with the reason: {}",
-                    request.getHost().getEffectiveName(), request.getRequest(), reason);
+        }
+        finally {
+            lock.unlock();
         }
 
-        else {
-            log.error("Unable to Close and Lock the thread channel for {} with reason {}", request.getHost().getEffectiveName(), reason);
-        }
     }
 
     public List<HelpRequest> getHelpRequests() {
@@ -785,7 +809,7 @@ public class Session implements PlayerListLogic {
 
         HelpRequest helpRequest = null;
 
-        while (index < helpRequests.size()){
+        while (index < helpRequests.size()) {
             if (helpRequests.get(index).getHost().getIdLong() == discordID) {
                 helpRequest = helpRequests.get(index);
                 break;
