@@ -146,11 +146,8 @@ public class HelpRequest implements PlayerListLogic {
                     error -> log.error("{} was unable to join {} sale thread", member.getEffectiveName(), host.getEffectiveName(), error));
         }
 
-        if (receivedAllHelpers() && isWaitingForHelpers()) {
+        if (receivedAllHelpers()) {
             noLongerWaitingForHelpers();
-        }
-        else if (!addMemberToThread && !isStaffMember(member)) {
-            targetThread.sendMessage("**" + member.getAsMention() + " has joined your sale thread channel!**").queue();
         }
     }
 
