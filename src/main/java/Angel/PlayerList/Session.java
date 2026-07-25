@@ -705,16 +705,26 @@ public class Session implements PlayerListLogic {
     }
 
     public boolean isPlayerInSession(long discordID) {
-        int index = 0;
+        try {
+            lock.lock();
+            int index = 0;
 
-        do {
-            if (players.get(index++).getDiscordAccount().getIdLong() == discordID) {
-                return true;
-            }
+            do {
+                if (players.get(index++).getDiscordAccount().getIdLong() == discordID) {
+                    return true;
+                }
 
-        } while (index < players.size());
+            } while (index < players.size());
 
-        return false;
+            return false;
+        }
+        catch (Exception e) {
+            log.error("Unable to Fetch whether or not a player was in session by ID {}", discordID, e);
+            return false;
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     // Everything Below this line has to do with the HelpRequests
@@ -782,16 +792,27 @@ public class Session implements PlayerListLogic {
     }
 
     public List<HelpRequest> getSaleQueue(boolean sort) {
-        List<HelpRequest> saleQueue = helpRequests.stream()
-                .filter(HelpRequest::isWaitingForHelpers)
-                .filter(hr -> !hr.getThreadChannel().isArchived())
-                .toList();
 
-        if (sort) {
-            saleQueue = saleQueue.stream().sorted(Comparator.comparing(HelpRequest::getRequestCreationTime)).toList();
+        try {
+            lock.lock();
+            List<HelpRequest> saleQueue = helpRequests.stream()
+                    .filter(HelpRequest::isWaitingForHelpers)
+                    .filter(hr -> !hr.getThreadChannel().isArchived())
+                    .toList();
+
+            if (sort) {
+                saleQueue = saleQueue.stream().sorted(Comparator.comparing(HelpRequest::getRequestCreationTime)).toList();
+            }
+
+            return saleQueue;
         }
-
-        return saleQueue;
+        catch (Exception e) {
+            log.error("Unable to fetch Sale Queue", e);
+            return Collections.emptyList();
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     public int getSaleQueueSize() {
@@ -805,19 +826,30 @@ public class Session implements PlayerListLogic {
     }
 
     public HelpRequest getHelpRequestByHost(long discordID) {
-        int index = 0;
 
-        HelpRequest helpRequest = null;
+        try {
+            lock.lock();
+            int index = 0;
 
-        while (index < helpRequests.size()) {
-            if (helpRequests.get(index).getHost().getIdLong() == discordID) {
-                helpRequest = helpRequests.get(index);
-                break;
+            HelpRequest helpRequest = null;
+
+            while (index < helpRequests.size()) {
+                if (helpRequests.get(index).getHost().getIdLong() == discordID) {
+                    helpRequest = helpRequests.get(index);
+                    break;
+                }
+                index++;
             }
-            index++;
-        }
 
-        return helpRequest;
+            return helpRequest;
+        }
+        catch (Exception e) {
+            log.error("Unable to fetch Help Request", e);
+            return null;
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     public HelpRequest getHelpRequestByHelper(Member m) {
@@ -825,20 +857,30 @@ public class Session implements PlayerListLogic {
     }
 
     public HelpRequest getHelpRequestByHelper(long discordID) {
-        int index = helpRequests.size() - 1;
+        try {
+            lock.lock();
+            int index = helpRequests.size() - 1;
 
-        HelpRequest helpRequest = null;
+            HelpRequest helpRequest = null;
 
-        while (index >= 0) {
-            List<Long> helpersDiscordIDs = helpRequests.get(index).getHelpers().stream().map(Member::getIdLong).toList();
-            if (helpersDiscordIDs.contains(discordID)) {
-                helpRequest = helpRequests.get(index);
-                break;
+            while (index >= 0) {
+                List<Long> helpersDiscordIDs = helpRequests.get(index).getHelpers().stream().map(Member::getIdLong).toList();
+                if (helpersDiscordIDs.contains(discordID)) {
+                    helpRequest = helpRequests.get(index);
+                    break;
+                }
+                index--;
             }
-            index--;
-        }
 
-        return helpRequest;
+            return helpRequest;
+        }
+        catch (Exception e) {
+            log.error("Unable to fetch Help Request", e);
+            return null;
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     public HelpRequest getHelpRequestByThreadChannel(ThreadChannel tc) {
@@ -846,19 +888,27 @@ public class Session implements PlayerListLogic {
     }
 
     public HelpRequest getHelpRequestByThreadChannel(long channelID) {
-        int index = 0;
+        try {
+            lock.lock();
+            int index = 0;
+            HelpRequest helpRequest = null;
 
-        HelpRequest helpRequest = null;
-
-        while (index < helpRequests.size()) {
-            if (helpRequests.get(index).getThreadChannel().getIdLong() == channelID) {
-                helpRequest = helpRequests.get(index);
-                break;
+            while (index < helpRequests.size()) {
+                if (helpRequests.get(index).getThreadChannel().getIdLong() == channelID) {
+                    helpRequest = helpRequests.get(index);
+                    break;
+                }
+                index++;
             }
-            index++;
+            return helpRequest;
         }
-
-        return helpRequest;
+        catch (Exception e) {
+            log.error("Unable to fetch Help Request", e);
+            return null;
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     public int getQueuePositionByHost(Member m) {
