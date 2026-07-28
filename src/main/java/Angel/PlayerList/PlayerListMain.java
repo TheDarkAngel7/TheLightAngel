@@ -844,18 +844,23 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
             else {
                 if (args.length == 1) {
                     List<Session> accessibleSessions = sessionManager.getAccessibleSessions(msg.getAuthor().getIdLong());
-                    if (accessibleSessions.size() == 1) {
-                        try {
-                            Session session = accessibleSessions.getFirst();
 
-                            if (session.isSessionChannelAccessible(msg.getAuthor().getIdLong())) {
-                                session.getPlayerListMessage(msg).setTargetChannel(msg.getChannel())
-                                        .getScreenshotEmbedAction().queue();
-                            }
-                            else {
-                                msg.getChannel().sendMessage(response).queue();
-                                msg.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions", "**You do not have permissions to view the screenshot!**", EmbedDesign.ERROR).getEmbed()).queue();
-                            }
+
+                    if (accessibleSessions.isEmpty()) {
+                        msg.getChannel().sendMessage(response).queue();
+                        msg.getChannel().sendMessageEmbeds(new MessageEntry("No Permissions", "**You do not have permissions to view the screenshot!**", EmbedDesign.ERROR).getEmbed()).queue();
+                        return;
+                    }
+                    List<Session> occupiedSessions = accessibleSessions.stream()
+                            .filter(s -> s.getStatus().equals(SessionStatus.FRESH_ONLINE) || s.getStatus().equals(SessionStatus.ONLINE))
+                            .filter(s -> s.getPlayerCount() > 0)
+                            .toList();
+                    if (occupiedSessions.size() == 1) {
+                        try {
+                            Session session = occupiedSessions.getFirst();
+
+                            session.getPlayerListMessage(msg).setTargetChannel(msg.getChannel())
+                                    .getScreenshotEmbedAction().queue();
                         }
                         catch (IOException e) {
                             log.error("Unable to send screenshot to {}. Reason: {}",
@@ -864,7 +869,7 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
                         }
                     }
                     else {
-                        mainConfig.dedicatedOutputChannel.sendMessageEmbeds(
+                        msg.getChannel().sendMessageEmbeds(
                                 new MessageEntry("Invalid Session", "**Unable to Find a Session from no search as there is " + (sessionManager.getSessions().size() > 1 ? "more than 1 session running!**"
                                         + getExampleUsagesOfCommand(args[0], msg.getAuthor().getIdLong()) :
                                         "no sessions running. This may because I just restarted and I'm waiting for the first player list from the host.**"),

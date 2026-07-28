@@ -31,4 +31,18 @@ public interface PlayerListLogic extends CommonLogic {
             }
         }
     }
+
+    default String getOrdinalSuffix(int value) {
+        // Handle the 11th, 12th, 13th exception
+        if (value % 100 >= 11 && value % 100 <= 13) {
+            return value + "th";
+        }
+
+        return switch (value % 10) {
+            case 1 ->   value + "st";
+            case 2 ->   value + "nd";
+            case 3 ->   value + "rd";
+            default ->  value + "th";
+        };
+    }
 }

@@ -1,5 +1,7 @@
 package Angel.PlayerList.HelpRequests;
 
+import Angel.EmbedDesign;
+import Angel.MessageEntry;
 import Angel.PlayerList.Exceptions.InvalidHelpRequestException;
 import Angel.PlayerList.Exceptions.InvalidSessionException;
 import Angel.PlayerList.PlayerListLogic;
@@ -95,10 +97,11 @@ public class HelpRequest implements PlayerListLogic {
                         this.targetThread = thread;
                         targetThread.getManager().setAutoArchiveDuration(ThreadChannel.AutoArchiveDuration.TIME_1_HOUR).queue(
                                 success -> {
+                                    String queuePositionString = getOrdinalSuffix(session.getQueuePositionByHost(host));
                                     channel.sendMessage("**" + host.getEffectiveName() + " is needing help with " + request + "**" +
-                                            (sessionManager.isParentChannelASessionChannel(targetThread) ? "\n\nQueue Position: **" + session.getQueuePositionByHost(host) + "**": "")).queue();
+                                            (sessionManager.isParentChannelASessionChannel(targetThread) ? "\n\nQueue Position: **" + queuePositionString + "**": "")).queue();
 
-                                    log.info("{} has created a help request for {} - Queue Position on Creation: {}", host.getEffectiveName(), request, (sessionManager.isParentChannelASessionChannel(targetThread) ? session.getQueuePositionByHost(host) : "None"));
+                                    log.info("{} has created a help request for {} - Queue Position on Creation: {}", host.getEffectiveName(), request, (sessionManager.isParentChannelASessionChannel(targetThread) ? queuePositionString : "None"));
                                 },
                                 error -> log.error("Failed to Setup Thread Channel for {}", host.getEffectiveName(), error)
                         );
@@ -116,7 +119,7 @@ public class HelpRequest implements PlayerListLogic {
                                                             "\n\n`" + mainConfig.commandPrefix + "helpers <# of Helpers>` (ex. `" + mainConfig.commandPrefix + "helpers 3`): **This tells me how many helpers you're wanting if it is now different from your original request for help.**" +
                                                             "\n\n`" + mainConfig.commandPrefix + "purpose <purpose>` (ex. `" + mainConfig.commandPrefix + "purpose 2MCs and bunker`): **This tells me the new purpose for the help request, you should update it before you requeue your request!**" +
                                                             "\n\n`" + mainConfig.commandPrefix + "newhost <@Mention>` (ex. `" + mainConfig.commandPrefix + "newhost @TheDarkAngel7`): **This tells me that one of the helpers is taking over as host of sales. Use this when you are finished with your sales and going to help one of your helpers.**" +
-                                                            "\n\n`" + mainConfig.commandPrefix + "kick <@Mention>` (ex. `" + mainConfig.commandPrefix + "`kick @TheDarkAngel7`): **This tells me to remove one of the helpers from the thread.**" +
+                                                            "\n\n`" + mainConfig.commandPrefix + "kick <@Mention>` (ex. `" + mainConfig.commandPrefix + "kick @TheDarkAngel7`): **This tells me to remove one of the helpers from the thread.**" +
                                                             "\n\n`" + mainConfig.commandPrefix + "close` **This tells me you're done with this thread and I can close it, you may use this at the end of your sale and nobody else has sales, or if you created this thread in error.**")
                                             .submit().thenAccept(m -> m.pin().queue(
                                                     success -> log.debug("Successfully Pinned the Getting Started Message to {}'s Sale Thread Channel!", host.getEffectiveName()),
@@ -220,15 +223,25 @@ public class HelpRequest implements PlayerListLogic {
     }
 
     public void requeueRequest() {
-        requestCreationTime = ZonedDateTime.now();
-        isWaitingForHelpers = true;
-        targetThread.sendMessage("**The sale has been requeued!**" +
-                "\n\nHost: **" + host.getAsMention() + "**" +
-                "\nPurpose: **" + request + "**" +
-                "\nHelpers Needed: **" + getHelpersToFind() + "**").queue();
-        session.getSessionChannel().sendMessage("**" + host.getEffectiveName() + " has reentered the queue as they need " + getHelpersToFind() + " more " +
-                (getHelpersToFind() > 1 ? "helpers" : "helper") + " for " + request + "**" +
-                "\n\nQueue Position: **" + session.getQueuePositionByHost(host) + "**").queue();
+        int helpersToFind = getHelpersToFind();
+        if (helpersToFind > 0) {
+            requestCreationTime = ZonedDateTime.now();
+            isWaitingForHelpers = true;
+            targetThread.sendMessage("**The sale has been requeued!**" +
+                    "\n\nHost: **" + host.getAsMention() + "**" +
+                    "\nPurpose: **" + request + "**" +
+                    "\nHelpers Needed: **" + helpersToFind + "**").queue();
+            session.getSessionChannel().sendMessage("**" + host.getEffectiveName() + " has reentered the queue as they need " + helpersToFind + " more " +
+                    (helpersToFind > 1 ? "helpers" : "helper") + " for " + request + "**" +
+                    "\n\nQueue Position: **" + getOrdinalSuffix(session.getQueuePositionByHost(host)) + "**").queue();
+        }
+        else {
+            targetThread.sendMessageEmbeds(new MessageEntry("Unable to Requeue Sale",
+                    ":x: **Whoops that's an error... in order to requeue a sale I need to see that the thread has less than the number of helpers required. " +
+                            "If helpers left the sale, then they should leave the thread, or you may kick them from the thread by using `" + mainConfig.commandPrefix + "kick <@PlayerName>`.**" +
+                            "\n\n**You should also ensure the number of helpers is correct, it is currently set at " + getMaxHelpers() + " and I see " + getCurrentNumberOfHelpers() + " in the thread.**" +
+                            "\n**You may change the setting by using `" + mainConfig.commandPrefix + "helpers " + (getMaxHelpers() >= 3 ? (getMaxHelpers() - 1) + "` to decrease the number of helpers needed to " + (getMaxHelpers() - 1) : (getMaxHelpers() + 1) + "` to increase the number of helpers needed to " + (getMaxHelpers() + 1)) + ".**", EmbedDesign.ERROR).getEmbed()).queue();
+        }
     }
 
     public boolean receivedAllHelpers() {
