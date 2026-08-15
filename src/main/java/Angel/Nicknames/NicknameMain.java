@@ -32,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 public class NicknameMain extends ListenerAdapter implements NickLogic {
     private final Logger log = LogManager.getLogger(NicknameMain.class);
@@ -1300,46 +1301,24 @@ public class NicknameMain extends ListenerAdapter implements NickLogic {
         commandUser = null;
     }
     private boolean inNickRestrictedRole(long targetDiscordID) {
-        List<Role> hasRoles = new ArrayList<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        if (guild.isMember(UserSnowflake.fromId(targetDiscordID))) {
-            guild.retrieveMemberById(targetDiscordID).useCache(false).submit().whenComplete(new BiConsumer<Member, Throwable>() {
-                @Override
-                public void accept(Member member, Throwable throwable) {
-                    if (throwable == null) {
-                        member.getRoles().forEach(role -> hasRoles.add(role));
-                    }
-                    else {
-                        log.error("Unable to Retrieve Member Object from Discord Gateway with Discord ID " + targetDiscordID + ": " + throwable.getMessage());
-                    }
-                    latch.countDown();
-                }
-            });
-            try {
-                latch.await();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+        Member m = guild.retrieveMemberById(targetDiscordID).useCache(false).complete();
 
-            return containsRestrictedRoles(hasRoles, targetDiscordID);
+        if (m == null || isTeamMember(m)) return false;
+
+        else {
+            Set<Long> restrictedRoleIDs = nickConfig.restrictedRoles.stream()
+                    .filter(Objects::nonNull)
+                    .map(Role::getIdLong)
+                    .collect(Collectors.toSet());
+
+            return m.getRoles().stream()
+                    .filter(Objects::nonNull)
+                    .map(Role::getIdLong)
+                    .anyMatch(restrictedRoleIDs::contains);
         }
-        else return false;
     }
     private boolean inNickRestrictedRole(Member m) {
-        return containsRestrictedRoles(m.getRoles(), m.getIdLong());
-    }
-
-    private boolean containsRestrictedRoles(List<Role> hasRoles, long targetDiscordID) {
-        if (hasRoles.isEmpty() || isTeamMember(targetDiscordID)) return false;
-        else {
-            int index = 0;
-            while (index < nickConfig.restrictedRoles.size()) {
-                if (hasRoles.contains(nickConfig.restrictedRoles.get(index++))) {
-                    return true;
-                }
-            }
-            return false;
-        }
+        return inNickRestrictedRole(m.getIdLong());
     }
     private boolean requestIsCoolingDown(long targetDiscordID) {
         int index = requestCooldownDiscordIDs.indexOf(targetDiscordID);
