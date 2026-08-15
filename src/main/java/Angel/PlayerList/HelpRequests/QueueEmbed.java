@@ -134,9 +134,8 @@ public class QueueEmbed implements PlayerListLogic {
             do {
                 Session currentSession = targetSessions.get(sessionsIndex++);
 
-                List<HelpRequest> helpRequests = targetSession.getSaleQueue(true).stream()
-                        .filter(hr -> hr.isWaitingForHelpers() || hr.getHelpersToFind() > 0)
-                        .toList();
+                List<HelpRequest> helpRequests = targetSession.getSaleQueue();
+
                 String queueString = "";
 
                 if (!helpRequests.isEmpty()) {

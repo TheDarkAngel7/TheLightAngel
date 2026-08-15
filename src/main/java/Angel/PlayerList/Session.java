@@ -791,20 +791,16 @@ public class Session implements PlayerListLogic {
         return helpRequests;
     }
 
-    public List<HelpRequest> getSaleQueue(boolean sort) {
+    public List<HelpRequest> getSaleQueue() {
 
         try {
             lock.lock();
-            List<HelpRequest> saleQueue = helpRequests.stream()
+
+            return helpRequests.stream()
                     .filter(HelpRequest::isWaitingForHelpers)
-                    .filter(hr -> !hr.getThreadChannel().isArchived())
+                    .filter(hr -> hr.getThreadChannel() != null && !hr.getThreadChannel().isArchived())
+                    .sorted(Comparator.comparing(HelpRequest::getRequestCreationTime))
                     .toList();
-
-            if (sort) {
-                saleQueue = saleQueue.stream().sorted(Comparator.comparing(HelpRequest::getRequestCreationTime)).toList();
-            }
-
-            return saleQueue;
         }
         catch (Exception e) {
             log.error("Unable to fetch Sale Queue", e);
@@ -816,7 +812,7 @@ public class Session implements PlayerListLogic {
     }
 
     public int getSaleQueueSize() {
-        return getSaleQueue(false).size();
+        return getSaleQueue().size();
     }
 
     public HelpRequest getHelpRequestByHost(Member m) {
@@ -916,7 +912,7 @@ public class Session implements PlayerListLogic {
     }
 
     public int getQueuePositionByHost(long discordID) {
-        List<HelpRequest> saleQueue = getSaleQueue(true);
+        List<HelpRequest> saleQueue = getSaleQueue();
 
         int index = 0;
 
