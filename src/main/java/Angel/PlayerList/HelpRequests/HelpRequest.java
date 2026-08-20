@@ -34,6 +34,8 @@ public class HelpRequest implements PlayerListLogic {
 
     private ZonedDateTime requestCreationTime = ZonedDateTime.now();
 
+    private ZonedDateTime nextShoutoutTime = ZonedDateTime.now().plusMinutes(5);
+
     public HelpRequest(Message cmd) throws InvalidHelpRequestException {
         String[] args = cmd.getContentRaw().substring(1).split(" ");
         this.host = cmd.getMember();
@@ -120,6 +122,7 @@ public class HelpRequest implements PlayerListLogic {
                                                             "\n\n`" + mainConfig.commandPrefix + "purpose <purpose>` (ex. `" + mainConfig.commandPrefix + "purpose 2MCs and bunker`): **This tells me the new purpose for the help request, you should update it before you requeue your request!**" +
                                                             "\n\n`" + mainConfig.commandPrefix + "newhost <@Mention>` (ex. `" + mainConfig.commandPrefix + "newhost @TheDarkAngel7`): **This tells me that one of the helpers is taking over as host of sales. Use this when you are finished with your sales and going to help one of your helpers.**" +
                                                             "\n\n`" + mainConfig.commandPrefix + "kick <@Mention>` (ex. `" + mainConfig.commandPrefix + "kick @TheDarkAngel7`): **This tells me to remove one of the helpers from the thread.**" +
+                                                            "\n\n`" + mainConfig.commandPrefix + "shout`: **Makes me post a brief message in the session channel to ask for helpers without needing to reenter the queue. You may do this once at least 5 minutes apart.**" +
                                                             "\n\n`" + mainConfig.commandPrefix + "close` **This tells me you're done with this thread and I can close it, you may use this at the end of your sale and nobody else has sales, or if you created this thread in error.**")
                                             .submit().thenAccept(m -> m.pin().queue(
                                                     success -> log.debug("Successfully Pinned the Getting Started Message to {}'s Sale Thread Channel!", host.getEffectiveName()),
@@ -241,6 +244,38 @@ public class HelpRequest implements PlayerListLogic {
                             "If helpers left the sale, then they should leave the thread, or you may kick them from the thread by using `" + mainConfig.commandPrefix + "kick <@PlayerName>`.**" +
                             "\n\n**You should also ensure the number of helpers is correct, it is currently set at " + getMaxHelpers() + " and I see " + getCurrentNumberOfHelpers() + " in the thread.**" +
                             "\n**You may change the setting by using `" + mainConfig.commandPrefix + "helpers " + (getMaxHelpers() >= 3 ? (getMaxHelpers() - 1) + "` to decrease the number of helpers needed to " + (getMaxHelpers() - 1) : (getMaxHelpers() + 1) + "` to increase the number of helpers needed to " + (getMaxHelpers() + 1)) + ".**", EmbedDesign.ERROR).getEmbed()).queue();
+        }
+    }
+
+    public void shoutoutRequest() {
+        if (ZonedDateTime.now().isAfter(nextShoutoutTime) && isWaitingForHelpers()) {
+            if (sessionManager.isParentChannelASessionChannel(targetThread)) {
+                log.info("{}'s sale thread shoutout executed. Purpose: {} - Time since last shoutout: {}", host.getEffectiveName(), request, getTimerFormatFrom(nextShoutoutTime));
+
+                int helpersToFind = getHelpersToFind();
+                session.getSessionChannel().sendMessage("**" + host.getEffectiveName() + " still needs " + (helpersToFind == 1 ? helpersToFind + " helper" : helpersToFind + " helpers") + " for " + request + "!**" +
+                        "\n\n**Currently " + getOrdinalSuffix(session.getQueuePositionByHost(host)) + " in queue**" +
+                        "\n**Entered the queue " + getDiscordRelativeTimeTag(requestCreationTime) + "**" +
+                        "\n\n**Join this sale with `" + mainConfig.commandPrefix + "join @" + host.getEffectiveName() + "`**").queue();
+
+                nextShoutoutTime = ZonedDateTime.now().plusMinutes(5);
+            }
+            else {
+                targetThread.sendMessageEmbeds(new MessageEntry("No Session Channel Found", "**Unable to Shout in the parent channel as this function is reserved for session channels only, the parent channel of this thread is not a session channel.**",
+                        EmbedDesign.ERROR).getEmbed()).queue();
+            }
+        }
+        else if (!isWaitingForHelpers()) {
+            targetThread.sendMessageEmbeds(new MessageEntry("Unable to Shoutout Thread", "**Unable to post a shoutout in the session channel as I don't think you are looking for helpers. The sale thread should be updated using the commands in the pins, and then you may requeue it. " +
+                    "After it's been placed in queue again, you may use this command after 5 minutes lapse**", EmbedDesign.ERROR).getEmbed()).queue();
+            log.info("{}'s sale thread for {} cannot be shouted since they are not waiting for helpers", host.getEffectiveName(), request);
+        }
+        else if (ZonedDateTime.now().isBefore(nextShoutoutTime)) {
+            targetThread.sendMessageEmbeds(new MessageEntry("Cooldown Enabled", "You cannot tell me to shoutout this thread at the moment, you need to wait at least 5 minutes from creation of the thread, or 5 minutes since the last shoutout.", EmbedDesign.ERROR).getEmbed()).queue();
+            log.info("{}'s sale thread for {} cannot be shouted since they have not waited the 5 minutes required, time to next shoutout: {}", host.getEffectiveName(), request, getTimerFormatTo(nextShoutoutTime));
+        }
+        else {
+            log.error("Unable to parse a message to send for sale thread shoutout. Host: {} - Purpose {}", host.getEffectiveName(), request);
         }
     }
 

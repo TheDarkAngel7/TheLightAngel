@@ -37,8 +37,19 @@ public class AntiScamListener extends ListenerAdapter implements SanctionLogic {
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         if (event.getAuthor().isBot() || isTeamMember(event.getAuthor().getIdLong()) || event.getChannelType() == ChannelType.PRIVATE) return;
 
+        int numOfLinks = countLinks(event.getMessage().getContentRaw());
+
+        if (!event.getMessage().getAttachments().isEmpty() || numOfLinks >= 1) {
+            log.debug("Message Received in #{} - Attachment Size: {}  - Number of Links: {}", event.getMessage().getChannel().getName(), event.getMessage().getAttachments().size(), countLinks(event.getMessage().getContentRaw()));
+            MessageEntry entry = new MessageEntry("Anti-Scam Filter Armed", "**Message Received in " + event.getMessage().getJumpUrl() + " was found to have links or attachments.**" +
+                    "\n\nAttachments: **" + event.getMessage().getAttachments().size() + "/" + sanctionConfig.getMinAttachments() + "**" +
+                    "\nLinks: **" + numOfLinks + "/" + sanctionConfig.getMinLinks() + "**" , EmbedDesign.INFO);
+
+            mainConfig.logChannel.sendMessageEmbeds(entry.getEmbed()).queue();
+        }
+
         if (event.getMessage().getAttachments().size() >= sanctionConfig.getMinAttachments() ||
-                countLinks(event.getMessage().getContentRaw()) >= sanctionConfig.getMinLinks()) {
+                numOfLinks >= sanctionConfig.getMinLinks()) {
             reentrantLock.lock();
             try {
                 violations.entrySet().removeIf(entry -> entry.getValue().hasTimedOut());
@@ -104,7 +115,7 @@ public class AntiScamListener extends ListenerAdapter implements SanctionLogic {
                 else {
                     violations.put(event.getAuthor().getIdLong(), new AntiScamViolation());
                     log.warn("{} has triggered the Anti-Scam Filter with {} files and {} links!",
-                            event.getMember().getEffectiveName(), event.getMessage().getAttachments().size(), countLinks(event.getMessage().getContentRaw()));
+                            event.getMember().getEffectiveName(), event.getMessage().getAttachments().size(), numOfLinks);
                 }
             }
             finally {

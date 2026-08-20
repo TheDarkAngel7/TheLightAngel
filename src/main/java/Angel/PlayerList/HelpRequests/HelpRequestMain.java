@@ -181,6 +181,11 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
                         case "q":
                             queueCmd(msg);
                             break;
+                        case "shout":
+                        case "shoutout":
+                        case "shoutsale":
+                            helpRequest.shoutoutRequest();
+                            break;
                     }
                 }
             }
