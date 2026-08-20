@@ -38,17 +38,15 @@ public class AntiScamListener extends ListenerAdapter implements SanctionLogic {
         if (event.getAuthor().isBot() || isTeamMember(event.getAuthor().getIdLong()) || event.getChannelType() == ChannelType.PRIVATE) return;
 
         int numOfLinks = countLinks(event.getMessage().getContentRaw());
+        int numOfAttachments = event.getMessage().getAttachments().size();
 
-        if (!event.getMessage().getAttachments().isEmpty() || numOfLinks >= 1) {
-            log.debug("Message Received in #{} - Attachment Size: {}  - Number of Links: {}", event.getMessage().getChannel().getName(), event.getMessage().getAttachments().size(), countLinks(event.getMessage().getContentRaw()));
-            MessageEntry entry = new MessageEntry("Anti-Scam Filter Armed", "**Message Received in " + event.getMessage().getJumpUrl() + " was found to have links or attachments.**" +
-                    "\n\nAttachments: **" + event.getMessage().getAttachments().size() + "/" + sanctionConfig.getMinAttachments() + "**" +
-                    "\nLinks: **" + numOfLinks + "/" + sanctionConfig.getMinLinks() + "**" , EmbedDesign.INFO);
+        String originalLogMessage = "**Message Received in " + event.getMessage().getJumpUrl() + " from " + event.getMember().getEffectiveName() + " was found to have links or attachments.**" +
+                "\n\nAttachments: **" + numOfAttachments + "/" + sanctionConfig.getMinAttachments() + "**" +
+                "\nLinks: **" + numOfLinks + "/" + sanctionConfig.getMinLinks() + "**";
 
-            mainConfig.logChannel.sendMessageEmbeds(entry.getEmbed()).queue();
-        }
+        MessageEntry logEmbed = new MessageEntry("Anti-Scam Filter Armed", originalLogMessage, EmbedDesign.INFO);
 
-        if (event.getMessage().getAttachments().size() >= sanctionConfig.getMinAttachments() ||
+        if (numOfAttachments >= sanctionConfig.getMinAttachments() ||
                 numOfLinks >= sanctionConfig.getMinLinks()) {
             reentrantLock.lock();
             try {
@@ -60,6 +58,11 @@ public class AntiScamListener extends ListenerAdapter implements SanctionLogic {
                     record.incrementViolationCount();
 
                     log.info("{} has triggered Anti-Scam Filter - Count: {}", event.getMember().getEffectiveName(), record.getViolationCount());
+
+                    logEmbed = logEmbed.setMessage(originalLogMessage.concat("\n\n**Anti-Scam Filter has been triggered from this message!**" +
+                                    "\nCount: **" + record.getViolationCount() + "/" + sanctionConfig.getAntiScamViolationsBanTrigger() + "**"))
+                            .setTitle("Anti-Scam Filter Triggered!")
+                            .setDesign(EmbedDesign.WARNING);
 
                     if (record.getViolationCount() == sanctionConfig.getAntiScamViolationsBanTrigger() - 1) {
                         String warningString = ":warning: **You have triggered my Anti-Scam Filter! " +
@@ -79,7 +82,6 @@ public class AntiScamListener extends ListenerAdapter implements SanctionLogic {
                     }
 
                     else if (record.getViolationCount() >= sanctionConfig.getAntiScamViolationsBanTrigger()) {
-
                         if (!event.getMessage().getAttachments().isEmpty()) {
                             List<CompletableFuture<FileUpload>> downloadFutures = new ArrayList<>();
 
@@ -110,17 +112,26 @@ public class AntiScamListener extends ListenerAdapter implements SanctionLogic {
                             logEvidenceToStaffChannel(event, new ArrayList<>());
                             executeAntiScamBan(event);
                         }
+
+                        logEmbed = logEmbed.setMessage(originalLogMessage.concat("\n\n**Ban Hammer Dropped!" +
+                                "\nCount: **" + record.getViolationCount() + "/" + sanctionConfig.getAntiScamViolationsBanTrigger() + "**"))
+                                .setTitle("Anti-Scam Ban Hammer Dropped!")
+                                .setDesign(EmbedDesign.WARNING);
                     }
                 }
                 else {
                     violations.put(event.getAuthor().getIdLong(), new AntiScamViolation());
                     log.warn("{} has triggered the Anti-Scam Filter with {} files and {} links!",
-                            event.getMember().getEffectiveName(), event.getMessage().getAttachments().size(), numOfLinks);
+                            event.getMember().getEffectiveName(), numOfAttachments, numOfLinks);
                 }
             }
             finally {
                 reentrantLock.unlock();
             }
+        }
+        if (numOfAttachments >= 1 || numOfLinks >= 1) {
+            log.debug("Message Received from {} in #{} - Attachment Size: {}  - Number of Links: {}", event.getMember().getEffectiveName(), event.getMessage().getChannel().getName(), event.getMessage().getAttachments().size(), countLinks(event.getMessage().getContentRaw()));
+            mainConfig.logChannel.sendMessageEmbeds(logEmbed.getEmbed()).queue();
         }
     }
 
@@ -158,7 +169,7 @@ public class AntiScamListener extends ListenerAdapter implements SanctionLogic {
         EmbedBuilder embed = new EmbedBuilder()
                 .setTitle("🚨 Automated Anti-Scam Ban")
                 .setColor(Color.RED)
-                .addField("Target User", event.getAuthor().getAsMention() + " (" + event.getAuthor().getId() + ")", false)
+                .addField("Target Member", event.getMember().getEffectiveName() + " (" + event.getAuthor().getId() + ")", false)
                 .addField("Previous Channel", event.getChannel().getAsMention(), true)
                 .addField("Attachment Count", String.valueOf(msg.getAttachments().size()), true)
                 .addField("Message Content", content.length() > 1024 ? content.substring(0, 1021) + "..." : content, false)
