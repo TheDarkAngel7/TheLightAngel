@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,14 +41,29 @@ public interface SanctionLogic extends CommonLogic {
 
     @Override
     default Guild getGuild() {
-        while (true) {
+        // Retry for up to ~5 seconds (50 attempts * 100ms) to allow JDA to finish booting
+        int maxAttempts = 50;
+        int attempts = 0;
+
+        while (attempts < maxAttempts) {
             try {
-                return jda.awaitReady().getGuilds().getFirst();
+                List<Guild> guilds = jda.getGuilds();
+                if (!guilds.isEmpty()) {
+                    return guilds.getFirst();
+                }
+
+                // If guilds aren't loaded yet, sleep briefly and try again
+                Thread.sleep(100);
+                attempts++;
             }
             catch (InterruptedException e) {
-                aue.logCaughtException(Thread.currentThread(), e);
+                // Restore the interrupted status
+                Thread.currentThread().interrupt();
             }
         }
+
+        // Absolute fallback if time runs out entirely
+        throw new IllegalStateException("Guild could not be fetched because JDA failed to initialize in time.");
     }
     default TextChannel getTeamBureauChannel() {
         return getGuild().getTextChannelsByName("team_bureau", true).getFirst();

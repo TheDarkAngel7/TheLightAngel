@@ -109,6 +109,6 @@ public class SanctionDatabaseManager extends Timer implements SanctionLogic {
                     }
                 }
             }
-        }, 0, 300000);
+        }, 600000, 300000);
     }
 }
