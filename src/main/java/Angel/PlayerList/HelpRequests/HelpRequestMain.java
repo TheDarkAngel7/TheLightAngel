@@ -263,13 +263,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
         }
         catch (InvalidSessionException ex) {
             // Command Wasn't used in a session channel
-            if (msg.getChannel().getName().contains("lf")) {
-                msg.getChannel().asTextChannel().createThreadChannel(msg.getMember().getEffectiveName() + " Session", false)
-                        .queue(tc -> tc.getManager().setAutoArchiveDuration(ThreadChannel.AutoArchiveDuration.TIME_24_HOURS).queue());
-            }
-            else {
-                log.warn("Unable to get a Session Channel from #{} from {}'s Message", msg.getChannel().getName(), msg.getMember().getEffectiveName());
-            }
+            log.warn("Unable to get a Session Channel from #{} from {}'s Message", msg.getChannel().getName(), msg.getMember().getEffectiveName());
         }
     }
 
