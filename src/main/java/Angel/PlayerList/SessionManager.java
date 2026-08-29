@@ -187,7 +187,15 @@ public class SessionManager implements PlayerListLogic {
             int score = levenshtein.apply(sessionName, playerString);
 
             if (score > 4) {
-                Player playerObj = new Player(playerString);
+                Player playerObj;
+
+                try {
+                    playerObj = new Player(playerString);
+                }
+                catch (IllegalStateException e) {
+                    log.error("Unable to load player object", e);
+                    break;
+                }
 
                 if (!playerListLong.contains(playerObj.getDiscordAccount().getIdLong())) {
                     playerList.add(playerObj);

@@ -12,12 +12,16 @@ public class Player implements PlayerListLogic {
     private final Logger log = LogManager.getLogger(Player.class);
     private final Member playerAccount;
 
-    public Player(String searchName) {
+    public Player(String searchName) throws IllegalStateException {
         Guild guild = getGuild();
 
         List<Member> verifiedMembers = guild.getMembers().stream().
                 filter(m -> m.getRoles().contains(mainConfig.getMemberRole()) ||
                         m.getRoles().contains(mainConfig.getTeamRole())).toList();
+
+        if (verifiedMembers.isEmpty()) {
+            throw new IllegalStateException("verifiedMembers Returned with empty list");
+        }
 
         int index = 0;
         Member accountCandidate = null;
