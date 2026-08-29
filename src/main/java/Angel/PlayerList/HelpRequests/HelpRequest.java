@@ -254,9 +254,11 @@ public class HelpRequest implements PlayerListLogic {
 
                 int helpersToFind = getHelpersToFind();
                 session.getSessionChannel().sendMessage("**" + host.getEffectiveName() + " still needs " + (helpersToFind == 1 ? helpersToFind + " helper" : helpersToFind + " helpers") + " for " + request + "!**" +
-                        "\n\n**Currently " + getOrdinalSuffix(session.getQueuePositionByHost(host)) + " in queue**" +
-                        "\n**Entered the queue " + getDiscordRelativeTimeTag(requestCreationTime) + "**" +
+                        "\n\n**They are currently " + getOrdinalSuffix(session.getQueuePositionByHost(host)) + " in queue**" +
+                        "\n\n**Entered the queue " + getDiscordRelativeTimeTag(requestCreationTime) + "**" +
                         "\n\n**Join this sale with `" + mainConfig.commandPrefix + "join @" + host.getEffectiveName() + "`**").queue();
+
+                targetThread.sendMessage("**Sending a shoutout in the session channel!**").queue();
 
                 nextShoutoutTime = ZonedDateTime.now().plusMinutes(5);
             }

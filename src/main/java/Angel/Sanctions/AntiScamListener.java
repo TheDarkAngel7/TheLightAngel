@@ -113,7 +113,7 @@ public class AntiScamListener extends ListenerAdapter implements SanctionLogic {
                             executeAntiScamBan(event);
                         }
 
-                        logEmbed = logEmbed.setMessage(originalLogMessage.concat("\n\n**Ban Hammer Dropped!" +
+                        logEmbed = logEmbed.setMessage(originalLogMessage.concat("\n\n**Ban Hammer Dropped!**" +
                                 "\nCount: **" + record.getViolationCount() + "/" + sanctionConfig.getAntiScamViolationsBanTrigger() + "**"))
                                 .setTitle("Anti-Scam Ban Hammer Dropped!")
                                 .setDesign(EmbedDesign.WARNING);
