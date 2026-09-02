@@ -262,8 +262,10 @@ public class Session implements PlayerListLogic {
             lock.lock();
 
             switch (status) {
-                case RESTART_SOON ->
-                        helpRequests.forEach(hr -> {
+                case RESTART_SOON -> {
+                        List<HelpRequest> requestSnapshot = new ArrayList<>(helpRequests);
+
+                        requestSnapshot.forEach(hr -> {
                             ThreadChannel channel = hr.getThreadChannel();
                             if (hr.isWaitingForHelpers()) {
 
@@ -280,8 +282,11 @@ public class Session implements PlayerListLogic {
 
                             }
                         });
+                }
                 case RESTARTING, RESTART_MOD, OFFLINE -> {
-                    helpRequests.forEach(hr -> {
+                    List<HelpRequest> requestsSnapshot = new ArrayList<>(helpRequests);
+
+                    requestsSnapshot.forEach(hr -> {
                         ThreadChannel channel = hr.getThreadChannel();
                         if (hr.isWaitingForHelpers()) {
                             channel.sendMessage(":x: **The Session has gone offline while you were waiting for helpers. This thread has been closed and locked**").queue();
