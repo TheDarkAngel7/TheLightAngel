@@ -3,6 +3,7 @@ package Angel.Sanctions.Database;
 import Angel.FileGarbageTruck;
 import Angel.RuntimeTypeAdapterFactory;
 import Angel.Sanctions.SanctionLogic;
+import Angel.Security.FileEncryptionManager;
 import Angel.ZoneIDInstanceCreator;
 import Angel.ZonedDateTimeAdapter;
 import com.google.gson.Gson;
@@ -11,8 +12,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -47,15 +46,21 @@ public class SanctionDatabaseManager extends Timer implements SanctionLogic {
     }
 
     public SanctionDatabaseContainer loadDatabase() {
-        try (FileReader reader = new FileReader(databasePath.toFile())) {
-            SanctionDatabaseContainer container = gson.fromJson(reader, SanctionDatabaseContainer.class);
-            this.container = container != null ? container : new SanctionDatabaseContainer();
-            log.info("sanctiondata.json file has been loaded");
-            return this.container;
-        }
-        catch (IOException e) {
-            log.warn("Unable to read sanctiondata.json: {}", e.getMessage(), e);
-            this.container = new SanctionDatabaseContainer();
+        try {
+            if (!databasePath.toFile().exists()) {
+                log.error("Unable to find a Sanction Database File! Returning New Container!");
+                this.container = new SanctionDatabaseContainer();
+            }
+            else {
+                String decryptedJson = FileEncryptionManager.readEncryptedFile(databasePath.toFile(), "Sanction Database");
+                if (!decryptedJson.isEmpty()) {
+                    this.container = gson.fromJson(decryptedJson, SanctionDatabaseContainer.class);
+                }
+                else {
+                    log.error("Unable to load Sanction Database from encrypted file! Returning new database!");
+                    this.container = new SanctionDatabaseContainer();
+                }
+            }
             return container;
         }
         finally {
@@ -84,13 +89,11 @@ public class SanctionDatabaseManager extends Timer implements SanctionLogic {
 
         fileGarbageTruck.dumpFiles();
 
-        try (FileWriter writer = new FileWriter(databasePath.toFile())) {
-            gson.toJson(container, writer);
-            log.info("sanctiondata.json file successfully saved");
-        }
-        catch (IOException e) {
-            log.error("Unable to save sanctiondata.json: {}", e.getMessage(), e);
-        }
+        String decryptedJson = gson.toJson(container);
+
+        FileEncryptionManager.writeEncryptedFile(databasePath.toFile(), decryptedJson, "Sanction Database");
+
+        log.info("sanctiondata.json file successfully saved");
     }
 
     private void startExpiryTimer() {

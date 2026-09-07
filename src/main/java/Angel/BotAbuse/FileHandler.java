@@ -1,6 +1,7 @@
 package Angel.BotAbuse;
 
 import Angel.FileGarbageTruck;
+import Angel.Security.FileEncryptionManager;
 import Angel.ZoneIDInstanceCreator;
 import Angel.ZonedDateTimeAdapter;
 import com.google.gson.*;
@@ -10,7 +11,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.FileSystemException;
@@ -37,12 +37,19 @@ class FileHandler {
         gson = new GsonBuilder().registerTypeAdapter(ZoneId.class, new ZoneIDInstanceCreator())
                 .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeAdapter()).create();
 
-        try (FileReader fileReader = new FileReader(jsonBADataFile)) {
-            botAbuseFile = gson.fromJson(fileReader, BotAbuseFile.class);
-            fileReader.close();
+        if (jsonBADataFile.exists()) {
+            String decryptedJson = FileEncryptionManager.readEncryptedFile(jsonBADataFile, "Bot Abuse");
+
+            if (!decryptedJson.isEmpty()) {
+                botAbuseFile = gson.fromJson(decryptedJson, BotAbuseFile.class);
+            }
+            else {
+                log.error("Unable to Read Encrypted File! An Empty Bot Abuse File will be generated!");
+                botAbuseFile = new BotAbuseFile();
+            }
         }
-        catch (IOException e) {
-            log.fatal(e.getMessage());
+        else {
+            botAbuseFile = new BotAbuseFile();
         }
     }
 
@@ -67,11 +74,9 @@ class FileHandler {
 
     public void saveDatabase(List<BotAbuseRecord> records, Map<String, String> reasonsDictionary) {
         try {
-            FileWriter fileWriter = new FileWriter(jsonTempBADataFile);
+            String decryptedJson = gson.toJson(new BotAbuseFile(records, reasonsDictionary));
 
-            fileWriter.write(gson.toJson(new BotAbuseFile(records, reasonsDictionary)));
-
-            fileWriter.close();
+            FileEncryptionManager.writeEncryptedFile(jsonTempBADataFile, decryptedJson, "Bot Abuse");
 
             log.info("JSONWriter Successfully Ran to Bot Abuse Database Temp File");
             while (true) {

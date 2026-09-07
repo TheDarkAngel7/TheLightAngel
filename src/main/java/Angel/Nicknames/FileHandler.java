@@ -1,6 +1,7 @@
 package Angel.Nicknames;
 
 import Angel.FileGarbageTruck;
+import Angel.Security.FileEncryptionManager;
 import Angel.ZoneIDInstanceCreator;
 import Angel.ZonedDateTimeAdapter;
 import com.google.gson.*;
@@ -8,7 +9,10 @@ import com.google.gson.reflect.TypeToken;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
@@ -35,15 +39,21 @@ class FileHandler {
                 .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeAdapter());
         gson = gsonBuilder.create();
 
-        try (FileReader fileReader = new FileReader(jsonNickDataFile)) {
-            nicknameFile = gson.fromJson(fileReader, NicknameFile.class);
+        if (jsonNickDataFile.exists()) {
+            String decryptedJson = FileEncryptionManager.readEncryptedFile(jsonNickDataFile, "Nicknames");
+
+            if (!decryptedJson.isEmpty()) {
+                nicknameFile = gson.fromJson(decryptedJson, NicknameFile.class);
+            }
+            else {
+                log.error("Unable to read encrypted nicknames file! Creating a new nickname file!");
+                nicknameFile = new NicknameFile();
+            }
         }
-        catch (FileNotFoundException e) {
-            log.fatal("Nickname FileHandler Constructor: " + e.getMessage());
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        else {
+            nicknameFile = new NicknameFile();
         }
+
     }
 
     public JsonObject getConfig() {

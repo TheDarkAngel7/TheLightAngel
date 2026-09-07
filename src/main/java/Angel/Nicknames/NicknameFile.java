@@ -1,10 +1,16 @@
 package Angel.Nicknames;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class NicknameFile {
     private final List<NicknameRequest> nicknameRequests;
     private final List<PlayerNameHistory> playerNameHistory;
+
+    public NicknameFile() {
+        nicknameRequests = new ArrayList<>();
+        playerNameHistory = new ArrayList<>();
+    }
 
     public NicknameFile(List<NicknameRequest> nicknameRequests, List<PlayerNameHistory> playerNameHistory) {
         this.nicknameRequests = nicknameRequests;

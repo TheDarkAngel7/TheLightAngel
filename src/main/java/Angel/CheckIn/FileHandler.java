@@ -1,6 +1,7 @@
 package Angel.CheckIn;
 
 import Angel.FileGarbageTruck;
+import Angel.Security.FileEncryptionManager;
 import Angel.ZoneIDInstanceCreator;
 import Angel.ZonedDateTimeAdapter;
 import com.google.gson.*;
@@ -8,12 +9,16 @@ import com.google.gson.reflect.TypeToken;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -43,19 +48,25 @@ class FileHandler {
     }
 
     public List<CheckInResult> getDatabase() {
-        try {
-            FileReader fileReader = new FileReader(jsonCheckInDataFile);
-            return gson.fromJson(fileReader, new TypeToken<List<CheckInResult>>(){}.getType());
+        if (!jsonCheckInDataFile.exists()) {
+            log.error("Check-In data file does not exist, returning empty CheckInResult array!");
+            return new ArrayList<>();
         }
-        catch (IOException ex) {
-            throw new RuntimeException(ex);
+
+        String decryptedJson = FileEncryptionManager.readEncryptedFile(jsonCheckInDataFile, "Check-In");
+
+        if (decryptedJson.isEmpty()) {
+            log.error("Unable to Read Check-In Data from Encrypted File! Returning Empty Check In Result List");
+            return new ArrayList<>();
         }
+        return gson.fromJson(decryptedJson, new TypeToken<List<CheckInResult>>(){}.getType());
     }
 
     public void saveDatabase(List<CheckInResult> ciResults) throws IOException {
-        Writer writer = new FileWriter(jsonCheckInDataFile);
-        gson.toJson(ciResults, writer);
-        writer.close();
+        String decryptedJson = gson.toJson(ciResults);
+
+        FileEncryptionManager.writeEncryptedFile(jsonCheckInDataTempFile, "Check-In", decryptedJson);
+
         log.info("JSONWriter Successfully Ran to Check In Database Temp File");
         while (true) {
             try {
