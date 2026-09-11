@@ -4,7 +4,9 @@ import Angel.PlayerList.SessionManager;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.utils.FileUpload;
 
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.concurrent.CountDownLatch;
@@ -115,5 +117,12 @@ public interface CommonLogic {
     // Past Tense - Assuming we want to know the duration from a time in the past - This would be a countup
     default String getTimerFormatFrom(ZonedDateTime beginTime) {
         return getTimerFormatBetween(beginTime, ZonedDateTime.now());
+    }
+
+    default FileUpload getSAFECrewLogo() {
+        InputStream resourceStream = getClass().getResourceAsStream("/safe-logo.png");
+        FileUpload thumbnail = FileUpload.fromData(resourceStream, "safe-logo.png");
+
+        return thumbnail;
     }
 }

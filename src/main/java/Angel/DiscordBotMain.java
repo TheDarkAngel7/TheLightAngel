@@ -12,6 +12,7 @@ import Angel.PlayerList.PlayerListInit;
 import Angel.PlayerList.PlayerListMain;
 import Angel.Sanctions.SanctionInit;
 import Angel.Sanctions.SanctionMain;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -29,10 +30,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -58,7 +61,7 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
     public boolean isStarting = true;
     private ArrayList<Date> pingCooldownOverTimes = new ArrayList<>();
     private ArrayList<Long> pingCooldownDiscordIDs = new ArrayList<>();
-    public final List<String> mainCommands = new ArrayList<>(Arrays.asList("search", "s", "reload", "restart", "ping", "status", "help", "set", "e", "embed", "transfer"));
+    public final List<String> mainCommands = new ArrayList<>(Arrays.asList("search", "s", "reload", "restart", "ping", "status", "help", "set", "e", "embed", "transfer", "privacy"));
 
     private List<ListEmbed> listEmbeds = new ArrayList<>();
     private Dictionary<Message, ScheduledFuture<?>> reactionClearTimers = new Hashtable<>();
@@ -631,6 +634,9 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
                         embed.setAsError("Invalid Command", ":x: **The Command you asked for help for does not exist anywhere within me...**");
                         embed.sendToChannel(msg, msg.getChannel().asTextChannel());
                     }
+                    break;
+                case "privacy":
+                    privacyCommand(msg);
                     break;
             }
         }
@@ -1217,6 +1223,25 @@ public class DiscordBotMain extends ListenerAdapter implements CommonLogic {
             }
             catch (NullPointerException ex) {}
         }
+    }
+
+    private void privacyCommand(Message msg) {
+        EmbedBuilder builder = new EmbedBuilder()
+                .setTitle("Privacy Statement").addField("📥 Data Collected",
+                        "• **Discord IDs & Usernames:** Used for authentication, permission checks, and logging.\n" +
+                                "• **Guild Nicknames & Display Names:** Collected during session monitoring and tracking.", false)
+                .addField("❌ Data NOT Collected",
+                        "To maintain strict data minimization, this bot does **not** collect:\n" +
+                                "• IP addresses or network telemetry\n" +
+                                "• Avatars, banners, or profile themes\n" +
+                                "• DMs or message contents outside of explicit command/mod logs\n" +
+                                "• Presence data or status tracking (Intent unused)", false)
+                .addField("🛡️ Security & Storage",
+                        "All off-platform data persisted in local databases is secured at rest using **AES-256 (GCM)** encryption. Data is never sold or shared.", false)
+                .setFooter("Full policy details available at safe-crew.net/privacy")
+                .setColor(Color.decode("#005700"));
+
+        msg.getChannel().sendMessageEmbeds(builder.setThumbnail("attachment://safe-logo.png").build()).setFiles(getSAFECrewLogo()).queue();
     }
 
     // Specifically for Embeds That Edit Themselves Based on Reactions

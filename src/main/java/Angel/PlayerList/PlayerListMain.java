@@ -20,14 +20,12 @@ import net.dv8tion.jda.api.events.message.react.MessageReactionRemoveEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
-import net.dv8tion.jda.api.utils.FileUpload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -1056,12 +1054,5 @@ public class PlayerListMain extends ListenerAdapter implements BotAbuseLogic {
 
     public boolean isValidCommand(String cmd) {
         return commands.contains(cmd.toLowerCase());
-    }
-
-    public FileUpload getSAFECrewLogo() {
-        InputStream resourceStream = getClass().getResourceAsStream("/safe-logo.png");
-        FileUpload thumbnail = FileUpload.fromData(resourceStream, "safe-logo.png");
-
-        return thumbnail;
     }
 }
