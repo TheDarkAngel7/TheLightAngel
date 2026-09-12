@@ -11,7 +11,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.FileSystemException;
@@ -78,11 +77,9 @@ class FileHandler {
     }
     public void saveDatabase(List<NicknameRequest> requests, List<PlayerNameHistory> oldNickDictionary) {
         try {
-            FileWriter fileWriter = new FileWriter(jsonTempNickDataFile);
+            String decryptedJson = gson.toJson(new NicknameFile(requests, oldNickDictionary));
 
-            fileWriter.write(gson.toJson(new NicknameFile(requests, oldNickDictionary)));
-
-            fileWriter.close();
+            FileEncryptionManager.writeEncryptedFile(jsonTempNickDataFile, decryptedJson, "Nicknames");
 
             log.info("JSONWriter Successfully Ran to Nickname Database Temp File");
             while (true) {
