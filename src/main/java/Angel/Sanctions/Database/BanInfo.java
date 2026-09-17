@@ -3,6 +3,8 @@ package Angel.Sanctions.Database;
 import Angel.Sanctions.Exceptions.InvalidExpirationDateException;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.UserSnowflake;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.requests.ErrorResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -59,11 +61,22 @@ public class BanInfo extends SanctionInfo {
         UserSnowflake u = UserSnowflake.fromId(getDiscordID());
 
         try {
+            // retrieveBan succeeds if the user is currently banned in the guild
             getGuild().retrieveBan(u).submit().get(5, TimeUnit.SECONDS);
             return true;
         }
+        catch (ErrorResponseException e) {
+            // Code 10007 means the ban doesn't exist (the user is simply not banned)
+            if (e.getErrorResponse() == ErrorResponse.UNKNOWN_BAN) {
+                log.error("Discord Account {} is not actively banned.", getDiscordID());
+            }
+            else {
+                log.error("API error while checking ban status for Discord Account {}", getDiscordID(), e);
+            }
+            return false;
+        }
         catch (Exception e) {
-            log.error("Discord Account {} is not actively banned.", getDiscordID(), e);
+            log.error("Unexpected error while checking ban status for Discord Account {}", getDiscordID(), e);
             return false;
         }
     }
