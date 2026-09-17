@@ -62,6 +62,8 @@ public abstract class SanctionInfo implements SanctionLogic {
 
     public abstract boolean sanctionApplied();
 
+    public abstract String getSanctionType();
+
     public void extendExpiryDate(String duration) throws InvalidExpirationDateException {
         expiryDate = parseExpirationDate(duration, true);
     }

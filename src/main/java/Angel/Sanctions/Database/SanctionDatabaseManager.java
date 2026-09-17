@@ -101,16 +101,22 @@ public class SanctionDatabaseManager extends Timer implements SanctionLogic {
         this.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
+                int removed = 0;
+                int reapplied = 0;
                 for (SanctionInfo record : container.getSanctionList()) {
                     if (ZonedDateTime.now().isAfter(record.getExpiryDate()) && record.sanctionApplied()) {
+                        log.info("Attempting to Remove {} for Discord ID {}", record.getSanctionType(), record.getDiscordID());
                         record.reverseSanction();
                         container.removeSanction(record.getDiscordID());
                         saveDatabase();
+                        removed++;
                     }
                     else if (ZonedDateTime.now().isBefore(record.getExpiryDate()) && !record.sanctionApplied()) {
+                        log.info("Attempting to Reapply {} for Discord ID {}", record.getSanctionType(), record.getDiscordID());
                         record.reapplySanction();
                     }
                 }
+                log.debug("Sanction Expiry Timer has been run! Removed {} & Reapplied {} ",  removed, reapplied);
             }
         }, 600000, 300000);
     }

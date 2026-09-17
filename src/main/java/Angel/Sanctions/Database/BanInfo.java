@@ -67,4 +67,9 @@ public class BanInfo extends SanctionInfo {
             return false;
         }
     }
+
+    @Override
+    public String getSanctionType() {
+        return "Ban";
+    }
 }

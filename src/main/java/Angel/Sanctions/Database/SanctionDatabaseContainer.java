@@ -16,7 +16,7 @@ public class SanctionDatabaseContainer {
     public void addSanction(SanctionInfo sanctionInfo) {
         sanctionList.add(sanctionInfo);
 
-        log.info("Added {} for Discord ID {} {}", (sanctionInfo instanceof BanInfo ? "Ban" : "Suspension"), sanctionInfo.getDiscordID(),
+        log.info("Added {} for Discord ID {} {}", sanctionInfo.getSanctionType(), sanctionInfo.getDiscordID(),
                 (sanctionInfo.getFullDurationString().equalsIgnoreCase("permanently") ?
                         sanctionInfo.getFullDurationString() : "for " + sanctionInfo.getFullDurationString()));
     }
@@ -27,7 +27,7 @@ public class SanctionDatabaseContainer {
         while (index < sanctionList.size()) {
             if (sanctionList.get(index).getDiscordID() == targetDiscordID) {
                 SanctionInfo sanctionInfo = sanctionList.remove(index);
-                log.info("Removed {} for Discord ID {}", (sanctionInfo instanceof BanInfo ? "Ban" : "Suspension"), sanctionInfo.getDiscordID());
+                log.info("Removed {} for Discord ID {}", sanctionInfo.getSanctionType(), sanctionInfo.getDiscordID());
                 break;
             }
             index++;

@@ -132,4 +132,9 @@ public class SuspensionInfo extends SanctionInfo {
         else return m.getRoles().contains(getHoldingRole()) && m.getRoles().stream()
                 .noneMatch(getRevokedRoles()::contains);
     }
+
+    @Override
+    public String getSanctionType() {
+        return "Suspension";
+    }
 }
