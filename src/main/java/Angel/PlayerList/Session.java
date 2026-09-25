@@ -738,9 +738,17 @@ public class Session implements PlayerListLogic {
         try {
             lock.lock();
 
-            HelpRequest helpRequest = new HelpRequest(cmd);
+            if (isPlayerInSession(cmd.getMember())) {
+                HelpRequest helpRequest = new HelpRequest(cmd);
 
-            helpRequests.add(helpRequest);
+                helpRequests.add(helpRequest);
+            }
+            else {
+                log.warn("Cannot Create Help Request for {} because they were not found in the {} session!", cmd.getMember().getEffectiveName(), sessionName);
+                cmd.getChannel().sendMessageEmbeds(new MessageEntry("Player Not In Session", "**Unable to Create Help Request because I found you were not in the session!**" +
+                        "\n\n**If this is an error it's possible I may've misread the list, please double check the player list to ensure you're appearing on it correctly. If not, you should consider changing your Social Club username.**", EmbedDesign.ERROR).getEmbed())
+                        .queue();
+            }
         }
         catch (InvalidHelpRequestException e) {
             cmd.getChannel().sendMessageEmbeds(new MessageEntry("Error Creating Help Request", "**Unable to Create Help Request**\n\nReason: **" + e.getMessage() + "**", EmbedDesign.ERROR)

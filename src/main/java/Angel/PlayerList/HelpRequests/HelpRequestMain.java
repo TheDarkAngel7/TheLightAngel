@@ -110,7 +110,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
             return;
         }
 
-        if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix) {
+        if (msg.getContentRaw().charAt(0) == mainConfig.commandPrefix && !msg.isFromType(ChannelType.PRIVATE)) {
 
             if (msg.getChannel().getType() == ChannelType.GUILD_PRIVATE_THREAD) {
                 Session session;
@@ -122,7 +122,7 @@ public class HelpRequestMain extends ListenerAdapter implements BotAbuseLogic, P
 
                     if (helpRequest == null) {
                         InvalidSessionException e = new InvalidSessionException("No Help Request Exists with the thread ID " +  msg.getChannel().asThreadChannel().getIdLong());
-                        log.error("Error Occured while looking up help request from thread", e);
+                        log.error("Error Occurred while looking up help request from thread", e);
                         throw e;
                     }
                 }
